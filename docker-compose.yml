@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: tappyone-postgres
+    environment:
+      POSTGRES_DB: tappyone
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tappyone-network
+    restart: unless-stopped
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    container_name: tappyone-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tappyone-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Backend Go API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: tappyone-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/tappyone?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=sua-chave-secreta-jwt-aqui
+      - WHATSAPP_API_URL=https://api.apiwhatsapp.com.br
+      - WHATSAPP_API_TOKEN=seu-token-whatsapp
+      - DEEPSEEK_API_KEY=sua-chave-deepseek
+      - SMTP_HOST=smtp.hostinger.com
+      - SMTP_PORT=587
+      - SMTP_USER=seu-email@dominio.com
+      - SMTP_PASS=sua-senha-email
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - tappyone-network
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/tmp
+
+  # Frontend Next.js
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: tappyone-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8080
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=sua-chave-nextauth-secreta
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/tappyone?sslmode=disable
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - postgres
+    networks:
+      - tappyone-network
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+
+  # Adminer para gerenciar banco de dados
+  adminer:
+    image: adminer:latest
+    container_name: tappyone-adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - tappyone-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  tappyone-network:
+    driver: bridge

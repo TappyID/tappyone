@@ -1,0 +1,527 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  MessageCircle, 
+  QrCode, 
+  CheckCircle, 
+  AlertCircle, 
+  Loader2, 
+  X,
+  Zap 
+} from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+
+type ConnectionStatus = 'disconnected' | 'connecting' | 'qr_ready' | 'connected' | 'error'
+
+interface WhatsAppConnectionProps {
+  onUpdate: (data: { isConnected: boolean; isActive: boolean }) => void
+}
+
+export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
+  const { user } = useAuth()
+  const [status, setStatus] = useState<ConnectionStatus>('disconnected')
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://apiwhatsapp.vyzer.com.br/api'
+  const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'atendia-waha-2024-secretkey'
+  const SESSION_NAME = user?.id ? `user_${user.id}` : 'default'
+
+  // Verificar status inicial quando componente carrega
+  useEffect(() => {
+    // Verificar conexão no backend primeiro, depois WAHA API
+    const initializeConnection = async () => {
+      const backendConnected = await checkBackendConnection()
+      if (!backendConnected) {
+        await checkSessionStatus()
+      }
+    }
+    
+    initializeConnection()
+    
+    // Verificar status periodicamente
+    const interval = setInterval(() => {
+      if (status === 'connecting' || status === 'qr_ready') {
+        checkSessionStatus()
+      }
+    }, 5000)
+    
+    return () => clearInterval(interval)
+  }, [status])
+
+  // Criar sessão WhatsApp
+  const createSession = async () => {
+    if (!user) {
+      setError('Usuário não encontrado')
+      return
+    }
+
+    setStatus('connecting')
+    setError(null)
+
+    try {
+      // Primeiro, verificar se já existe uma conexão no backend
+      const existingConnection = await checkBackendConnection()
+      if (existingConnection) return
+
+      // Verificar se já existe uma sessão na WAHA API
+      const existingSession = await checkSessionStatus()
+      if (existingSession) return
+
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Token de autenticação não encontrado')
+        return
+      }
+
+      const response = await fetch(`${API_BASE}/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Api-Key': API_KEY
+        },
+        body: JSON.stringify({
+          name: SESSION_NAME,
+          start: true,
+          config: {
+            metadata: {
+              'user.id': user.id,
+              'user.email': user.email,
+              'user.name': user.nome,
+              'company': 'TappyOne CRM'
+            },
+            debug: false,
+            noweb: {
+              store: {
+                enabled: true,
+                fullSync: false
+              }
+            },
+            webhooks: [{
+              url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/webhooks/whatsapp`,
+              events: ['message', 'session.status'],
+              hmac: null,
+              retries: {
+                delaySeconds: 2,
+                attempts: 15
+              },
+              customHeaders: [{
+                name: 'Authorization',
+                value: `Bearer ${token}`
+              }]
+            }]
+          }
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Sessão criada:', data)
+        
+        // Criar/atualizar conexão no backend
+        await createBackendConnection('connecting')
+        
+        // Se já está WORKING, não precisa de QR Code
+        if (data.status === 'WORKING') {
+          setStatus('connected')
+          await createBackendConnection('connected')
+          onUpdate({ isConnected: true, isActive: true })
+          return
+        }
+        
+        // Aguardar um pouco e verificar o status
+        setTimeout(() => {
+          checkSessionStatus()
+        }, 2000)
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }))
+        console.error('Erro ao criar sessão:', errorData)
+        
+        // Se sessão já existe, verificar status
+        if (response.status === 400 && errorData.message?.includes('already exists')) {
+          console.log('Sessão já existe, verificando status...')
+          await checkSessionStatus()
+          return
+        }
+        
+        setError(errorData.message || 'Erro ao criar sessão')
+        setStatus('disconnected')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
+      setStatus('disconnected')
+    }
+  }
+
+  // Obter QR Code
+  const getQRCode = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/${SESSION_NAME}/auth/qr?format=image`, {
+        headers: {
+          'Accept': 'image/png',
+          'X-Api-Key': API_KEY
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const qrUrl = URL.createObjectURL(blob)
+        setQrCode(qrUrl)
+        setShowQRModal(true)
+      } else {
+        throw new Error('Falha ao obter QR Code')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao obter QR Code')
+    }
+  }
+
+  // Verificar conexão no backend primeiro
+  const checkBackendConnection = async (): Promise<boolean> => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return false
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/whatsapp`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const connection = await response.json()
+        console.log('Conexão no backend:', connection)
+        
+        if (connection.status === 'connected') {
+          setStatus('connected')
+          setError(null)
+          onUpdate({ isConnected: true, isActive: true })
+          return true
+        } else if (connection.status === 'connecting') {
+          setStatus('connecting')
+          // Verificar status na WAHA API também
+          await checkSessionStatus()
+          return false
+        }
+      }
+      return false
+    } catch (err) {
+      console.error('Erro ao verificar backend:', err)
+      return false
+    }
+  }
+
+  // Verificar status da sessão na WAHA API
+  const checkSessionStatus = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
+        headers: {
+          'X-Api-Key': API_KEY
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Status da sessão WAHA:', data)
+        
+        // Sincronizar com backend
+        await syncWithBackend(data.status)
+        
+        if (data.status === 'WORKING') {
+          setStatus('connected')
+          setShowQRModal(false)
+          setError(null)
+          onUpdate({ isConnected: true, isActive: true })
+          console.log('WhatsApp conectado com sucesso!', data.me)
+          return true
+        } else if (data.status === 'SCAN_QR_CODE') {
+          setStatus('qr_ready')
+          setError(null)
+          // QR Code foi atualizado, buscar novo QR
+          try {
+            await getQRCode()
+          } catch (err) {
+            console.error('Erro ao buscar QR Code:', err)
+            setError('Erro ao buscar QR Code')
+          }
+        } else if (data.status === 'STARTING') {
+          setStatus('connecting')
+          setError(null)
+        } else if (data.status === 'FAILED') {
+          setStatus('error')
+          setError('Sessão falhou - tente reiniciar')
+        } else if (data.status === 'STOPPED') {
+          setStatus('disconnected')
+          setError(null)
+          onUpdate({ isConnected: false, isActive: false })
+        }
+      } else if (response.status === 404) {
+        // Sessão não existe
+        setStatus('disconnected')
+        setError(null)
+        onUpdate({ isConnected: false, isActive: false })
+      }
+      return false
+    } catch (err) {
+      console.error('Erro ao verificar status:', err)
+      return false
+    }
+  }
+
+  // Sincronizar status com backend
+  const syncWithBackend = async (wahaStatus: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/whatsapp/sync/${SESSION_NAME}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+    } catch (err) {
+      console.error('Erro ao sincronizar com backend:', err)
+    }
+  }
+
+  // Criar/atualizar conexão no backend
+  const createBackendConnection = async (status: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const connectionStatus = status === 'connected' ? 'connected' : 
+                              status === 'connecting' ? 'connecting' : 'disconnected'
+
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          platform: 'whatsapp',
+          status: connectionStatus,
+          session_name: SESSION_NAME,
+          session_data: {
+            user_id: user?.id,
+            user_email: user?.email,
+            created_at: new Date().toISOString()
+          }
+        })
+      })
+    } catch (err) {
+      console.error('Erro ao criar conexão no backend:', err)
+    }
+  }
+
+  // Desconectar sessão
+  const disconnectSession = async () => {
+    try {
+      // Desconectar da WAHA API
+      await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Api-Key': API_KEY
+        }
+      })
+      
+      // Desconectar no backend
+      const token = localStorage.getItem('token')
+      if (token) {
+        await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/whatsapp/${SESSION_NAME}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      }
+      
+      setStatus('disconnected')
+      setQrCode(null)
+      setShowQRModal(false)
+      setError(null)
+      onUpdate({ isConnected: false, isActive: false })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao desconectar')
+    }
+  }
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'connected': return 'text-green-600 dark:text-green-400'
+      case 'connecting': case 'qr_ready': return 'text-yellow-600 dark:text-yellow-400'
+      case 'error': return 'text-red-600 dark:text-red-400'
+      default: return 'text-gray-600 dark:text-gray-400'
+    }
+  }
+
+  const connection = {
+    name: 'WhatsApp Business',
+    description: 'Conecte sua conta do WhatsApp Business para atendimento automatizado',
+    icon: MessageCircle,
+    color: 'text-green-600'
+  }
+
+  return (
+    <>
+      <motion.div
+        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300"
+        whileHover={{ y: -2 }}
+        layout
+      >
+        {/* Header */}
+        <div className="flex items-start gap-4 mb-4">
+          <div className={`p-3 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20`}>
+            <connection.icon className={`w-6 h-6 ${connection.color}`} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {connection.name}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {connection.description}
+            </p>
+          </div>
+        </div>
+
+        {/* Status Info */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-2 h-2 rounded-full ${
+              status === 'connected' ? 'bg-green-500' : 
+              status === 'connecting' || status === 'qr_ready' ? 'bg-yellow-500' :
+              status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+            }`} />
+            <span className={`text-sm font-medium ${getStatusColor()}`}>
+              {status === 'connected' && 'Conectado'}
+              {status === 'connecting' && 'Conectando...'}
+              {status === 'qr_ready' && 'Aguardando QR Code'}
+              {status === 'error' && 'Erro na conexão'}
+              {status === 'disconnected' && 'Desconectado'}
+            </span>
+          </div>
+          
+          {/* Debug info quando há erro ou conectado */}
+          {(error || status === 'connected') && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+              <div>Sessão: {SESSION_NAME}</div>
+              <div>Usuário: {user?.nome} ({user?.email})</div>
+              {status === 'connected' ? (
+                <div className="text-green-600">✅ WhatsApp conectado e funcionando!</div>
+              ) : error && (
+                <div className="text-red-500">{error}</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Ações */}
+        <div className="flex gap-3">
+          {status === 'connected' ? (
+            <motion.button
+              onClick={disconnectSession}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Desconectar
+            </motion.button>
+          ) : (
+            <motion.button
+              onClick={createSession}
+              disabled={status === 'connecting'}
+              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              whileHover={{ scale: status !== 'connecting' ? 1.02 : 1 }}
+              whileTap={{ scale: status !== 'connecting' ? 0.98 : 1 }}
+            >
+              {status === 'connecting' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Conectando...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="w-4 h-4" />
+                  Conectar
+                </>
+              )}
+            </motion.button>
+          )}
+          
+          {status === 'qr_ready' && (
+            <motion.button
+              onClick={() => setShowQRModal(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <QrCode className="w-4 h-4" />
+              Ver QR
+            </motion.button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQRModal && qrCode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowQRModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Conectar WhatsApp
+                </h3>
+                <button
+                  onClick={() => setShowQRModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="text-center">
+                <div className="bg-white p-4 rounded-xl mb-4 inline-block">
+                  <img 
+                    src={qrCode} 
+                    alt="QR Code WhatsApp" 
+                    className="w-64 h-64 mx-auto"
+                  />
+                </div>
+                
+                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                  <p className="font-medium">Como conectar:</p>
+                  <ol className="text-left space-y-1">
+                    <li>1. Abra o WhatsApp no seu celular</li>
+                    <li>2. Toque em "Mais opções" (⋮) → "Dispositivos conectados"</li>
+                    <li>3. Toque em "Conectar um dispositivo"</li>
+                    <li>4. Escaneie este QR Code</li>
+                  </ol>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
