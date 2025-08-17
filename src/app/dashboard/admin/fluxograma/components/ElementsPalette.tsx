@@ -229,7 +229,7 @@ export default function ElementsPalette() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
                 draggable
-                onDragStart={(e) => onDragStart(e, element.type, {
+                onDragStart={(e) => onDragStart(e as unknown as React.DragEvent<HTMLDivElement>, element.type, {
                   label: element.label,
                   icon: element.icon,
                   color: element.color,

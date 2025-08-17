@@ -33,7 +33,7 @@ const mockAtendentes = [
     nome: 'Maria Silva',
     email: 'maria@tappyone.com',
     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
-    status: 'online',
+    status: 'online' as 'online' | 'ocupado' | 'ausente' | 'offline',
     cargo: 'Atendente Senior',
     ultimaMsg: 'Preciso de ajuda com um cliente...',
     ultimaAtividade: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
@@ -44,7 +44,7 @@ const mockAtendentes = [
     nome: 'João Santos',
     email: 'joao@tappyone.com',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    status: 'ocupado',
+    status: 'ocupado' as 'online' | 'ocupado' | 'ausente' | 'offline',
     cargo: 'Atendente',
     ultimaMsg: 'Relatório enviado!',
     ultimaAtividade: new Date(Date.now() - 15 * 60 * 1000), // 15 min ago
@@ -55,7 +55,7 @@ const mockAtendentes = [
     nome: 'Ana Costa',
     email: 'ana@tappyone.com',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    status: 'ausente',
+    status: 'ausente' as 'online' | 'ocupado' | 'ausente' | 'offline',
     cargo: 'Supervisora',
     ultimaMsg: 'Vou almoçar, volto em 1h',
     ultimaAtividade: new Date(Date.now() - 45 * 60 * 1000), // 45 min ago
@@ -66,7 +66,7 @@ const mockAtendentes = [
     nome: 'Carlos Oliveira',
     email: 'carlos@tappyone.com',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    status: 'offline',
+    status: 'offline' as 'online' | 'ocupado' | 'ausente' | 'offline',
     cargo: 'Atendente',
     ultimaMsg: 'Até amanhã!',
     ultimaAtividade: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago

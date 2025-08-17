@@ -125,7 +125,10 @@ export default function CriarFluxogramaModal({ onClose, onSave }: CriarFluxogram
       categoria: formData.categoria,
       status: formData.status,
       tags: formData.tags,
-      nodes: selectedTemplate.nodes,
+      nodes: selectedTemplate.nodes.map((node: any) => ({
+        ...node,
+        type: node.type as 'trigger' | 'condition' | 'action' | 'kanban' | 'atendente' | 'resposta' | 'agendamento' | 'ia' | 'delay'
+      })),
       edges: selectedTemplate.edges
     }
 
