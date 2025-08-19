@@ -11,7 +11,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Criar usuário admin padrão (senha: admin123)
+-- Criar usuário admin padrão (senha: admin123)s
 -- Hash gerado com bcrypt para 'admin123'
 INSERT INTO usuarios (id, email, nome, tipo, ativo, senha, criado_em, atualizado_em) 
 VALUES (
