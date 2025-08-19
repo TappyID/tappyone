@@ -15,10 +15,10 @@ interface MediaUploadResult {
 
 interface UseMediaUploadReturn {
   uploadFile: (file: File) => Promise<MediaUploadResult>
-  sendImage: (chatId: string, imageUrl: string, caption?: string) => Promise<any>
-  sendFile: (chatId: string, fileUrl: string, filename: string, caption?: string) => Promise<any>
-  sendVoice: (chatId: string, audioUrl: string) => Promise<any>
-  sendVideo: (chatId: string, videoUrl: string, caption?: string) => Promise<any>
+  sendImage: (chatId: string, imageFile: File, caption?: string) => Promise<any>
+  sendFile: (chatId: string, file: File, caption?: string) => Promise<any>
+  sendVoice: (chatId: string, audioBlob: Blob) => Promise<any>
+  sendVideo: (chatId: string, videoFile: File, caption?: string) => Promise<any>
   uploadAndSendMedia: (chatId: string, file: File, type: string, caption?: string) => Promise<any>
   isUploading: boolean
   uploadProgress: UploadProgress | null
@@ -69,18 +69,22 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
     }
   }, [])
 
-  const sendImage = useCallback(async (chatId: string, imageUrl: string, caption?: string) => {
+  const sendImage = useCallback(async (chatId: string, imageFile: File, caption?: string) => {
+    setIsUploading(true)
+    setError(null)
+    
     try {
+      const formData = new FormData()
+      formData.append('chatId', chatId)
+      formData.append('image', imageFile)
+      if (caption) {
+        formData.append('caption', caption)
+      }
+
       const response = await fetch(`/api/whatsapp/chats/${chatId}/image`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          imageUrl,
-          caption: caption || ''
-        })
+        headers: getAuthHeaders(),
+        body: formData
       })
 
       if (!response.ok) {
@@ -92,22 +96,27 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
       const errorMessage = err instanceof Error ? err.message : 'Send image failed'
       setError(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      setIsUploading(false)
     }
   }, [])
 
-  const sendFile = useCallback(async (chatId: string, fileUrl: string, filename: string, caption?: string) => {
+  const sendFile = useCallback(async (chatId: string, file: File, caption?: string) => {
+    setIsUploading(true)
+    setError(null)
+    
     try {
+      const formData = new FormData()
+      formData.append('chatId', chatId)
+      formData.append('file', file)
+      if (caption) {
+        formData.append('caption', caption)
+      }
+
       const response = await fetch(`/api/whatsapp/chats/${chatId}/file`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          fileUrl,
-          filename,
-          caption: caption || ''
-        })
+        headers: getAuthHeaders(),
+        body: formData
       })
 
       if (!response.ok) {
@@ -119,20 +128,24 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
       const errorMessage = err instanceof Error ? err.message : 'Send file failed'
       setError(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      setIsUploading(false)
     }
   }, [])
 
-  const sendVoice = useCallback(async (chatId: string, audioUrl: string) => {
+  const sendVoice = useCallback(async (chatId: string, audioBlob: Blob) => {
+    setIsUploading(true)
+    setError(null)
+    
     try {
+      const formData = new FormData()
+      formData.append('chatId', chatId)
+      formData.append('audio', audioBlob, 'voice_message.webm')
+
       const response = await fetch(`/api/whatsapp/chats/${chatId}/voice`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          audioUrl
-        })
+        headers: getAuthHeaders(),
+        body: formData
       })
 
       if (!response.ok) {
@@ -144,21 +157,27 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
       const errorMessage = err instanceof Error ? err.message : 'Send voice failed'
       setError(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      setIsUploading(false)
     }
   }, [])
 
-  const sendVideo = useCallback(async (chatId: string, videoUrl: string, caption?: string) => {
+  const sendVideo = useCallback(async (chatId: string, videoFile: File, caption?: string) => {
+    setIsUploading(true)
+    setError(null)
+    
     try {
+      const formData = new FormData()
+      formData.append('chatId', chatId)
+      formData.append('video', videoFile)
+      if (caption) {
+        formData.append('caption', caption)
+      }
+
       const response = await fetch(`/api/whatsapp/chats/${chatId}/video`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          videoUrl,
-          caption: caption || ''
-        })
+        headers: getAuthHeaders(),
+        body: formData
       })
 
       if (!response.ok) {
@@ -170,6 +189,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
       const errorMessage = err instanceof Error ? err.message : 'Send video failed'
       setError(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      setIsUploading(false)
     }
   }, [])
 

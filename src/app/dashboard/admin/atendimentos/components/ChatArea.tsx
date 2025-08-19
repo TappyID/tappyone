@@ -3,40 +3,72 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Send, 
-  Paperclip, 
-  Smile, 
-  Phone, 
-  Video, 
-  Info, 
-  MoreVertical, 
-  User,
-  Bot,
-  Tag,
-  MessageSquare,
-  Calendar,
-  DollarSign,
-  FileSignature,
-  Hash,
+import {
+  Send,
+  Paperclip,
   Mic,
-  Clock,
-  CheckCheck,
-  Check,
-  Monitor,
-  Languages,
-  AudioLines,
-  Image,
-  FileText,
+  MicOff,
+  Smile,
+  Phone,
+  Video,
+  MoreHorizontal,
+  Search,
+  Star,
+  Archive,
+  Trash2,
+  UserPlus,
+  Settings,
+  X,
   Play,
   Pause,
-  Square,
+  Download,
+  Eye,
+  EyeOff,
+  Calendar,
+  DollarSign,
+  FileText,
+  Tag,
+  Users,
+  MapPin,
+  Contact,
+  BarChart3,
+  Check,
+  CheckCheck,
+  Languages,
+  Volume2,
+  VolumeX,
+  AudioLines,
+  Image as ImageIcon,
+  FileVideo,
+  FileAudio,
+  File,
+  Reply,
+  Forward,
+  Edit,
+  Copy,
+  ExternalLink,
+  User,
+  Wifi,
+  WifiOff,
+  MessageSquare,
+  FileSignature,
+  Hash,
+  Monitor,
   Upload,
-  X
+  Square,
+  Bot
 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useAudioRecorder, formatDuration, blobToFile } from '@/hooks/useAudioRecorder'
+import { usePresence } from '@/hooks/usePresence'
 import EmojiPicker from '@/components/EmojiPicker'
+import { MessageContextMenu } from '@/components/MessageContextMenu'
+import { EditMessageModal } from '@/components/EditMessageModal'
+import ForwardMessageModal from '@/components/ForwardMessageModal'
+import { MediaSendModal } from '@/components/MediaSendModal'
+import MessageContent from '@/components/MessageContent'
+import InputLinkPreview from '@/components/InputLinkPreview'
+import { useMessageActions } from '@/hooks/useMessageActions'
 import AgendamentoModal from './modals/AgendamentoModal'
 import OrcamentoModal from './modals/OrcamentoModal'
 import AssinaturaModal from './modals/AssinaturaModal'
@@ -86,6 +118,7 @@ export default function ChatArea({
   const [message, setMessage] = useState('')
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const [kanbanInfo, setKanbanInfo] = useState<{quadro: string, coluna: string, color: string} | null>(null)
+  const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   
   // Função para buscar informações do quadro e coluna
   const getKanbanInfo = async (chatId: string) => {
@@ -166,13 +199,6 @@ export default function ChatArea({
     return null
   }
   
-  // Debug: Log quando mensagens mudam
-  useEffect(() => {
-    console.log('ChatArea: Messages updated', {
-      messageCount: propMessages?.length || 0,
-      messages: propMessages
-    })
-  }, [propMessages])
   
   // Carregar informações do Kanban quando a conversa mudar
   useEffect(() => {
@@ -208,6 +234,36 @@ export default function ChatArea({
   const [showLigacaoModal, setShowLigacaoModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
   
+  // Estados para novas funcionalidades
+  const [showSearch, setShowSearch] = useState(false)
+  const [showMediaModal, setShowMediaModal] = useState<'contact' | 'location' | 'poll' | null>(null)
+  const [showForwardModal, setShowForwardModal] = useState(false)
+  const [messageToForward, setMessageToForward] = useState<any>(null)
+  const [detectedLink, setDetectedLink] = useState<string | null>(null)
+  const [replyingTo, setReplyingTo] = useState<any>(null)
+  const [editingMessage, setEditingMessage] = useState<any>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [starredMessages, setStarredMessages] = useState<Set<string>>(() => {
+    // Carregar mensagens favoritadas do localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`starredMessages_${conversation?.id}`)
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    }
+    return new Set()
+  })
+  
+  // Hook para ações de mensagem
+  const chatId = extractChatId(conversation)
+  const messageActions = useMessageActions({ 
+    chatId, 
+    onMessageUpdate: () => {
+      // Forçar re-render das mensagens
+      if (onMarkAsRead && chatId) {
+        onMarkAsRead(chatId)
+      }
+    }
+  })
+  
   // Hooks para mídia
   const mediaUpload = useMediaUpload()
   const attachmentModalRef = useRef<HTMLDivElement>(null)
@@ -220,14 +276,79 @@ export default function ChatArea({
   const [hoveredMessage, setHoveredMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const [isUserScrolling, setIsUserScrolling] = useState(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const isAtBottom = () => {
+    if (!chatContainerRef.current) return true
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current
+    return scrollHeight - scrollTop - clientHeight < 50 // 50px de tolerância
+  }
+
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    // Só faz auto-scroll se o usuário estiver no final do chat
+    if (!isUserScrolling && isAtBottom()) {
+      scrollToBottom()
+    }
+  }, [messages, isUserScrolling])
+
+  // Marcar mensagens como vistas quando o chat é aberto ou mensagens mudam
+  useEffect(() => {
+    if (messages && messages.length > 0 && conversation) {
+      // Filtrar mensagens não vistas do contato (não do agente)
+      const unseenMessages = messages
+        .filter(msg => msg.sender !== 'agent' && !(msg as any).seen)
+        .map(msg => msg.id || (msg as any)._data?.id?.id)
+        .filter(Boolean)
+      
+      if (unseenMessages.length > 0) {
+        // Aguardar um pouco antes de marcar como visto para simular leitura
+        const timer = setTimeout(() => {
+          markMessagesAsSeen(unseenMessages)
+        }, 1000)
+        
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [messages, conversation])
+
+  // Scroll inicial para o final quando conversa carrega
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Pequeno delay para garantir que o DOM foi renderizado
+      setTimeout(() => {
+        scrollToBottom()
+      }, 100)
+    }
+  }, [conversation?.id])
+
+  // Detectar quando usuário está fazendo scroll manual
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current
+    if (!chatContainer) return
+
+    let scrollTimeout: NodeJS.Timeout
+
+    const handleScroll = () => {
+      setIsUserScrolling(true)
+      
+      // Reset após 2 segundos de inatividade
+      clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(() => {
+        setIsUserScrolling(false)
+      }, 2000)
+    }
+
+    chatContainer.addEventListener('scroll', handleScroll)
+    return () => {
+      chatContainer.removeEventListener('scroll', handleScroll)
+      clearTimeout(scrollTimeout)
+    }
+  }, [])
 
   // Fechar modal ao clicar fora
   useEffect(() => {
@@ -280,27 +401,41 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
-  // Extrair dados do contato atual
-  const getContactData = () => {
-    if (!conversation) return undefined
-    return {
-      nome: conversation.name || conversation.nome,
-      telefone: conversation.id || conversation.numeroTelefone
+  // Função para marcar mensagens como vistas
+  const markMessagesAsSeen = async (messageIds: string[]) => {
+    if (!messageIds.length) return
+    
+    const chatId = extractChatId(conversation)
+    if (!chatId) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      await fetch('/api/whatsapp/sendSeen', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          chatId,
+          messageIds
+        })
+      })
+    } catch (error) {
+      console.error('Erro ao marcar mensagens como vistas:', error)
     }
   }
 
-  const sendMessage = () => {
-    if (!message.trim()) return
-
-    // Usar sempre a função real das props
-    if (onSendMessage) {
-      onSendMessage(message)
+  // Extrair dados do contato atual
+  const getContactData = () => {
+    if (!conversation) return null
+    return {
+      nome: conversation.name,
+      telefone: conversation.phone || extractChatId(conversation),
+      avatar: conversation.profilePictureUrl
     }
-    setMessage('')
-    
-    // Simulate typing indicator
-    setIsTyping(true)
-    setTimeout(() => setIsTyping(false), 2000)
   }
   
   // Funções para mídia
@@ -318,9 +453,13 @@ export default function ChatArea({
     if (!chatId) return
     
     try {
-      await mediaUpload.uploadAndSendMedia(chatId, file, type)
-      // Recarregar mensagens após envio
-      // onSendMessage poderia ser expandido para suportar diferentes tipos
+      if (type === 'image') {
+        await mediaUpload.sendImage(chatId, file)
+      } else if (type === 'video') {
+        await mediaUpload.sendVideo(chatId, file)
+      } else {
+        await mediaUpload.sendFile(chatId, file)
+      }
     } catch (error) {
       console.error('Erro ao enviar arquivo:', error)
     }
@@ -342,7 +481,15 @@ export default function ChatArea({
     for (const file of files) {
       try {
         const type = getFileType(file)
-        await mediaUpload.uploadAndSendMedia(chatId, file, type)
+        if (type === 'image') {
+          await mediaUpload.sendImage(chatId, file)
+        } else if (type === 'video') {
+          await mediaUpload.sendVideo(chatId, file)
+        } else if (type === 'voice') {
+          await mediaUpload.sendVoice(chatId, file)
+        } else {
+          await mediaUpload.sendFile(chatId, file)
+        }
       } catch (error) {
         console.error('Erro ao enviar arquivo:', error)
       }
@@ -381,8 +528,7 @@ export default function ChatArea({
     if (!chatId) return
     
     try {
-      const audioFile = blobToFile(audioRecorder.audioBlob, `audio-${Date.now()}.webm`)
-      await mediaUpload.uploadAndSendMedia(chatId, audioFile, 'voice')
+      await mediaUpload.sendVoice(chatId, audioRecorder.audioBlob)
       audioRecorder.clearRecording()
     } catch (error) {
       console.error('Erro ao enviar áudio:', error)
@@ -399,30 +545,100 @@ export default function ChatArea({
     }
   }
 
+  // Função para detectar links no texto
+  const detectLinkInText = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}[^\s]*)/gi
+    const match = text.match(urlRegex)
+    if (match && match.length > 0) {
+      let url = match[0]
+      if (!url.startsWith('http')) {
+        url = url.startsWith('www.') ? `https://${url}` : `https://${url}`
+      }
+      return url
+    }
+    return null
+  }
+
   // Função para lidar com mudanças no input
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    setMessage(newValue)
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value)
     
-    // Enviar status de "digitando" quando começar a digitar
-    if (newValue.length > 0 && message.length === 0) {
-      handleTyping(true)
-    }
+    // Detectar links no texto
+    const link = detectLinkInText(e.target.value)
+    setDetectedLink(link)
     
-    // Limpar timeout anterior
-    if (typingTimeout) {
-      clearTimeout(typingTimeout)
-    }
+    const chatId = extractChatId(conversation)
+    if (!chatId) return
     
-    // Definir novo timeout para parar o status de "digitando"
-    if (newValue.length > 0) {
-      const timeout = setTimeout(() => {
-        handleTyping(false)
-      }, 2000) // Para de "digitar" após 2 segundos sem digitar
+    // Enviar sinal de digitação via WAHA API
+    if (e.target.value.length > 0) {
+      await startTyping(chatId)
+      
+      // Clear previous timeout
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+      }
+      
+      // Set new timeout to stop typing indicator
+      const timeout = setTimeout(async () => {
+        await stopTyping(chatId)
+      }, 2000)
+      
       setTypingTimeout(timeout)
     } else {
       // Se o campo estiver vazio, para imediatamente o status de "digitando"
       handleTyping(false)
+    }
+  }
+
+  // Função para enviar mensagem
+  const sendMessage = async () => {
+    if (!message.trim()) return
+    
+    const messageToSend = message.trim()
+    const chatId = extractChatId(conversation)
+    
+    try {
+      const token = localStorage.getItem('token')
+      if (!token || !chatId) return
+      
+      // Se há uma mensagem sendo respondida, enviar como reply
+      if (replyingTo) {
+        const replyPayload = {
+          chatId: chatId,
+          text: messageToSend,
+          replyTo: replyingTo.id || replyingTo._data?.id?.id
+        }
+        
+        const response = await fetch('/api/whatsapp/reply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(replyPayload)
+        })
+        
+        if (!response.ok) {
+          throw new Error('Erro ao enviar reply')
+        }
+      } else {
+        // Enviar mensagem normal
+        onSendMessage(messageToSend)
+      }
+      
+      // Limpar estados após envio
+      setMessage('')
+      setDetectedLink(null)
+      setReplyingTo(null)
+      
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error)
+      // Em caso de erro, usar fallback
+      onSendMessage(messageToSend)
+      setMessage('')
+      setDetectedLink(null)
+      setReplyingTo(null)
     }
   }
 
@@ -483,15 +699,29 @@ export default function ChatArea({
                 <User className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+            {/* Presence Status Indicator */}
+            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
+              isOnline(extractChatId(conversation) || '') ? 'bg-green-500' : 'bg-gray-400'
+            }`}>
+              {isOnline(extractChatId(conversation) || '') ? (
+                <Wifi className="w-2 h-2 text-white" />
+              ) : (
+                <WifiOff className="w-2 h-2 text-white" />
+              )}
+            </div>
           </motion.div>
 
           {/* User Info */}
           <div>
             <h3 className="font-semibold text-gray-900">{conversation.name}</h3>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span className="text-sm text-gray-600">Online • Visto por último às 14:30</span>
+              <div className={`w-2 h-2 rounded-full ${
+                isOnline(extractChatId(conversation) || '') ? 'bg-green-500' : 'bg-gray-400'
+              }`} />
+              <span className="text-sm text-gray-600">
+                {isOnline(extractChatId(conversation) || '') ? 'Online' : 'Offline'}
+                {isContactTyping(extractChatId(conversation) || '') && ' • digitando...'}
+              </span>
             </div>
           </div>
 
@@ -500,6 +730,17 @@ export default function ChatArea({
 
         {/* Header Actions */}
         <div className="flex items-center gap-2">
+          {/* Buscar Mensagens */}
+          <motion.button
+            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowSearch(true)}
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            title="Buscar Mensagens"
+          >
+            <Search className="w-5 h-5 text-gray-600" />
+          </motion.button>
+          
           {/* Resposta Rápida */}
           <motion.button
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
@@ -613,7 +854,7 @@ export default function ChatArea({
       </motion.div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/30 to-white scrollbar-chat">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/30 to-white scrollbar-chat">
         <AnimatePresence>
           {messages.map((msg, index) => (
             <motion.div
@@ -626,55 +867,174 @@ export default function ChatArea({
               onMouseEnter={() => setHoveredMessage(msg.id)}
               onMouseLeave={() => setHoveredMessage(null)}
             >
-              <motion.div 
-                className={`relative transition-all duration-300 ${
-                  hoveredMessage === msg.id 
-                    ? 'max-w-md lg:max-w-xl xl:max-w-2xl' 
-                    : 'max-w-xs lg:max-w-md xl:max-w-lg'
-                } ${msg.sender === 'agent' ? 'ml-auto' : ''}`}
-                animate={{
-                  scale: hoveredMessage === msg.id ? 1.02 : 1
-                }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+              <div 
+                className={`relative max-w-xs lg:max-w-md xl:max-w-lg ${msg.sender === 'agent' ? 'ml-auto' : ''}`}
               >
-                <motion.div
-                  animate={{
-                    paddingLeft: hoveredMessage === msg.id ? '20px' : '16px',
-                    paddingRight: hoveredMessage === msg.id ? '20px' : '16px'
-                  }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`relative py-3 rounded-2xl shadow-sm transition-all duration-300 ${
-                    msg.sender === 'agent'
-                      ? 'bg-gradient-to-r from-[#273155] to-[#2a3660] text-white'
+                <div 
+                  className={`p-3 rounded-lg ${
+                    msg.sender === 'agent' 
+                      ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-white shadow-lg' 
                       : 'bg-white border border-gray-200'
-                  } ${
-                    hoveredMessage === msg.id ? 'shadow-xl' : ''
-                  }`}
+                  } max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl shadow-sm`}
+                  onDoubleClick={() => {
+                    if (msg.sender === 'agent' && msg.type === 'text') {
+                      setEditingMessage(msg)
+                      setShowEditModal(true)
+                    }
+                  }}
                 >
                   {/* Renderizar conteúdo da mensagem com mídia */}
-                  {msg.type === 'image' && (msg as any).mediaUrl ? (
+                  
+                  {/* Verificar se é localização */}
+                  {msg.type === 'location' || (msg as any).location ? (
                     <div className="mb-2">
-                      <img 
-                        src={(msg as any).mediaUrl} 
-                        alt="Imagem" 
-                        className="max-w-xs rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => window.open((msg as any).mediaUrl, '_blank')}
-                      />
-                      {msg.content && <p className="text-sm mt-2">{msg.content}</p>}
+                      <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                        msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-50'
+                      }`}>
+                        <div className={`p-2 rounded-full ${
+                          msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                        }`}>
+                          <MapPin className={`w-4 h-4 ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className={`font-medium text-sm ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {(msg as any).location?.title || msg.content || 'Localização'}
+                          </div>
+                          {(msg as any).location?.address && (
+                            <div className={`text-xs mt-1 ${
+                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500'
+                            }`}>
+                              {(msg as any).location.address}
+                            </div>
+                          )}
+                          <div className={`text-xs mt-1 ${
+                            msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500'
+                          }`}>
+                            Lat: {(msg as any).location?.latitude || (msg as any).latitude}, 
+                            Lng: {(msg as any).location?.longitude || (msg as any).longitude}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const lat = (msg as any).location?.latitude || (msg as any).latitude
+                            const lng = (msg as any).location?.longitude || (msg as any).longitude
+                            window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank')
+                          }}
+                          className={`p-2 rounded-full hover:bg-opacity-80 transition-colors ${
+                            msg.sender === 'agent' ? 'bg-white/20 hover:bg-white/30' : 'bg-blue-100 hover:bg-blue-200'
+                          }`}
+                        >
+                          <ExternalLink className={`w-3 h-3 ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
+                          }`} />
+                        </button>
+                      </div>
                     </div>
-                  ) : msg.type === 'audio' && (msg as any).mediaUrl ? (
+                  ) : (msg as any).mediaUrl && (
+                    (msg as any).mediaUrl.includes('.jpeg') ||
+                    (msg as any).mediaUrl.includes('.jpg') ||
+                    (msg as any).mediaUrl.includes('.png') ||
+                    (msg as any).mediaUrl.includes('.gif') ||
+                    (msg as any).mediaUrl.includes('.webp') ||
+                    msg.type === 'image' || 
+                    (msg as any).mimetype?.includes('image')
+                  ) ? (
                     <div className="mb-2">
-                      <audio 
-                        controls 
-                        className="max-w-xs"
-                        preload="metadata"
-                      >
-                        <source src={(msg as any).mediaUrl} type="audio/webm" />
-                        <source src={(msg as any).mediaUrl} type="audio/ogg" />
-                        <source src={(msg as any).mediaUrl} type="audio/mp3" />
-                        Seu navegador não suporta o elemento de áudio.
-                      </audio>
-                      {msg.content && <p className="text-sm mt-2">{msg.content}</p>}
+                      <div className="relative">
+                        <img 
+                          src={msg.content} 
+                          alt="Imagem enviada" 
+                          className="w-full h-auto rounded-lg max-h-64 object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA2MEw5MCA0NUwxMjUgODBMMTUwIDU1VjEyMEg1MFY2MEg3NVoiIGZpbGw9IiNEMUQ1REIiLz4KPGNpcmNsZSBjeD0iNzAiIGN5PSI3MCIgcj0iMTAiIGZpbGw9IiNEMUQ1REIiLz4KPHRleHQgeD0iMTAwIiB5PSIxMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY5NzA3QiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2VtPC90ZXh0Pgo8L3N2Zz4K";
+                          }}
+                        />
+                      </div>
+                      {(msg.content || (msg as any).caption) && (
+                        <p className={`text-sm mt-2 ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
+                          {msg.content || (msg as any).caption}
+                        </p>
+                      )}
+                    </div>
+                  ) : (msg as any).mediaUrl && (
+                    (msg as any).mediaUrl.includes('.oga') ||
+                    (msg as any).mediaUrl.includes('.ogg') ||
+                    (msg as any).mediaUrl.includes('.mp3') ||
+                    (msg as any).mediaUrl.includes('.wav') ||
+                    (msg as any).mediaUrl.includes('.webm') ||
+                    (msg as any).mediaUrl.includes('.bin') ||
+                    msg.type === 'audio' || 
+                    (msg as any).mimetype?.includes('audio')
+                  ) ? (
+                    <div className="mb-2">
+                      <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                        msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-50'
+                      }`}>
+                        <div className={`p-2 rounded-full ${
+                          msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                        }`}>
+                          <AudioLines className={`w-4 h-4 ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
+                          }`} />
+                        </div>
+                        <audio 
+                          controls 
+                          className="flex-1 h-8"
+                          preload="metadata"
+                          style={{
+                            filter: msg.sender === 'agent' ? 'invert(1) brightness(2)' : 'none'
+                          }}
+                        >
+                          <source src={
+                            (msg as any).media?.data ? 
+                              `data:${(msg as any).media.mimetype || 'audio/webm'};base64,${(msg as any).media.data}` :
+                            (msg as any).mediaUrl ? 
+                              ((msg as any).mediaUrl.startsWith('http') ? 
+                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
+                                `/api/files/${(msg as any).mediaUrl}`
+                              ) :
+                            ((msg as any).hasMedia && (msg as any).media?.id ? 
+                              `/api/files/${(msg as any).media.id}` : 
+                              ''
+                            )
+                          } type="audio/webm" />
+                          <source src={
+                            (msg as any).mediaUrl ? 
+                              ((msg as any).mediaUrl.startsWith('http') ? 
+                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
+                                `/api/files/${(msg as any).mediaUrl}`
+                              ) :
+                            `/api/files/${(msg as any).media?.id}`
+                          } type="audio/ogg" />
+                          <source src={
+                            (msg as any).mediaUrl ? 
+                              ((msg as any).mediaUrl.startsWith('http') ? 
+                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
+                                `/api/files/${(msg as any).mediaUrl}`
+                              ) :
+                            `/api/files/${(msg as any).media?.id}`
+                          } type="audio/mp3" />
+                          <source src={
+                            (msg as any).mediaUrl ? 
+                              ((msg as any).mediaUrl.startsWith('http') ? 
+                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
+                                `/api/files/${(msg as any).mediaUrl}`
+                              ) :
+                            `/api/files/${(msg as any).media?.id}`
+                          } type="audio/wav" />
+                          Áudio não suportado
+                        </audio>
+                      </div>
+                      {(msg.content || (msg as any).caption) && (
+                        <p className={`text-sm mt-2 ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
+                          {msg.content || (msg as any).caption}
+                        </p>
+                      )}
                     </div>
                   ) : msg.type === 'video' && (msg as any).mediaUrl ? (
                     <div className="mb-2">
@@ -687,7 +1047,7 @@ export default function ChatArea({
                         <source src={(msg as any).mediaUrl} type="video/webm" />
                         Seu navegador não suporta o elemento de vídeo.
                       </video>
-                      {msg.content && <p className="text-sm mt-2">{msg.content}</p>}
+                      {(msg.content || (msg as any).caption) && <p className="text-sm mt-2">{msg.content || (msg as any).caption}</p>}
                     </div>
                   ) : msg.type === 'document' && (msg as any).mediaUrl ? (
                     <div className="mb-2">
@@ -698,12 +1058,15 @@ export default function ChatArea({
                         className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
                       >
                         <FileText className="w-4 h-4" />
-                        {(msg as any).filename || 'Documento'}
+                        {(msg as any).fileName || (msg as any).filename || 'Documento'}
                       </a>
-                      {msg.content && <p className="text-sm mt-2">{msg.content}</p>}
+                      {(msg.content || (msg as any).caption) && <p className="text-sm mt-2">{msg.content || (msg as any).caption}</p>}
                     </div>
                   ) : (
-                    <p className="text-sm leading-relaxed mb-1">{msg.content}</p>
+                    <MessageContent 
+                      content={msg.content} 
+                      className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}
+                    />
                   )}
                   
                   {/* Linha com timestamp e ícones */}
@@ -712,6 +1075,10 @@ export default function ChatArea({
                   }`}>
                     <div className="flex items-center gap-2">
                       <span className="text-xs">{msg.timestamp}</span>
+                      {/* Indicador de mensagem favoritada */}
+                      {starredMessages.has(msg.id) && (
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      )}
                       {/* Status de mensagem do agente */}
                       {msg.sender === 'agent' && (
                         <div className="flex items-center gap-1">
@@ -722,16 +1089,7 @@ export default function ChatArea({
                     </div>
                     
                     {/* Ícones de Ação - Aparecem no hover */}
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8, width: 0 }}
-                      animate={{ 
-                        opacity: hoveredMessage === msg.id ? 1 : 0,
-                        scale: hoveredMessage === msg.id ? 1 : 0.8,
-                        width: hoveredMessage === msg.id ? 'auto' : 0
-                      }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="flex items-center gap-1.5 overflow-hidden"
-                    >
+                    <div className="flex items-center gap-1.5 overflow-hidden">
                       {/* Ícone de Tradução */}
                       <motion.button
                         whileHover={{ 
@@ -774,10 +1132,47 @@ export default function ChatArea({
                       >
                         <AudioLines className="w-3.5 h-3.5" />
                       </motion.button>
-                    </motion.div>
+
+                      {/* Menu de Contexto */}
+                      <MessageContextMenu
+                        message={{
+                          ...msg,
+                          chatId: chatId || '',
+                          fromMe: msg.sender === 'agent',
+                          author: msg.sender === 'agent' ? 'agent' : 'user',
+                          body: msg.content
+                        } as any}
+                        onReply={(message) => setReplyingTo(message)}
+                        onForward={(message) => {
+                          setMessageToForward(message)
+                          setShowForwardModal(true)
+                        }}
+                        onEdit={(message) => {
+                          setEditingMessage(message)
+                          setShowEditModal(true)
+                        }}
+                        onDelete={(message) => messageActions.deleteMessage(message.id)}
+                        onStar={(message) => {
+                          messageActions.starMessage(message.id)
+                          const newStarred = new Set(starredMessages)
+                          if (newStarred.has(message.id)) {
+                            newStarred.delete(message.id)
+                          } else {
+                            newStarred.add(message.id)
+                          }
+                          setStarredMessages(newStarred)
+                          
+                          // Salvar no localStorage
+                          if (typeof window !== 'undefined' && conversation?.id) {
+                            localStorage.setItem(`starredMessages_${conversation.id}`, JSON.stringify(Array.from(newStarred)))
+                          }
+                        }}
+                        onCopy={(text) => messageActions.copyToClipboard(text)}
+                      />
+                    </div>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -801,6 +1196,37 @@ export default function ChatArea({
                       transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
                     />
                   ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Typing Indicator */}
+          {isContactTyping(extractChatId(conversation) || '') && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex justify-start"
+            >
+              <div className="bg-gray-200 rounded-2xl px-4 py-3 max-w-xs">
+                <div className="flex items-center space-x-1">
+                  <span className="text-sm text-gray-600 mr-2">digitando</span>
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                    className="w-2 h-2 bg-gray-500 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                    className="w-2 h-2 bg-gray-500 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                    className="w-2 h-2 bg-gray-500 rounded-full"
+                  />
                 </div>
               </div>
             </motion.div>
@@ -868,46 +1294,72 @@ export default function ChatArea({
             <MessageSquare className="w-5 h-5 text-gray-600" />
           </motion.button>
 
+          {/* Emoji Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+            title="Emojis"
+          >
+            <Smile className="w-5 h-5 text-gray-600" />
+          </motion.button>
+
+          {/* Attachment Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+            title="Anexar arquivo"
+          >
+            <Paperclip className="w-5 h-5 text-gray-600" />
+          </motion.button>
+
           {/* Input Area */}
           <div className="flex-1 relative">
-            <div className="flex items-center bg-gray-50 rounded-2xl border border-gray-200 focus-within:border-[#273155] focus-within:ring-2 focus-within:ring-[#273155]/20 transition-all duration-300">
-              <input
-                ref={inputRef}
-                type="text"
-                value={message}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 px-4 py-3 bg-transparent border-none outline-none text-gray-900 placeholder-gray-500"
-              />
-              
-              <div className="flex items-center gap-1 px-3">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                  className={`p-2 hover:bg-gray-200 rounded-lg transition-colors ${
-                    showAttachmentMenu ? 'bg-gray-200' : ''
-                  }`}
-                  title="Anexar arquivo"
-                  data-attachment-button
-                >
-                  <Paperclip className="w-5 h-5 text-gray-500" />
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={`p-2 hover:bg-gray-200 rounded-lg transition-colors ${
-                    showEmojiPicker ? 'bg-gray-200' : ''
-                  }`}
-                  title="Emoji"
-                >
-                  <Smile className="w-5 h-5 text-gray-500" />
-                </motion.button>
+            {/* Reply Preview */}
+            {replyingTo && (
+              <div className="mb-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm text-blue-600 font-medium">
+                      Respondendo para {replyingTo.sender === 'agent' ? 'Você' : replyingTo.author}
+                    </div>
+                    <div className="text-sm text-gray-600 truncate">
+                      {replyingTo.body || replyingTo.content}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="ml-2 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Link Preview */}
+            {detectedLink && (
+              <div className="mb-2">
+                <InputLinkPreview 
+                  url={detectedLink} 
+                  onRemove={() => setDetectedLink(null)}
+                />
+              </div>
+            )}
+
+            {/* Message Input */}
+            <input
+              ref={inputRef}
+              type="text"
+              value={message}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Digite sua mensagem..."
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
             
             {/* Emoji Picker */}
             <EmojiPicker
@@ -918,7 +1370,6 @@ export default function ChatArea({
             
             {/* Attachment Menu */}
             {showAttachmentMenu && (
-              console.log('🔍 Renderizando modal de anexo:', new Date().toISOString()),
               <motion.div
                 ref={attachmentModalRef}
                 key="attachment-modal-unique"
@@ -957,7 +1408,7 @@ export default function ChatArea({
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Image className="w-6 h-6 text-white" />
+                          <ImageIcon className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-gray-700">Imagem</span>
                         <span className="text-xs text-gray-500">JPG, PNG, GIF</span>
@@ -997,21 +1448,55 @@ export default function ChatArea({
                         <span className="text-xs text-gray-500">PDF, DOC, TXT</span>
                       </motion.button>
                       
-                      {/* Câmera */}
+                      {/* Contato */}
                       <motion.button
                         whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
-                          // TODO: Implementar captura de câmera
+                          setShowMediaModal('contact')
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-orange-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Upload className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Contact className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Câmera</span>
-                        <span className="text-xs text-gray-500">Capturar foto</span>
+                        <span className="text-sm font-medium text-gray-700">Contato</span>
+                        <span className="text-xs text-gray-500">Enviar vCard</span>
+                      </motion.button>
+                      
+                      {/* Localização */}
+                      <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setShowMediaModal('location')
+                          setShowAttachmentMenu(false)
+                        }}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-green-300 transition-all duration-300 group"
+                      >
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <MapPin className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">Localização</span>
+                        <span className="text-xs text-gray-500">Enviar local</span>
+                      </motion.button>
+                      
+                      {/* Enquete */}
+                      <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setShowMediaModal('poll')
+                          setShowAttachmentMenu(false)
+                        }}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-300 transition-all duration-300 group"
+                      >
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">Enquete</span>
+                        <span className="text-xs text-gray-500">Criar votação</span>
                       </motion.button>
                     </div>
                     
@@ -1175,6 +1660,96 @@ export default function ChatArea({
         onStartShare={handleCompartilharTelaStart}
         contactData={getContactData()}
       />
+      
+      {/* Modal de Busca */}
+      {showSearch && chatId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4">Buscar Mensagens</h3>
+            <input 
+              type="text" 
+              placeholder="Digite para buscar..."
+              className="w-full p-2 border rounded mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setShowSearch(false)}
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Encaminhamento */}
+      {showForwardModal && messageToForward && (
+        <ForwardMessageModal
+          isOpen={showForwardModal}
+          onClose={() => {
+            setShowForwardModal(false)
+            setMessageToForward(null)
+          }}
+          message={messageToForward}
+          onForward={async (toChatIds) => {
+            try {
+              await messageActions.forwardMessage(messageToForward.id, toChatIds)
+              setShowForwardModal(false)
+              setMessageToForward(null)
+            } catch (error) {
+              console.error('Erro ao encaminhar mensagem:', error)
+            }
+          }}
+        />
+      )}
+
+      {/* Modal de Edição */}
+      {showEditModal && editingMessage && (
+        <EditMessageModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingMessage(null)
+          }}
+          initialText={editingMessage.content || editingMessage.body || ''}
+          onSave={async (newText) => {
+            try {
+              await messageActions.editMessage(editingMessage.id, newText)
+              setShowEditModal(false)
+              setEditingMessage(null)
+              // Forçar reload das mensagens
+              window.location.reload()
+            } catch (error) {
+              console.error('Erro ao editar mensagem:', error)
+            }
+          }}
+          loading={messageActions.loading}
+        />
+      )}
+
+      {/* Modal de Envio de Mídia Especial */}
+      {showMediaModal && chatId && (
+        <MediaSendModal
+          type={showMediaModal}
+          chatId={chatId}
+          onClose={() => setShowMediaModal(null)}
+          onSend={async (data) => {
+            try {
+              if (showMediaModal === 'contact') {
+                await messageActions.sendContact(data.contactId, data.name)
+              } else if (showMediaModal === 'location') {
+                await messageActions.sendLocation(data.latitude, data.longitude, data.title, data.address)
+              } else if (showMediaModal === 'poll') {
+                await messageActions.sendPoll(data.name, data.options, data.multipleAnswers)
+              }
+              setShowMediaModal(null)
+            } catch (error) {
+              console.error('Erro ao enviar mídia:', error)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -86,6 +86,23 @@ services:
       - /app/node_modules
       - /app/.next
 
+  # WAHA Plus para WhatsApp API
+  waha:
+    image: devlikeapro/waha-plus:chrome
+    container_name: tappyone-waha
+    environment:
+      - WHATSAPP_HOOK_URL=http://backend:8080/webhooks/whatsapp
+      - WHATSAPP_HOOK_EVENTS=message,message.any,state.change,group.join,group.leave
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_START_SESSION=default
+    ports:
+      - "3001:3000"
+    networks:
+      - tappyone-network
+    restart: unless-stopped
+    volumes:
+      - waha_data:/app/.sessions
+
   # Adminer para gerenciar banco de dados
   adminer:
     image: adminer:latest
@@ -99,6 +116,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  waha_data:
 
 networks:
   tappyone-network:

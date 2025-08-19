@@ -20,8 +20,12 @@ import {
   Tag,
   ChevronDown,
   Languages,
-  Mic
+  Mic,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
+import { usePresence } from '@/hooks/usePresence'
+import { usePresencePolling } from '@/hooks/usePresencePolling'
 
 interface ConversationSidebarProps {
   chats: any[]
@@ -101,17 +105,18 @@ const getContactName = (chat: any, contacts: any[]) => {
   return `+${phoneNumber}`
 }
 
-export default function ConversationSidebar({ 
-  chats, 
-  contacts, 
-  selectedConversation, 
-  onSelectConversation, 
-  searchQuery, 
+export default function ConversationSidebar({
+  chats,
+  contacts,
+  selectedConversation,
+  onSelectConversation,
+  searchQuery,
   onSearchChange,
-  isLoading = false 
+  isLoading = false
 }: ConversationSidebarProps) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
+  const { getChatPresence, isOnline, isTyping } = usePresence()
   const [selectedQueue, setSelectedQueue] = useState('todas')
   const [showQueueDropdown, setShowQueueDropdown] = useState(false)
   
@@ -129,6 +134,7 @@ export default function ConversationSidebar({
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showQueueDropdown])
+
   
   // Opções de filas mock
   const queueOptions = [
@@ -139,13 +145,25 @@ export default function ConversationSidebar({
     { value: 'marketing', label: 'Marketing' }
   ]
   
-  // Função para buscar informações do quadro e coluna
+  // Cache para evitar requests desnecessários
+  const [kanbanCache, setKanbanCache] = useState<{[key: string]: any}>({})
+  const [lastKanbanFetch, setLastKanbanFetch] = useState<number>(0)
+  
+  // Função para buscar informações do quadro e coluna (com cache)
   const getKanbanInfo = async (chatId: string) => {
+    // Cache por 5 minutos
+    const CACHE_DURATION = 5 * 60 * 1000
+    const now = Date.now()
+    
+    if (kanbanCache[chatId] && (now - lastKanbanFetch) < CACHE_DURATION) {
+      return kanbanCache[chatId]
+    }
+    
     try {
       const token = localStorage.getItem('token')
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
       
-      // Buscar todos os quadros do usuário
+      // Buscar todos os quadros do usuário apenas se necessário
       const quadrosResponse = await fetch(`${backendUrl}/api/kanban/quadros`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -154,10 +172,13 @@ export default function ConversationSidebar({
       })
       
       if (!quadrosResponse.ok) {
-        return { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
+        const fallback = { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
+        setKanbanCache(prev => ({ ...prev, [chatId]: fallback }))
+        return fallback
       }
       
       const quadros = await quadrosResponse.json()
+      setLastKanbanFetch(now)
       
       // Para cada quadro, buscar os metadados para encontrar o chat
       for (const quadro of quadros) {
@@ -187,11 +208,13 @@ export default function ConversationSidebar({
                 const quadroCompleto = await quadroResponse.json()
                 const coluna = quadroCompleto.colunas?.find((col: any) => col.id === cardInfo.colunaId)
                 
-                return {
+                const result = {
                   quadro: quadro.nome,
                   coluna: coluna?.nome || 'Coluna desconhecida',
                   color: coluna?.cor || '#d1d5db' // Usar a cor exata da coluna
                 }
+                setKanbanCache(prev => ({ ...prev, [chatId]: result }))
+                return result
               }
             }
           }
@@ -200,22 +223,29 @@ export default function ConversationSidebar({
         }
       }
       
-      return { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
+      const fallback = { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
+      setKanbanCache(prev => ({ ...prev, [chatId]: fallback }))
+      return fallback
     } catch (error) {
       console.error('Erro ao buscar informações do Kanban:', error)
-      return { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
+      const fallback = { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
+      setKanbanCache(prev => ({ ...prev, [chatId]: fallback }))
+      return fallback
     }
   }
   
   // Estado para armazenar informações do Kanban
   const [kanbanInfo, setKanbanInfo] = useState<{[key: string]: any}>({})
   
-  // Carregar informações do Kanban quando os chats mudarem
+  // Carregar informações do Kanban apenas para chats visíveis (otimização)
   useEffect(() => {
     const loadKanbanInfo = async () => {
       const newKanbanInfo: {[key: string]: any} = {}
       
-      for (const chat of chats) {
+      // Carregar apenas para os primeiros 10 chats (visíveis)
+      const visibleChats = chats.slice(0, 10)
+      
+      for (const chat of visibleChats) {
         const chatId = chat.id._serialized || chat.id
         const info = await getKanbanInfo(chatId)
         newKanbanInfo[chatId] = info
@@ -273,6 +303,17 @@ export default function ConversationSidebar({
     
     return matchesSearch && matchesFilter
   })
+
+  // Configurar polling de presença para chats visíveis
+  const visibleChatIds = filteredConversations.slice(0, 10).map(conv => conv.id)
+  
+  usePresencePolling({
+    chatIds: visibleChatIds,
+    enabled: visibleChatIds.length > 0,
+    interval: 30000 // 30 segundos
+  })
+
+  // Presença removida para melhorar performance
 
   return (
     <div className="w-[520px] bg-gray-50/80 backdrop-blur-sm border-r border-gray-200/50 flex flex-col h-full">
@@ -443,12 +484,16 @@ export default function ConversationSidebar({
                     </div>
                   </motion.div>
                   
-                  {/* Status Indicator */}
-                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                    conversation.status === 'online' ? 'bg-green-500' :
-                    conversation.status === 'away' ? 'bg-yellow-500' :
-                    conversation.status === 'active' ? 'bg-blue-500' : 'bg-gray-400'
-                  }`} />
+                  {/* Presence Status Indicator */}
+                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
+                    isOnline(conversation.id) ? 'bg-green-500' : 'bg-gray-400'
+                  }`}>
+                    {isOnline(conversation.id) ? (
+                      <Wifi className="w-2 h-2 text-white" />
+                    ) : (
+                      <WifiOff className="w-2 h-2 text-white" />
+                    )}
+                  </div>
                 </div>
 
                 {/* Content */}
@@ -459,7 +504,36 @@ export default function ConversationSidebar({
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-gray-600 truncate flex-1">{conversation.lastMessage}</p>
+                    {isTyping(conversation.id) ? (
+                      <div className="flex items-center text-sm text-blue-600 flex-1">
+                        <motion.div
+                          animate={{ opacity: [1, 0.5, 1] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                          className="flex items-center"
+                        >
+                          <span className="mr-2">digitando</span>
+                          <div className="flex space-x-1">
+                            <motion.div
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                              className="w-1 h-1 bg-blue-600 rounded-full"
+                            />
+                            <motion.div
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                              className="w-1 h-1 bg-blue-600 rounded-full"
+                            />
+                            <motion.div
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                              className="w-1 h-1 bg-blue-600 rounded-full"
+                            />
+                          </div>
+                        </motion.div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600 truncate flex-1">{conversation.lastMessage}</p>
+                    )}
                     {/* Badge Mock */}
                     <motion.span
                       initial={{ scale: 0 }}

@@ -175,27 +175,17 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               {isKanbanPage ? (
                 /* Badge de Conversas Ativas - Verde */
                 activeChatsCount > 0 && (
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    whileHover={{ scale: 1.1 }}
-                    className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30 px-1"
-                  >
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30">
                     <span className="text-[10px] font-bold text-white drop-shadow-sm">
                       {activeChatsCount > 99 ? '99+' : activeChatsCount}
                     </span>
-                  </motion.div>
+                  </div>
                 )
               ) : (
                 /* Badge Kanban - Azul */
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  whileHover={{ scale: 1.1 }}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-blue-300/30"
-                >
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-blue-300/30">
                   <Kanban className="w-3 h-3 text-white drop-shadow-sm" />
-                </motion.div>
+                </div>
               )}
             </motion.div>
             
@@ -211,14 +201,9 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </motion.button>
               
               {/* Badge Fluxograma - Roxo */}
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30"
-              >
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
                 <GitBranch className="w-3 h-3 text-white drop-shadow-sm" />
-              </motion.div>
+              </div>
             </motion.div>
 
             <motion.div className="relative">
@@ -232,14 +217,9 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </motion.button>
               
               {/* Badge Respostas Rápidas - Amarelo */}
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-yellow-300/30"
-              >
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-yellow-300/30">
                 <Zap className="w-3 h-3 text-white drop-shadow-sm" />
-              </motion.div>
+              </div>
             </motion.div>
             
             <motion.div className="relative">
@@ -254,14 +234,9 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </motion.button>
               
               {/* Badge IA - Ciano */}
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-cyan-300/30"
-              >
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-cyan-300/30">
                 <span className="text-[10px] font-bold text-white drop-shadow-sm">🤖</span>
-              </motion.div>
+              </div>
             </motion.div>
             
             <motion.div className="relative">
@@ -276,14 +251,9 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </motion.button>
               
               {/* Badge Filas - Laranja */}
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-orange-300/30"
-              >
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-orange-300/30">
                 <List className="w-3 h-3 text-white drop-shadow-sm" />
-              </motion.div>
+              </div>
             </motion.div>
             
             <motion.div className="relative">
@@ -298,31 +268,17 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </motion.button>
               
               {/* Badge com bandeira do idioma ativo */}
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30 overflow-hidden"
-              >
-                <ReactCountryFlag 
-                  countryCode={(() => {
-                    const activeLanguage = [
-                      { code: 'pt-BR', countryCode: 'BR', active: true },
-                      { code: 'en-US', countryCode: 'US', active: false },
-                      { code: 'es-ES', countryCode: 'ES', active: false },
-                      { code: 'hi-IN', countryCode: 'IN', active: false },
-                      { code: 'fr-FR', countryCode: 'FR', active: false }
-                    ].find(lang => lang.active);
-                    return activeLanguage?.countryCode || 'BR';
-                  })()}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-indigo-300/30">
+                <ReactCountryFlag
+                  countryCode="BR"
                   svg
                   style={{
-                    width: '16px',
+                    width: '12px',
                     height: '12px',
                     borderRadius: '2px'
                   }}
                 />
-              </motion.div>
+              </div>
               
               {/* Translation Dropdown */}
               <AnimatePresence>
@@ -465,14 +421,9 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
             </motion.button>
             
             {/* Badge Notificações - Vermelho */}
-            <motion.div 
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              whileHover={{ scale: 1.1 }}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-red-300/30"
-            >
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-red-300/30">
               <span className="text-[10px] font-bold text-white drop-shadow-sm">3</span>
-            </motion.div>
+            </div>
             
             {/* Notifications Dropdown */}
             <AnimatePresence>

@@ -49,11 +49,9 @@ export default function AtendimentosPage() {
     if (selectedConversation) {
       const chatId = extractChatId(selectedConversation)
       if (!chatId) {
-        debugLogger.error('Unable to extract chatId from selectedConversation:', selectedConversation)
         return
       }
       
-      debugLogger.log('Loading messages for selected conversation:', chatId)
       loadChatMessages(chatId)
     }
   }, [selectedConversation, loadChatMessages])
@@ -66,10 +64,9 @@ export default function AtendimentosPage() {
     if (!chatId) return
     
     const interval = setInterval(() => {
-      debugLogger.log('Polling: Reloading messages for active chat:', chatId)
       // Usar reloadChatMessages para forçar o reload
       reloadChatMessages(chatId)
-    }, 3000) // 3 segundos - MAIS RÁPIDO! 🚀
+    }, 60000) // 60 segundos - otimizado
     
     return () => clearInterval(interval)
   }, [selectedConversation, reloadChatMessages])

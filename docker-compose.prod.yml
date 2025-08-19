@@ -28,7 +28,7 @@ services:
 
   # WAHA API (WhatsApp HTTP API)
   waha:
-    image: devlikeapro/waha-plus:latest
+    image: devlikeapro/waha-plus:chrome
     container_name: tappyone-waha
     restart: unless-stopped
     ports:
@@ -40,6 +40,13 @@ services:
       - WAHA_PRINT_QR=true
       - WAHA_SESSION_STORE_TYPE=file
       - WAHA_SESSION_STORE_PATH=/app/sessions
+      # TappyOne White Label Configuration
+      - WHATSAPP_SWAGGER_TITLE=TappyOne CRM API
+      - WHATSAPP_SWAGGER_DESCRIPTION=<p><strong>TappyOne CRM</strong> - Sistema completo de gestão de relacionamento com clientes via WhatsApp.<br/><a href='https://tappyone.vercel.app'>Acesse nossa plataforma</a></p>
+      - WHATSAPP_SWAGGER_EXTERNAL_DOC_URL=https://tappyone.vercel.app
+      - WHATSAPP_SWAGGER_USERNAME=tappyone
+      - WHATSAPP_SWAGGER_PASSWORD=admin2024
+      - WAHA_API_KEY=tappyone-secure-api-key-2024
     networks:
       - tappyone-network
     volumes:

@@ -55,7 +55,7 @@ export function useAuth() {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/me', {
+      const response = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
