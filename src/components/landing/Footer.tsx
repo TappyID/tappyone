@@ -55,11 +55,7 @@ const footerLinks = {
     { name: 'Status do Sistema', href: '#', description: 'Monitoramento em tempo real' },
     { name: 'Comunidade', href: '#', description: 'Fórum de usuários' },
     { name: 'Treinamentos', href: '#', description: 'Cursos e certificações' },
-    { name: 'Consultoria', href: '#', description: 'Implementação especializada' },
-    { name: 'Suporte 24/7', href: '#', description: 'Atendimento premium' },
-    { name: 'Sobre Nós', href: '#', description: 'Nossa história' },
-    { name: 'Carreiras', href: '#', description: 'Trabalhe conosco' },
-    { name: 'Parceiros', href: '#', description: 'Programa de parceria' }
+   
   ]
 }
 
