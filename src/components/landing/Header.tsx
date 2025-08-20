@@ -291,15 +291,24 @@ export default function Header() {
               </button>
             </div>
 
-            <Link href="#" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 font-semibold py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
+            <button 
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 font-semibold py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
               Preços
-            </Link>
-            <Link href="#" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 font-semibold py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
+            </button>
+            <button 
+              onClick={() => document.getElementById('benefits')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 font-semibold py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
               Recursos
-            </Link>
-            <Link href="#" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 font-semibold py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
+            </button>
+            <button 
+              onClick={() => document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 font-semibold py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
               Suporte
-            </Link>
+            </button>
           </div>
 
           {/* Actions */}
@@ -323,11 +332,13 @@ export default function Header() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link href="/dashboard">
+                <button 
+                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                >
                   <Button className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold px-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                    Começar Grátis
+                    Contratar
                   </Button>
-                </Link>
+                </button>
               </motion.div>
             </div>
 
@@ -353,32 +364,50 @@ export default function Header() {
               className="lg:hidden mt-6 pb-6 border-t border-gray-200 dark:border-gray-700"
             >
               <div className="pt-6 space-y-4">
-                <Link href="#" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                <button 
+                  onClick={() => { document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' }); setIsMenuOpen(false); }}
+                  className="block text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                >
                   Produtos
-                </Link>
-                <Link href="#" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                </button>
+                <button 
+                  onClick={() => { document.getElementById('benefits')?.scrollIntoView({ behavior: 'smooth' }); setIsMenuOpen(false); }}
+                  className="block text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                >
                   Soluções
-                </Link>
-                <Link href="#" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                </button>
+                <button 
+                  onClick={() => { document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); setIsMenuOpen(false); }}
+                  className="block text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                >
                   Preços
-                </Link>
-                <Link href="#" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                </button>
+                <button 
+                  onClick={() => { document.getElementById('benefits')?.scrollIntoView({ behavior: 'smooth' }); setIsMenuOpen(false); }}
+                  className="block text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                >
                   Recursos
-                </Link>
-                <Link href="#" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                </button>
+                <button 
+                  onClick={() => { document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' }); setIsMenuOpen(false); }}
+                  className="block text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                >
                   Suporte
-                </Link>
+                </button>
                 <div className="pt-4 space-y-3">
                   <Link href="/login" className="block">
                     <Button variant="outline" className="w-full">
                       Entrar
                     </Button>
                   </Link>
-                  <Link href="/dashboard" className="block">
+                  <button 
+                    onClick={() => { document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); setIsMenuOpen(false); }}
+                    className="block w-full"
+                  >
                     <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-700">
-                      Começar Grátis
+                      Contratar
                     </Button>
-                  </Link>
+                  </button>
                 </div>
               </div>
             </motion.div>

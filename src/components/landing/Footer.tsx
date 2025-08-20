@@ -55,7 +55,9 @@ const footerLinks = {
     { name: 'Status do Sistema', href: '#', description: 'Monitoramento em tempo real' },
     { name: 'Comunidade', href: '#', description: 'Fórum de usuários' },
     { name: 'Treinamentos', href: '#', description: 'Cursos e certificações' },
-   
+    { name: 'Consultoria', href: '#', description: 'Implementação especializada' },
+    { name: 'Suporte 24/7', href: '#', description: 'Atendimento premium' },
+
   ]
 }
 
@@ -190,7 +192,7 @@ export default function Footer() {
                   </div>
                 </div>
 
-                <div className="flex space-x-4">
+                <div className="flex space-x-2 mt-14">
                   {[Facebook, Twitter, Instagram, Linkedin, Youtube].map((Icon, index) => (
                     <motion.a
                       key={index}
@@ -215,7 +217,7 @@ export default function Footer() {
                 transition={{ duration: 0.6, delay: categoryIndex * 0.1 }}
                 viewport={{ once: true }}
               >
-                <h4 className="text-lg font-bold mb-6 capitalize text-white tracking-tight">
+                <h4 className="text-lg font-bold mb-7 capitalize text-white tracking-tight pl-3">
                   {category}
                 </h4>
                 <ul className="space-y-3">
@@ -248,9 +250,7 @@ export default function Footer() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h4 className="text-lg font-semibold mb-8 text-center text-white">
-                Certificações e Conformidades
-              </h4>
+             
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {certifications.map((cert, index) => (
                   <div key={index} className="text-center">

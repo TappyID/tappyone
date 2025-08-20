@@ -195,31 +195,33 @@ export default function HeroSection() {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <motion.button
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
               className={`group relative px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
                 actualTheme === 'dark'
-                  ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-lg shadow-purple-500/25'
-                  : 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-lg shadow-purple-500/25'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/25'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/25'
               }`}
               whileHover={{ 
                 scale: 1.05,
                 boxShadow: actualTheme === 'dark' 
-                  ? '0 20px 40px rgba(139, 92, 246, 0.4)' 
-                  : '0 20px 40px rgba(139, 92, 246, 0.3)'
+                  ? '0 20px 40px rgba(59, 130, 246, 0.4)' 
+                  : '0 20px 40px rgba(59, 130, 246, 0.3)'
               }}
               whileTap={{ scale: 0.95 }}
             >
               <span className="relative z-10 flex items-center gap-2">
-                Começar Grátis
+                Contratar
                 <motion.div
                   className="group-hover:translate-x-1 transition-transform duration-300"
                 >
                   <ArrowRight className="w-5 h-5" />
                 </motion.div>
               </span>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </motion.button>
 
             <motion.button
+              onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
               className={`px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
                 actualTheme === 'dark'
                   ? 'bg-slate-800/50 text-white border border-slate-600/50 hover:bg-slate-700/50'
@@ -228,7 +230,7 @@ export default function HeroSection() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Ver Demonstração
+              Ver Recursos
             </motion.button>
           </motion.div>
 

@@ -287,29 +287,35 @@ export default function HeroSection() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link href="/dashboard">
+                <button 
+                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                >
                   <Button 
                     size="lg" 
                     className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold px-8 py-4 text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 group"
                   >
-                    Começar Grátis
+                    Contratar
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
-                </Link>
+                </button>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold px-8 py-4 text-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-all duration-300 group"
+                <button 
+                  onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
                 >
-                  <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Ver Demo
-                </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold px-8 py-4 text-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-all duration-300 group"
+                  >
+                    <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                    Ver Recursos
+                  </Button>
+                </button>
               </motion.div>
             </motion.div>
 
