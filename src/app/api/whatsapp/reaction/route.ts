@@ -15,7 +15,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
     
     const response = await fetch(`${backendUrl}/api/whatsapp/messages/${messageId}/reaction`, {
       method: 'PUT',

@@ -124,7 +124,7 @@ export default function ChatArea({
   const getKanbanInfo = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       // Buscar todos os quadros do usuário
       const quadrosResponse = await fetch(`${backendUrl}/api/kanban/quadros`, {
@@ -946,7 +946,7 @@ export default function ChatArea({
                     <div className="mb-2">
                       <div className="relative">
                         <img 
-                          src={msg.content} 
+                          src={(msg as any).mediaUrl || msg.content} 
                           alt="Imagem enviada" 
                           className="w-full h-auto rounded-lg max-h-64 object-cover"
                           onError={(e) => {
@@ -972,64 +972,53 @@ export default function ChatArea({
                     (msg as any).mimetype?.includes('audio')
                   ) ? (
                     <div className="mb-2">
-                      <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                        msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-50'
-                      }`}>
-                        <div className={`p-2 rounded-full ${
-                          msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                      {/* Verificar se tem dados de mídia válidos */}
+                      {(msg as any).media?.data ? (
+                        <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                          msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-50'
                         }`}>
-                          <AudioLines className={`w-4 h-4 ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
-                          }`} />
+                          <div className={`p-2 rounded-full ${
+                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                          }`}>
+                            <AudioLines className={`w-4 h-4 ${
+                              msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
+                            }`} />
+                          </div>
+                          <audio 
+                            controls 
+                            className="w-full max-w-xs" 
+                            preload="metadata"
+                          >
+                            <source src={`data:${(msg as any).media.mimetype || 'audio/webm'};base64,${(msg as any).media.data}`} type="audio/webm" />
+                            <source src={`data:${(msg as any).media.mimetype || 'audio/ogg'};base64,${(msg as any).media.data}`} type="audio/ogg" />
+                            Áudio não suportado
+                          </audio>
                         </div>
-                        <audio 
-                          controls 
-                          className="flex-1 h-8"
-                          preload="metadata"
-                          style={{
-                            filter: msg.sender === 'agent' ? 'invert(1) brightness(2)' : 'none'
-                          }}
-                        >
-                          <source src={
-                            (msg as any).media?.data ? 
-                              `data:${(msg as any).media.mimetype || 'audio/webm'};base64,${(msg as any).media.data}` :
-                            (msg as any).mediaUrl ? 
-                              ((msg as any).mediaUrl.startsWith('http') ? 
-                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
-                                `/api/files/${(msg as any).mediaUrl}`
-                              ) :
-                            ((msg as any).hasMedia && (msg as any).media?.id ? 
-                              `/api/files/${(msg as any).media.id}` : 
-                              ''
-                            )
-                          } type="audio/webm" />
-                          <source src={
-                            (msg as any).mediaUrl ? 
-                              ((msg as any).mediaUrl.startsWith('http') ? 
-                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
-                                `/api/files/${(msg as any).mediaUrl}`
-                              ) :
-                            `/api/files/${(msg as any).media?.id}`
-                          } type="audio/ogg" />
-                          <source src={
-                            (msg as any).mediaUrl ? 
-                              ((msg as any).mediaUrl.startsWith('http') ? 
-                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
-                                `/api/files/${(msg as any).mediaUrl}`
-                              ) :
-                            `/api/files/${(msg as any).media?.id}`
-                          } type="audio/mp3" />
-                          <source src={
-                            (msg as any).mediaUrl ? 
-                              ((msg as any).mediaUrl.startsWith('http') ? 
-                                (msg as any).mediaUrl.replace('http://localhost:3000/api/files/', '/api/files/') :
-                                `/api/files/${(msg as any).mediaUrl}`
-                              ) :
-                            `/api/files/${(msg as any).media?.id}`
-                          } type="audio/wav" />
-                          Áudio não suportado
-                        </audio>
-                      </div>
+                      ) : (
+                        <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
+                          msg.sender === 'agent' ? 'bg-orange-50/10 border-orange-300/50' : 'bg-orange-50 border-orange-200'
+                        }`}>
+                          <div className={`p-2 rounded-full ${
+                            msg.sender === 'agent' ? 'bg-orange-200/20' : 'bg-orange-100'
+                          }`}>
+                            <AudioLines className={`w-4 h-4 ${
+                              msg.sender === 'agent' ? 'text-orange-300' : 'text-orange-600'
+                            }`} />
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${
+                              msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700'
+                            }`}>
+                              🎤 Mensagem de Áudio
+                            </p>
+                            <p className={`text-xs ${
+                              msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600'
+                            }`}>
+                              Arquivo não disponível (mensagem antiga)
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {(msg.content || (msg as any).caption) && (
                         <p className={`text-sm mt-2 ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
                           {msg.content || (msg as any).caption}

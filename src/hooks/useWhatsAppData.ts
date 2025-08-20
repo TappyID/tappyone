@@ -134,7 +134,7 @@ export function useWhatsAppData() {
       setError(null)
 
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       if (!token) {
         setError('Token de autenticação não encontrado')
@@ -300,7 +300,7 @@ export function useWhatsAppData() {
         return []
       }
       
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       const response = await fetch(`${backendUrl}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
         method: 'GET',
@@ -358,7 +358,7 @@ export function useWhatsAppData() {
         return []
       }
       
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       const response = await fetch(`${backendUrl}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
         method: 'GET',
@@ -433,7 +433,7 @@ export function useWhatsAppData() {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/messages`, {
         method: 'POST',
@@ -461,7 +461,7 @@ export function useWhatsAppData() {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/read`, {
         method: 'POST',
@@ -491,7 +491,7 @@ export function useWhatsAppData() {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/read`, {
         method: 'POST',

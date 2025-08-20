@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { uploadToBlob } from '@/lib/blob-storage'
 
 export async function POST(
   request: NextRequest,
@@ -15,19 +16,27 @@ export async function POST(
 
     // Obter dados do FormData
     const formData = await request.formData()
+    const file = formData.get('image') as File
+    const caption = formData.get('caption') as string
     
-    // Criar novo FormData para enviar ao backend
+    if (!file) {
+      return NextResponse.json({ error: 'Nenhuma imagem fornecida' }, { status: 400 })
+    }
+
+    // Upload para Vercel Blob Storage
+    const blobResult = await uploadToBlob(file)
+    
+    // Criar FormData para enviar ao backend Go com a URL do blob
     const backendFormData = new FormData()
-    
-    // Copiar todos os campos do FormData original
-    for (const [key, value] of formData.entries()) {
-      backendFormData.append(key, value)
+    backendFormData.append('imageUrl', blobResult.url)
+    if (caption) {
+      backendFormData.append('caption', caption)
     }
 
     // URL do backend Go
     const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'}/api/whatsapp/chats/${chatId}/image`
     
-    console.log('Proxy image request para:', backendUrl)
+    console.log('Enviando imagem via blob URL:', blobResult.url)
     
     // Fazer request para o backend Go
     const response = await fetch(backendUrl, {
@@ -45,10 +54,15 @@ export async function POST(
     }
 
     const result = await response.json()
-    return NextResponse.json(result)
+    
+    // Adicionar URL do blob ao resultado
+    return NextResponse.json({
+      ...result,
+      mediaUrl: blobResult.url
+    })
     
   } catch (error) {
-    console.error('Erro no proxy de imagem:', error)
+    console.error('Erro no upload de imagem:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

@@ -65,7 +65,7 @@ export function useWhatsAppSession() {
             },
             webhooks: [
               {
-                url: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}/api/webhooks/whatsapp`,
+                url: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'}/api/webhooks/whatsapp`,
                 events: ['message', 'session.status'],
                 hmac: null,
                 retries: {

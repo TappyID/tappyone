@@ -161,7 +161,7 @@ export default function ConversationSidebar({
     
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       // Buscar todos os quadros do usuário apenas se necessário
       const quadrosResponse = await fetch(`${backendUrl}/api/kanban/quadros`, {

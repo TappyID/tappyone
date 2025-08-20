@@ -230,7 +230,7 @@ JWT_SECRET=...
 
 ### **Frontend (.env.local)**
 ```env
-NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8081
 WAHA_API_URL=https://apiwhatsapp.vyzer.com.br/api
 WAHA_API_KEY=atendia-waha-2024-secretkey
 ```
@@ -275,7 +275,7 @@ FAILED          →  error
 cd backend
 go build -o tappyone.exe ./cmd/server
 ./tappyone.exe
-# Servidor rodando em http://localhost:8080
+# Servidor rodando em http://localhost:8081
 ```
 
 ### **2. Iniciar Frontend**

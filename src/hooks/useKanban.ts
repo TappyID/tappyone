@@ -57,7 +57,7 @@ export function useKanban() {
       throw new Error('Token de autenticação não encontrado')
     }
 
-    const response = await fetch(`http://localhost:8080/api${url}`, {
+    const response = await fetch(`http://localhost:8081/api${url}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

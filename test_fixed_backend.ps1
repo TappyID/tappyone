@@ -1,7 +1,7 @@
 # Teste rápido do backend corrigido
 Write-Host "=== TESTE BACKEND CORRIGIDO ===" -ForegroundColor Green
 
-$BACKEND_URL = "http://localhost:8080"
+$BACKEND_URL = "http://localhost:8081"
 
 # Login primeiro
 $loginData = @{
@@ -26,13 +26,22 @@ $headers = @{
 Write-Host "`n1. Testando /api/whatsapp/chats..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "$BACKEND_URL/api/whatsapp/chats" -Method GET -Headers $headers
-    Write-Host "✅ Chats funcionando!" -ForegroundColor Green
-    Write-Host "Quantidade de chats: $($response.Count)" -ForegroundColor Gray
+    Write-Host "✅ Chats OK" -ForegroundColor Green
 } catch {
     Write-Host "❌ Erro nos chats: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-Write-Host "`n2. Testando /api/whatsapp/contacts..." -ForegroundColor Yellow
+Write-Host "`n2. Testando mídia específica..." -ForegroundColor Yellow
+try {
+    $mediaUrl = "$BACKEND_URL/api/whatsapp/media/true_5518997200106@c.us_3AE377CA93D6E9FBCA36"
+    $mediaResponse = Invoke-WebRequest -Uri $mediaUrl -Headers $headers
+    Write-Host "✅ Mídia acessível - Status: $($mediaResponse.StatusCode)" -ForegroundColor Green
+    Write-Host "Content-Type: $($mediaResponse.Headers.'Content-Type')" -ForegroundColor Cyan
+} catch {
+    Write-Host "❌ Erro na mídia: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+Write-Host "`n3. Testando /api/whatsapp/contacts..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "$BACKEND_URL/api/whatsapp/contacts" -Method GET -Headers $headers
     Write-Host "✅ Contatos funcionando!" -ForegroundColor Green

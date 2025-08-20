@@ -12,6 +12,11 @@ export interface WhatsAppMessage {
   mediaUrl?: string
   fileName?: string
   caption?: string
+  media?: {
+    data?: string
+    mimetype?: string
+    filename?: string
+  }
 }
 
 interface UseInfiniteMessagesProps {
@@ -52,7 +57,7 @@ export function useInfiniteMessages({
         throw new Error('Token não encontrado')
       }
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       const currentOffset = reset ? 0 : offset
       
       const response = await fetch(
@@ -84,7 +89,13 @@ export function useInfiniteMessages({
         status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
         mediaUrl: msg.mediaUrl,
         fileName: msg.filename || msg.fileName,
-        caption: msg.caption
+        caption: msg.caption,
+        // Adicionar dados de mídia se existirem
+        media: msg.media ? {
+          data: msg.media.data,
+          mimetype: msg.media.mimetype,
+          filename: msg.media.filename
+        } : undefined
       }))
 
       if (reset) {

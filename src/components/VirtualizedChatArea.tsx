@@ -69,6 +69,20 @@ const MessageItem: React.FC<MessageItemProps> = ({ index, style, data }) => {
 
       case 'audio':
       case 'voice':
+        // Se a mensagem contém texto de fallback, renderizar como texto
+        if (message.body && message.body.includes('🎤 *Mensagem de Áudio*')) {
+          return (
+            <div className="mb-2">
+              <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <AudioLines className="w-5 h-5 text-orange-500" />
+                <div className="flex-1">
+                  <p className="text-sm text-orange-700 whitespace-pre-line">{message.body}</p>
+                </div>
+              </div>
+            </div>
+          )
+        }
+        
         return (
           <div className="mb-2">
             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
@@ -84,7 +98,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ index, style, data }) => {
                 <span className="text-sm text-gray-500">Áudio não disponível</span>
               )}
             </div>
-            {(message.body || message.caption) && (
+            {(message.body || message.caption) && !message.body?.includes('🎤 *Mensagem de Áudio*') && (
               <p className="text-sm mt-2">{message.body || message.caption}</p>
             )}
           </div>

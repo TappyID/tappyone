@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBlobUrl } from '@/lib/blob-storage'
 
 export async function GET(
   request: NextRequest,
@@ -6,44 +7,74 @@ export async function GET(
 ) {
   try {
     const filePath = params.path.join('/')
+    console.log('API /api/files chamada para:', filePath)
     
-    // Usar backend Go diretamente para servir arquivos
-    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'}/uploads/${filePath}`
-    
-    console.log('Proxy request para:', backendUrl)
-    
-    // Fazer request para o backend Go
-    const response = await fetch(backendUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': '*/*',
-      },
-    })
-
-    if (!response.ok) {
-      console.error('Erro do backend:', response.status, response.statusText)
-      return new NextResponse('File not found', { status: 404 })
+    // Se o arquivo já é uma URL do blob, redireciona diretamente
+    if (filePath.startsWith('http')) {
+      return NextResponse.redirect(filePath)
     }
-
-    // Obter o tipo de conteúdo
-    const contentType = response.headers.get('content-type') || 'application/octet-stream'
     
-    // Obter o buffer do arquivo
-    const buffer = await response.arrayBuffer()
+    // Verificar se é um caminho do WAHA (user_xxx/arquivo)
+    if (filePath.includes('user_')) {
+      // Fazer proxy para o WAHA diretamente
+      const wahaUrl = `http://159.65.34.199:3000/api/files/${filePath}`
+      console.log('Fazendo proxy para WAHA:', wahaUrl)
+      
+      try {
+        const wahaResponse = await fetch(wahaUrl, {
+          headers: {
+            'Authorization': `Bearer tappyone-waha-2024-secretkey`
+          }
+        })
+        
+        if (wahaResponse.ok) {
+          const contentType = wahaResponse.headers.get('content-type') || 'application/octet-stream'
+          const buffer = await wahaResponse.arrayBuffer()
+          
+          return new NextResponse(buffer, {
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=31536000'
+            }
+          })
+        }
+      } catch (wahaError) {
+        console.log('Erro ao acessar WAHA:', wahaError)
+      }
+    }
     
-    // Retornar o arquivo com headers corretos
-    return new NextResponse(buffer, {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    })
+    // Tentar media server local como fallback
+    try {
+      const mediaServerUrl = `http://localhost:8082/media/${filePath}`
+      const mediaResponse = await fetch(mediaServerUrl, { method: 'HEAD' })
+      
+      if (mediaResponse.ok) {
+        console.log('Arquivo encontrado no media server local:', mediaServerUrl)
+        return NextResponse.redirect(mediaServerUrl)
+      }
+    } catch (mediaError) {
+      console.log('Media server não disponível')
+    }
+    
+    // Tentar construir URL do blob como último recurso
+    const blobUrl = getBlobUrl(filePath)
+    console.log('Tentando blob URL:', blobUrl)
+    
+    try {
+      const blobResponse = await fetch(blobUrl, { method: 'HEAD' })
+      if (blobResponse.ok) {
+        return NextResponse.redirect(blobUrl)
+      }
+    } catch (blobError) {
+      console.log('Arquivo não encontrado no blob storage')
+    }
+    
+    // Se nenhum funcionar, retornar 404
+    console.log('Arquivo não encontrado em nenhum local:', filePath)
+    return new NextResponse('File not found', { status: 404 })
+    
   } catch (error) {
-    console.error('Erro no proxy de arquivos:', error)
+    console.error('Erro ao acessar arquivo:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 }

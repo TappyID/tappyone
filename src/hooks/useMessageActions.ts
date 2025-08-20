@@ -16,7 +16,7 @@ export function useMessageActions({ chatId, onMessageUpdate }: UseMessageActions
       throw new Error('Token não encontrado')
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
     const response = await fetch(`${backendUrl}/api/whatsapp${endpoint}`, {
       method,
       headers: {

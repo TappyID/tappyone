@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { uploadToBlob } from '@/lib/blob-storage'
 
 export async function POST(
   request: NextRequest,
@@ -13,13 +14,22 @@ export async function POST(
     }
 
     const formData = await request.formData()
-    const backendFormData = new FormData()
+    const file = formData.get('audio') as File
     
-    for (const [key, value] of formData.entries()) {
-      backendFormData.append(key, value)
+    if (!file) {
+      return NextResponse.json({ error: 'Nenhum áudio fornecido' }, { status: 400 })
     }
 
+    // Upload para Vercel Blob Storage
+    const blobResult = await uploadToBlob(file)
+    
+    // Criar FormData para enviar ao backend Go com a URL do blob
+    const backendFormData = new FormData()
+    backendFormData.append('audioUrl', blobResult.url)
+
     const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'}/api/whatsapp/chats/${chatId}/voice`
+    
+    console.log('Enviando áudio via blob URL:', blobResult.url)
     
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -36,10 +46,15 @@ export async function POST(
     }
 
     const result = await response.json()
-    return NextResponse.json(result)
+    
+    // Adicionar URL do blob ao resultado
+    return NextResponse.json({
+      ...result,
+      mediaUrl: blobResult.url
+    })
     
   } catch (error) {
-    console.error('Erro no proxy de áudio:', error)
+    console.error('Erro no upload de áudio:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

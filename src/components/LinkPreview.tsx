@@ -43,9 +43,8 @@ export default function LinkPreview({ url, className = '' }: LinkPreviewProps) {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
       
-      const response = await fetch(`${backendUrl}/api/link-preview`, {
+      const response = await fetch(`/api/link-preview`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
