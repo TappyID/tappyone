@@ -136,3 +136,5 @@ dump.rdb
 
 # Local development
 .local/
+
+.vercel

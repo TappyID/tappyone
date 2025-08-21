@@ -76,7 +76,7 @@ export function useRespostasRapidas() {
   const [error, setError] = useState<string | null>(null)
 
   const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`/api/respostas-rapidas${endpoint}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/respostas-rapidas${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
