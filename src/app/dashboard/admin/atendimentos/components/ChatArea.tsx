@@ -608,7 +608,7 @@ export default function ChatArea({
           replyTo: replyingTo.id || replyingTo._data?.id?.id
         }
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/reply`, {
+        const response = await fetch('/api/whatsapp/reply', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

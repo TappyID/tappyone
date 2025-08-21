@@ -46,7 +46,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/upload`, {
+      const response = await fetch('/api/whatsapp/upload', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -81,7 +81,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/chats/${chatId}/image`, {
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/image`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -113,7 +113,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/chats/${chatId}/file`, {
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/file`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -142,7 +142,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
       formData.append('chatId', chatId)
       formData.append('audio', audioBlob, 'voice_message.webm')
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/chats/${chatId}/voice`, {
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/voice`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -174,7 +174,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/chats/${chatId}/video`, {
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/video`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -207,7 +207,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/chats/${chatId}/media`, {
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/media`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
