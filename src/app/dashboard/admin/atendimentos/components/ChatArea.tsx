@@ -401,7 +401,7 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
-  // Função para marcar mensagens como vistas
+  // Função para marcar mensagens como vistas (usando nova rota anti-bloqueio)
   const markMessagesAsSeen = async (messageIds: string[]) => {
     if (!messageIds.length) return
     
@@ -410,18 +410,16 @@ export default function ChatArea({
     
     try {
       const token = localStorage.getItem('token')
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       if (!token) return
       
-      await fetch('/api/whatsapp/sendSeen', {
+      // Usar nova rota anti-bloqueio diretamente no backend
+      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/seen`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          chatId,
-          messageIds
-        })
+        }
       })
     } catch (error) {
       console.error('Erro ao marcar mensagens como vistas:', error)

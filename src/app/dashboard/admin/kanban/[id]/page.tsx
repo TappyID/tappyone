@@ -835,8 +835,8 @@ export default function QuadroPage() {
           
           // Buscar foto de perfil usando o endpoint correto da WAHA API
           try {
-            const wahaApiUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://apiwhatsapp.vyzer.com.br/api'
-            const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'atendia-waha-2024-secretkey'
+            const wahaApiUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://server.tappy.id/api'
+            const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
             const sessionName = `user_${user?.id}` // Usando user do contexto de auth
             
             console.log('🖼️ Fetching picture for chatId:', chatId)

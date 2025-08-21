@@ -229,8 +229,8 @@ export function useWhatsAppData() {
           
           // Buscar foto de perfil usando o endpoint correto da WAHA API (sem logs excessivos)
           try {
-            const wahaApiUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://apiwhatsapp.vyzer.com.br/api'
-            const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'atendia-waha-2024-secretkey'
+            const wahaApiUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://server.tappy.id/api'
+            const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
             const sessionName = `user_${user.id}`
             
             const pictureResponse = await fetch(`${wahaApiUrl}/${sessionName}/chats/${chatId}/picture`, {
@@ -427,7 +427,7 @@ export function useWhatsAppData() {
     }
   }, [user, playNotificationSound])
 
-  // Enviar mensagem
+  // Enviar mensagem seguindo boas práticas WAHA anti-bloqueio
   const sendWhatsAppMessage = useCallback(async (chatId: string, text: string) => {
     if (!user) return false
 
@@ -435,6 +435,38 @@ export function useWhatsAppData() {
       const token = localStorage.getItem('token')
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
+      // 1. Marcar como visualizada (sendSeen)
+      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/seen`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      // 2. Começar a digitar (startTyping)
+      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/typing/start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      // 3. Aguardar intervalo baseado no tamanho da mensagem (simular digitação)
+      const typingDelay = Math.min(Math.max(text.length * 50, 1000), 5000) // 50ms por char, min 1s, max 5s
+      await new Promise(resolve => setTimeout(resolve, typingDelay))
+
+      // 4. Parar de digitar (stopTyping)
+      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/typing/stop`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      // 5. Enviar mensagem
       const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/messages`, {
         method: 'POST',
         headers: {
@@ -453,7 +485,7 @@ export function useWhatsAppData() {
       console.error('Error sending message:', err)
       return false
     }
-  }, [user])
+  }, [user, playSentSound])
 
   // Marcar como lida
   const markAsRead = useCallback(async (chatId: string) => {

@@ -15,8 +15,8 @@ export function ApiTest() {
     try {
       console.log('Testando API WhatsApp...')
       
-      const API_BASE = 'https://apiwhatsapp.vyzer.com.br/api'
-      const API_KEY = 'atendia-waha-2024-secretkey'
+      const API_BASE = 'https://server.tappy.id/api'
+      const API_KEY = 'tappyone-waha-2024-secretkey'
 
       // Teste 1: Listar sessões existentes
       console.log('1. Listando sessões...')

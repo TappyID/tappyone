@@ -26,8 +26,8 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const [showQRModal, setShowQRModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://apiwhatsapp.vyzer.com.br/api'
-  const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'atendia-waha-2024-secretkey'
+  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://server.tappy.id/api'
+  const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
   const SESSION_NAME = user?.id ? `user_${user.id}` : 'default'
 
   // Verificar status inicial quando componente carrega
@@ -41,15 +41,17 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     }
     
     initializeConnection()
-    
-    // Verificar status periodicamente
-    const interval = setInterval(() => {
-      if (status === 'connecting' || status === 'qr_ready') {
+  }, []) // Remove dependency on status to prevent infinite loop
+
+  // Verificar status periodicamente apenas quando necessário
+  useEffect(() => {
+    if (status === 'connecting' || status === 'qr_ready') {
+      const interval = setInterval(() => {
         checkSessionStatus()
-      }
-    }, 5000)
-    
-    return () => clearInterval(interval)
+      }, 5000)
+      
+      return () => clearInterval(interval)
+    }
   }, [status])
 
   // Criar sessão WhatsApp
@@ -102,7 +104,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
               }
             },
             webhooks: [{
-              url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/webhooks/whatsapp`,
+              url: `http://localhost:8081/webhooks/whatsapp`,
               events: ['message', 'session.status'],
               hmac: null,
               retries: {

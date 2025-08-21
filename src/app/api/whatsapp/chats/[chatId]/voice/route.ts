@@ -1,40 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadToBlob } from '@/lib/blob-storage'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { chatId: string } }
 ) {
   try {
-    const { chatId } = params
-    
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Token de autorização necessário' }, { status: 401 })
-    }
-
     const formData = await request.formData()
-    const file = formData.get('audio') as File
-    
+    const file = formData.get('voice') as File
+
     if (!file) {
       return NextResponse.json({ error: 'Nenhum áudio fornecido' }, { status: 400 })
     }
 
-    // Upload para Vercel Blob Storage
-    const blobResult = await uploadToBlob(file)
-    
-    // Criar FormData para enviar ao backend Go com a URL do blob
+    // Converter arquivo para FormData para enviar ao backend Go
     const backendFormData = new FormData()
-    backendFormData.append('audioUrl', blobResult.url)
+    backendFormData.append('voice', file)
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'}/api/whatsapp/chats/${chatId}/voice`
-    
-    console.log('Enviando áudio via blob URL:', blobResult.url)
-    
-    const response = await fetch(backendUrl, {
+    // Enviar diretamente para o backend Go (que salvará no droplet)
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+    const token = request.headers.get('authorization')
+
+    const response = await fetch(`${backendUrl}/api/whatsapp/chats/${params.chatId}/voice`, {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
+        'Authorization': token || ''
       },
       body: backendFormData
     })
@@ -46,15 +35,16 @@ export async function POST(
     }
 
     const result = await response.json()
-    
-    // Adicionar URL do blob ao resultado
     return NextResponse.json({
-      ...result,
-      mediaUrl: blobResult.url
+      success: true,
+      ...result
     })
-    
+
   } catch (error) {
     console.error('Erro no upload de áudio:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
   }
 }

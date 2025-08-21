@@ -12,6 +12,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 export default function AtendimentosPage() {
   const [selectedConversation, setSelectedConversation] = useState<WhatsAppChat | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const { actualTheme } = useTheme()
   
   // Helper function para extrair chatId da estrutura da WAHA API
@@ -94,6 +95,8 @@ export default function AtendimentosPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isLoading={loading}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
         
         {/* Área do Chat */}

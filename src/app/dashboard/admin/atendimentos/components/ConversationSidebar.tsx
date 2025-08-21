@@ -22,7 +22,9 @@ import {
   Languages,
   Mic,
   Wifi,
-  WifiOff
+  WifiOff,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react'
 import { usePresence } from '@/hooks/usePresence'
 import { usePresencePolling } from '@/hooks/usePresencePolling'
@@ -35,6 +37,8 @@ interface ConversationSidebarProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   isLoading?: boolean
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 // Função para formatar timestamp
@@ -89,20 +93,31 @@ const formatTimestamp = (timestamp: number | string) => {
 
 // Função para extrair nome do contato
 const getContactName = (chat: any, contacts: any[]) => {
+  // Diferentes formatos de ID dependendo do engine WAHA
+  const chatId = chat.id?._serialized || chat.id || chat.chatId || ''
+  
   // Tentar encontrar o contato na lista
-  const contact = contacts.find(c => c.id === chat.id._serialized)
+  const contact = contacts.find(c => c.id === chatId)
   if (contact && contact.name && contact.name !== contact.id) {
     return contact.name
   }
   
   // Se tem nome no chat, usar
-  if (chat.name && chat.name !== chat.id._serialized) {
+  if (chat.name && chat.name !== chatId) {
     return chat.name
   }
   
-  // Extrair número do telefone
-  const phoneNumber = chat.id.user || chat.id._serialized.split('@')[0]
-  return `+${phoneNumber}`
+  // Extrair número do telefone de diferentes formatos
+  let phoneNumber = ''
+  if (chat.id?.user) {
+    phoneNumber = chat.id.user
+  } else if (chatId && chatId.includes('@')) {
+    phoneNumber = chatId.split('@')[0]
+  } else if (chatId) {
+    phoneNumber = chatId.replace(/\D/g, '') // Remove tudo que não é dígito
+  }
+  
+  return phoneNumber ? `+${phoneNumber}` : 'Contato'
 }
 
 export default function ConversationSidebar({
@@ -112,7 +127,9 @@ export default function ConversationSidebar({
   onSelectConversation,
   searchQuery,
   onSearchChange,
-  isLoading = false
+  isLoading = false,
+  isCollapsed = false,
+  onToggleCollapse
 }: ConversationSidebarProps) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -261,7 +278,7 @@ export default function ConversationSidebar({
   
   // Processar chats do WhatsApp para o formato esperado
   const conversations = chats.map((chat, index) => {
-    const chatId = chat.id._serialized || chat.id
+    const chatId = chat.id?._serialized || chat.id || chat.chatId || ''
     const kanbanData = kanbanInfo[chatId] || { quadro: 'Carregando...', coluna: '', color: '#d1d5db' }
     
     return {
@@ -316,12 +333,52 @@ export default function ConversationSidebar({
   // Presença removida para melhorar performance
 
   return (
-    <div className="w-[520px] bg-gray-50/80 backdrop-blur-sm border-r border-gray-200/50 flex flex-col h-full">
-      {/* Filters Header */}
-      <div className="p-4 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
-          <div className="flex items-center gap-3">
+    <motion.div 
+      animate={{ 
+        width: isCollapsed ? '80px' : '520px'
+      }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="bg-gray-50/80 backdrop-blur-sm border-r border-gray-200/50 flex flex-col h-full overflow-hidden relative"
+    >
+      {/* Collapsed State - Floating Expand Button */}
+      {isCollapsed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-start pt-6 bg-gradient-to-b from-white/90 to-gray-50/90 backdrop-blur-sm z-10">
+          <motion.button
+            whileHover={{ scale: 1.1, backgroundColor: '#3b82f6' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onToggleCollapse}
+            className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg mb-4"
+            title="Expandir sidebar"
+          >
+            <PanelLeftOpen className="w-6 h-6" />
+          </motion.button>
+          
+          {/* Vertical Icons */}
+          <div className="flex flex-col gap-4 items-center">
+            <div className="p-2 bg-white/80 rounded-lg shadow-sm">
+              <MessageCircle className="w-5 h-5 text-gray-600" />
+            </div>
+            <div className="p-2 bg-white/80 rounded-lg shadow-sm">
+              <Users className="w-5 h-5 text-gray-600" />
+            </div>
+            <div className="p-2 bg-white/80 rounded-lg shadow-sm">
+              <Search className="w-5 h-5 text-gray-600" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Normal State Content */}
+      <motion.div
+        animate={{ opacity: isCollapsed ? 0 : 1 }}
+        transition={{ duration: 0.2 }}
+        className={isCollapsed ? "pointer-events-none" : ""}
+      >
+        {/* Filters Header */}
+        <div className="p-4 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+            <div className="flex items-center gap-3">
             {/* Select Filas Elegante */}
             <motion.div 
               className="relative"
@@ -392,6 +449,20 @@ export default function ConversationSidebar({
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Filter className="w-5 h-5 text-gray-600" />
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onToggleCollapse}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
+            >
+              {isCollapsed ? (
+                <PanelLeftOpen className="w-5 h-5 text-gray-600" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-gray-600" />
+              )}
             </motion.button>
           </div>
         </div>
@@ -625,6 +696,7 @@ export default function ConversationSidebar({
           </motion.button>
         </div>
       </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

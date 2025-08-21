@@ -16,7 +16,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'apiwhatsapp.vyzer.com.br',
+        hostname: 'server.tappy.id',
         pathname: '/**',
       },
       {
@@ -36,8 +36,8 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY || '',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
     NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081',
-    NEXT_PUBLIC_WAHA_API_URL: process.env.WAHA_API_URL || 'http://159.65.34.199:3000/api',
-    NEXT_PUBLIC_WAHA_API_KEY: process.env.WAHA_API_KEY || 'tappyone-secure-key-2024',
+    NEXT_PUBLIC_WAHA_API_URL: process.env.WAHA_API_URL || 'https://server.tappy.id/api',
+    NEXT_PUBLIC_WAHA_API_KEY: process.env.WAHA_API_KEY || 'tappyone-waha-2024-secretkey',
   },
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081';

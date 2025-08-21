@@ -16,14 +16,14 @@ export async function GET(
     
     // Verificar se é um caminho do WAHA (user_xxx/arquivo)
     if (filePath.includes('user_')) {
-      // Fazer proxy para o WAHA diretamente
-      const wahaUrl = `http://159.65.34.199:3000/api/files/${filePath}`
+      // Fazer proxy para o WAHA em produção
+      const wahaUrl = `https://server.tappy.id/api/files/${filePath}`
       console.log('Fazendo proxy para WAHA:', wahaUrl)
       
       try {
         const wahaResponse = await fetch(wahaUrl, {
           headers: {
-            'Authorization': `Bearer tappyone-waha-2024-secretkey`
+            'X-Api-Key': 'tappyone-waha-2024-secretkey'
           }
         })
         

@@ -71,38 +71,6 @@ func Setup(container *services.Container) *gin.Engine {
 	// WebSocket route (with JWT auth via query param)
 	r.GET("/ws", handlers.NewWebSocketHandler(container.AuthService, container.Config.JWTSecret))
 
-	// Webhook para receber mensagens da WAHA API
-	r.POST("/webhooks/whatsapp", func(c *gin.Context) {
-		log.Printf("[WEBHOOK] Received WhatsApp webhook")
-
-		var payload map[string]interface{}
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			log.Printf("[WEBHOOK] Error parsing payload: %v", err)
-			c.JSON(400, gin.H{"error": "Invalid payload"})
-			return
-		}
-
-		log.Printf("[WEBHOOK] Payload: %+v", payload)
-
-		// Verificar se é uma mensagem nova
-		if event, ok := payload["event"].(string); ok && event == "message" {
-			if data, ok := payload["data"].(map[string]interface{}); ok {
-				// Extrair session da mensagem para identificar o usuário
-				if session, ok := payload["session"].(string); ok {
-					// Extrair userID do session name (formato: user_UUID)
-					if len(session) > 5 && session[:5] == "user_" {
-						userID := session[5:]
-						log.Printf("[WEBHOOK] Broadcasting message to user: %s", userID)
-
-						// Enviar via WebSocket
-						handlers.BroadcastNewMessage(userID, data)
-					}
-				}
-			}
-		}
-
-		c.JSON(200, gin.H{"status": "ok"})
-	})
 
 	// Webhook específico para respostas rápidas
 	r.POST("/webhooks/resposta-rapida", respostaRapidaHandler.ProcessarMensagemWebhook)
@@ -160,7 +128,7 @@ func Setup(container *services.Container) *gin.Engine {
 		connections := protected.Group("/connections")
 		{
 			connections.GET("/", connectionHandler.GetUserConnections)
-			connections.GET("/whatsapp", connectionHandler.GetUserConnection)
+			connections.GET("/whatsapp", connectionHandler.GetWhatsAppConnection)
 			connections.GET("/:platform", connectionHandler.GetUserConnection)
 			connections.POST("/", connectionHandler.CreateOrUpdateConnection)
 			connections.PUT("/:platform", connectionHandler.UpdateConnection)
@@ -343,6 +311,64 @@ func Setup(container *services.Container) *gin.Engine {
 				chatID := c.Param("chatId")
 
 				result, err := container.WhatsAppService.MarkAsRead(sessionName, chatID)
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(200, result)
+			})
+
+			// Anti-blocking endpoints conforme WAHA best practices
+			// 1. Marcar como visualizada (sendSeen)
+			whatsappAPI.POST("/chats/:chatId/seen", func(c *gin.Context) {
+				userID, exists := c.Get("userID")
+				if !exists {
+					c.JSON(401, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				sessionName := fmt.Sprintf("user_%s", userID)
+				chatID := c.Param("chatId")
+
+				result, err := container.WhatsAppService.SendSeenAntiBlock(sessionName, chatID)
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(200, result)
+			})
+
+			// 2. Começar a digitar (startTyping)
+			whatsappAPI.POST("/chats/:chatId/typing/start", func(c *gin.Context) {
+				userID, exists := c.Get("userID")
+				if !exists {
+					c.JSON(401, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				sessionName := fmt.Sprintf("user_%s", userID)
+				chatID := c.Param("chatId")
+
+				result, err := container.WhatsAppService.StartTyping(sessionName, chatID)
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(200, result)
+			})
+
+			// 3. Parar de digitar (stopTyping)
+			whatsappAPI.POST("/chats/:chatId/typing/stop", func(c *gin.Context) {
+				userID, exists := c.Get("userID")
+				if !exists {
+					c.JSON(401, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				sessionName := fmt.Sprintf("user_%s", userID)
+				chatID := c.Param("chatId")
+
+				result, err := container.WhatsAppService.StopTyping(sessionName, chatID)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return

@@ -16,8 +16,8 @@ export function useWhatsAppSession() {
   const { user } = useAuth()
   const [sessions, setSessions] = useState<Map<string, WhatsAppSession>>(new Map())
 
-  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://apiwhatsapp.vyzer.com.br/api'
-  const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'atendia-waha-2024-secretkey'
+  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'https://server.tappy.id/api'
+  const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
   const getSessionName = useCallback((userId?: string) => {
     return userId ? `user_${userId}` : 'default'
