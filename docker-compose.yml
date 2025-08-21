@@ -1,123 +1,57 @@
 version: '3.8'
 
 services:
-  # Banco de dados PostgreSQL
-  postgres:
-    image: postgres:15-alpine
-    container_name: tappyone-postgres
-    environment:
-      POSTGRES_DB: tappyone
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - tappyone-network
-    restart: unless-stopped
-
-  # Redis para cache e sessões
-  redis:
-    image: redis:7-alpine
-    container_name: tappyone-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - tappyone-network
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-
-  # Backend Go API
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: tappyone-backend
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/tappyone?sslmode=disable
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=sua-chave-secreta-jwt-aqui
-      - WHATSAPP_API_URL=https://api.apiwhatsapp.com.br
-      - WHATSAPP_API_TOKEN=seu-token-whatsapp
-      - DEEPSEEK_API_KEY=sua-chave-deepseek
-      - SMTP_HOST=smtp.hostinger.com
-      - SMTP_PORT=587
-      - SMTP_USER=seu-email@dominio.com
-      - SMTP_PASS=sua-senha-email
-      - PORT=8080
+    build: .
     ports:
-      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - WAHA_API_URL=http://waha:3000/api
+      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=8081
+      - FRONTEND_URL=https://crm.tappy.id
+      - DOMAIN=server.tappy.id
+    env_file:
+      - .env
+    restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      - waha
     networks:
       - tappyone-network
-    restart: unless-stopped
-    volumes:
-      - ./backend:/app
-      - /app/tmp
 
-  # Frontend Next.js
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: tappyone-frontend
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8081
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8080
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=sua-chave-nextauth-secreta
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/tappyone?sslmode=disable
+  waha:
+    image: devlikeapro/waha-plus:gows
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
-      - postgres
-    networks:
-      - tappyone-network
-    restart: unless-stopped
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-
-  # WAHA Plus para WhatsApp API
-  waha:
-    image: devlikeapro/waha-plus:chrome
-    container_name: tappyone-waha
     environment:
-      - WHATSAPP_HOOK_URL=http://backend:8080/webhooks/whatsapp
-      - WHATSAPP_HOOK_EVENTS=message,message.any,state.change,group.join,group.leave
-      - WHATSAPP_DEFAULT_ENGINE=WEBJS
-      - WHATSAPP_START_SESSION=default
-    ports:
-      - "3001:3000"
-    networks:
-      - tappyone-network
-    restart: unless-stopped
+      - WHATSAPP_DEFAULT_ENGINE=GOWS
+      # Media Storage - PostgreSQL
+      - WAHA_MEDIA_STORAGE=POSTGRESQL
+      - WAHA_MEDIA_POSTGRESQL_URL=${DATABASE_URL}
+      - WAHA_API_KEY=tappyone-waha-2024-secretkey
+      - WAHA_API_HOSTNAME=0.0.0.0
+      - WAHA_API_PORT=3000
+      - WAHA_DASHBOARD_ENABLED=true
+      - WAHA_DASHBOARD_URL=https://server.tappy.id/dashboard
+      - WHATSAPP_HOOK_URL=https://server.tappy.id/webhooks/whatsapp
+      - WHATSAPP_HOOK_EVENTS=message,session.status
+      - WHATSAPP_SWAGGER_TITLE=TappyOne CRM API
+      - WHATSAPP_SWAGGER_DESCRIPTION=<p><strong>TappyOne CRM</strong> - Sistema completo de gestão via WhatsApp.<br/><a href='https://crm.tappy.id'>Acesse nossa plataforma</a></p>
+      - WHATSAPP_SWAGGER_EXTERNAL_DOC_URL=https://crm.tappy.id
+      - WAHA_AUTO_START_DELAY_SECONDS=1
+      - WAHA_PRINT_QR=true
+      - WAHA_WORKER_ID=tappyone-server
+      - WHATSAPP_RESTART_ALL_SESSIONS=true
     volumes:
-      - waha_data:/app/.sessions
-
-  # Adminer para gerenciar banco de dados
-  adminer:
-    image: adminer:latest
-    container_name: tappyone-adminer
-    ports:
-      - "8081:8080"
+      - ./sessions:/app/.sessions
+    restart: unless-stopped
     networks:
       - tappyone-network
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
-  waha_data:
 
 networks:
   tappyone-network:
     driver: bridge
+
+

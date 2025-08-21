@@ -716,50 +716,8 @@ func (s *WhatsAppService) GetChatMessages(sessionName, chatID string, limit int,
 		// Adicionar tipo processado
 		msgMap["processedType"] = msgType
 
-		// Se tem mídia, verificar se já tem URL do blob ou gerar nova
-		if hasMedia, exists := msgMap["hasMedia"].(bool); exists && hasMedia {
-			// Verificar se já existe uma URL de blob storage
-			if existingURL, exists := msgMap["mediaUrl"].(string); exists && strings.Contains(existingURL, "vercel-storage.com") {
-				// Já tem URL do blob, manter
-				log.Printf("[WHATSAPP] GetChatMessages - Using existing blob URL: %s", existingURL)
-			} else {
-				// Verificar se tem URL da mídia do WAHA para download
-				var mediaURL string
-				if media, exists := msgMap["media"].(map[string]interface{}); exists {
-					if url, ok := media["url"].(string); ok {
-						mediaURL = url
-					}
-				}
-
-				if mediaURL != "" {
-					// Tem URL do WAHA, mas precisa de proxy pois requer autenticação
-					// Usar rota de proxy do frontend
-					proxyURL := fmt.Sprintf("/api/files/%s", strings.TrimPrefix(mediaURL, "http://localhost:3000/api/files/"))
-					msgMap["mediaUrl"] = proxyURL
-					log.Printf("[WHATSAPP] GetChatMessages - Using proxy URL: %s (original: %s)", proxyURL, mediaURL)
-				} else {
-					// Fallback para sistema antigo
-					var mediaID string
-					if id, exists := msgMap["id"].(map[string]interface{}); exists {
-						if serialized, ok := id["_serialized"].(string); ok {
-							mediaID = serialized
-						}
-					}
-					if mediaID == "" {
-						if id, exists := msgMap["id"].(string); exists {
-							mediaID = id
-						}
-					}
-
-					if mediaID != "" {
-						backendURL := "http://localhost:8081"
-						fallbackURL := fmt.Sprintf("%s/api/whatsapp/media/%s", backendURL, mediaID)
-						msgMap["mediaUrl"] = fallbackURL
-						log.Printf("[WHATSAPP] GetChatMessages - Using fallback URL: %s", fallbackURL)
-					}
-				}
-			}
-		}
+		// Com PostgreSQL Media Storage, as URLs do WAHA já são diretas e acessíveis
+		// Não precisamos mais processar URLs de mídia
 
 		processedMessages = append(processedMessages, msgMap)
 	}
