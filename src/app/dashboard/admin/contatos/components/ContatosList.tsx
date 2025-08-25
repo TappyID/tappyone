@@ -1,26 +1,37 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Users, 
-  Phone, 
-  Mail, 
-  MessageSquare, 
-  Star, 
-  MoreVertical,
+import {
+  Search,
+  Filter,
+  Users,
+  UserPlus,
+  MoreHorizontal,
+  Star,
+  MessageCircle,
+  Phone,
+  Mail,
+  MapPin,
+  Building,
+  Calendar,
   Eye,
   Edit,
   Trash2,
-  UserPlus,
+  ChevronDown,
+  Loader2,
+  AlertCircle,
   Tag,
-  Calendar,
-  Activity,
-  MapPin
+  MessageSquare,
+  MoreVertical
 } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import ContactActionModal from './ContactActionModal'
+import CreateContactModal from './CreateContactModal'
 
 interface ContatosListProps {
   searchQuery: string
+  refreshKey?: number
 }
 
 interface Contato {
@@ -28,19 +39,21 @@ interface Contato {
   nome: string
   telefone: string
   email?: string
+  empresa?: string
+  cpf?: string
+  cnpj?: string
+  cep?: string
+  rua?: string
+  numero?: string
+  bairro?: string
+  pais?: string
   foto_perfil?: string
-  ultima_mensagem?: string
+  ultima_mensagem: string
   ultima_interacao: string
   total_mensagens: number
   status: 'online' | 'offline' | 'ausente'
   favorito: boolean
   tags: string[]
-  kanban_info?: {
-    quadro_nome: string
-    coluna_nome: string
-    card_id: string
-    cor: string
-  }
   origem: 'whatsapp' | 'instagram' | 'facebook' | 'site' | 'manual'
   cidade?: string
   estado?: string
@@ -49,125 +62,78 @@ interface Contato {
 export default function ContatosList({ searchQuery }: ContatosListProps) {
   const [contatos, setContatos] = useState<Contato[]>([])
   const [loading, setLoading] = useState(true)
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [selectedContact, setSelectedContact] = useState<Contato | null>(null)
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false)
+  const [editingContact, setEditingContact] = useState<any>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  // Simular carregamento de dados da API
-  useEffect(() => {
-    const loadContatos = async () => {
-      setLoading(true)
+  // Carregar contatos reais da API
+  const loadContatos = async () => {
+    setLoading(true)
+    
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('Token não encontrado')
+        return
+      }
+
+      console.log('📞 Buscando contatos da API...')
       
-      // Simular delay da API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Dados mockados que simulam a estrutura real
-      const mockContatos: Contato[] = [
-        {
-          id: '1',
-          nome: 'João Silva',
-          telefone: '+55 11 99999-9999',
-          email: 'joao.silva@email.com',
-          foto_perfil: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-          ultima_mensagem: 'Oi, gostaria de saber mais sobre o produto',
-          ultima_interacao: '2024-01-20T10:30:00Z',
-          total_mensagens: 45,
-          status: 'online',
-          favorito: true,
-          tags: ['cliente', 'vip'],
-          kanban_info: {
-            quadro_nome: 'Vendas',
-            coluna_nome: 'Negociação',
-            card_id: 'card-123',
-            cor: '#3b82f6'
-          },
-          origem: 'whatsapp',
-          cidade: 'São Paulo',
-          estado: 'SP'
-        },
-        {
-          id: '2',
-          nome: 'Maria Santos',
-          telefone: '+55 11 88888-8888',
-          email: 'maria.santos@empresa.com',
-          foto_perfil: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-          ultima_mensagem: 'Obrigada pelo atendimento!',
-          ultima_interacao: '2024-01-19T14:15:00Z',
-          total_mensagens: 23,
-          status: 'offline',
-          favorito: false,
-          tags: ['prospect', 'marketing'],
-          kanban_info: {
-            quadro_nome: 'Marketing',
-            coluna_nome: 'Qualificação',
-            card_id: 'card-456',
-            cor: '#10b981'
-          },
-          origem: 'instagram',
-          cidade: 'Rio de Janeiro',
-          estado: 'RJ'
-        },
-        {
-          id: '3',
-          nome: 'Pedro Costa',
-          telefone: '+55 11 77777-7777',
-          ultima_mensagem: 'Quando podemos conversar?',
-          ultima_interacao: '2024-01-18T16:45:00Z',
-          total_mensagens: 12,
-          status: 'ausente',
-          favorito: false,
-          tags: ['lead', 'design'],
-          kanban_info: {
-            quadro_nome: 'Projetos',
-            coluna_nome: 'Aguardando',
-            card_id: 'card-789',
-            cor: '#f59e0b'
-          },
-          origem: 'site',
-          cidade: 'Belo Horizonte',
-          estado: 'MG'
-        },
-        {
-          id: '4',
-          nome: 'Ana Oliveira',
-          telefone: '+55 11 66666-6666',
-          email: 'ana.oliveira@startup.com',
-          foto_perfil: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-          ultima_mensagem: 'Vamos fechar o negócio hoje!',
-          ultima_interacao: '2024-01-21T08:20:00Z',
-          total_mensagens: 67,
-          status: 'online',
-          favorito: true,
-          tags: ['cliente', 'ceo', 'investidor'],
-          kanban_info: {
-            quadro_nome: 'Vendas',
-            coluna_nome: 'Fechamento',
-            card_id: 'card-101',
-            cor: '#ef4444'
-          },
-          origem: 'whatsapp',
-          cidade: 'São Paulo',
-          estado: 'SP'
-        },
-        {
-          id: '5',
-          nome: 'Carlos Ferreira',
-          telefone: '+55 11 55555-5555',
-          email: 'carlos.ferreira@corp.com',
-          ultima_mensagem: 'Preciso de mais informações',
-          ultima_interacao: '2024-01-17T12:00:00Z',
-          total_mensagens: 8,
-          status: 'offline',
-          favorito: false,
-          tags: ['corporativo', 'diretor'],
-          origem: 'facebook',
-          cidade: 'Brasília',
-          estado: 'DF'
+      const response = await fetch('/api/contatos', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      ]
-      
-      setContatos(mockContatos)
-      setLoading(false)
+      })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ Contatos carregados:', data.length)
+          
+          // Transformar dados do backend para formato do frontend
+          const contatosTransformados = data.map((contato: any) => ({
+            id: contato.id,
+            nome: contato.nome || contato.numeroTelefone,
+            telefone: contato.numeroTelefone,
+            email: contato.email,
+            empresa: contato.empresa,
+            cpf: contato.cpf,
+            cnpj: contato.cnpj,
+            cep: contato.cep,
+            rua: contato.rua,
+            numero: contato.numero,
+            bairro: contato.bairro,
+            pais: contato.pais,
+            foto_perfil: contato.fotoPerfil,
+            ultima_mensagem: '',
+            ultima_interacao: contato.atualizadoEm || contato.criadoEm,
+            total_mensagens: 0,
+            status: 'offline' as const,
+            favorito: contato.favorito || false,
+            tags: [], // TODO: carregar tags relacionadas
+            origem: 'whatsapp' as const, // Assumir WhatsApp por padrão
+            cidade: contato.cidade,
+            estado: contato.estado
+          }))
+          
+          setContatos(contatosTransformados)
+        } else {
+          console.error('Erro ao buscar contatos:', response.status)
+          setContatos([])
+        }
+      } catch (error) {
+        console.error('Erro ao carregar contatos:', error)
+        setContatos([])
+      } finally {
+        setLoading(false)
+      }
     }
 
+  useEffect(() => {
     loadContatos()
   }, [])
 
@@ -181,10 +147,12 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
       contato.telefone.includes(searchQuery) ||
       contato.email?.toLowerCase().includes(searchLower) ||
       contato.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
-      contato.cidade?.toLowerCase().includes(searchLower)
+      contato.cidade?.toLowerCase().includes(searchLower) ||
+      contato.estado?.toLowerCase().includes(searchLower)
     )
   })
 
+  // Função para formatar timestamp
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp)
     const now = new Date()
@@ -202,322 +170,263 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online':
-        return 'bg-green-500'
-      case 'ausente':
-        return 'bg-yellow-500'
-      case 'offline':
-      default:
-        return 'bg-gray-400'
-    }
-  }
+  // Função para toggle favorito
+  const handleToggleFavorito = async (id: string) => {
+    const contato = contatos.find(c => c.id === id)
+    if (!contato) return
 
-  const getOrigemIcon = (origem: string) => {
-    switch (origem) {
-      case 'whatsapp':
-        return '💬'
-      case 'instagram':
-        return '📷'
-      case 'facebook':
-        return '📘'
-      case 'site':
-        return '🌐'
-      case 'manual':
-        return '✏️'
-      default:
-        return '📱'
-    }
-  }
+    const novoFavorito = !contato.favorito
 
-  const handleToggleFavorito = (id: string) => {
+    // Atualizar UI otimisticamente
     setContatos(prev => prev.map(c => 
-      c.id === id ? { ...c, favorito: !c.favorito } : c
+      c.id === id ? { ...c, favorito: novoFavorito } : c
     ))
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ favorito: novoFavorito })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar favorito')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar favorito:', error)
+      // Reverter mudança na UI se API falhou
+      setContatos(prev => prev.map(c => 
+        c.id === id ? { ...c, favorito: contato.favorito } : c
+      ))
+    }
   }
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="bg-white rounded-2xl p-16 shadow-lg border border-gray-100"
-      >
-        <div className="flex flex-col items-center justify-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#305e73]/20"></div>
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-[#305e73] absolute top-0 left-0"></div>
-          </div>
-          <span className="mt-6 text-gray-700 font-medium text-lg">Carregando contatos...</span>
-          <span className="mt-2 text-gray-500 text-sm">Sincronizando dados do WhatsApp</span>
+      <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#305e73]"></div>
+          <span className="ml-2 text-gray-600">Carregando contatos...</span>
         </div>
-      </motion.div>
+      </div>
     )
   }
 
   if (filteredContatos.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl p-16 shadow-lg border border-gray-100 text-center"
-      >
-        <div className="w-24 h-24 bg-gradient-to-br from-[#305e73]/10 to-[#3a6d84]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Users className="w-12 h-12 text-[#305e73]" />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-3">
+      <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 text-center">
+        <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
           {searchQuery ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado'}
         </h3>
-        <p className="text-gray-600 mb-8 max-w-md mx-auto">
+        <p className="text-gray-600 mb-6">
           {searchQuery 
             ? 'Tente ajustar sua busca para encontrar contatos'
             : 'Seus contatos do WhatsApp aparecerão aqui automaticamente'
           }
         </p>
         {!searchQuery && (
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-3 mx-auto font-semibold"
-          >
-            <UserPlus className="w-5 h-5" />
-            Sincronizar Contatos
-          </motion.button>
+          <div className="flex gap-4 justify-center">
+            <motion.button 
+              onClick={() => setIsCreateModalOpen(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
+            >
+              <UserPlus className="w-5 h-5" />
+              Novo Contato
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
+            >
+              <UserPlus className="w-5 h-5" />
+              Sincronizar Contatos
+            </motion.button>
+          </div>
         )}
-      </motion.div>
+      </div>
     )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-    >
+    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
+      <div className="bg-gradient-to-r from-[#305e73] via-[#3a6d84] to-[#305e73] px-6 py-5">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">
-              Contatos ({filteredContatos.length})
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Lista de todos os seus contatos sincronizados
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                Contatos
+              </h2>
+              <p className="text-white/80 text-sm">
+                {filteredContatos.length} de {contatos.length} contatos
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-600 font-medium">
-                Sincronizado há 5 min
-              </span>
+            <div className="px-3 py-1.5 bg-white/20 rounded-full text-white text-sm font-medium">
+              {contatos.filter(c => c.favorito).length} favoritos
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lista */}
-      <div className="divide-y divide-gray-100">
+      {/* Lista de Contatos */}
+      <div className="p-2">
         <AnimatePresence>
           {filteredContatos.map((contato, index) => (
             <motion.div
               key={contato.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{ delay: index * 0.05 }}
-              whileHover={{ 
-                scale: 1.01,
-                transition: { duration: 0.2 }
-              }}
-              className="p-6 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all duration-300 group cursor-pointer border-l-4 border-transparent hover:border-[#305e73] hover:shadow-md"
-              onClick={() => {/* Navegar para detalhes do contato */}}
+              className="p-6 m-2 bg-gray-50/50 hover:bg-white hover:shadow-lg rounded-2xl transition-all duration-300 cursor-pointer group border border-gray-100 hover:border-gray-200"
             >
-              <div className="flex items-center gap-4">
-                {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                  {contato.foto_perfil ? (
-                    <img
-                      src={contato.foto_perfil}
-                      alt={contato.nome}
-                      className="w-14 h-14 rounded-full object-cover border-3 border-white shadow-lg group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#305e73] to-[#3a6d84] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      {contato.nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </div>
-                  )}
-                  
-                  {/* Status indicator */}
-                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 ${getStatusColor(contato.status)} rounded-full border-2 border-white shadow-sm`}></div>
-                  
-                  {/* Origem badge */}
-                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-sm border-2 border-gray-100 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                    {getOrigemIcon(contato.origem)}
-                  </div>
-                </div>
-
+              <div className="flex items-start justify-between">
                 {/* Informações principais */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-gray-900 truncate">
-                      {contato.nome}
-                    </h4>
-                    
-                    {contato.favorito && (
-                      <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
-                    )}
-                    
-                    {/* Kanban Badge */}
-                    {contato.kanban_info && (
-                      <span 
-                        className="inline-flex items-center px-3 py-1.5 text-xs text-white rounded-full font-semibold flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200"
-                        style={{ 
-                          background: `linear-gradient(135deg, ${contato.kanban_info.cor}, ${contato.kanban_info.cor}dd)`,
-                          boxShadow: `0 2px 8px ${contato.kanban_info.cor}40`
-                        }}
-                      >
-                        <Tag className="w-3 h-3 mr-1.5" />
-                        {contato.kanban_info.coluna_nome}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      <span>{contato.telefone}</span>
-                    </div>
-                    
-                    {contato.email && (
-                      <div className="flex items-center gap-1">
-                        <Mail className="w-4 h-4" />
-                        <span className="truncate max-w-[200px]">{contato.email}</span>
+                <div className="flex items-start gap-4 flex-1">
+                  {/* Avatar */}
+                  <div className="relative group-hover:scale-105 transition-transform duration-200">
+                    {contato.foto_perfil ? (
+                      <img
+                        src={contato.foto_perfil}
+                        alt={contato.nome}
+                        className="w-16 h-16 rounded-2xl object-cover shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#305e73] via-[#3a6d84] to-[#4a7d94] flex items-center justify-center shadow-lg">
+                        <span className="text-white font-bold text-xl">
+                          {contato.nome.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                     )}
                     
-                    {contato.cidade && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{contato.cidade}, {contato.estado}</span>
+                    {/* Status indicator */}
+                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-3 border-white shadow-sm
+                      ${contato.status === 'online' ? 'bg-green-500' : 
+                        contato.status === 'ausente' ? 'bg-yellow-500' : 'bg-gray-400'}
+                    `} />
+                  </div>
+
+                  {/* Detalhes do contato */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 truncate mb-1">
+                            {contato.nome}
+                            {contato.favorito && (
+                              <Star className="w-5 h-5 text-yellow-500 fill-current inline-block ml-2" />
+                            )}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-full font-semibold border border-green-200">
+                              WhatsApp
+                            </span>
+                            <div className={`w-2 h-2 rounded-full ${
+                              contato.status === 'online' ? 'bg-green-500' : 'bg-gray-300'
+                            }`} />
+                            <span className="text-xs text-gray-500">
+                              {contato.status === 'online' ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Última mensagem */}
-                  {contato.ultima_mensagem && (
-                    <p className="text-sm text-gray-500 truncate mb-2">
-                      💬 {contato.ultima_mensagem}
-                    </p>
-                  )}
-
-                  {/* Tags */}
-                  {contato.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {contato.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-3 py-1.5 bg-gradient-to-r from-[#305e73]/10 to-[#3a6d84]/10 text-[#305e73] rounded-full text-xs font-semibold border border-[#305e73]/20 group-hover:scale-105 transition-transform duration-200"
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleFavorito(contato.id)
+                          }}
+                          className={`p-2.5 rounded-xl transition-all hover:scale-110 ${
+                            contato.favorito 
+                              ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100' 
+                              : 'text-gray-400 bg-gray-50 hover:bg-yellow-50 hover:text-yellow-500'
+                          }`}
+                          title={contato.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                         >
-                          #{tag}
-                        </span>
-                      ))}
-                      {contato.tags.length > 3 && (
-                        <span className="px-3 py-1.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 rounded-full text-xs font-semibold border border-gray-300 group-hover:scale-105 transition-transform duration-200">
-                          +{contato.tags.length - 3}
-                        </span>
+                          <Star className={`w-5 h-5 ${contato.favorito ? 'fill-current' : ''}`} />
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedContact(contato)
+                            setIsActionModalOpen(true)
+                          }}
+                          className="p-2.5 text-gray-400 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all hover:scale-110"
+                          title="Ações do contato"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Phone className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-medium">Telefone</p>
+                          <p className="font-semibold text-gray-900">{contato.telefone}</p>
+                        </div>
+                      </div>
+                      {contato.email && (
+                        <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Mail className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-purple-600 font-medium">Email</p>
+                            <p className="font-semibold text-gray-900 truncate">{contato.email}</p>
+                          </div>
+                        </div>
+                      )}
+                      {contato.cidade && contato.estado && (
+                        <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                          <div className="p-2 bg-emerald-100 rounded-lg">
+                            <MapPin className="w-4 h-4 text-emerald-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-emerald-600 font-medium">Localização</p>
+                            <p className="font-semibold text-gray-900 truncate">{contato.cidade}, {contato.estado}</p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-
-                {/* Estatísticas e ações */}
-                <div className="flex items-center gap-6 flex-shrink-0">
-                  {/* Stats */}
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">
-                      {contato.total_mensagens}
-                    </div>
-                    <div className="text-xs text-gray-600">mensagens</div>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatTimestamp(contato.ultima_interacao)}
-                    </div>
-                    <div className="text-xs text-gray-600">última interação</div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <motion.button
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleToggleFavorito(contato.id)
-                      }}
-                      className={`p-2.5 rounded-xl transition-all duration-200 shadow-sm ${
-                        contato.favorito
-                          ? 'text-yellow-600 bg-yellow-100 hover:bg-yellow-200 border border-yellow-200'
-                          : 'text-gray-400 bg-gray-100 hover:bg-yellow-100 hover:text-yellow-600 border border-gray-200 hover:border-yellow-200'
-                      }`}
-                    >
-                      <Star className={`w-4 h-4 ${contato.favorito ? 'fill-current' : ''}`} />
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        // Abrir chat
-                      }}
-                      className="p-2.5 text-[#305e73] bg-[#305e73]/10 hover:bg-[#305e73]/20 rounded-xl transition-all duration-200 shadow-sm border border-[#305e73]/20 hover:border-[#305e73]/30"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </motion.button>
-
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setOpenMenuId(openMenuId === contato.id ? null : contato.id)
-                        }}
-                        className="p-2.5 text-gray-400 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 shadow-sm border border-gray-200 hover:border-gray-300"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </motion.button>
-
-                      {openMenuId === contato.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 z-10 backdrop-blur-sm"
-                        >
-                          <button className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 flex items-center gap-3 rounded-lg mx-2 transition-all duration-200">
-                            <Eye className="w-4 h-4 text-[#305e73]" />
-                            <span className="font-medium">Ver Perfil</span>
-                          </button>
-                          <button className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 flex items-center gap-3 rounded-lg mx-2 transition-all duration-200">
-                            <Edit className="w-4 h-4 text-blue-600" />
-                            <span className="font-medium">Editar</span>
-                          </button>
-                          <button className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 flex items-center gap-3 rounded-lg mx-2 transition-all duration-200">
-                            <MessageSquare className="w-4 h-4 text-green-600" />
-                            <span className="font-medium">Iniciar Conversa</span>
-                          </button>
-                          <hr className="my-3 mx-2 border-gray-200" />
-                          <button className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 flex items-center gap-3 rounded-lg mx-2 transition-all duration-200">
-                            <Trash2 className="w-4 h-4" />
-                            <span className="font-medium">Remover</span>
-                          </button>
-                        </motion.div>
-                      )}
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-gray-100 rounded-lg">
+                          <Calendar className="w-3 h-3 text-gray-500" />
+                        </div>
+                        <div className="text-sm text-gray-600 font-medium">
+                          {contato.ultima_interacao 
+                            ? formatTimestamp(contato.ultima_interacao)
+                            : 'Novo contato'
+                          }
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-xs text-gray-500">
+                          {contato.total_mensagens} msg{contato.total_mensagens !== 1 ? 's' : ''}
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          contato.favorito ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {contato.favorito ? 'Favorito' : 'Normal'}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -526,6 +435,56 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
           ))}
         </AnimatePresence>
       </div>
-    </motion.div>
+
+      {/* Contact Action Modal */}
+      {selectedContact && (
+        <ContactActionModal
+          isOpen={isActionModalOpen}
+          onClose={() => {
+            setIsActionModalOpen(false)
+            setSelectedContact(null)
+          }}
+          contact={{
+            id: selectedContact.id,
+            nome: selectedContact.nome,
+            telefone: selectedContact.telefone,
+            email: selectedContact.email,
+            empresa: selectedContact.empresa,
+            cpf: selectedContact.cpf,
+            cnpj: selectedContact.cnpj,
+            cep: selectedContact.cep,
+            rua: selectedContact.rua,
+            numero: selectedContact.numero,
+            bairro: selectedContact.bairro,
+            cidade: selectedContact.cidade,
+            estado: selectedContact.estado,
+            pais: selectedContact.pais,
+            fotoPerfil: selectedContact.foto_perfil
+          }}
+          onSuccess={() => {
+            loadContatos() // Recarregar lista após ação
+          }}
+          onEdit={(contactData) => {
+            setEditingContact(contactData)
+            setIsEditModalOpen(true)
+          }}
+        />
+      )}
+
+      {/* Edit Contact Modal */}
+      <CreateContactModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setEditingContact(null)
+        }}
+        onSuccess={() => {
+          loadContatos() // Recarregar lista após edição
+          setIsEditModalOpen(false)
+          setEditingContact(null)
+        }}
+        editContact={editingContact}
+      />
+    </div>
   )
 }

@@ -32,10 +32,19 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
   const [selectedLanguage, setSelectedLanguage] = useState(languages[0])
 
   const handleLanguageSelect = (language: Language) => {
+    console.log('🔥 CLIQUE NO IDIOMA:', language.code, language.name)
     setSelectedLanguage(language)
     setIsOpen(false)
-    // Aqui você implementaria a lógica real de mudança de idioma
-    console.log('Idioma selecionado:', language.code)
+    
+    // Disparar evento global para tradução
+    const event = new CustomEvent('languageChanged', { 
+      detail: { languageCode: language.code } 
+    })
+    
+    console.log('📡 Disparando evento languageChanged:', event.detail)
+    window.dispatchEvent(event)
+    
+    console.log('🌍 Idioma selecionado para tradução:', language.code)
   }
 
   return (

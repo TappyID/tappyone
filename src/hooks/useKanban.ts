@@ -41,23 +41,36 @@ export function useKanban() {
   const [quadros, setQuadros] = useState<Quadro[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isClient, setIsClient] = useState(false)
+
+  // Aguardar hidratação do cliente
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // Função para buscar token do localStorage
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token')
+      const token = localStorage.getItem('token')
+      console.log('🔑 Token encontrado:', token ? 'presente' : 'ausente')
+      return token
     }
+    console.log('🔑 Window undefined - SSR')
     return null
   }
 
   // Função para fazer requisições autenticadas
   const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+    if (!isClient) {
+      throw new Error('Cliente ainda não hidratado')
+    }
+    
     const token = getAuthToken()
     if (!token) {
       throw new Error('Token de autenticação não encontrado')
     }
 
-    const response = await fetch(`http://localhost:8081/api${url}`, {
+    const response = await fetch(`/api${url}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -84,10 +97,18 @@ export function useKanban() {
       
       // Transformar dados do backend para o formato do frontend
       const transformedQuadros = data.map((quadro: any, index: number) => {
-        // Calcular estatísticas baseadas nos dados reais
-        const totalColunas = quadro.colunas?.length || Math.floor(Math.random() * 4) + 3
-        const totalCards = quadro.colunas?.reduce((acc: number, col: any) => acc + (col.cards?.length || 0), 0) || Math.floor(Math.random() * 15) + 5
-        const membros = 1 + Math.floor(Math.random() * 5) // Usuário + colaboradores
+        // Debug: Verificar dados brutos do backend
+        console.log('🔍 Dados do quadro:', quadro.nome, {
+          colunas: quadro.colunas?.length || 0,
+          colunasData: quadro.colunas,
+          totalCards: quadro.colunas?.reduce((acc: number, col: any) => acc + (col.cards?.length || 0), 0) || 0,
+          cardsDetalhados: quadro.colunas?.map((col: any) => ({ nome: col.nome, cards: col.cards?.length || 0 }))
+        })
+        
+        // Calcular estatísticas baseadas APENAS nos dados reais
+        const totalColunas = quadro.colunas?.length || 0
+        const totalCards = quadro.colunas?.reduce((acc: number, col: any) => acc + (col.cards?.length || 0), 0) || 0
+        const membros = 1 // Usuário principal (TODO: implementar sistema de membros)
         
         // Calcular progresso baseado em cards concluídos
         const cardsCompletos = quadro.colunas?.reduce((acc: number, col: any) => {
@@ -97,7 +118,7 @@ export function useKanban() {
           return acc
         }, 0) || 0
         
-        const progresso = totalCards > 0 ? Math.round((cardsCompletos / totalCards) * 100) : Math.floor(Math.random() * 80) + 10
+        const progresso = totalCards > 0 ? Math.round((cardsCompletos / totalCards) * 100) : 0
         
         // Data de atualização formatada
         const ultimaAtualizacao = quadro.updatedAt 
@@ -117,10 +138,6 @@ export function useKanban() {
           progresso,
           status: quadro.ativo ? 'Ativo' : 'Inativo',
           favorito: false, // TODO: Implementar sistema de favoritos
-          // Adicionar métricas de performance
-          leads: Math.floor(Math.random() * 50) + 10,
-          conversoes: Math.floor(Math.random() * 20) + 5,
-          taxa: Math.floor(Math.random() * 30) + 15,
           // Cor com fallback
           cor: quadro.cor || ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][index % 6]
         }
@@ -240,10 +257,35 @@ export function useKanban() {
     }
   }
 
-  // Carregar quadros automaticamente
+  // Carregar quadros automaticamente quando cliente estiver hidratado
   useEffect(() => {
-    fetchQuadros()
-  }, [])
+    if (isClient) {
+      fetchQuadros()
+    }
+  }, [isClient])
+
+  // Criar nova coluna
+  const createColuna = async (colunaData: {
+    nome: string
+    cor: string
+    posicao: number
+    quadroId: string
+  }): Promise<any> => {
+    try {
+      console.log('📡 [HOOK] Enviando dados da coluna para API:', colunaData)
+      
+      const data = await makeAuthenticatedRequest('/kanban/colunas', {
+        method: 'POST',
+        body: JSON.stringify(colunaData),
+      })
+      
+      console.log('📡 [HOOK] Resposta da API para coluna:', data)
+      return data
+    } catch (err) {
+      console.error('❌ [HOOK] Erro ao criar coluna:', err)
+      throw err
+    }
+  }
 
   return {
     quadros,
@@ -251,6 +293,7 @@ export function useKanban() {
     error,
     fetchQuadros,
     createQuadro,
+    createColuna,
     updateQuadro,
     deleteQuadro,
     getQuadro,

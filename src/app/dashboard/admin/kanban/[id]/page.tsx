@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import { 
   ArrowLeft,
@@ -27,28 +27,33 @@ import {
   CreditCard,
   Columns,
   Filter,
-  Inbox,
   Archive,
   Layers,
   Zap,
   Video,
   Monitor,
-  DollarSign,
+  Inbox,
+  CalendarDays,
   FileSignature,
-  Hash
+  DollarSign,
+  StickyNote,
+  UserCheck
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanban } from '@/hooks/useKanban'
 import { useWhatsAppData, WhatsAppChat } from '@/hooks/useWhatsAppData'
-import AgendamentoModal from '@/app/dashboard/admin/atendimentos/components/modals/AgendamentoModal'
-import OrcamentoModal from '@/app/dashboard/admin/atendimentos/components/modals/OrcamentoModal'
-import AssinaturaModal from '@/app/dashboard/admin/atendimentos/components/modals/AssinaturaModal'
-import VideoChamadaModal from '@/app/dashboard/admin/atendimentos/components/modals/VideoChamadaModal'
-import LigacaoModal from '@/app/dashboard/admin/atendimentos/components/modals/LigacaoModal'
-import CompartilharTelaModal from '@/app/dashboard/admin/atendimentos/components/modals/CompartilharTelaModal'
+import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
+import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
+import AgendamentoModal from '../../atendimentos/components/modals/AgendamentoModal'
+import CriarOrcamentoModal from '../../orcamentos/components/CriarOrcamentoModal'
 import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
+import { fileLogger } from '@/utils/fileLogger'
 import CriarCardModal from '../components/CriarCardModal'
+import AssinaturaModal from '../../atendimentos/components/modals/AssinaturaModal'
+import VideoChamadaModal from '../../atendimentos/components/modals/VideoChamadaModal'
+import LigacaoModal from '../../atendimentos/components/modals/LigacaoModal'
+import CompartilharTelaModal from '../../atendimentos/components/modals/CompartilharTelaModal'
 import ColorPickerModal from '../components/ColorPickerModal'
 import {
   DndContext,
@@ -75,7 +80,16 @@ import { CSS } from '@dnd-kit/utilities'
 // Componente de Área Droppable Ultra Sofisticado com Modal de Cores
 function DroppableArea({ 
   coluna, 
-  theme, 
+  theme,
+  notesCount,
+  orcamentosCount,
+  agendamentosCount,
+  assinaturasCount,
+  contactStatus,
+  orcamentosData,
+  agendamentosData,
+  assinaturasData,
+  anotacoesData,
   onDoubleClick, 
   onDelete, 
   editingColumnId, 
@@ -87,12 +101,22 @@ function DroppableArea({
   onOpenAgendamento,
   onOpenOrcamento,
   onOpenAssinatura,
+  onOpenAnotacoes,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela
 }: { 
   coluna: any, 
   theme: string,
+  notesCount: Record<string, number>,
+  orcamentosCount: Record<string, number>,
+  agendamentosCount: Record<string, number>,
+  assinaturasCount: Record<string, number>,
+  contactStatus: Record<string, 'synced' | 'error'>,
+  orcamentosData: Record<string, any[]>,
+  agendamentosData: Record<string, any[]>,
+  assinaturasData: Record<string, any[]>,
+  anotacoesData: Record<string, any[]>,
   onDoubleClick: (coluna: any) => void,
   onDelete: (colunaId: string) => void,
   editingColumnId: string | null,
@@ -101,9 +125,10 @@ function DroppableArea({
   onEditingNameChange: (name: string) => void,
   onOpenColorModal: (coluna: any) => void,
   handleAddCard: (colunaId: string) => void,
-  onOpenAgendamento: () => void,
-  onOpenOrcamento: () => void,
-  onOpenAssinatura: () => void,
+  onOpenAgendamento: (card: any) => void,
+  onOpenOrcamento: (card: any) => void,
+  onOpenAssinatura: (card: any) => void,
+  onOpenAnotacoes: (card: any) => void,
   onOpenVideoChamada: () => void,
   onOpenLigacao: () => void,
   onOpenCompartilharTela: () => void
@@ -316,39 +341,177 @@ function DroppableArea({
           </div>
         </div>
         
-        {/* Barra de Progresso Sutil */}
-        <div className={`h-1 rounded-full overflow-hidden ${
-          theme === 'dark' ? 'bg-slate-700/30' : 'bg-gray-200/40'
-        }`}>
+        {/* Barra de Progresso Enhanced */}
+        <div className={`relative h-2 rounded-full overflow-hidden ${
+          theme === 'dark' ? 'bg-slate-800/50' : 'bg-gray-100/60'
+        } backdrop-blur-sm`}>
+          {/* Background Pattern */}
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `repeating-linear-gradient(45deg, ${coluna.cor}20 0, ${coluna.cor}20 2px, transparent 2px, transparent 8px)`
+            }}
+          />
+          
+          {/* Main Progress Bar */}
           <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: coluna.cor }}
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min((coluna.cards?.length || 0) * 10, 100)}%` }}
-            transition={{ duration: 1, ease: 'easeOut' }}
+            className="h-full rounded-full relative overflow-hidden"
+            style={{
+              background: `linear-gradient(90deg, ${coluna.cor}E6, ${coluna.cor}, ${coluna.cor}CC)`
+            }}
+            initial={{ width: 0, x: '-100%' }}
+            animate={{ 
+              width: `${Math.min((coluna.cards?.length || 0) * 12, 100)}%`,
+              x: '0%'
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeOut",
+              delay: 0.3 
+            }}
+            whileHover={{
+              filter: 'brightness(1.2)',
+              boxShadow: `0 0 20px ${coluna.cor}60`
+            }}
+          >
+            {/* Shimmer Effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+              initial={{ x: '-100%' }}
+              animate={{ x: '200%' }}
+              transition={{
+                duration: 2,
+                ease: "easeInOut",
+                repeat: Infinity,
+                repeatDelay: 3
+              }}
+              style={{ width: '30%' }}
+            />
+            
+            {/* Pulse Effect */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle, ${coluna.cor}40 0%, transparent 70%)`
+              }}
+              animate={{
+                opacity: [0.5, 0.8, 0.5],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{
+                duration: 2,
+                ease: "easeInOut",
+                repeat: Infinity
+              }}
+            />
+          </motion.div>
+          
+          {/* Progress Indicator */}
+          <motion.div
+            className="absolute top-0 h-full w-1 rounded-full"
+            style={{
+              background: coluna.cor,
+              filter: `drop-shadow(0 0 4px ${coluna.cor})`
+            }}
+            initial={{ left: '0%' }}
+            animate={{ 
+              left: `${Math.min((coluna.cards?.length || 0) * 12, 100)}%`
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeOut",
+              delay: 0.6
+            }}
           />
         </div>
       </div>
 
       {/* Área de Cards */}
       <div className="p-4 flex-1">
+        {/* Resumo de Orçamentos da Coluna */}
+        {(() => {
+          const totalOrcamentos = coluna.cards.reduce((total: number, card: any) => {
+            const cardOrcamentos = orcamentosData?.[card.id] || []
+            return total + cardOrcamentos.length
+          }, 0)
+          
+          const totalValor = coluna.cards.reduce((total: number, card: any) => {
+            const cardOrcamentos = orcamentosData?.[card.id] || []
+            const cardTotal = cardOrcamentos.reduce((sum: number, orc: any) => {
+              const valor = parseFloat(orc.valorTotal) || 0
+              return sum + valor
+            }, 0)
+            return total + cardTotal
+          }, 0)
+
+          // Só renderizar se houver orçamentos
+          if (totalOrcamentos === 0) return null
+          return (
+            <motion.div
+              className="mb-4 px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
+              style={{
+                background: theme === 'dark' 
+                  ? `linear-gradient(135deg, ${coluna.cor}20 0%, ${coluna.cor}10 100%)`
+                  : `linear-gradient(135deg, ${coluna.cor}15 0%, ${coluna.cor}08 100%)`,
+                borderColor: `${coluna.cor}60`,
+                borderWidth: '2px'
+              }}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              whileHover={{ 
+                scale: 1.02,
+                borderColor: `${coluna.cor}80`
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-3.5 h-3.5" style={{ color: coluna.cor }} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    {totalOrcamentos} orçamento{totalOrcamentos !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="text-sm font-bold" style={{ color: coluna.cor }}>
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2
+                  }).format(totalValor)}
+                </div>
+              </div>
+            </motion.div>
+          )
+        })()}
+        
         <SortableContext
           items={coluna.cards?.map((card: any) => card.id) || []}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-3">
             {coluna.cards?.map((card: any) => (
-              <SortableCard 
-                key={card.id} 
-                card={card} 
-                theme={theme} 
+              <SortableCard
+                key={card.id}
+                card={card}
+                theme={theme}
                 columnColor={coluna.cor}
+                notesCount={notesCount[card.id] || 0}
+                orcamentosCount={orcamentosCount[card.id] || 0}
+                agendamentosCount={agendamentosCount[card.id] || 0}
+                assinaturasCount={assinaturasCount[card.id] || 0}
+                contactStatus={contactStatus[card.id] || 'error'}
                 onOpenAgendamento={onOpenAgendamento}
                 onOpenOrcamento={onOpenOrcamento}
                 onOpenAssinatura={onOpenAssinatura}
+                onOpenAnotacoes={onOpenAnotacoes}
                 onOpenVideoChamada={onOpenVideoChamada}
                 onOpenLigacao={onOpenLigacao}
                 onOpenCompartilharTela={onOpenCompartilharTela}
+                orcamentosData={orcamentosData}
+                agendamentosData={agendamentosData}
+                assinaturasData={assinaturasData}
+                anotacoesData={anotacoesData}
               />
             ))}
           </div>
@@ -386,28 +549,203 @@ function DroppableArea({
 
 
 
+interface SortableCardProps {
+  card: any;
+  theme: string;
+  columnColor: string;
+  notesCount: number;
+  orcamentosCount: number;
+  agendamentosCount: number;
+  assinaturasCount: number;
+  contactStatus: 'synced' | 'error';
+  onOpenAgendamento: (card: any) => void;
+  onOpenOrcamento: (card: any) => void;
+  onOpenAssinatura: (card: any) => void;
+  onOpenAnotacoes: (card: any) => void;
+  onOpenVideoChamada: () => void;
+  onOpenLigacao: () => void;
+  onOpenCompartilharTela: () => void;
+  orcamentosData: any;
+  agendamentosData: any;
+  assinaturasData: any;
+  anotacoesData: any;
+}
+
+// Componente Sortable para Orçamentos dentro dos cards
+function SortableOrcamentoItem({ orc, index, columnColor, theme }: {
+  orc: any;
+  index: number;
+  columnColor: string;
+  theme: string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `orc-${orc.id}`,
+    data: {
+      type: 'orcamento',
+      orc,
+    },
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    borderLeft: `3px solid ${columnColor}`,
+    background: theme === 'dark' 
+      ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
+      : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
+  }
+
+  return (
+    <motion.div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={style}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className={`p-2 rounded-lg cursor-grab active:cursor-grabbing ${
+        theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
+      } ${isDragging ? 'rotate-2 scale-95' : 'hover:scale-[1.02]'}`}
+    >
+      <div className="flex justify-between items-start mb-1">
+        <h4 className={`font-medium text-xs ${
+          theme === 'dark' ? 'text-white' : 'text-gray-800'
+        }`}>
+          {orc.titulo}
+        </h4>
+        <span className="text-xs font-bold" style={{ color: columnColor }}>
+          R$ {parseFloat(orc.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        </span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+        }`}>
+          {orc.status}
+        </span>
+        {orc.dataVencimento && (
+          <span className="text-xs opacity-60">
+            {new Date(orc.dataVencimento).toLocaleDateString('pt-BR')}
+          </span>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// Componente Sortable para Agendamentos dentro dos cards
+function SortableAgendamentoItem({ agend, index, columnColor, theme }: {
+  agend: any;
+  index: number;
+  columnColor: string;
+  theme: string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `agend-${agend.id}`,
+    data: {
+      type: 'agendamento',
+      agend,
+    },
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <motion.div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={style}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className={`p-2 rounded-lg cursor-grab active:cursor-grabbing ${
+        theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
+      } ${isDragging ? 'rotate-2 scale-95' : 'hover:scale-[1.02]'}`}
+      style={{
+        ...style,
+        borderLeft: `3px solid ${columnColor}`,
+        background: theme === 'dark' 
+          ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
+          : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
+      }}
+      whileHover={{ scale: 1.02 }}
+    >
+      <div className="flex justify-between items-center">
+        <h4 className={`font-medium text-xs ${
+          theme === 'dark' ? 'text-white' : 'text-gray-800'
+        }`}>
+          {agend.titulo}
+        </h4>
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+        }`}>
+          {agend.status || 'Agendado'}
+        </span>
+      </div>
+      <div className="flex justify-between items-center mt-1">
+        <span className="text-xs opacity-60">
+          {agend.dataHora ? new Date(agend.dataHora).toLocaleDateString('pt-BR') : 'Data não definida'}
+        </span>
+        <span className="text-xs opacity-60">
+          {agend.dataHora ? new Date(agend.dataHora).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }) : '--:--'}
+        </span>
+      </div>
+    </motion.div>
+  )
+}
+
 // Componente Card Sortable
 function SortableCard({ 
   card, 
   theme, 
-  columnColor, 
-  onOpenAgendamento,
+  columnColor,
+  notesCount,
+  orcamentosCount,
+  agendamentosCount,
+  assinaturasCount,
+  contactStatus,
+  onOpenAgendamento, 
   onOpenOrcamento,
   onOpenAssinatura,
+  onOpenAnotacoes,
   onOpenVideoChamada,
   onOpenLigacao,
-  onOpenCompartilharTela
-}: { 
-  card: any, 
-  theme: string, 
-  columnColor?: string,
-  onOpenAgendamento: () => void,
-  onOpenOrcamento: () => void,
-  onOpenAssinatura: () => void,
-  onOpenVideoChamada: () => void,
-  onOpenLigacao: () => void,
-  onOpenCompartilharTela: () => void
-}) {
+  onOpenCompartilharTela,
+  orcamentosData,
+  agendamentosData,
+  assinaturasData,
+  anotacoesData
+}: SortableCardProps) {
+  const [isHovered, setIsHovered] = useState(false)
+  const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  
+  // Debug do estado
+  console.log('Card render - expandedSection:', expandedSection, 'cardId:', card.id)
+  
   const {
     attributes,
     listeners,
@@ -430,39 +768,31 @@ function SortableCard({
   }
 
   return (
-    <motion.div
+    <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`p-4 rounded-xl cursor-grab active:cursor-grabbing transition-all duration-300 ${
+      className={`p-4 rounded-xl transition-all duration-300 relative overflow-hidden cursor-grab active:cursor-grabbing ${
         theme === 'dark'
-          ? 'bg-gradient-to-br from-slate-800/30 via-slate-800/20 to-slate-800/10 border-l-4 text-white backdrop-blur-xl'
-          : 'bg-gradient-to-br from-white/60 via-white/40 to-white/20 text-gray-900 backdrop-blur-xl shadow-xl border-l-4'
+          ? 'bg-gradient-to-br from-slate-800/30 via-slate-800/20 to-slate-800/10 text-white backdrop-blur-xl'
+          : 'bg-gradient-to-br from-white/60 via-white/40 to-white/20 text-gray-900 backdrop-blur-xl shadow-xl'
       } ${
         isDragging ? 'opacity-50 transform rotate-2 scale-95' : 'hover:shadow-2xl hover:scale-[1.02]'
       }`}
       style={{
         ...style,
-        userSelect: 'none',
-        touchAction: 'none',
+        borderLeft: `6px solid ${columnColor || '#475569'}`,
         ...(theme === 'dark' 
           ? {
-              borderLeftColor: columnColor || '#475569',
               boxShadow: `0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)`
             }
           : {
-              borderLeftColor: columnColor || '#d1d5db',
               boxShadow: `0 8px 32px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)`
             }
         )
       }}
-      whileHover={{ 
-        scale: 1.02,
-        boxShadow: theme === 'dark'
-          ? `0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)`
-          : `0 12px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.9)`
-      }}
-      whileTap={{ scale: 0.98 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Card inteiro é draggable - sem indicador visual */}
       <div className="flex-1">
@@ -533,8 +863,376 @@ onError={(e) => {
           ))}
         </div>
 
+        {/* Badges que aparecem apenas no hover */}
+        <motion.div 
+          className="space-y-2"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ 
+            opacity: isHovered ? 1 : 0,
+            height: isHovered ? 'auto' : 0
+          }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          style={{ overflow: 'hidden' }}
+        >
+          {/* Badge Orçamentos - Clicável */}
+          {orcamentosCount > 0 && (
+            <div
+              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
+              style={{
+                background: theme === 'dark' 
+                  ? `${columnColor}15`
+                  : `${columnColor}10`,
+                border: `1px solid ${columnColor}30`
+              }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Clicou orçamentos, expandedSection atual:', expandedSection)
+                console.log('orcamentosData para card:', card.id, orcamentosData?.[card.id])
+                setExpandedSection(expandedSection === 'orcamentos' ? null : 'orcamentos')
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-3.5 h-3.5" style={{ color: columnColor }} />
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-800'
+                }`}>
+                  {orcamentosCount} Orçamento{orcamentosCount > 1 ? 's' : ''}
+                </span>
+              </div>
+              {orcamentosData && orcamentosData[card.id] && (
+                <div className="text-xs font-bold" style={{ color: columnColor }}>
+                  R$ {orcamentosData[card.id].reduce((sum: number, orc: any) => 
+                    sum + (parseFloat(orc.valorTotal) || 0), 0
+                  ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Badge Agendamentos - Clicável */}
+          {agendamentosCount > 0 && (
+            <div
+              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
+              style={{
+                background: theme === 'dark' 
+                  ? `${columnColor}15`
+                  : `${columnColor}10`,
+                border: `1px solid ${columnColor}30`
+              }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Clicou agendamentos, expandedSection atual:', expandedSection)
+                setExpandedSection(expandedSection === 'agendamentos' ? null : 'agendamentos')
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" style={{ color: columnColor }} />
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-800'
+                }`}>
+                  {agendamentosCount} Agendamento{agendamentosCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Badge Assinaturas - Clicável */}
+          {assinaturasCount > 0 && (
+            <div
+              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
+              style={{
+                background: theme === 'dark' 
+                  ? `${columnColor}15`
+                  : `${columnColor}10`,
+                border: `1px solid ${columnColor}30`
+              }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Clicou assinaturas, expandedSection atual:', expandedSection)
+                setExpandedSection(expandedSection === 'assinaturas' ? null : 'assinaturas')
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <FileSignature className="w-3.5 h-3.5" style={{ color: columnColor }} />
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-800'
+                }`}>
+                  {assinaturasCount} Assinatura{assinaturasCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Badge Anotações - Clicável */}
+          {notesCount > 0 && (
+            <div
+              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
+              style={{
+                background: theme === 'dark' 
+                  ? `${columnColor}15`
+                  : `${columnColor}10`,
+                border: `1px solid ${columnColor}30`
+              }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Clicou anotações, expandedSection atual:', expandedSection)
+                setExpandedSection(expandedSection === 'anotacoes' ? null : 'anotacoes')
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <StickyNote className="w-3.5 h-3.5" style={{ color: columnColor }} />
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-800'
+                }`}>
+                  {notesCount} Anotaç{notesCount > 1 ? 'ões' : 'ão'}
+                </span>
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Seções Expandidas - Aparecem quando clicadas */}
+        <AnimatePresence>
+          {/* Detalhes Orçamentos Expandidos */}
+          {expandedSection === 'orcamentos' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-3 space-y-2"
+              style={{ overflow: 'hidden' }}
+            >
+              {orcamentosData && orcamentosData[card.id] && Array.isArray(orcamentosData[card.id]) ? (
+                <SortableContext
+                  items={orcamentosData[card.id].map((orc: any) => `orc-${orc.id}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {orcamentosData[card.id].map((orc: any, index: number) => (
+                    <SortableOrcamentoItem
+                      key={orc.id}
+                      orc={orc}
+                      index={index}
+                      columnColor={columnColor}
+                      theme={theme}
+                    />
+                  ))}
+                </SortableContext>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`p-4 rounded-lg text-center ${
+                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                  }`}
+                >
+                  <DollarSign className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Carregando orçamentos...</p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Detalhes Agendamentos Expandidos */}
+          {expandedSection === 'agendamentos' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-3 space-y-2"
+              style={{ overflow: 'hidden' }}
+            >
+              {agendamentosData && agendamentosData[card.id] && Array.isArray(agendamentosData[card.id]) ? (
+                agendamentosData[card.id].map((agend: any, index: number) => (
+                  <motion.div
+                    key={agend.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`p-2 rounded-lg ${
+                      theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
+                    }`}
+                    style={{
+                      borderLeft: `3px solid ${columnColor}`,
+                      background: theme === 'dark' 
+                        ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
+                        : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <h4 className={`font-medium text-xs ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {agend.titulo}
+                      </h4>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        {agend.status || 'Agendado'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs opacity-60">
+                        {agend.dataHora ? new Date(agend.dataHora).toLocaleDateString('pt-BR') : 'Data não definida'}
+                      </span>
+                      <span className="text-xs opacity-60">
+                        {agend.dataHora ? new Date(agend.dataHora).toLocaleTimeString('pt-BR', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        }) : '--:--'}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`p-4 rounded-lg text-center ${
+                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                  }`}
+                >
+                  <Calendar className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Carregando agendamentos...</p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Detalhes Assinaturas Expandidos */}
+          {expandedSection === 'assinaturas' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-3 space-y-2"
+              style={{ overflow: 'hidden' }}
+            >
+              {assinaturasData && assinaturasData[card.id] && Array.isArray(assinaturasData[card.id]) ? (
+                assinaturasData[card.id].map((ass: any, index: number) => (
+                  <motion.div
+                    key={ass.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`p-2 rounded-lg ${
+                      theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
+                    }`}
+                    style={{
+                      borderLeft: `3px solid ${columnColor}`,
+                      background: theme === 'dark' 
+                        ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
+                        : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <h4 className={`font-medium text-xs ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {ass.nome || ass.titulo || 'Assinatura'}
+                      </h4>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        {ass.status || 'Ativa'}
+                      </span>
+                    </div>
+                    {ass.valor && (
+                      <div className="mt-1">
+                        <span className="text-xs font-bold" style={{ color: columnColor }}>
+                          R$ {parseFloat(ass.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`p-3 rounded-lg text-center ${
+                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                  }`}
+                >
+                  <DollarSign className="w-5 h-5 mx-auto mb-1 opacity-50" />
+                  <p className="text-xs">Carregando assinaturas...</p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Detalhes Anotações Expandidos */}
+          {expandedSection === 'anotacoes' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-3 space-y-2"
+              style={{ overflow: 'hidden' }}
+            >
+              {console.log('DEBUG Anotações - cardId:', card.id, 'anotacoesData:', anotacoesData, 'dados do card:', anotacoesData?.[card.id])}
+              {anotacoesData && anotacoesData[card.id] && Array.isArray(anotacoesData[card.id]) ? (
+                anotacoesData[card.id].map((anotacao: any, index: number) => (
+                  <motion.div
+                    key={anotacao.id}
+                    onClick={() => onOpenAnotacoes(card)}
+                    className={`p-2 rounded-lg cursor-pointer hover:scale-[1.02] transition-transform ${
+                      theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
+                    }`}
+                    style={{
+                      borderLeft: `3px solid ${columnColor}`,
+                      background: theme === 'dark' 
+                        ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
+                        : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className={`font-medium text-xs ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {anotacao.titulo || 'Anotação'}
+                      </h4>
+                      <span className="text-xs opacity-60">
+                        {anotacao.createdAt ? new Date(anotacao.createdAt).toLocaleDateString('pt-BR') : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs opacity-80">
+                      {anotacao.conteudo || anotacao.texto || 'Sem conteúdo'}
+                    </p>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`p-4 rounded-lg text-center ${
+                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                  }`}
+                >
+                  <StickyNote className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Nenhuma anotação encontrada</p>
+                  <button
+                    onClick={() => onOpenAnotacoes(card)}
+                    className="mt-2 text-xs underline hover:opacity-80"
+                    style={{ color: columnColor }}
+                  >
+                    Adicionar primeira anotação
+                  </button>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Rodapé do Card com Ações do ChatArea */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 mt-3">
           {/* Ações do ChatArea - Alinhadas à Esquerda */}
           <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs transition-all duration-300 ${
             theme === 'dark' 
@@ -591,8 +1289,8 @@ onError={(e) => {
             
             {/* Agendar */}
             <motion.button 
-              onClick={onOpenAgendamento}
-              className={`p-1.5 rounded-lg transition-all duration-200 ${
+              onClick={() => onOpenAgendamento(card)}
+              className={`relative p-1.5 rounded-lg transition-all duration-200 ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
                   : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
@@ -602,12 +1300,18 @@ onError={(e) => {
               title="Agendar"
             >
               <Calendar className="w-3 h-3" />
+              {/* Badge com número de agendamentos */}
+              {agendamentosCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                  {agendamentosCount > 99 ? '99+' : agendamentosCount}
+                </span>
+              )}
             </motion.button>
             
             {/* Orçamento */}
             <motion.button 
-              onClick={onOpenOrcamento}
-              className={`p-1.5 rounded-lg transition-all duration-200 ${
+              onClick={() => onOpenOrcamento(card)}
+              className={`relative p-1.5 rounded-lg transition-all duration-200 ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
                   : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
@@ -617,12 +1321,18 @@ onError={(e) => {
               title="Orçamento"
             >
               <DollarSign className="w-3 h-3" />
+              {/* Badge com número de orçamentos */}
+              {orcamentosCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                  {orcamentosCount > 99 ? '99+' : orcamentosCount}
+                </span>
+              )}
             </motion.button>
             
             {/* Assinatura */}
             <motion.button 
-              onClick={onOpenAssinatura}
-              className={`p-1.5 rounded-lg transition-all duration-200 ${
+              onClick={() => onOpenAssinatura(card)}
+              className={`relative p-1.5 rounded-lg transition-all duration-200 ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
                   : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
@@ -632,6 +1342,55 @@ onError={(e) => {
               title="Assinatura"
             >
               <FileSignature className="w-3 h-3" />
+              {/* Badge com número de assinaturas */}
+              {assinaturasCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                  {assinaturasCount > 99 ? '99+' : assinaturasCount}
+                </span>
+              )}
+            </motion.button>
+            
+            {/* Contato */}
+            <motion.button 
+              onClick={() => {
+                // Navegar para página de contatos com filtro
+                window.open(`/dashboard/admin/contatos?search=${encodeURIComponent(card.id)}`, '_blank')
+              }}
+              className={`relative p-1.5 rounded-lg transition-all duration-200 ${
+                theme === 'dark' 
+                  ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
+                  : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
+              }`}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title="Contato"
+            >
+              <UserCheck className="w-3 h-3" />
+              {/* Badge de status do contato */}
+              <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ${
+                contactStatus === 'synced' ? 'bg-green-500' : 'bg-red-500'
+              }`}></div>
+            </motion.button>
+            
+            {/* Anotações */}
+            <motion.button 
+              onClick={() => onOpenAnotacoes(card)}
+              className={`relative p-1.5 rounded-lg transition-all duration-200 ${
+                theme === 'dark' 
+                  ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
+                  : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
+              }`}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title="Anotações"
+            >
+              <StickyNote className="w-3 h-3" />
+              {/* Badge com número de anotações */}
+              {notesCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                  {notesCount > 99 ? '99+' : notesCount}
+                </span>
+              )}
             </motion.button>
           </div>
           
@@ -665,7 +1424,7 @@ onError={(e) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -777,19 +1536,21 @@ export default function QuadroPage() {
   const router = useRouter()
   const { getQuadro } = useKanban()
   const id = params.id as string
-  
   // Hook customizado para Kanban - sem polling automático
   const [chats, setChats] = useState<WhatsAppChat[]>([])
   const [whatsappLoading, setWhatsappLoading] = useState(false)
   
-  // Estados para modal de cores
+  // Estados para cores
   const [showColorModal, setShowColorModal] = useState(false)
-  const [selectedColumnForColor, setSelectedColumnForColor] = useState<any>(null)
+  const [selectedColumn, setSelectedColumn] = useState<any>(null)
+
+
   
-  // Estados para modais do ChatArea
+  // Estados para modais
   const [showAgendamentoModal, setShowAgendamentoModal] = useState(false)
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false)
   const [showAssinaturaModal, setShowAssinaturaModal] = useState(false)
+  const [showAnotacoesModal, setShowAnotacoesModal] = useState(false)
   const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
   const [showLigacaoModal, setShowLigacaoModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
@@ -803,9 +1564,29 @@ export default function QuadroPage() {
   // Função para carregar conversas manualmente
   const loadChatsManual = async () => {
     setWhatsappLoading(true)
+    
+    await fileLogger.log({
+      component: 'Kanban',
+      action: 'loadChatsManual_started',
+      data: { timestamp: new Date().toISOString() },
+      userId: user?.id
+    })
+    
     try {
       const token = localStorage.getItem('token')
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadChatsManual_config',
+        data: { 
+          hasToken: !!token, 
+          backendUrl, 
+          userId: user?.id,
+          tokenLength: token?.length || 0
+        },
+        userId: user?.id
+      })
       
       const response = await fetch(`${backendUrl}/api/whatsapp/chats`, {
         method: 'GET',
@@ -815,22 +1596,42 @@ export default function QuadroPage() {
         }
       })
 
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadChatsManual_response',
+        data: { 
+          status: response.status, 
+          ok: response.ok,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        },
+        userId: user?.id
+      })
+
       if (response.ok) {
         const data = await response.json()
-        console.log('📱 Conversas carregadas para Kanban:', data.length)
+        
+        await fileLogger.log({
+          component: 'Kanban',
+          action: 'loadChatsManual_data_received',
+          data: { 
+            type: typeof data, 
+            isArray: Array.isArray(data), 
+            length: data?.length || 0,
+            sample: data?.slice(0, 3) || [],
+            rawData: data
+          },
+          userId: user?.id
+        })
         
         // Aplicar a mesma lógica do useWhatsAppData para buscar fotos de perfil
         const transformedChats = await Promise.all(data.map(async (chat: any) => {
           let profilePictureUrl = null
           
-          // Debug: verificar estrutura do chat
-          console.log('🔍 Processing chat:', { chat, chatId: chat.id, chatIdType: typeof chat.id })
-          
           // Extrair o ID correto do chat (pode estar em chat.id.id ou chat.id._serialized)
           let chatId = chat.id
           if (typeof chat.id === 'object') {
             chatId = chat.id.id || chat.id._serialized || chat.id.user || JSON.stringify(chat.id)
-            console.log('🔍 Extracted chatId from object:', chatId)
           }
           
           // Buscar foto de perfil usando o endpoint correto da WAHA API
@@ -839,7 +1640,6 @@ export default function QuadroPage() {
             const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
             const sessionName = `user_${user?.id}` // Usando user do contexto de auth
             
-            console.log('🖼️ Fetching picture for chatId:', chatId)
             const pictureResponse = await fetch(`${wahaApiUrl}/${sessionName}/chats/${chatId}/picture`, {
               headers: {
                 'X-Api-Key': wahaApiKey,
@@ -850,12 +1650,9 @@ export default function QuadroPage() {
             if (pictureResponse.ok) {
               const pictureData = await pictureResponse.json()
               profilePictureUrl = pictureData.url
-              console.log(`✅ Profile picture loaded for ${chatId}:`, pictureData.url)
-            } else {
-              console.log(`⚠️ No profile picture for ${chatId}:`, pictureResponse.status)
             }
           } catch (pictureError) {
-            console.log(`❌ Error loading picture for ${chatId}:`, pictureError)
+            // Silenciar erros de foto
           }
           
           return {
@@ -864,24 +1661,72 @@ export default function QuadroPage() {
           }
         }))
         
+        await fileLogger.log({
+          component: 'Kanban',
+          action: 'loadChatsManual_chats_transformed',
+          data: { 
+            count: transformedChats?.length || 0,
+            firstChat: transformedChats?.[0] || null,
+            allChatNames: transformedChats?.map(c => c.name) || []
+          },
+          userId: user?.id
+        })
+        
         setChats(transformedChats || [])
         
-        // Feedback visual de sucesso
-        if (data && data.length > 0) {
-          console.log(`✅ ${data.length} conversas sincronizadas com sucesso!`)
-        }
+        await fileLogger.log({
+          component: 'Kanban',
+          action: 'loadChatsManual_success',
+          data: { 
+            finalChatCount: transformedChats?.length || 0,
+            success: true
+          },
+          userId: user?.id
+        })
+        
       } else {
-        console.error('❌ Erro na resposta da API:', response.status)
+        const errorText = await response.text()
+        
+        await fileLogger.log({
+          component: 'Kanban',
+          action: 'loadChatsManual_api_error',
+          data: { 
+            status: response.status, 
+            statusText: response.statusText,
+            error: errorText,
+            url: `${backendUrl}/api/whatsapp/chats`
+          },
+          userId: user?.id
+        })
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar conversas:', error)
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadChatsManual_exception',
+        data: { 
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : null
+        },
+        userId: user?.id
+      })
     } finally {
       setWhatsappLoading(false)
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadChatsManual_finished',
+        data: { 
+          finalState: {
+            chatsLength: chats.length,
+            whatsappLoading: false
+          }
+        },
+        userId: user?.id
+      })
     }
   }
   
   const refreshData = () => {
-    console.log('🔄 Atualizando dados do WhatsApp...')
     loadChatsManual()
   }
   
@@ -892,55 +1737,429 @@ export default function QuadroPage() {
   }
   
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
-    console.log(`🔔 ${type.toUpperCase()}: ${message}`)
     // TODO: Implementar toast notifications
   }
   
   // Handlers dos modais do ChatArea
-  const handleAgendamentoSave = (data: any) => {
-    console.log('📅 Agendamento salvo:', data)
-    setShowAgendamentoModal(false)
+  const handleAgendamentoSave = async (agendamento: any) => {
+    try {
+      
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      // Extrair número de telefone do chat ID para usar como contato_id
+      const contatoId = selectedCard?.id || agendamento.contato.id
+      const numeroTelefone = contatoId.replace('@c.us', '')
+      
+      // Converter formato UniversalAgendamentoData para formato backend
+      const data = agendamento
+      const inicio_em = `${data.data}T${data.hora_inicio}:00-03:00`
+      const fim_em = `${data.data}T${data.hora_fim}:00-03:00`
+      const backendData = {
+        titulo: data.titulo,
+        descricao: data.descricao,
+        inicio_em,
+        fim_em,
+        link_meeting: data.link_video,
+        contato_id: numeroTelefone,  // Enviar só o número, sem @c.us
+        contato: {
+          id: agendamento.contato.id,
+          nome: agendamento.contato.nome,
+          telefone: agendamento.contato.telefone,
+          email: agendamento.contato.email,
+          empresa: agendamento.contato.empresa,
+          cpf: agendamento.contato.cpf,
+          cnpj: agendamento.contato.cnpj,
+          cep: agendamento.contato.cep,
+          rua: agendamento.contato.rua,
+          numero: agendamento.contato.numero,
+          bairro: agendamento.contato.bairro,
+          cidade: agendamento.contato.cidade,
+          estado: agendamento.contato.estado,
+          pais: agendamento.contato.pais
+        }
+      }
+
+      const response = await fetch('/api/agendamentos', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(backendData)
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setShowAgendamentoModal(false)
+        
+        // Refrescar contagem de agendamentos após salvar
+        if (selectedCard?.id) {
+          setTimeout(async () => {
+            const count = await fetchAgendamentosCount(selectedCard.id)
+            setAgendamentosCount(prev => ({
+              ...prev,
+              [selectedCard.id]: count
+            }))
+          }, 500)
+        }
+      } else {
+        console.error('❌ Erro ao criar agendamento:', response.statusText)
+        alert('Erro ao criar agendamento. Tente novamente.')
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar agendamento:', error)
+      alert('Erro ao criar agendamento. Verifique sua conexão.')
+    }
   }
   
-  const handleOrcamentoSave = (data: any) => {
-    console.log('💰 Orçamento salvo:', data)
+  const handleOrcamentoSave = async (data: any) => {
     setShowOrcamentoModal(false)
+    
+    // Refrescar contagem de orçamentos após salvar
+    if (selectedCard?.id) {
+      setTimeout(async () => {
+        const count = await fetchOrcamentosCount(selectedCard.id)
+        setOrcamentosCount(prev => ({
+          ...prev,
+          [selectedCard.id]: count
+        }))
+      }, 500)
+    }
   }
   
-  const handleAssinaturaSave = (data: any) => {
-    console.log('📝 Assinatura salva:', data)
+  const handleAssinaturaSave = async (data: any) => {
     setShowAssinaturaModal(false)
+    
+    // Atualizar contagens após salvar
+    if (selectedCard?.id) {
+      setTimeout(async () => {
+        const count = await fetchAssinaturasCount(selectedCard.id)
+        setAssinaturasCount(prev => ({
+          ...prev,
+          [selectedCard.id]: count
+        }))
+      }, 500)
+    }
   }
   
   const handleVideoChamadaStart = (data: any) => {
-    console.log('📹 Vídeo chamada iniciada:', data)
     setShowVideoChamadaModal(false)
   }
   
   const handleLigacaoStart = (data: any) => {
-    console.log('📞 Ligação iniciada:', data)
     setShowLigacaoModal(false)
   }
   
   const handleCompartilharTelaStart = (data: any) => {
-    console.log('🖥️ Compartilhamento de tela iniciado:', data)
     setShowCompartilharTelaModal(false)
   }
   
-  // Função para obter dados do contato (mock)
+  // Função para obter dados do contato real
   const getContactData = () => {
+    if (!selectedCard?.id) {
+      return {
+        id: `temp-${Date.now()}`,
+        nome: 'Contato não encontrado',
+        telefone: '',
+        email: '',
+        empresa: '',
+        avatar: ''
+      }
+    }
+
+    // Buscar contato real pelo chatId (JID)
+    const contato = chats.find(c => c.id === selectedCard.id)
+    
+    if (contato) {
+      return {
+        id: contato.id || `temp-${Date.now()}`,
+        nome: contato.name || 'Contato sem nome',
+        telefone: contato.id || '',
+        email: '',
+        empresa: '',
+        avatar: contato.profilePictureUrl || ''
+      }
+    }
+
     return {
-      nome: 'Contato Kanban',
-      telefone: '+55 11 99999-9999'
+      id: selectedCard.id || `temp-${Date.now()}`,
+      nome: 'Contato não encontrado',
+      telefone: selectedCard.id || '',
+      email: '',
+      empresa: '',
+      avatar: ''
     }
   }
-  
+
+
+  // Função para buscar dados completos de orçamentos
+  const fetchOrcamentosDetalhes = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.slice(0, 3) : [] // Limitamos aos 3 mais recentes
+      }
+      return []
+    } catch (error) {
+      console.error('Erro ao buscar orçamentos:', error)
+      return []
+    }
+  }
+
+  // Função para buscar dados completos de agendamentos
+  const fetchAgendamentosDetalhes = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.slice(0, 3) : [] // Limitamos aos 3 mais recentes
+      }
+      return []
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error)
+      return []
+    }
+  }
+
+  // Função para buscar dados completos de assinaturas
+  const fetchAssinaturasDetalhes = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.slice(0, 3) : [] // Limitamos às 3 mais recentes
+      }
+      return []
+    } catch (error) {
+      console.error('Erro ao buscar assinaturas:', error)
+      return []
+    }
+  }
+
+  // Função para buscar contagem de orçamentos
+  const fetchOrcamentosCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return data.length || 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contagem de orçamentos:', error)
+    }
+    return 0
+  }
+
+  // Função para buscar contagem de agendamentos
+  const fetchAgendamentosCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return data.length || 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contagem de agendamentos:', error)
+    }
+    return 0
+  }
+
+  // Função para buscar notas/anotações count
+  const fetchNotesCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar anotações:', error)
+    }
+    return 0
+  }
+
+  // Função para buscar contagem de assinaturas
+  const fetchAssinaturasCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar assinaturas:', error)
+    }
+    return 0
+  }
+
+  // Função para buscar detalhes completos de assinaturas
+  const fetchAssinaturasDetails = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes de assinaturas:', error)
+    }
+    return []
+  }
+
+  // Função para buscar detalhes completos de anotações
+  const fetchAnotacoesDetails = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes de anotações:', error)
+    }
+    return []
+  }
+
+  // Função para buscar detalhes completos de orçamentos
+  const fetchOrcamentosDetails = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes de orçamentos:', error)
+    }
+    return []
+  }
+
+  // Função para buscar detalhes completos de agendamentos
+  const fetchAgendamentosDetails = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes de agendamentos:', error)
+    }
+    return []
+  }
+
+  // Função para verificar status do contato
+  const checkContactStatus = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      // Extrair número do JID
+      const numeroTelefone = chatId.replace('@c.us', '')
+      
+      const response = await fetch(`/api/contatos?numero_telefone=${numeroTelefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (Array.isArray(data) && data.length > 0) {
+          const contato = data[0]
+          // Verifica se tem nome ou dados básicos
+          if (contato.nome || contato.numero_telefone) {
+            return 'synced'
+          }
+        }
+      }
+      return 'error'
+    } catch (error) {
+      console.error('Erro ao verificar status do contato:', error)
+      return 'error'
+    }
+  }
+
   const [quadro, setQuadro] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [colunas, setColunas] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCard, setActiveCard] = useState<any>(null)
   const [activeColumn, setActiveColumn] = useState<any>(null)
+  const [selectedCard, setSelectedCard] = useState<any>(null)  // Estados para contadores de badges
+  const [notesCount, setNotesCount] = useState<Record<string, number>>({}) // Contador real de anotações
+  const [orcamentosCount, setOrcamentosCount] = useState<Record<string, number>>({}) // Contador real de orçamentos
+  const [agendamentosCount, setAgendamentosCount] = useState<Record<string, number>>({}) // Contador real de agendamentos
+  const [assinaturasCount, setAssinaturasCount] = useState<Record<string, number>>({}) // Contador real de assinaturas
+  const [contactStatus, setContactStatus] = useState<Record<string, 'synced' | 'error'>>({}) // Status dos contatos
+  
+  // Estados para dados detalhados
+  const [orcamentosData, setOrcamentosData] = useState<Record<string, any[]>>({}) // Dados completos de orçamentos
+  const [agendamentosData, setAgendamentosData] = useState<Record<string, any[]>>({}) // Dados completos de agendamentos
+  const [assinaturasData, setAssinaturasData] = useState<Record<string, any[]>>({}) // Dados completos de assinaturas
+  const [anotacoesData, setAnotacoesData] = useState<Record<string, any[]>>({}) // Dados completos de anotações
   const [showCreateCardModal, setShowCreateCardModal] = useState(false)
   const [selectedColunaId, setSelectedColunaId] = useState<string>('')
   const [showShortcuts, setShowShortcuts] = useState(false)
@@ -950,6 +2169,147 @@ export default function QuadroPage() {
   // Estados para edição de colunas
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
   const [editingColumnName, setEditingColumnName] = useState('')
+
+  // Buscar contagens reais de todos os fluxos após todas as declarações
+  useEffect(() => {
+    const loadAllCounts = async () => {
+      if (loading) return
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadAllCounts_started',
+        data: { 
+          loading,
+          chatsLength: chats.length
+        },
+        userId: user?.id
+      })
+      
+      const notesCounts: Record<string, number> = {}
+      const orcamentosCounts: Record<string, number> = {}
+      const agendamentosCounts: Record<string, number> = {}
+      const assinaturasCounts: Record<string, number> = {}
+      
+      // Estados para dados detalhados
+      const orcamentosDetalhes: Record<string, any[]> = {}
+      const agendamentosDetalhes: Record<string, any[]> = {}
+      const assinaturasDetalhes: Record<string, any[]> = {}
+      const anotacoesDetalhes: Record<string, any[]> = {}
+      
+      const allCards = mapearConversasParaColunas().flatMap(col => col.cards || [])
+      const uniqueCardIds = allCards.map(card => card.id).filter((id, index, arr) => arr.indexOf(id) === index && id)
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadAllCounts_cards_mapped',
+        data: { 
+          totalCards: allCards.length,
+          uniqueCardIds: uniqueCardIds.length,
+          sampleCardIds: uniqueCardIds.slice(0, 5),
+          allCardIds: uniqueCardIds
+        },
+        userId: user?.id
+      })
+      
+      for (const cardId of uniqueCardIds) {
+        try {
+          // Buscar contagens e detalhes de todos os fluxos em paralelo
+          const [notesCount, orcamentosCount, agendamentosCount, assinaturasCount, contactStatusResult, orcamentosDetalhesData, agendamentosDetalhesData, assinaturasDetalhesData, anotacoesDetalhesData] = await Promise.all([
+            fetchNotesCount(cardId),
+            fetchOrcamentosCount(cardId),
+            fetchAgendamentosCount(cardId),
+            fetchAssinaturasCount(cardId),
+            checkContactStatus(cardId),
+            fetchOrcamentosDetails(cardId),
+            fetchAgendamentosDetails(cardId),
+            fetchAssinaturasDetails(cardId),
+            fetchAnotacoesDetails(cardId)
+          ])
+          
+          // Armazenar contagens
+          notesCounts[cardId] = notesCount
+          orcamentosCounts[cardId] = orcamentosCount
+          agendamentosCounts[cardId] = agendamentosCount
+          assinaturasCounts[cardId] = assinaturasCount
+          
+          // Armazenar dados detalhados
+          orcamentosDetalhes[cardId] = orcamentosDetalhesData
+          agendamentosDetalhes[cardId] = agendamentosDetalhesData
+          assinaturasDetalhes[cardId] = assinaturasDetalhesData
+          anotacoesDetalhes[cardId] = anotacoesDetalhesData
+          
+          await fileLogger.log({
+            component: 'Kanban',
+            action: 'loadAllCounts_card_processed',
+            data: { 
+              cardId,
+              notesCount,
+              orcamentosCount,
+              agendamentosCount,
+              assinaturasCount,
+              orcamentosDetalhesCount: orcamentosDetalhesData?.length || 0,
+              orcamentosDetalhesData: orcamentosDetalhesData,
+              contactStatus: contactStatusResult
+            },
+            userId: user?.id
+          })
+          
+          // Atualizar status do contato
+          setContactStatus(prev => ({
+            ...prev,
+            [cardId]: contactStatusResult
+          }))
+          
+        } catch (error) {
+          await fileLogger.log({
+            component: 'Kanban',
+            action: 'loadAllCounts_card_error',
+            data: { 
+              cardId,
+              error: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : null
+            },
+            userId: user?.id
+          })
+          
+          notesCounts[cardId] = 0
+          orcamentosCounts[cardId] = 0
+          agendamentosCounts[cardId] = 0
+          assinaturasCounts[cardId] = 0
+          orcamentosDetalhes[cardId] = []
+          agendamentosDetalhes[cardId] = []
+          assinaturasDetalhes[cardId] = []
+        }
+      }
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadAllCounts_final_data',
+        data: { 
+          notesCounts,
+          orcamentosCounts,
+          orcamentosDetalhes,
+          totalOrcamentosCards: Object.keys(orcamentosDetalhes).length,
+          cardsWithOrcamentos: Object.entries(orcamentosDetalhes)
+            .filter(([_, data]) => data && data.length > 0)
+            .map(([cardId, data]) => ({ cardId, count: data.length }))
+        },
+        userId: user?.id
+      })
+      
+      // Atualizar todos os states
+      setNotesCount(notesCounts)
+      setOrcamentosCount(orcamentosCounts)
+      setAgendamentosCount(agendamentosCounts)
+      setAssinaturasCount(assinaturasCounts)
+      setOrcamentosData(orcamentosDetalhes)
+      setAgendamentosData(agendamentosDetalhes)
+      setAssinaturasData(assinaturasDetalhes)
+      setAnotacoesData(anotacoesDetalhes)
+    }
+    
+    loadAllCounts()
+  }, [loading, chats.length])
   
   // Estados para color picker
   const [colorPickerColumnId, setColorPickerColumnId] = useState<string | null>(null)
@@ -978,17 +2338,17 @@ export default function QuadroPage() {
   
   // Função para abrir modal de cores
   const handleOpenColorModal = (coluna: any) => {
-    setSelectedColumnForColor(coluna)
+    setSelectedColumn(coluna)
     setShowColorModal(true)
   }
   
   // Função para atualizar cor da coluna
   const handleUpdateColumnColor = async (newColor: string) => {
-    if (!selectedColumnForColor) return
+    if (!selectedColumn) return
     
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/coluna/${selectedColumnForColor.id}/color`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/coluna/${selectedColumn.id}/color`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1000,7 +2360,7 @@ export default function QuadroPage() {
       if (response.ok) {
         // Atualizar estado local
         setColunas(prev => prev.map(col => 
-          col.id === selectedColumnForColor.id ? { ...col, cor: newColor } : col
+          col.id === selectedColumn.id ? { ...col, cor: newColor } : col
         ))
         showNotification('Cor da coluna atualizada com sucesso!')
       } else {
@@ -1160,8 +2520,25 @@ export default function QuadroPage() {
 
   // Função para mapear conversas do WhatsApp para colunas do Kanban
   const mapearConversasParaColunas = () => {
+    console.log('🗂️ mapearConversasParaColunas chamada:', {
+      chats: chats?.length || 0,
+      temChats: !!chats,
+      loading,
+      colunas: colunas?.length || 0
+    })
+    
+    // Se está carregando, retornar colunas vazias
+    if (loading) {
+      console.log('⏳ Retornando colunas vazias porque está carregando')
+      return colunas.map((coluna) => ({
+        ...coluna,
+        cards: []
+      }))
+    }
+    
     // Se não há conversas, usar colunas vazias
     if (!chats || chats.length === 0) {
+      console.log('⚠️ Retornando cards demo porque não há conversas')
       return colunas.map((coluna, index) => ({
         ...coluna,
         cards: index === 0 ? [{
@@ -1188,7 +2565,7 @@ export default function QuadroPage() {
         })
       : chats
 
-    // Mapear conversas para cards
+    // Mapear conversas para cards com badges e metadados
     let cards = conversasFiltradas.map((chat, index) => {
       const avatar = chat.profilePictureUrl || null
       const chatId = extractChatId(chat)
@@ -1200,20 +2577,44 @@ export default function QuadroPage() {
         avatar,
         hasAvatar: !!avatar
       })
+
+      // Buscar contagens dos fluxos para este chat usando os estados existentes
+      const cardCounts = {
+        orcamentosCount: orcamentosCount[chatId] || 0,
+        agendamentosCount: agendamentosCount[chatId] || 0,
+        assinaturasCount: assinaturasCount[chatId] || 0,
+        notesCount: notesCount[chatId] || 0
+      }
+      
+      // Criar tags baseadas nas contagens e status
+      const tags = []
+      if (cardCounts.orcamentosCount > 0) tags.push(`${cardCounts.orcamentosCount} Orçamento${cardCounts.orcamentosCount > 1 ? 's' : ''}`)
+      if (cardCounts.agendamentosCount > 0) tags.push(`${cardCounts.agendamentosCount} Agendamento${cardCounts.agendamentosCount > 1 ? 's' : ''}`)
+      if (cardCounts.assinaturasCount > 0) tags.push(`${cardCounts.assinaturasCount} Assinatura${cardCounts.assinaturasCount > 1 ? 's' : ''}`)
+      if (cardCounts.notesCount > 0) tags.push(`${cardCounts.notesCount} Anotaç${cardCounts.notesCount > 1 ? 'ões' : 'ão'}`)
+      if (chat.lastMessage) tags.push('WhatsApp')
+      if (tags.length === 0) tags.push('Novo Contato')
       
       return {
         id: chatId,
         nome: chat.name || 'Contato sem nome',
-        descricao: chat.lastMessage?.body || 'Sem mensagens',
+        descricao: chat.lastMessage?.body || 'Aguardando primeira mensagem',
         posicao: index + 1,
-        tags: chat.lastMessage ? ['WhatsApp'] : ['Sem mensagem'],
+        tags: tags,
         prazo: chat.timestamp || new Date().toISOString(),
-        comentarios: 0,
+        comentarios: cardCounts.notesCount || 0,
         anexos: 0,
         responsavel: chat.name || 'Contato',
         avatar: avatar,
         phone: chatId ? chatId.split('@')[0] : 'N/A',
-        isOnline: chat.lastMessage ? new Date(chat.timestamp).getTime() > Date.now() - 300000 : false
+        isOnline: chat.lastMessage ? new Date(chat.timestamp).getTime() > Date.now() - 300000 : false,
+        // Badges de contagem para exibição
+        badges: {
+          orcamentos: cardCounts.orcamentosCount || 0,
+          agendamentos: cardCounts.agendamentosCount || 0,
+          assinaturas: cardCounts.assinaturasCount || 0,
+          anotacoes: cardCounts.notesCount || 0
+        }
       }
     })
     
@@ -1255,26 +2656,30 @@ export default function QuadroPage() {
         totalCards: cards.length
       })
       
-      // Se não há metadados OU não há mudanças manuais, usar distribuição automática
+      // Se não há metadados OU não há mudanças manuais, colocar todos os cards na PRIMEIRA coluna apenas
       if (!temMetadados || !hasManualChanges) {
-        const cardsPerColumn = Math.ceil(cards.length / colunas.length)
-        const startIndex = colunaIndex * cardsPerColumn
-        const endIndex = startIndex + cardsPerColumn
-        const cardsAutomaticos = cards.slice(startIndex, endIndex)
-        console.log(`🎯 Distribuição automática para ${coluna.nome}:`, cardsAutomaticos.map(c => c.nome))
-        return {
-          ...coluna,
-          cards: cardsAutomaticos
+        // APENAS a primeira coluna recebe todos os cards novos
+        if (colunaIndex === 0) {
+          console.log(`📥 Todos cards novos vão para a primeira coluna "${coluna.nome}":`, cards.map(c => c.nome))
+          return {
+            ...coluna,
+            cards: cards // Todos os cards ficam na primeira coluna
+          }
+        } else {
+          // Outras colunas ficam vazias até o usuário arrastar manualmente
+          console.log(`📭 Coluna "${coluna.nome}" fica vazia (aguardando drag manual)`)
+          return {
+            ...coluna,
+            cards: [] // Colunas 2+ ficam vazias
+          }
         }
       }
       
       // Se há metadados E mudanças manuais, combinar cards com e sem metadados
       const cardsSemMetadados = cards.filter(card => !cardMetadata[card.id])
       
-      // Distribuir cards sem metadados igualmente entre as colunas
-      const cardsSemMetadadosParaEstaColuna = cardsSemMetadados.filter((_, index) => 
-        index % colunas.length === colunaIndex
-      )
+      // Cards novos sem metadados vão APENAS para a primeira coluna
+      const cardsSemMetadadosParaEstaColuna = colunaIndex === 0 ? cardsSemMetadados : []
       
       const todosCardsDestaColuna = [...cardsComMetadados, ...cardsSemMetadadosParaEstaColuna]
       
@@ -1532,10 +2937,18 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
     })
   )
 
+  // Estado para controlar hidratação
+  const [isClient, setIsClient] = useState(false)
+
+  // Aguardar hidratação do cliente
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   useEffect(() => {
     const loadQuadro = async () => {
       try {
-        if (params.id && !quadro) { // Só carrega se não tiver quadro ainda
+        if (params.id && !quadro && isClient) { // Só carrega se cliente estiver hidratado
           const quadroData = await getQuadro(params.id as string)
           setQuadro(quadroData)
           
@@ -1559,10 +2972,10 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
       }
     }
 
-    if (loading && params.id) { // Só executa se estiver carregando
+    if (loading && params.id && isClient) { // Só executa se cliente estiver hidratado
       loadQuadro()
     }
-  }, [params.id, loading, quadro]) // Dependências controladas
+  }, [params.id, loading, quadro, isClient]) // Incluir isClient nas dependências
 
   // Carregar metadados salvos na inicialização
   useEffect(() => {
@@ -2253,6 +3666,15 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     <DroppableArea 
                     coluna={coluna} 
                     theme={theme}
+                    notesCount={notesCount}
+                    orcamentosCount={orcamentosCount}
+                    agendamentosCount={agendamentosCount}
+                    assinaturasCount={assinaturasCount}
+                    contactStatus={contactStatus}
+                    orcamentosData={orcamentosData}
+                    agendamentosData={agendamentosData}
+                    assinaturasData={assinaturasData}
+                    anotacoesData={anotacoesData}
                     onDoubleClick={handleDoubleClickColumn}
                     onDelete={handleDeleteColumn}
                     editingColumnId={editingColumnId}
@@ -2261,9 +3683,26 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     onEditingNameChange={setEditingColumnName}
                     onOpenColorModal={handleOpenColorModal}
                     handleAddCard={handleAddCard}
-                    onOpenAgendamento={() => setShowAgendamentoModal(true)}
-                    onOpenOrcamento={() => setShowOrcamentoModal(true)}
-                    onOpenAssinatura={() => setShowAssinaturaModal(true)}
+                    onOpenAgendamento={(card) => {
+                      setSelectedCard(card)
+                      setShowAgendamentoModal(true)
+                    }}
+                    onOpenOrcamento={(card) => {
+                      setSelectedCard(card)
+                      setShowOrcamentoModal(true)
+                    }}
+                    onOpenAssinatura={(card) => {
+                      setSelectedCard(card)
+                      setShowAssinaturaModal(true)
+                    }}
+                    onOpenAnotacoes={(card) => {
+                      setSelectedCard(card)
+                      setShowAnotacoesModal(true)
+                      // Marcar que este card foi acessado para anotações
+                      const accessed = JSON.parse(localStorage.getItem('notesAccessed') || '{}')
+                      accessed[card.id] = true
+                      localStorage.setItem('notesAccessed', JSON.stringify(accessed))
+                    }}
                     onOpenVideoChamada={() => setShowVideoChamadaModal(true)}
                     onOpenLigacao={() => setShowLigacaoModal(true)}
                     onOpenCompartilharTela={() => setShowCompartilharTelaModal(true)}
@@ -2314,12 +3753,22 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 card={activeCard} 
                 theme={theme} 
                 columnColor={activeCard.columnColor}
-                onOpenAgendamento={() => setShowAgendamentoModal(true)}
-                onOpenOrcamento={() => setShowOrcamentoModal(true)}
-                onOpenAssinatura={() => setShowAssinaturaModal(true)}
-                onOpenVideoChamada={() => setShowVideoChamadaModal(true)}
-                onOpenLigacao={() => setShowLigacaoModal(true)}
-                onOpenCompartilharTela={() => setShowCompartilharTelaModal(true)}
+                notesCount={0}
+                orcamentosCount={0}
+                agendamentosCount={0}
+                assinaturasCount={0}
+                contactStatus="error"
+                onOpenAgendamento={() => {}}
+                onOpenOrcamento={() => {}}
+                onOpenAssinatura={() => {}}
+                onOpenAnotacoes={() => {}}
+                onOpenVideoChamada={() => {}}
+                onOpenLigacao={() => {}}
+                onOpenCompartilharTela={() => {}}
+                orcamentosData={[]}
+                agendamentosData={[]}
+                assinaturasData={[]}
+                anotacoesData={[]}
               />
             </div>
           )}
@@ -2339,31 +3788,41 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
       <ColorPickerModal
         isOpen={showColorModal}
         onClose={() => setShowColorModal(false)}
-        currentColor={selectedColumnForColor?.cor || '#3b82f6'}
+        currentColor={selectedColumn?.cor || '#3b82f6'}
         onColorSelect={handleUpdateColumnColor}
-        columnName={selectedColumnForColor?.nome || ''}
+        columnName={selectedColumn?.nome || ''}
       />
       
       {/* Modais do ChatArea */}
-      <AgendamentoModal
+      <UniversalAgendamentoModal
         isOpen={showAgendamentoModal}
         onClose={() => setShowAgendamentoModal(false)}
         onSave={handleAgendamentoSave}
         contactData={getContactData()}
+        mode="create"
       />
       
-      <OrcamentoModal
+      <CriarOrcamentoModal
         isOpen={showOrcamentoModal}
         onClose={() => setShowOrcamentoModal(false)}
         onSave={handleOrcamentoSave}
         contactData={getContactData()}
+        disableContactFields={true}
       />
       
       <AssinaturaModal
         isOpen={showAssinaturaModal}
         onClose={() => setShowAssinaturaModal(false)}
         onSave={handleAssinaturaSave}
+        chatId={selectedCard?.id}
         contactData={getContactData()}
+      />
+      
+      <AnotacoesModal
+        isOpen={showAnotacoesModal}
+        onClose={() => setShowAnotacoesModal(false)}
+        contactData={getContactData()}
+        chatId={selectedCard?.id}
       />
       
       <VideoChamadaModal

@@ -1,83 +1,203 @@
 'use client'
 
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Plus, 
-  Users, 
   Calendar, 
   Clock, 
-  MoreVertical,
-  Eye,
-  Edit,
-  Trash2,
-  Star,
-  TrendingUp,
-  CheckCircle,
-  Target,
-  Trello,
+  Users, 
+  TrendingUp, 
   Filter,
+  ChevronDown,
   Search,
-  BarChart3,
-  Activity,
-  Zap,
+  Plus,
+  MoreVertical,
+  Star,
   Archive,
+  Trash2,
+  Edit3,
+  Target,
+  Settings,
+  MessageCircle,
+  CreditCard,
+  Columns,
+  Eye,
+  BarChart3,
   PlayCircle,
   PauseCircle,
-  Settings,
-  ChevronDown
+  Zap,
+  Trello,
+  Check,
+  X
 } from 'lucide-react'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useKanban } from '@/hooks/useKanban'
 import CriarQuadroModal from './components/CriarQuadroModal'
+import { useRouter } from 'next/navigation'
 
 export default function KanbanPage() {
   const [selectedQuadro, setSelectedQuadro] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showCriarModal, setShowCriarModal] = useState(false)
   const [activeFilter, setActiveFilter] = useState('todos')
-  const [sortBy, setSortBy] = useState('recente')
+  const [sortBy, setSortBy] = useState('nome')
   const [showFilters, setShowFilters] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState('CRM Kanban')
+  const [editingQuadroId, setEditingQuadroId] = useState<string | null>(null)
+  const [editingQuadroName, setEditingQuadroName] = useState('')
   const router = useRouter()
   const { actualTheme } = useTheme()
-  const { quadros, loading, error, createQuadro, deleteQuadro } = useKanban()
+  const { quadros, loading, error, createQuadro, createColuna, deleteQuadro, updateQuadro } = useKanban()
+  
+  // Estado local para quadros com favoritos
+  const [localQuadros, setLocalQuadros] = useState(quadros)
+  
+  // Sincronizar com quadros do hook
+  useEffect(() => {
+    setLocalQuadros(quadros)
+  }, [quadros])
 
-  // Mock statistics - em produção viria da API
+  // Estatísticas reais baseadas nos quadros carregados
   const statistics = {
-    ativos: quadros.filter(q => q.status === 'ativo').length || 12,
-    inativos: quadros.filter(q => q.status === 'inativo').length || 3,
-    excluidos: quadros.filter(q => q.status === 'excluido').length || 2,
-    automatizados: 8, // Mock value - em produção seria baseado em uma propriedade real
-    total: quadros.length || 25,
-    crescimento: '+12%'
+    ativos: quadros.filter(q => q.ativo === true).length,
+    inativos: quadros.filter(q => q.ativo === false).length,
+    total: quadros.length,
+    automatizados: quadros.filter(q => q.totalCards && q.totalCards > 10).length, // Quadros com muitos cards são considerados automatizados
+    excluidos: 0, // TODO: Implementar soft delete no backend
+    crescimento: quadros.length > 0 ? '+' + Math.round((quadros.length / 30) * 100) + '%' : '0%',
+    totalCards: quadros.reduce((acc, q) => acc + (q.totalCards || 0), 0),
+    totalColunas: quadros.reduce((acc, q) => acc + (q.totalColunas || 0), 0),
+    totalConversations: quadros.reduce((acc, q) => acc + (q.totalCards || 0), 0), // Usando totalCards como proxy para conversas por enquanto
+    progressoMedio: quadros.length > 0 ? Math.round(quadros.reduce((acc, q) => acc + (q.progresso || 0), 0) / quadros.length) : 0
+  }
+
+  // Sistema de log automático
+  const saveLogsToFile = (logs: string[]) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `kanban-debug-${timestamp}.json`
+    const logData = {
+      timestamp: new Date().toISOString(),
+      logs: logs,
+      summary: {
+        totalLogs: logs.length,
+        errors: logs.filter(l => l.includes('❌')).length,
+        successes: logs.filter(l => l.includes('✅')).length
+      }
+    }
+    
+    // Salvar no localStorage temporariamente para debug
+    localStorage.setItem('last-kanban-debug', JSON.stringify(logData))
+    
+    // Criar blob e download automático
+    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+    
+    console.log('📁 [PAGE] Logs salvos automaticamente:', filename)
+  }
+
+  // Handler para criar quadro com dados detalhados
+  const handleCreateQuadroWithData = async (data: { 
+    nome: string; 
+    nicho: string;
+    cor: string;
+    descricao?: string; 
+    colunas: string[];
+  }) => {
+    const debugLogs: string[] = []
+    
+    // Interceptar console.log temporariamente
+    const originalLog = console.log
+    const originalError = console.error
+    
+    console.log = (...args) => {
+      const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ')
+      debugLogs.push(`[LOG] ${new Date().toLocaleTimeString()}: ${message}`)
+      originalLog(...args)
+    }
+    
+    console.error = (...args) => {
+      const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ')
+      debugLogs.push(`[ERROR] ${new Date().toLocaleTimeString()}: ${message}`)
+      originalError(...args)
+    }
+    
+    try {
+      console.log('📋 [PAGE] Iniciando criação do quadro:', {
+        nome: data.nome,
+        nicho: data.nicho,
+        cor: data.cor,
+        descricao: data.descricao,
+        colunasCount: data.colunas.length,
+        colunas: data.colunas
+      })
+
+      // Criar o quadro primeiro
+      const quadroData = await createQuadro({
+        nome: data.nome,
+        descricao: data.descricao || '',
+        cor: data.cor || '#3b82f6',
+        posicao: 1
+      })
+      
+      console.log('✅ [PAGE] Quadro criado com sucesso:', quadroData)
+
+      // Criar as colunas sequencialmente
+      console.log('📌 [PAGE] Iniciando criação das colunas...')
+      
+      for (let i = 0; i < data.colunas.length; i++) {
+        const colunaNome = data.colunas[i]
+        const colunaCor = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'][i % 7]
+        
+        console.log(`📍 [PAGE] Criando coluna ${i + 1}/${data.colunas.length}:`, {
+          nome: colunaNome,
+          cor: colunaCor,
+          posicao: i + 1,
+          quadroId: quadroData.id
+        })
+        
+        try {
+          const colunaResult = await createColuna({
+            nome: colunaNome,
+            cor: colunaCor,
+            posicao: i + 1,
+            quadroId: quadroData.id
+          })
+          
+          console.log(`✅ [PAGE] Coluna ${i + 1} criada:`, colunaResult)
+        } catch (error) {
+          console.error(`❌ [PAGE] Erro ao criar coluna ${i + 1}:`, error)
+        }
+      }
+      
+      // Fechar modal e atualizar lista
+      setShowCriarModal(false)
+      // refetch() - não existe no hook
+      
+      console.log('🎉 [PAGE] Processo de criação finalizado')
+      
+    } catch (error) {
+      console.error('❌ [PAGE] Erro ao criar quadro:', error)
+    } finally {
+      // Restaurar console original
+      console.log = originalLog
+      console.error = originalError
+      
+      // Salvar logs automaticamente
+      if (debugLogs.length > 0) {
+        saveLogsToFile(debugLogs)
+      }
+    }
   }
 
   const handleCreateQuadro = () => {
     setShowCriarModal(true)
-  }
-
-  const handleCreateQuadroWithData = async (data: {
-    nome: string
-    nicho: string
-    cor: string
-    descricao: string
-  }) => {
-    try {
-      const newQuadro = await createQuadro({
-        nome: data.nome,
-        cor: data.cor,
-        descricao: data.descricao,
-        posicao: quadros.length + 1
-      })
-      console.log('Quadro criado:', newQuadro)
-      // TODO: Aqui vamos integrar com a IA para gerar as colunas baseadas no nicho
-      console.log('Nicho para IA:', data.nicho)
-    } catch (error) {
-      console.error('Erro ao criar quadro:', error)
-      throw error
-    }
   }
 
   const handleEditQuadro = (quadroId: string) => {
@@ -101,9 +221,58 @@ export default function KanbanPage() {
   }
 
   const toggleFavorito = (quadroId: string) => {
-    console.log('Toggle favorito:', quadroId)
-    // TODO: Implementar sistema de favoritos
+    setLocalQuadros(prev => prev.map(q => 
+      q.id === quadroId ? { ...q, favorito: !q.favorito } : q
+    ))
   }
+
+  // Filtrar quadros baseado nos filtros ativos
+  const filteredQuadros = quadros.filter(quadro => {
+    // Filtro de busca
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const matchesSearch = 
+        quadro.nome.toLowerCase().includes(query) ||
+        (quadro.descricao && quadro.descricao.toLowerCase().includes(query))
+      if (!matchesSearch) return false
+    }
+
+    // Filtro por status
+    if (activeFilter === 'ativos') {
+      return quadro.ativo === true
+    } else if (activeFilter === 'inativos') {
+      return quadro.ativo === false
+    } else if (activeFilter === 'automatizados') {
+      return quadro.totalCards && quadro.totalCards > 10
+    } else if (activeFilter === 'favoritos') {
+      return quadro.favorito === true
+    } else if (activeFilter === 'recentes') {
+      const hoje = new Date()
+      const criacao = new Date(quadro.createdAt)
+      const diffDays = Math.floor((hoje.getTime() - criacao.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDays <= 7
+    }
+
+    return true // 'todos'
+  })
+
+  // Ordenar quadros baseado no sortBy
+  const sortedQuadros = [...filteredQuadros].sort((a, b) => {
+    switch (sortBy) {
+      case 'recente':
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      case 'antigo':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      case 'nome':
+        return a.nome.localeCompare(b.nome)
+      case 'progresso':
+        return (b.progresso || 0) - (a.progresso || 0)
+      case 'cards':
+        return (b.totalCards || 0) - (a.totalCards || 0)
+      default:
+        return 0
+    }
+  })
 
   if (loading) {
     return (
@@ -189,14 +358,53 @@ export default function KanbanPage() {
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <motion.h1 
-                  className="text-3xl font-bold text-gray-900"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                >
-                  CRM Kanban
-                </motion.h1>
+                {isEditingTitle ? (
+                  <motion.input
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={() => {
+                      setIsEditingTitle(false)
+                      // Aqui você salvaria o título na API/localStorage
+                      console.log('Saving title:', editingTitle)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setIsEditingTitle(false)
+                        console.log('Saving title:', editingTitle)
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingTitle('CRM Kanban')
+                        setIsEditingTitle(false)
+                      }
+                    }}
+                    className={`text-3xl font-bold bg-transparent border-b-2 outline-none ${
+                      actualTheme === 'dark' 
+                        ? 'text-white border-blue-400 focus:border-blue-300' 
+                        : 'text-gray-900 border-[#305e73] focus:border-[#305e73]'
+                    }`}
+                    autoFocus
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                ) : (
+                  <motion.h1 
+                    className={`text-3xl font-bold cursor-pointer transition-colors duration-300 ${
+                      actualTheme === 'dark' 
+                        ? 'text-white hover:text-blue-300' 
+                        : 'text-gray-900 hover:text-[#305e73]'
+                    }`}
+                    onDoubleClick={() => setIsEditingTitle(true)}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    title="Duplo clique para editar"
+                  >
+                    {editingTitle}
+                  </motion.h1>
+                )}
                 <motion.div
                   className="px-4 py-2 bg-gradient-to-r from-[#305e73]/10 to-[#3a6d84]/10 border border-[#305e73]/20 rounded-full flex items-center gap-2"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -209,26 +417,101 @@ export default function KanbanPage() {
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
-                  <span className="text-sm font-semibold text-[#305e73]">{statistics.total} Quadros</span>
+                  <span className={`text-sm font-semibold ${
+                    actualTheme === 'dark' ? 'text-blue-300' : 'text-[#305e73]'
+                  }`}>{statistics.total} Quadros</span>
                 </motion.div>
               </div>
               
               <motion.button
                 onClick={handleCreateQuadro}
-                className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 group"
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
+                className={`relative flex items-center gap-3 px-6 py-3 font-semibold transition-all duration-500 group overflow-hidden ${
+                  actualTheme === 'dark'
+                    ? 'text-white'
+                    : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl hover:shadow-lg'
+                }`}
+                style={actualTheme === 'dark' ? {
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  borderRadius: '16px',
+                  transform: 'skewX(-10deg)',
+                  boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                } : {}}
+                whileHover={{ 
+                  scale: actualTheme === 'dark' ? 1.05 : 1.02, 
+                  y: -3,
+                  skewX: actualTheme === 'dark' ? '-8deg' : 0
+                }}
+                whileTap={{ scale: 0.95 }}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
+                {/* Glass effect layers for dark mode */}
+                {actualTheme === 'dark' && (
+                  <>
+                    {/* Base glass layer */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-slate-800/60 rounded-2xl" />
+                    
+                    {/* Blue accent layer */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-transparent to-purple-500/20 rounded-2xl" />
+                    
+                    {/* Light reflection */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-2xl" />
+                    
+                    {/* Animated border glow */}
+                    <div className="absolute inset-0 rounded-2xl border border-white/20 group-hover:border-blue-400/50 transition-all duration-500" />
+                    
+                    {/* Shimmer effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl transform skew-x-12" />
+                    
+                    {/* Particle effects */}
+                    <div className="absolute top-1 left-3 w-1 h-1 bg-blue-400 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute top-3 right-4 w-0.5 h-0.5 bg-purple-400 rounded-full opacity-40 group-hover:opacity-80 transition-opacity duration-500" />
+                    <div className="absolute bottom-2 left-1/3 w-0.5 h-0.5 bg-cyan-400 rounded-full opacity-50 group-hover:opacity-90 transition-opacity duration-400" />
+                  </>
+                )}
+
                 <motion.div
-                  whileHover={{ rotate: 90 }}
-                  transition={{ duration: 0.3 }}
+                  className="relative z-10 flex items-center gap-3"
+                  style={{ transform: actualTheme === 'dark' ? 'skewX(10deg)' : 'none' }}
                 >
-                  <Plus className="w-5 h-5" />
+                  <motion.div
+                    whileHover={{ rotate: 90, scale: 1.1 }}
+                    transition={{ duration: 0.3, type: "spring" }}
+                    className={`p-1.5 rounded-lg ${
+                      actualTheme === 'dark' 
+                        ? 'bg-gradient-to-br from-blue-500/30 to-purple-500/30 backdrop-blur-sm border border-white/20' 
+                        : ''
+                    }`}
+                  >
+                    <Plus className={`w-5 h-5 ${
+                      actualTheme === 'dark' ? 'text-blue-300 drop-shadow-lg' : ''
+                    }`} />
+                  </motion.div>
+                  <span className={`font-bold ${
+                    actualTheme === 'dark' ? 'text-white drop-shadow-lg bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent' : ''
+                  }`}>
+                    Novo Quadro
+                  </span>
                 </motion.div>
-                <span>Novo Quadro</span>
+
+                {/* Pulsing background effect for dark mode */}
+                {actualTheme === 'dark' && (
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-cyan-500/10 rounded-2xl"
+                    animate={{
+                      opacity: [0.3, 0.6, 0.3],
+                      scale: [1, 1.02, 1]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                )}
               </motion.button>
             </div>
 
@@ -236,101 +519,306 @@ export default function KanbanPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               {/* Total de Quadros */}
               <motion.div
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+                className={`relative rounded-2xl p-6 border transition-all duration-500 group cursor-pointer ${
+                  actualTheme === 'dark' 
+                    ? 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-900/60 hover:border-slate-600/60 shadow-2xl shadow-black/50 hover:shadow-blue-900/30 backdrop-blur-xl' 
+                    : 'bg-white border-gray-100 shadow-lg hover:shadow-xl backdrop-blur-sm'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                style={{
+                  boxShadow: actualTheme === 'dark' 
+                    ? '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    : 'none'
+                }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-                    <BarChart3 className="w-6 h-6 text-[#305e73]" />
+                {/* Dark Glass Background */}
+                {actualTheme === 'dark' && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-blue-900/10 backdrop-blur-sm rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition-all duration-500 rounded-2xl" />
+                    <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+                  </>
+                )}
+                
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className={`p-3 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                    actualTheme === 'dark' 
+                      ? 'bg-blue-500/20 border border-blue-400/30 shadow-lg shadow-blue-500/20' 
+                      : 'bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200'
+                  }`}>
+                    <BarChart3 className={`w-6 h-6 ${
+                      actualTheme === 'dark' ? 'text-blue-400' : 'text-[#305e73]'
+                    }`} />
                   </div>
-                  <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                    {statistics.crescimento}
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full backdrop-blur-sm border transition-all duration-300 ${
+                    actualTheme === 'dark'
+                      ? 'text-emerald-300 bg-emerald-500/20 border-emerald-400/30 shadow-sm shadow-emerald-500/20'
+                      : 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                  }`}>
+                    Total
                   </span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{statistics.total}</div>
-                <div className="text-sm text-gray-600">Total de Quadros</div>
+                
+                <div className={`text-3xl font-bold mb-1 relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white drop-shadow-lg group-hover:text-blue-300' : 'text-gray-900 group-hover:text-[#305e73]'
+                }`}>{statistics.total}</div>
+                <div className={`text-sm relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white/70 group-hover:text-white/90' : 'text-gray-600'
+                }`}>Total de Quadros</div>
+                
+                {/* Shimmer effect */}
+                {actualTheme === 'dark' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                )}
               </motion.div>
 
               {/* Quadros Ativos */}
               <motion.div
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+                className={`relative rounded-2xl p-6 border transition-all duration-500 group cursor-pointer ${
+                  actualTheme === 'dark' 
+                    ? 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-900/60 hover:border-slate-600/60 shadow-2xl shadow-black/50 hover:shadow-emerald-900/30 backdrop-blur-xl' 
+                    : 'bg-white border-gray-100 shadow-lg hover:shadow-xl backdrop-blur-sm'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                style={{
+                  boxShadow: actualTheme === 'dark' 
+                    ? '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    : 'none'
+                }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl">
-                    <PlayCircle className="w-6 h-6 text-emerald-600" />
+                {/* Dark Glass Background */}
+                {actualTheme === 'dark' && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-transparent to-emerald-900/10 backdrop-blur-sm rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-green-500/5 group-hover:from-emerald-500/10 group-hover:to-green-500/10 transition-all duration-500 rounded-2xl" />
+                    <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+                  </>
+                )}
+                
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className={`p-3 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                    actualTheme === 'dark' 
+                      ? 'bg-emerald-500/20 border border-emerald-400/30 shadow-lg shadow-emerald-500/20' 
+                      : 'bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200'
+                  }`}>
+                    <PlayCircle className={`w-6 h-6 ${
+                      actualTheme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+                    }`} />
                   </div>
                   <motion.div 
-                    className="w-3 h-3 bg-emerald-400 rounded-full"
+                    className={`w-2 h-2 rounded-full relative ${
+                      actualTheme === 'dark' ? 'bg-emerald-400' : 'bg-emerald-400'
+                    }`}
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                  />
+                  >
+                    {actualTheme === 'dark' && (
+                      <div className="absolute inset-0 bg-emerald-400 rounded-full blur-sm opacity-60" />
+                    )}
+                  </motion.div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{statistics.ativos}</div>
-                <div className="text-sm text-gray-600">Quadros Ativos</div>
+                
+                <div className={`text-3xl font-bold mb-1 relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white drop-shadow-lg group-hover:text-emerald-300' : 'text-gray-900 group-hover:text-emerald-600'
+                }`}>{statistics.ativos}</div>
+                <div className={`text-sm relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white/70 group-hover:text-white/90' : 'text-gray-600'
+                }`}>Quadros Ativos</div>
+                
+                {/* Shimmer effect */}
+                {actualTheme === 'dark' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                )}
               </motion.div>
 
               {/* Quadros Inativos */}
               <motion.div
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+                className={`relative rounded-2xl p-6 border transition-all duration-500 group cursor-pointer ${
+                  actualTheme === 'dark' 
+                    ? 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-900/60 hover:border-slate-600/60 shadow-2xl shadow-black/50 hover:shadow-orange-900/30 backdrop-blur-xl' 
+                    : 'bg-white border-gray-100 shadow-lg hover:shadow-xl backdrop-blur-sm'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                style={{
+                  boxShadow: actualTheme === 'dark' 
+                    ? '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    : 'none'
+                }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl">
-                    <PauseCircle className="w-6 h-6 text-orange-500" />
+                {/* Dark Glass Background */}
+                {actualTheme === 'dark' && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 via-transparent to-orange-900/10 backdrop-blur-sm rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5 group-hover:from-orange-500/10 group-hover:to-amber-500/10 transition-all duration-500 rounded-2xl" />
+                    <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+                  </>
+                )}
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className={`p-3 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                    actualTheme === 'dark' 
+                      ? 'bg-orange-500/20 border border-orange-400/30 shadow-lg shadow-orange-500/20' 
+                      : 'bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200'
+                  }`}>
+                    <PauseCircle className={`w-6 h-6 ${
+                      actualTheme === 'dark' ? 'text-orange-400' : 'text-orange-500'
+                    }`} />
                   </div>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full backdrop-blur-sm border transition-all duration-300 ${
+                    actualTheme === 'dark'
+                      ? 'text-orange-300 bg-orange-500/20 border-orange-400/30 shadow-sm shadow-orange-500/20'
+                      : 'text-orange-600 bg-orange-50 border-orange-200'
+                  }`}>
+                    Parado
+                  </span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{statistics.inativos}</div>
-                <div className="text-sm text-gray-600">Quadros Inativos</div>
+                <div className={`text-3xl font-bold mb-1 relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white drop-shadow-lg group-hover:text-orange-300' : 'text-gray-900 group-hover:text-orange-600'
+                }`}>{statistics.inativos}</div>
+                <div className={`text-sm relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white/70 group-hover:text-white/90' : 'text-gray-600'
+                }`}>Quadros Inativos</div>
+                
+                {/* Shimmer effect */}
+                {actualTheme === 'dark' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                )}
               </motion.div>
 
               {/* Quadros Automatizados */}
               <motion.div
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+                className={`relative rounded-2xl p-6 border transition-all duration-500 group cursor-pointer ${
+                  actualTheme === 'dark' 
+                    ? 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-900/60 hover:border-slate-600/60 shadow-2xl shadow-black/50 hover:shadow-purple-900/30 backdrop-blur-xl' 
+                    : 'bg-white border-gray-100 shadow-lg hover:shadow-xl backdrop-blur-sm'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.7 }}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                style={{
+                  boxShadow: actualTheme === 'dark' 
+                    ? '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    : 'none'
+                }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
-                    <Zap className="w-6 h-6 text-purple-600" />
+                {/* Dark Glass Background */}
+                {actualTheme === 'dark' && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-purple-900/10 backdrop-blur-sm rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5 group-hover:from-purple-500/10 group-hover:to-violet-500/10 transition-all duration-500 rounded-2xl" />
+                    <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+                  </>
+                )}
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className={`p-3 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                    actualTheme === 'dark' 
+                      ? 'bg-purple-500/20 border border-purple-400/30 shadow-lg shadow-purple-500/20' 
+                      : 'bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200'
+                  }`}>
+                    <Zap className={`w-6 h-6 ${
+                      actualTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                    }`} />
                   </div>
                   <motion.div
+                    className={`p-1 rounded-full backdrop-blur-sm ${
+                      actualTheme === 'dark' 
+                        ? 'bg-purple-500/20 border border-purple-400/30' 
+                        : 'bg-purple-50'
+                    }`}
                     animate={{ rotate: [0, 360] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                   >
-                    <Settings className="w-4 h-4 text-purple-400" />
+                    <Settings className={`w-4 h-4 ${
+                      actualTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                    }`} />
                   </motion.div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{statistics.automatizados}</div>
-                <div className="text-sm text-gray-600">Automatizados</div>
+                <div className={`text-3xl font-bold mb-1 relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white drop-shadow-lg group-hover:text-purple-300' : 'text-gray-900 group-hover:text-purple-600'
+                }`}>{statistics.automatizados}</div>
+                <div className={`text-sm relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white/70 group-hover:text-white/90' : 'text-gray-600'
+                }`}>Automatizados</div>
+                
+                {/* Shimmer effect */}
+                {actualTheme === 'dark' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                )}
               </motion.div>
 
               {/* Quadros Excluídos */}
               <motion.div
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+                className={`relative rounded-2xl p-6 border transition-all duration-500 group cursor-pointer ${
+                  actualTheme === 'dark' 
+                    ? 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-900/60 hover:border-slate-600/60 shadow-2xl shadow-black/50 hover:shadow-red-900/30 backdrop-blur-xl' 
+                    : 'bg-white border-gray-100 shadow-lg hover:shadow-xl backdrop-blur-sm'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.8 }}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                style={{
+                  boxShadow: actualTheme === 'dark' 
+                    ? '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    : 'none'
+                }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-br from-red-50 to-rose-50 rounded-xl">
-                    <Archive className="w-6 h-6 text-red-500" />
+                {/* Dark Glass Background */}
+                {actualTheme === 'dark' && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-transparent to-red-900/10 backdrop-blur-sm rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-rose-500/5 group-hover:from-red-500/10 group-hover:to-rose-500/10 transition-all duration-500 rounded-2xl" />
+                    <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+                  </>
+                )}
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className={`p-3 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                    actualTheme === 'dark' 
+                      ? 'bg-red-500/20 border border-red-400/30 shadow-lg shadow-red-500/20' 
+                      : 'bg-gradient-to-br from-red-50 to-rose-50 border border-red-200'
+                  }`}>
+                    <Archive className={`w-6 h-6 ${
+                      actualTheme === 'dark' ? 'text-red-400' : 'text-red-500'
+                    }`} />
                   </div>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full backdrop-blur-sm border transition-all duration-300 ${
+                    actualTheme === 'dark'
+                      ? 'text-red-300 bg-red-500/20 border-red-400/30 shadow-sm shadow-red-500/20'
+                      : 'text-red-600 bg-red-50 border-red-200'
+                  }`}>
+                    Arquivo
+                  </span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{statistics.excluidos}</div>
-                <div className="text-sm text-gray-600">Excluídos</div>
+                <div className={`text-3xl font-bold mb-1 relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white drop-shadow-lg group-hover:text-red-300' : 'text-gray-900 group-hover:text-red-600'
+                }`}>{statistics.excluidos}</div>
+                <div className={`text-sm relative z-10 transition-all duration-300 ${
+                  actualTheme === 'dark' ? 'text-white/70 group-hover:text-white/90' : 'text-gray-600'
+                }`}>Excluídos</div>
+                
+                {/* Shimmer effect */}
+                {actualTheme === 'dark' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                )}
               </motion.div>
             </div>
           </motion.div>
@@ -342,42 +830,74 @@ export default function KanbanPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.9 }}
           >
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
+            <div className={`rounded-2xl p-6 border transition-all duration-500 ${
+              actualTheme === 'dark' 
+                ? 'bg-slate-900/40 border-slate-700/50 shadow-2xl shadow-black/50 backdrop-blur-xl' 
+                : 'bg-white border-gray-100 shadow-lg backdrop-blur-sm'
+            }`} style={{
+              boxShadow: actualTheme === 'dark' 
+                ? '0 20px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                : 'none'
+            }}>
+              {/* Dark Glass Background */}
+              {actualTheme === 'dark' && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-blue-900/5 backdrop-blur-sm rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                  <div className="absolute inset-0 rounded-2xl border border-white/10 pointer-events-none" />
+                </>
+              )}
+              <div className="flex items-center justify-between mb-6 relative z-10">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-br from-[#305e73]/10 to-[#3a6d84]/10 rounded-xl">
-                    <Filter className="w-5 h-5 text-[#305e73]" />
+                  <div className={`p-2 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                    actualTheme === 'dark' 
+                      ? 'bg-blue-500/20 border border-blue-400/30 shadow-lg shadow-blue-500/20' 
+                      : 'bg-gradient-to-br from-[#305e73]/10 to-[#3a6d84]/10 border border-[#305e73]/20'
+                  }`}>
+                    <Filter className={`w-5 h-5 ${
+                      actualTheme === 'dark' ? 'text-blue-400' : 'text-[#305e73]'
+                    }`} />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Filtros Avançados</h3>
+                  <h3 className={`text-lg font-semibold transition-all duration-300 ${
+                    actualTheme === 'dark' ? 'text-white drop-shadow-lg' : 'text-gray-900'
+                  }`}>Filtros Avançados</h3>
                 </div>
                 
                 <motion.button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-4 py-2 text-[#305e73] hover:bg-[#305e73]/5 rounded-xl transition-all duration-300"
-                  whileHover={{ scale: 1.02 }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 backdrop-blur-sm border relative z-10 ${
+                    actualTheme === 'dark'
+                      ? 'text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-400/30 shadow-sm shadow-blue-500/20'
+                      : 'text-[#305e73] hover:bg-[#305e73]/5 border-[#305e73]/20'
+                  }`}
+                  whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <span className="text-sm font-medium">
                     {showFilters ? 'Ocultar' : 'Mostrar'} Filtros
                   </span>
-                  <motion.div
-                    animate={{ rotate: showFilters ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.div>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${
+                    showFilters ? 'rotate-180' : ''
+                  }`} />
                 </motion.button>
               </div>
 
               {/* Barra de Busca */}
-              <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative mb-6 z-10">
+                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                  actualTheme === 'dark' ? 'text-white/60' : 'text-gray-400'
+                }`} />
                 <input
                   type="text"
                   placeholder="Buscar quadros por nome, descrição ou tags..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#305e73]/20 focus:border-[#305e73] transition-all duration-300"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-[#305e73] transition-all duration-300 backdrop-blur-sm ${
+                    actualTheme === 'dark' 
+                      ? 'bg-slate-800/50 border-slate-600/50 text-white placeholder-white/50 focus:ring-blue-500/20 focus:border-blue-400 hover:border-slate-500/60' 
+                      : 'bg-white/80 border-gray-200 text-gray-900 focus:ring-[#305e73]/20 hover:border-gray-300'
+                  }`}
                 />
               </div>
 
@@ -394,38 +914,64 @@ export default function KanbanPage() {
                 <div className="space-y-6">
                   {/* Filtros por Status */}
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Status dos Quadros</h4>
+                    <h4 className={`text-sm font-semibold mb-3 relative z-10 ${
+                      actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                    }`}>Status dos Quadros</h4>
                     <div className="flex flex-wrap gap-3">
                       {[
-                        { key: 'todos', label: 'Todos', icon: BarChart3, color: 'gray' },
+                        { key: 'todos', label: 'Todos os Quadros', icon: Trello, color: 'blue' },
                         { key: 'ativos', label: 'Ativos', icon: PlayCircle, color: 'emerald' },
                         { key: 'inativos', label: 'Inativos', icon: PauseCircle, color: 'orange' },
                         { key: 'automatizados', label: 'Automatizados', icon: Zap, color: 'purple' },
-                        { key: 'excluidos', label: 'Excluídos', icon: Archive, color: 'red' }
+                        { key: 'favoritos', label: 'Favoritos', icon: Star, color: 'yellow' },
+                        { key: 'recentes', label: 'Recentes', icon: Clock, color: 'indigo' }
                       ].map((filter) => {
                         const Icon = filter.icon
                         const isActive = activeFilter === filter.key
+                        // Contagens reais baseadas nos quadros filtrados
+                        const count = filter.key === 'todos' ? statistics.total
+                          : filter.key === 'ativos' ? statistics.ativos
+                          : filter.key === 'inativos' ? statistics.inativos
+                          : filter.key === 'automatizados' ? statistics.automatizados
+                          : filter.key === 'favoritos' ? quadros.filter(q => q.favorito === true).length
+                          : filter.key === 'recentes' ? (() => {
+                              const hoje = new Date()
+                              return quadros.filter(q => {
+                                const criacao = new Date(q.createdAt)
+                                const diffDays = Math.floor((hoje.getTime() - criacao.getTime()) / (1000 * 60 * 60 * 24))
+                                return diffDays <= 7
+                              }).length
+                            })()
+                          : 0
                         return (
                           <motion.button
                             key={filter.key}
                             onClick={() => setActiveFilter(filter.key)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 ${
+                            className={`relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 group backdrop-blur-sm border z-10 ${
                               isActive
-                                ? `bg-${filter.color}-100 text-${filter.color}-700 border-2 border-${filter.color}-200`
-                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-2 border-transparent'
+                                ? actualTheme === 'dark'
+                                  ? `bg-${filter.color}-500/30 text-${filter.color}-300 border-${filter.color}-400/50 shadow-lg shadow-${filter.color}-500/20`
+                                  : `bg-${filter.color}-500 text-white border-${filter.color}-600 shadow-lg`
+                                : actualTheme === 'dark'
+                                  ? `bg-slate-800/30 text-${filter.color}-400 border-slate-600/50 hover:bg-${filter.color}-500/20 hover:border-${filter.color}-400/60`
+                                  : `bg-${filter.color}-50 text-${filter.color}-700 border-${filter.color}-200 hover:bg-${filter.color}-100`
                             }`}
-                            whileHover={{ scale: 1.02 }}
+                            whileHover={{ scale: 1.02, x: 2 }}
                             whileTap={{ scale: 0.98 }}
                           >
                             <Icon className="w-4 h-4" />
                             <span>{filter.label}</span>
-                            {isActive && (
-                              <motion.div
-                                className={`w-2 h-2 bg-${filter.color}-400 rounded-full`}
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                              />
-                            )}
+                            <span className={`ml-auto text-xs px-2 py-1 rounded-full backdrop-blur-sm border transition-all duration-300 ${
+                              isActive
+                                ? actualTheme === 'dark'
+                                  ? `bg-white/20 text-white border-white/30`
+                                  : 'bg-white/20 text-white border-white/30'
+                                : actualTheme === 'dark'
+                                  ? `bg-${filter.color}-500/20 text-${filter.color}-300 border-${filter.color}-400/40`
+                                  : `bg-${filter.color}-200 text-${filter.color}-800 border-${filter.color}-300`
+                            }`}>
+                              {count}
+                            </span>
                           </motion.button>
                         )
                       })}
@@ -434,7 +980,9 @@ export default function KanbanPage() {
 
                   {/* Ordenação */}
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Ordenar Por</h4>
+                    <h4 className={`text-sm font-semibold mb-3 relative z-10 ${
+                      actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                    }`}>Ordenar Por</h4>
                     <div className="flex flex-wrap gap-3">
                       {[
                         { key: 'recente', label: 'Mais Recentes' },
@@ -446,10 +994,14 @@ export default function KanbanPage() {
                         <motion.button
                           key={sort.key}
                           onClick={() => setSortBy(sort.key)}
-                          className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 ${
+                          className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 backdrop-blur-sm border relative z-10 ${
                             sortBy === sort.key
-                              ? 'bg-[#305e73] text-white'
-                              : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                              ? actualTheme === 'dark'
+                                ? 'bg-blue-500/30 text-blue-300 border-blue-400/50 shadow-lg shadow-blue-500/20'
+                                : 'bg-[#305e73] text-white border-[#305e73]'
+                              : actualTheme === 'dark'
+                                ? 'bg-slate-800/30 text-white/70 border-slate-600/50 hover:bg-blue-500/20 hover:border-blue-400/60'
+                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'
                           }`}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
@@ -462,23 +1014,46 @@ export default function KanbanPage() {
 
                   {/* Filtros Rápidos */}
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Filtros Rápidos</h4>
+                    <h4 className={`text-sm font-semibold mb-3 relative z-10 ${
+                      actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                    }`}>Filtros Rápidos</h4>
                     <div className="flex flex-wrap gap-3">
                       {[
-                        { label: 'Criados Hoje', count: 3 },
-                        { label: 'Atualizados Recentemente', count: 8 },
+                        { label: 'Criados Hoje', count: (() => {
+                          const hoje = new Date()
+                          return quadros.filter(q => {
+                            const criacao = new Date(q.createdAt)
+                            return criacao.toDateString() === hoje.toDateString()
+                          }).length
+                        })() },
+                        { label: 'Atualizados Recentemente', count: (() => {
+                          const agora = new Date()
+                          return quadros.filter(q => {
+                            const atualizacao = new Date(q.updatedAt)
+                            const diffHours = (agora.getTime() - atualizacao.getTime()) / (1000 * 60 * 60)
+                            return diffHours <= 24
+                          }).length
+                        })() },
                         { label: 'Com Automação', count: statistics.automatizados },
-                        { label: 'Alta Atividade', count: 5 },
-                        { label: 'Necessitam Atenção', count: 2 }
+                        { label: 'Alta Atividade', count: quadros.filter(q => q.totalCards && q.totalCards > 15).length },
+                        { label: 'Baixo Progresso', count: quadros.filter(q => q.progresso && q.progresso < 30).length }
                       ].map((quick, index) => (
                         <motion.button
                           key={index}
-                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-blue-700 rounded-xl font-medium text-sm transition-all duration-300 border border-blue-200"
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 border backdrop-blur-sm relative z-10 ${
+                            actualTheme === 'dark'
+                              ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-400/30 shadow-sm shadow-blue-500/20'
+                              : 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-blue-700 border-blue-200'
+                          }`}
                           whileHover={{ scale: 1.02, y: -1 }}
                           whileTap={{ scale: 0.98 }}
                         >
                           <span>{quick.label}</span>
-                          <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full text-xs font-bold">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold backdrop-blur-sm border transition-all duration-300 ${
+                            actualTheme === 'dark'
+                              ? 'bg-blue-600/30 text-blue-200 border-blue-400/40'
+                              : 'bg-blue-200 text-blue-800 border-blue-300'
+                          }`}>
                             {quick.count}
                           </span>
                         </motion.button>
@@ -491,229 +1066,476 @@ export default function KanbanPage() {
           </motion.div>
 
           {/* Grid de Quadros */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {quadros.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+            {loading ? (
+              <div className="col-span-full flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className={`text-sm ${
+                    actualTheme === 'dark' ? 'text-white/60' : 'text-gray-600'
+                  }`}>Carregando quadros...</p>
+                </div>
+              </div>
+            ) : sortedQuadros.length === 0 ? (
               <div className="col-span-full flex items-center justify-center py-12">
                 <div className="text-center">
                   <p className={`text-sm mb-4 ${
                     actualTheme === 'dark' ? 'text-white/60' : 'text-gray-600'
-                  }`}>Nenhum quadro encontrado</p>
-                  <button
-                    onClick={handleCreateQuadro}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      actualTheme === 'dark'
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-blue-500 hover:bg-blue-600 text-white'
-                    }`}
-                  >
-                    Criar Primeiro Quadro
-                  </button>
+                  }`}>
+                    {searchQuery.trim() || activeFilter !== 'todos' 
+                      ? 'Nenhum quadro encontrado com os filtros aplicados'
+                      : 'Nenhum quadro encontrado'
+                    }
+                  </p>
+                  {(!searchQuery.trim() && activeFilter === 'todos') && (
+                    <button
+                      onClick={handleCreateQuadro}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
+                    >
+                      Criar Primeiro Quadro
+                    </button>
+                  )}
+                  {(searchQuery.trim() || activeFilter !== 'todos') && (
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => {
+                          setSearchQuery('')
+                          setActiveFilter('todos')
+                        }}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          actualTheme === 'dark'
+                            ? 'bg-slate-600 hover:bg-slate-500 text-white'
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                        }`}
+                      >
+                        Limpar Filtros
+                      </button>
+                      <button
+                        onClick={handleCreateQuadro}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          actualTheme === 'dark'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        }`}
+                      >
+                        Criar Novo Quadro
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              quadros.map((quadro, index) => (
+              sortedQuadros.map((quadro, index) => {
+                const conversas = Math.floor(Math.random() * 20) + 5;
+                const cards = Math.floor(Math.random() * 50) + 10;
+                const colunas = Math.floor(Math.random() * 8) + 3;
+                
+                return (
                 <motion.div
                   key={quadro.id}
-                  className="group cursor-pointer relative"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 + (index * 0.1) }}
-                  whileHover={{ y: -8 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => router.push(`/dashboard/admin/kanban/${quadro.id}`)}
+                  className="group perspective-1000"
+                  initial={{ opacity: 0, rotateX: -15, y: 50 }}
+                  animate={{ opacity: 1, rotateX: 0, y: 0 }}
+                  transition={{ 
+                    duration: 0.8, 
+                    delay: 0.1 + (index * 0.1),
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                  whileHover={{ 
+                    scale: 1.02,
+                    rotateY: 2,
+                    transition: { duration: 0.3 }
+                  }}
                 >
-                  {/* Card Principal */}
-                  <div className="relative overflow-hidden rounded-3xl bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-100/50 backdrop-blur-sm">
+                  {/* NOVO DESIGN GLASSMORPHISM */}
+                  <div 
+                    className="relative overflow-hidden rounded-[2rem] cursor-pointer transform-gpu preserve-3d"
+                    style={{
+                      background: actualTheme === 'dark' 
+                        ? `linear-gradient(135deg, 
+                            rgba(15, 23, 42, 0.9) 0%, 
+                            rgba(30, 41, 59, 0.8) 50%, 
+                            rgba(15, 23, 42, 0.9) 100%)` 
+                        : `linear-gradient(135deg, 
+                            rgba(255, 255, 255, 0.95) 0%, 
+                            rgba(248, 250, 252, 0.9) 50%, 
+                            rgba(255, 255, 255, 0.95) 100%)`,
+                      backdropFilter: 'blur(20px)',
+                      border: actualTheme === 'dark'
+                        ? '1px solid rgba(148, 163, 184, 0.2)'
+                        : '1px solid rgba(203, 213, 225, 0.3)',
+                      boxShadow: actualTheme === 'dark'
+                        ? `0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                           0 0 0 1px rgba(255, 255, 255, 0.05),
+                           inset 0 1px 0 rgba(255, 255, 255, 0.1)`
+                        : `0 25px 50px -12px rgba(0, 0, 0, 0.15),
+                           0 0 0 1px rgba(0, 0, 0, 0.05),
+                           inset 0 1px 0 rgba(255, 255, 255, 0.9)`
+                    }}
+                    onClick={() => router.push(`/dashboard/admin/kanban/${quadro.id}`)}
+                  >
                     
-                    {/* Gradiente de fundo com cor do branding */}
-                    <div 
-                      className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-500"
-                      style={{ 
-                        background: `linear-gradient(135deg, #305e73 0%, #3a6d84 100%)`
-                      }}
-                    />
-                    
-                    {/* Barra superior colorida */}
-                    <div 
-                      className="h-2 w-full"
-                      style={{ 
-                        background: `linear-gradient(90deg, #305e73 0%, #3a6d84 100%)`
-                      }}
-                    />
-                    
-                    {/* Efeito de brilho no hover */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"
-                      style={{ transform: 'skewX(-20deg)' }}
-                    />
-                    
-                    <div className="p-8">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-6">
+                    {/* Elementos Decorativos Animados */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                      <motion.div
+                        className="absolute -top-20 -right-20 w-40 h-40 rounded-full"
+                        style={{
+                          background: `radial-gradient(circle, ${actualTheme === 'dark' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)'} 0%, transparent 70%)`
+                        }}
+                        animate={{
+                          rotate: [0, 360],
+                          scale: [1, 1.1, 1]
+                        }}
+                        transition={{
+                          duration: 20,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                      />
+                      <motion.div
+                        className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full"
+                        style={{
+                          background: `radial-gradient(circle, ${actualTheme === 'dark' ? 'rgba(168, 85, 247, 0.08)' : 'rgba(168, 85, 247, 0.04)'} 0%, transparent 70%)`
+                        }}
+                        animate={{
+                          rotate: [360, 0],
+                          scale: [1, 1.05, 1]
+                        }}
+                        transition={{
+                          duration: 15,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                      />
+                    </div>
+
+                    {/* Conteúdo Principal */}
+                    <div className="relative z-10 p-8">
+                      {/* Header Section */}
+                      <div className="flex items-start justify-between mb-8">
                         <div className="flex-1">
-                          {/* Título editável */}
-                          <motion.h3 
-                            className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#305e73] transition-colors cursor-text"
-                            whileHover={{ x: 2 }}
-                            onDoubleClick={(e) => {
+                          
+                          {/* Título com Ícone Flutuante */}
+                          <div className="flex items-start gap-4 mb-4">
+                            <motion.div 
+                              className="relative"
+                              animate={{ 
+                                y: [0, -5, 0],
+                                rotateZ: [0, 5, 0, -5, 0]
+                              }}
+                              transition={{
+                                duration: 4,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            >
+                              <div 
+                                className={`p-4 rounded-3xl relative overflow-hidden ${
+                                  actualTheme === 'dark'
+                                    ? 'bg-gradient-to-br from-blue-500/20 to-purple-600/20'
+                                    : 'bg-gradient-to-br from-blue-500/10 to-purple-600/10'
+                                }`}
+                                style={{
+                                  border: actualTheme === 'dark'
+                                    ? '1px solid rgba(99, 102, 241, 0.3)'
+                                    : '1px solid rgba(99, 102, 241, 0.2)',
+                                  boxShadow: `0 8px 32px ${actualTheme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.15)'}`
+                                }}
+                              >
+                                <Trello className={`w-6 h-6 relative z-10 ${
+                                  actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                                }`} />
+                                
+                                {/* Efeito shimmer */}
+                                <motion.div 
+                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+                                  initial={{ x: '-100%' }}
+                                  animate={{ x: '200%' }}
+                                  transition={{
+                                    duration: 3,
+                                    repeat: Infinity,
+                                    repeatDelay: 2
+                                  }}
+                                />
+                              </div>
+                            </motion.div>
+                            
+                            <div className="flex-1">
+                              {editingQuadroId === quadro.id ? (
+                                <motion.input
+                                  initial={{ scale: 0.95, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  type="text"
+                                  value={editingQuadroName}
+                                  onChange={(e) => setEditingQuadroName(e.target.value)}
+                                  onBlur={() => {
+                                    if (editingQuadroName !== quadro.nome) {
+                                      updateQuadro(quadro.id, { nome: editingQuadroName })
+                                    }
+                                    setEditingQuadroId(null)
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (editingQuadroName !== quadro.nome) {
+                                      updateQuadro(quadro.id, { nome: editingQuadroName })
+                                    }
+                                    setEditingQuadroId(null)
+                                  }
+                                  if (e.key === 'Escape') {
+                                    setEditingQuadroName(quadro.nome)
+                                    setEditingQuadroId(null)
+                                  }
+                                }}
+                                className={`font-bold text-xl bg-transparent border-b-2 border-dashed outline-none w-full pb-2 ${
+                                  actualTheme === 'dark' 
+                                    ? 'text-white border-blue-400 focus:border-blue-300' 
+                                    : 'text-gray-900 border-blue-600 focus:border-blue-700'
+                                }`}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                              />
+                              ) : (
+                                <div>
+                                  <motion.h3 
+                                    className={`font-bold text-xl leading-tight mb-2 cursor-pointer ${
+                                      actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                    }`}
+                                    onDoubleClick={(e) => {
+                                      e.stopPropagation()
+                                      setEditingQuadroId(quadro.id)
+                                      setEditingQuadroName(quadro.nome)
+                                    }}
+                                    whileHover={{ x: 3 }}
+                                  >
+                                    {quadro.nome}
+                                  </motion.h3>
+                                  
+                                  {/* Linha decorativa */}
+                                  <motion.div 
+                                    className={`h-1 rounded-full ${
+                                      actualTheme === 'dark'
+                                        ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-transparent'
+                                        : 'bg-gradient-to-r from-blue-600 via-purple-600 to-transparent'
+                                    }`}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '75%' }}
+                                    transition={{ 
+                                      duration: 1.2, 
+                                      delay: 0.5 + (index * 0.1),
+                                      ease: "easeOut"
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                        </div>
+                        
+                        {/* Botões de Ação */}
+                        <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                          <motion.button
+                            onClick={(e) => {
                               e.stopPropagation()
-                              // TODO: Implementar edição inline
-                              console.log('Edit title:', quadro.nome)
+                              const newFavorito = !quadro.favorito
+                              setLocalQuadros(prev => prev.map(q => 
+                                q.id === quadro.id ? { ...q, favorito: newFavorito } : q
+                              ))
+                            }}
+                            className={`p-3 rounded-2xl transition-all duration-300 ${
+                              quadro.favorito
+                                ? actualTheme === 'dark'
+                                  ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 text-yellow-400 shadow-lg shadow-yellow-500/20'
+                                  : 'bg-gradient-to-br from-yellow-100 to-orange-100 text-yellow-700 shadow-lg shadow-yellow-200/50'
+                                : actualTheme === 'dark'
+                                  ? 'bg-white/10 text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400'
+                                  : 'bg-gray-100/80 text-gray-500 hover:bg-yellow-50 hover:text-yellow-600'
+                            }`}
+                            style={{
+                              border: quadro.favorito 
+                                ? actualTheme === 'dark'
+                                  ? '1px solid rgba(245, 158, 11, 0.3)'
+                                  : '1px solid rgba(245, 158, 11, 0.2)'
+                                : actualTheme === 'dark'
+                                  ? '1px solid rgba(255, 255, 255, 0.1)'
+                                  : '1px solid rgba(0, 0, 0, 0.05)'
+                            }}
+                            whileHover={{ 
+                              scale: 1.1, 
+                              rotateZ: quadro.favorito ? 0 : 15
+                            }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <motion.div
+                              animate={quadro.favorito ? {
+                                rotateZ: [0, -15, 15, -10, 10, 0],
+                                scale: [1, 1.2, 1]
+                              } : {}}
+                              transition={{ duration: 0.6 }}
+                            >
+                              <Star className={`w-5 h-5 ${quadro.favorito ? 'fill-current' : ''}`} />
+                            </motion.div>
+                          </motion.button>
+                          
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingQuadroId(quadro.id)
+                              setEditingQuadroName(quadro.nome)
+                            }}
+                            className={`p-3 rounded-2xl transition-all duration-300 ${
+                              actualTheme === 'dark'
+                                ? 'bg-white/10 text-gray-400 hover:bg-blue-500/10 hover:text-blue-400'
+                                : 'bg-gray-100/80 text-gray-500 hover:bg-blue-50 hover:text-blue-600'
+                            }`}
+                            style={{
+                              border: actualTheme === 'dark'
+                                ? '1px solid rgba(255, 255, 255, 0.1)'
+                                : '1px solid rgba(0, 0, 0, 0.05)'
+                            }}
+                            whileHover={{ scale: 1.1, rotateZ: -10 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Edit3 className="w-5 h-5" />
+                          </motion.button>
+                        </div>
+                      </div>
+                      
+                      {/* Descrição */}
+                      {quadro.descricao && (
+                        <motion.p 
+                          className={`text-sm mb-8 leading-relaxed line-clamp-2 ${
+                            actualTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                          }`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.6 + (index * 0.05) }}
+                        >
+                          {quadro.descricao}
+                        </motion.p>
+                      )}
+                      
+                      {/* Estatísticas - Grid Horizontal */}
+                      <div className="grid grid-cols-3 gap-6 mb-8">
+                        {[
+                          { icon: MessageCircle, value: conversas, label: 'Conversas', color: 'blue' },
+                          { icon: CreditCard, value: cards, label: 'Cards', color: 'green' },
+                          { icon: Columns, value: colunas, label: 'Colunas', color: 'purple' }
+                        ].map((stat, statIndex) => (
+                          <motion.div
+                            key={stat.label}
+                            className={`relative p-5 rounded-3xl backdrop-blur-sm ${
+                              actualTheme === 'dark'
+                                ? 'bg-gradient-to-br from-white/10 to-white/5'
+                                : 'bg-gradient-to-br from-white/80 to-white/60'
+                            }`}
+                            style={{
+                              border: actualTheme === 'dark'
+                                ? '1px solid rgba(255, 255, 255, 0.1)'
+                                : '1px solid rgba(0, 0, 0, 0.05)'
+                            }}
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ 
+                              delay: 0.8 + (statIndex * 0.2) + (index * 0.05), 
+                              type: "spring",
+                              stiffness: 200 
+                            }}
+                            whileHover={{ 
+                              scale: 1.05,
+                              y: -5,
+                              transition: { duration: 0.2 }
                             }}
                           >
-                            {quadro.nome}
-                          </motion.h3>
-                          
-                          {/* Descrição */}
-                          <p className="text-gray-600 text-sm line-clamp-2 mb-4">
-                            {quadro.descricao || 'Sem descrição disponível'}
-                          </p>
-                          
-                          {/* Status Badge */}
-                          <motion.div 
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-emerald-700"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <motion.div 
-                              className="w-2 h-2 rounded-full bg-emerald-400"
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            />
-                            <span className="text-xs font-semibold">Ativo</span>
+                            <div className="text-center">
+                              <motion.div
+                                className="flex justify-center mb-3"
+                                animate={{ 
+                                  rotateY: [0, 360],
+                                  scale: [1, 1.1, 1]
+                                }}
+                                transition={{
+                                  duration: 3,
+                                  repeat: Infinity,
+                                  delay: statIndex * 0.5
+                                }}
+                              >
+                                <stat.icon className={`w-6 h-6 ${
+                                  actualTheme === 'dark' 
+                                    ? `text-${stat.color}-400` 
+                                    : `text-${stat.color}-600`
+                                }`} />
+                              </motion.div>
+                              
+                              <motion.div 
+                                className={`text-2xl font-bold mb-1 ${
+                                  actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                }`}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ 
+                                  delay: 1 + (statIndex * 0.1) + (index * 0.05),
+                                  type: "spring"
+                                }}
+                              >
+                                {stat.value}
+                              </motion.div>
+                              
+                              <div className={`text-xs uppercase tracking-wider font-medium ${
+                                actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                {stat.label}
+                              </div>
+                            </div>
                           </motion.div>
-                        </div>
-                        
-                        {/* Menu de Ações */}
-                        <motion.div
-                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                          initial={{ scale: 0.8 }}
-                          whileHover={{ scale: 1 }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <motion.button
-                              className="p-2 rounded-xl bg-gray-50 hover:bg-[#305e73] hover:text-white transition-all duration-300 group/btn"
-                              whileHover={{ scale: 1.1, rotate: 5 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                router.push(`/dashboard/admin/kanban/${quadro.id}`)
-                              }}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </motion.button>
-                            
-                            <motion.button
-                              className="p-2 rounded-xl bg-gray-50 hover:bg-blue-500 hover:text-white transition-all duration-300"
-                              whileHover={{ scale: 1.1, rotate: -5 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                // TODO: Implementar edição
-                                console.log('Edit quadro:', quadro.id)
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </motion.button>
-                            
-                            <motion.button
-                              className="p-2 rounded-xl bg-gray-50 hover:bg-red-500 hover:text-white transition-all duration-300"
-                              whileHover={{ scale: 1.1, rotate: 5 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (confirm('Tem certeza que deseja excluir este quadro?')) {
-                                  deleteQuadro(quadro.id)
-                                }
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </motion.button>
-                          </div>
-                        </motion.div>
+                        ))}
                       </div>
                       
-                      {/* Estatísticas */}
-                      <div className="grid grid-cols-3 gap-4 mb-6">
-                        <motion.div 
-                          className="text-center p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100"
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="text-2xl font-bold text-[#305e73] mb-1">
-                            {quadro.totalCards || 0}
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Cards</div>
-                        </motion.div>
-                        
-                        <motion.div 
-                          className="text-center p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100"
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="text-2xl font-bold text-purple-600 mb-1">
-                            {quadro.membros || 1}
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Membros</div>
-                        </motion.div>
-                        
-                        <motion.div 
-                          className="text-center p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-100"
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="text-2xl font-bold text-emerald-600 mb-1">
-                            {quadro.progresso || 0}%
-                          </div>
-                          <div className="text-xs text-gray-600 font-medium">Progresso</div>
-                        </motion.div>
-                      </div>
-                      
-                      {/* Barra de Progresso */}
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-600">Progresso Geral</span>
-                          <span className="text-xs font-bold text-[#305e73]">{quadro.progresso || 0}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      {/* Bottom Status Bar */}
+                      <motion.div 
+                        className={`flex items-center justify-between p-4 rounded-2xl backdrop-blur-sm ${
+                          actualTheme === 'dark'
+                            ? 'bg-gradient-to-r from-emerald-500/10 to-green-500/5'
+                            : 'bg-gradient-to-r from-emerald-50 to-green-50'
+                        }`}
+                        style={{
+                          border: actualTheme === 'dark'
+                            ? '1px solid rgba(16, 185, 129, 0.2)'
+                            : '1px solid rgba(16, 185, 129, 0.15)'
+                        }}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 1.2 + (index * 0.05) }}
+                      >
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs ${
+                          actualTheme === 'dark'
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : 'bg-emerald-100 text-emerald-700'
+                        }`}>
                           <motion.div 
-                            className="h-full bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${quadro.progresso || 0}%` }}
-                            transition={{ duration: 1, delay: 0.5 + (index * 0.1) }}
+                            className="w-2 h-2 rounded-full bg-emerald-500"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
                           />
-                        </div>
-                      </div>
-                      
-                      {/* Footer com ações rápidas */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <motion.div 
-                            className="flex items-center gap-2 text-xs text-gray-500"
-                            whileHover={{ scale: 1.05 }}
-                          >
-                            <Calendar className="w-3 h-3" />
-                            <span>Criado há {Math.floor(Math.random() * 30) + 1} dias</span>
-                          </motion.div>
+                          Ativo
                         </div>
                         
-                        <motion.button
-                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300"
-                          whileHover={{ scale: 1.05, y: -1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/dashboard/admin/kanban/${quadro.id}`)
-                          }}
-                        >
-                          <Target className="w-3 h-3" />
-                          Abrir Quadro
-                        </motion.button>
-                      </div>
+                        <span className={`text-sm font-medium ${
+                          actualTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          {quadro.progresso || 0}% completo
+                        </span>
+                      </motion.div>
                     </div>
                   </div>
                 </motion.div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

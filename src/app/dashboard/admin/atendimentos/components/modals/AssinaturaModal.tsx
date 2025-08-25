@@ -7,7 +7,8 @@ import { X, FileSignature, CreditCard, Link, User, Phone, Calendar, DollarSign }
 interface AssinaturaModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (assinatura: AssinaturaData) => void
+  onSave?: (assinatura: AssinaturaData) => void
+  chatId?: string
   contactData?: {
     nome?: string
     telefone?: string
@@ -29,8 +30,10 @@ export default function AssinaturaModal({
   isOpen, 
   onClose, 
   onSave, 
+  chatId,
   contactData 
 }: AssinaturaModalProps) {
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<AssinaturaData>({
     nome: '',
     plano: '',
@@ -42,9 +45,31 @@ export default function AssinaturaModal({
     telefone: contactData?.telefone || ''
   })
 
-  // Preencher dados do contato quando disponível
+  // API para criar assinatura
+  const apiCreateAssinatura = async (assinaturaData: any) => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token não encontrado')
+
+    const response = await fetch('/api/assinaturas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(assinaturaData),
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro ao criar assinatura')
+    }
+
+    return response.json()
+  }
+
+  // Atualizar dados do contato quando mudarem
   useEffect(() => {
     if (contactData) {
+      console.log('ContactData recebido no modal:', contactData)
       setFormData(prev => ({
         ...prev,
         cliente: contactData.nome || '',
@@ -53,21 +78,57 @@ export default function AssinaturaModal({
     }
   }, [contactData])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Debug do chatId
+  useEffect(() => {
+    console.log('ChatId no AssinaturaModal:', chatId)
+  }, [chatId])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
-    onClose()
-    // Reset form
-    setFormData({
-      nome: '',
-      plano: '',
-      formaPagamento: 'pix',
-      linkPagamento: '',
-      valor: 0,
-      renovacao: 'mensal',
-      cliente: contactData?.nome || '',
-      telefone: contactData?.telefone || ''
-    })
+    if (!chatId) return
+    
+    setLoading(true)
+    try {
+      // Preparar dados para o backend
+      const assinaturaData = {
+        nome: formData.nome,
+        plano: formData.plano,
+        forma_pagamento: formData.formaPagamento,
+        link_pagamento: formData.linkPagamento || null,
+        valor: formData.valor,
+        renovacao: formData.renovacao,
+        data_inicio: new Date().toISOString(), // Data de início como hoje
+        contato_id: chatId, // JID do contato
+      }
+
+      console.log('Criando assinatura:', assinaturaData)
+      
+      await apiCreateAssinatura(assinaturaData)
+      
+      // Callback opcional para compatibilidade
+      if (onSave) {
+        onSave(formData)
+      }
+      
+      onClose()
+      
+      // Reset form
+      setFormData({
+        nome: '',
+        plano: '',
+        formaPagamento: 'pix',
+        linkPagamento: '',
+        valor: 0,
+        renovacao: 'mensal',
+        cliente: contactData?.nome || '',
+        telefone: contactData?.telefone || ''
+      })
+    } catch (error) {
+      console.error('Erro ao criar assinatura:', error)
+      alert('Erro ao criar assinatura!')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (field: keyof AssinaturaData, value: string | number) => {

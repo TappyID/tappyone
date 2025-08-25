@@ -7,7 +7,8 @@ import { X, Calendar, Clock, Link, FileText, User, Phone } from 'lucide-react'
 interface AgendamentoModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (agendamento: AgendamentoData) => void
+  onSave?: (agendamento: AgendamentoData) => void
+  chatId?: string
   contactData?: {
     nome?: string
     telefone?: string
@@ -28,8 +29,10 @@ export default function AgendamentoModal({
   isOpen, 
   onClose, 
   onSave, 
+  chatId,
   contactData 
 }: AgendamentoModalProps) {
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<AgendamentoData>({
     titulo: '',
     data: '',
@@ -39,6 +42,27 @@ export default function AgendamentoModal({
     cliente: contactData?.nome || '',
     telefone: contactData?.telefone || ''
   })
+
+  // API para criar agendamento
+  const apiCreateAgendamento = async (agendamentoData: any) => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token não encontrado')
+
+    const response = await fetch('/api/agendamentos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(agendamentoData),
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro ao criar agendamento')
+    }
+
+    return response.json()
+  }
 
   // Preencher dados do contato quando disponível
   useEffect(() => {
@@ -51,20 +75,49 @@ export default function AgendamentoModal({
     }
   }, [contactData])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
-    onClose()
-    // Reset form
-    setFormData({
-      titulo: '',
-      data: '',
-      horario: '',
-      linkMeeting: '',
-      descricao: '',
-      cliente: contactData?.nome || '',
-      telefone: contactData?.telefone || ''
-    })
+    if (!chatId) return
+    
+    setLoading(true)
+    try {
+      // Preparar dados para o backend
+      const agendamentoData = {
+        titulo: formData.titulo,
+        descricao: formData.descricao || null,
+        inicio_em: new Date(`${formData.data}T${formData.horario}`).toISOString(),
+        fim_em: new Date(`${formData.data}T${formData.horario}`).toISOString(), // Por enquanto mesmo horário
+        link_meeting: formData.linkMeeting || null,
+        contato_id: chatId, // JID do contato
+      }
+
+      console.log('Criando agendamento:', agendamentoData)
+      
+      await apiCreateAgendamento(agendamentoData)
+      
+      // Callback opcional para compatibilidade
+      if (onSave) {
+        onSave(formData)
+      }
+      
+      onClose()
+      
+      // Reset form
+      setFormData({
+        titulo: '',
+        data: '',
+        horario: '',
+        linkMeeting: '',
+        descricao: '',
+        cliente: contactData?.nome || '',
+        telefone: contactData?.telefone || ''
+      })
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error)
+      alert('Erro ao criar agendamento!')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (field: keyof AgendamentoData, value: string) => {

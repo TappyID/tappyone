@@ -47,7 +47,36 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showTranslation, setShowTranslation] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('pt-BR')
   const { actualTheme, setTheme } = useTheme()
+  
+  // Mapeamento de idiomas para bandeiras
+  const getCountryCode = (langCode: string) => {
+    const mapping: { [key: string]: string } = {
+      'pt-BR': 'BR',
+      'en-US': 'US', 
+      'es-ES': 'ES',
+      'hi-IN': 'IN',
+      'fr-FR': 'FR'
+    }
+    return mapping[langCode] || 'BR'
+  }
+
+  // Função para alterar idioma
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode)
+    
+    console.log('🌍 Alterando idioma para:', langCode)
+    
+    // Disparar evento global para o ChatArea
+    const event = new CustomEvent('languageChanged', {
+      detail: { languageCode: langCode }
+    })
+    window.dispatchEvent(event)
+    
+    // Fechar dropdown após seleção
+    setShowTranslation(false)
+  }
   
   // Detectar se está na página do Kanban
   const isKanbanPage = pathname?.includes('/kanban')
@@ -268,9 +297,13 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </motion.button>
               
               {/* Badge com bandeira do idioma ativo */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-indigo-300/30">
+              <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border ${
+                selectedLanguage !== 'pt-BR' 
+                  ? 'bg-gradient-to-br from-green-400 to-green-600 border-green-300/30 animate-pulse' 
+                  : 'bg-gradient-to-br from-indigo-400 to-indigo-600 border-indigo-300/30'
+              }`}>
                 <ReactCountryFlag
-                  countryCode="BR"
+                  countryCode={getCountryCode(selectedLanguage)}
                   svg
                   style={{
                     width: '12px',
@@ -349,13 +382,16 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
                             countryCode: 'FR',
                             active: false
                           }
-                        ].map((lang, index) => (
+                        ].map((lang, index) => {
+                          const isActive = selectedLanguage === lang.code
+                          return (
                           <motion.button
                             key={lang.code}
+                            onClick={() => handleLanguageChange(lang.code)}
                             whileHover={{ scale: 1.02, x: 4 }}
                             whileTap={{ scale: 0.98 }}
                             className={`w-full p-3 rounded-lg border transition-all flex items-center gap-3 ${
-                              lang.active 
+                              isActive
                                 ? 'bg-green-500/20 border-green-400/50 text-green-300 shadow-lg shadow-green-500/20' 
                                 : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
                             }`}
@@ -375,11 +411,11 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
                               <div className="font-semibold text-sm">{lang.name}</div>
                               <div className="text-xs opacity-70">{lang.country}</div>
                             </div>
-                            {lang.active && (
+                            {isActive && (
                               <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                             )}
                           </motion.button>
-                        ))}
+                          )})}
                       </div>
                     </div>
                     

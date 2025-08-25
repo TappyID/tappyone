@@ -104,7 +104,7 @@ export default function RespostasList({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
     >
       {respostas.map((resposta, index) => {
         const categoria = getCategoriaById(resposta.categoria_id)
@@ -115,28 +115,28 @@ export default function RespostasList({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+            className="bg-white rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg hover:border-[#305e73]/20 transition-all duration-300 group hover:-translate-y-1"
           >
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                <div className="flex items-center gap-1 mb-1">
+                  <h3 className="font-semibold text-sm text-gray-900 truncate">
                     {resposta.titulo}
                   </h3>
                   {resposta.pausado ? (
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">Pausada</span>
                   ) : (
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="px-1.5 py-0.5 bg-green-100 text-green-600 text-xs font-medium rounded-full">Ativa</span>
                   )}
                 </div>
                 
                 {categoria && (
                   <div 
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-white mb-2"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white mb-1"
                     style={{ backgroundColor: categoria.cor }}
                   >
-                    <Tag className="w-3 h-3" />
+                    <Tag className="w-2.5 h-2.5" />
                     {categoria.nome}
                   </div>
                 )}
@@ -229,30 +229,23 @@ export default function RespostasList({
             )}
 
             {/* Triggers */}
-            <div className="mb-4">
-              <p className="text-xs font-medium text-gray-500 mb-1">Triggers:</p>
-              <p className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 mb-1">Triggers:</p>
+              <p className="text-xs text-gray-700 bg-gray-50 rounded px-2 py-1 truncate">
                 {formatTriggers(resposta.triggers)}
               </p>
             </div>
 
             {/* Stats */}
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-              <div className="flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                {resposta.acoes?.length || 0} ações
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">
+                <Zap className="w-3 h-3 text-blue-500" />
+                <span>{resposta.acoes?.length || 0}</span>
               </div>
               
-              {resposta.agendamento_ativo && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  Agendado
-                </div>
-              )}
-              
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {new Date(resposta.created_at).toLocaleDateString('pt-BR')}
+              <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">
+                <Clock className="w-3 h-3 text-gray-500" />
+                <span>{new Date(resposta.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
               </div>
             </div>
 
@@ -261,10 +254,10 @@ export default function RespostasList({
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onExecute(resposta.id, 'test-chat')} // TODO: Implementar seleção de chat
-                className="flex-1 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all duration-200"
+                onClick={() => onExecute(resposta.id, 'test-chat')}
+                className="flex-1 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:shadow-md transition-all duration-200"
               >
-                <Play className="w-4 h-4" />
+                <Play className="w-3 h-3" />
                 Executar
               </motion.button>
 
@@ -272,9 +265,9 @@ export default function RespostasList({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onEdit(resposta)}
-                className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                className="bg-blue-50 text-blue-600 py-2 px-3 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center"
               >
-                <Eye className="w-4 h-4" />
+                <Eye className="w-3 h-3" />
               </motion.button>
             </div>
           </motion.div>

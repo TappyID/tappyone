@@ -4,7 +4,9 @@ import React, { useEffect, useRef, useCallback, useState } from 'react'
 import { FixedSizeList as List } from 'react-window'
 import InfiniteLoader from 'react-window-infinite-loader'
 import { useInfiniteMessages, WhatsAppMessage } from '@/hooks/useInfiniteMessages'
-import { AudioLines, Download, FileText, Image, Video, MapPin, Users, Star } from 'lucide-react'
+import { FixedSizeList } from 'react-window'
+import { AudioLines, FileImage, FileVideo, MapPin, User, FileText, Download, Users } from 'lucide-react'
+import AudioMessageComponent from './AudioMessageComponent'
 
 interface VirtualizedChatAreaProps {
   chatId: string | null
@@ -85,19 +87,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ index, style, data }) => {
         
         return (
           <div className="mb-2">
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-              <AudioLines className="w-5 h-5 text-blue-500" />
-              {message.mediaUrl ? (
-                <audio controls className="flex-1" preload="metadata">
-                  <source src={message.mediaUrl} type="audio/webm" />
-                  <source src={message.mediaUrl} type="audio/ogg" />
-                  <source src={message.mediaUrl} type="audio/mpeg" />
-                  Seu navegador não suporta áudio.
-                </audio>
-              ) : (
-                <span className="text-sm text-gray-500">Áudio não disponível</span>
-              )}
-            </div>
+            <AudioMessageComponent 
+              message={message}
+              onTranscribe={(text) => {
+                // Adicionar transcrição à mensagem
+                console.log('Transcrição:', text)
+              }}
+            />
             {(message.body || message.caption) && !message.body?.includes('🎤 *Mensagem de Áudio*') && (
               <p className="text-sm mt-2">{message.body || message.caption}</p>
             )}

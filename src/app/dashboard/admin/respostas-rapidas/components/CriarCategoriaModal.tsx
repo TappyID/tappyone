@@ -1,11 +1,12 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Tag, Palette, Save } from 'lucide-react'
+import { X, Tag, Palette, Save, MessageCircle, Users, Headphones, DollarSign, HelpCircle, Star, Heart, Zap, Shield, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { CreateCategoriaRequest } from '@/hooks/useRespostasRapidas'
 
 interface CriarCategoriaModalProps {
+  isOpen: boolean
   onClose: () => void
   onSave: (data: CreateCategoriaRequest) => Promise<void>
 }
@@ -16,7 +17,21 @@ const coresPredefinidas = [
   '#0f766e', '#4338ca', '#7c2d12', '#166534', '#1e40af', '#be123c'
 ]
 
+const iconesPredefinidos = [
+  { name: 'MessageCircle', component: MessageCircle, label: 'Mensagem' },
+  { name: 'Users', component: Users, label: 'Usuários' },
+  { name: 'Headphones', component: Headphones, label: 'Suporte' },
+  { name: 'DollarSign', component: DollarSign, label: 'Vendas' },
+  { name: 'HelpCircle', component: HelpCircle, label: 'Ajuda' },
+  { name: 'Star', component: Star, label: 'Favorito' },
+  { name: 'Heart', component: Heart, label: 'Favorito' },
+  { name: 'Zap', component: Zap, label: 'Rápido' },
+  { name: 'Shield', component: Shield, label: 'Segurança' },
+  { name: 'Settings', component: Settings, label: 'Configurações' }
+]
+
 export default function CriarCategoriaModal({
+  isOpen,
   onClose,
   onSave
 }: CriarCategoriaModalProps) {
@@ -24,6 +39,7 @@ export default function CriarCategoriaModal({
     nome: '',
     descricao: '',
     cor: '#305e73',
+    icone: 'MessageCircle',
     ordem: 0
   })
   
@@ -59,6 +75,8 @@ export default function CriarCategoriaModal({
     setCorCustomizada(cor)
     setFormData(prev => ({ ...prev, cor }))
   }
+
+  if (!isOpen) return null
 
   return (
     <AnimatePresence>
@@ -127,6 +145,59 @@ export default function CriarCategoriaModal({
                 rows={3}
                 placeholder="Descreva o propósito desta categoria..."
               />
+            </div>
+
+            {/* Ícone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Ícone da Categoria
+              </label>
+              
+              {/* Preview do ícone selecionado */}
+              <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                {(() => {
+                  const iconeAtual = iconesPredefinidos.find(i => i.name === formData.icone)
+                  const IconComponent = iconeAtual?.component || MessageCircle
+                  return (
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: formData.cor }}
+                    >
+                      <IconComponent className="w-4 h-4 text-white" />
+                    </div>
+                  )
+                })()}
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {iconesPredefinidos.find(i => i.name === formData.icone)?.label || 'Mensagem'}
+                  </p>
+                  <p className="text-sm text-gray-600 font-mono">{formData.icone}</p>
+                </div>
+              </div>
+
+              {/* Grid de ícones */}
+              <div className="grid grid-cols-5 gap-2">
+                {iconesPredefinidos.map((icone) => {
+                  const IconComponent = icone.component
+                  return (
+                    <motion.button
+                      key={icone.name}
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setFormData(prev => ({ ...prev, icone: icone.name }))}
+                      className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all ${
+                        formData.icone === icone.name 
+                          ? 'bg-[#305e73] text-white shadow-lg' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={icone.label}
+                    >
+                      <IconComponent className="w-5 h-5" />
+                    </motion.button>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Cor */}

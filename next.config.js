@@ -39,15 +39,16 @@ const nextConfig = {
     NEXT_PUBLIC_WAHA_API_URL: process.env.WAHA_API_URL || 'https://server.tappy.id/api',
     NEXT_PUBLIC_WAHA_API_KEY: process.env.WAHA_API_KEY || 'tappyone-waha-2024-secretkey',
   },
-  async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081';
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ]
-  },
+  // Comentado para permitir que as rotas API do Next.js funcionem
+  // async rewrites() {
+  //   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081';
+  //   return [
+  //     {
+  //       source: '/api/:path*',
+  //       destination: `${backendUrl}/api/:path*`,
+  //     },
+  //   ]
+  // },
 }
 
 module.exports = nextConfig

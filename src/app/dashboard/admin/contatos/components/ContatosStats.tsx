@@ -1,14 +1,53 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, UserCheck, Star, UserX, TrendingUp, MessageCircle } from 'lucide-react'
 
+interface StatsData {
+  totalContatos: number
+  contatosAtivos: number
+  favoritos: number
+  conversasHoje: number
+}
+
 export default function ContatosStats() {
-  // Aqui você pode conectar com a API real para buscar os dados
+  const [statsData, setStatsData] = useState<StatsData>({
+    totalContatos: 0,
+    contatosAtivos: 0,
+    favoritos: 0,
+    conversasHoje: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStatsData(data)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
   const stats = [
     {
       title: 'Total de Contatos',
-      value: 1234,
+      value: loading ? 0 : statsData.totalContatos,
       icon: Users,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-100',
@@ -19,7 +58,7 @@ export default function ContatosStats() {
     },
     {
       title: 'Contatos Ativos',
-      value: 987,
+      value: loading ? 0 : statsData.contatosAtivos,
       icon: UserCheck,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-100',
@@ -30,7 +69,7 @@ export default function ContatosStats() {
     },
     {
       title: 'Favoritos',
-      value: 156,
+      value: loading ? 0 : statsData.favoritos,
       icon: Star,
       color: 'from-yellow-500 to-yellow-600',
       bgColor: 'bg-yellow-100',
@@ -41,7 +80,7 @@ export default function ContatosStats() {
     },
     {
       title: 'Conversas Hoje',
-      value: 89,
+      value: loading ? 0 : statsData.conversasHoje,
       icon: MessageCircle,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-100',

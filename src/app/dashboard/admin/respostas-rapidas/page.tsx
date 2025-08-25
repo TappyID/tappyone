@@ -17,12 +17,14 @@ import {
   Tag
 } from 'lucide-react'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
-import { useRespostasRapidas } from '../../../../hooks/useRespostasRapidas'
+import { useRespostasRapidas, RespostaRapida } from '../../../../hooks/useRespostasRapidas'
 import RespostasList from './components/RespostasList'
 import CategoriasList from './components/CategoriasList'
 import EstatisticasCard from './components/EstatisticasCard'
 import CriarRespostaModal from './components/CriarRespostaModal'
 import CriarCategoriaModal from './components/CriarCategoriaModal'
+import VisualizarRespostaModal from './components/VisualizarRespostaModal'
+import CriarComIAModal from './components/CriarComIAModal'
 
 export default function RespostasRapidasPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -31,6 +33,10 @@ export default function RespostasRapidasPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [selectedResposta, setSelectedResposta] = useState<RespostaRapida | null>(null)
+  const [editingResposta, setEditingResposta] = useState<RespostaRapida | null>(null)
+  const [showAIModal, setShowAIModal] = useState(false)
 
   const {
     respostas,
@@ -43,20 +49,55 @@ export default function RespostasRapidasPage() {
     togglePauseResposta,
     executeResposta,
     createCategoria,
-    updateCategoria,
-    deleteCategoria
   } = useRespostasRapidas()
 
   const filteredRespostas = respostas.filter(resposta => {
     const matchesSearch = resposta.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          resposta.descricao?.toLowerCase().includes(searchQuery.toLowerCase())
+    
     const matchesCategory = !selectedCategory || resposta.categoria_id === selectedCategory
+    
     const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && !resposta.pausado) ||
-                         (statusFilter === 'paused' && resposta.pausado)
+                         (statusFilter === 'active' && resposta.ativo) ||
+                         (statusFilter === 'paused' && !resposta.ativo)
     
     return matchesSearch && matchesCategory && matchesStatus
   })
+
+  const handleCreateWithAI = () => {
+    setShowAIModal(true)
+  }
+
+  const handleViewResposta = (resposta: RespostaRapida) => {
+    setSelectedResposta(resposta)
+    setShowViewModal(true)
+  }
+
+  const handleEditResposta = (resposta: RespostaRapida) => {
+    setEditingResposta(resposta)
+    setShowCreateModal(true)
+  }
+
+  const handleDuplicateResposta = async (resposta: RespostaRapida) => {
+    try {
+      const duplicatedResposta = {
+        ...resposta,
+        titulo: `${resposta.titulo} (Cópia)`,
+        id: undefined
+      }
+      await createResposta(duplicatedResposta)
+    } catch (err) {
+      console.error('Erro ao duplicar resposta:', err)
+    }
+  }
+
+  const handleExecuteResposta = async (respostaId: string, chatId: string) => {
+    try {
+      await executeResposta(respostaId, chatId)
+    } catch (err) {
+      console.error('Erro ao executar resposta:', err)
+    }
+  }
 
   const filteredCategorias = categorias.filter(categoria => {
     return categoria.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,7 +117,7 @@ export default function RespostasRapidasPage() {
 
   const handleDeleteCategoria = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-      await deleteCategoria(id)
+      console.log('Delete categoria não implementado:', id)
     }
   }
 
@@ -100,15 +141,26 @@ export default function RespostasRapidasPage() {
             
             <div className="flex items-center gap-3">
               {activeTab === 'respostas' && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Plus className="w-5 h-5" />
-                  Nova Resposta
-                </motion.button>
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleCreateWithAI()}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    <Zap className="w-5 h-5" />
+                    Criar com IA
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowCreateModal(true)}
+                    className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Nova Resposta
+                  </motion.button>
+                </>
               )}
               
               {activeTab === 'categorias' && (
@@ -236,19 +288,10 @@ export default function RespostasRapidasPage() {
                 respostas={filteredRespostas}
                 categorias={categorias}
                 loading={loading}
-                onEdit={(resposta) => {
-                  // TODO: Implement edit modal
-                  console.log('Edit resposta:', resposta)
-                }}
-                onDuplicate={(resposta) => {
-                  // TODO: Implement duplicate functionality
-                  console.log('Duplicate resposta:', resposta)
-                }}
+                onEdit={handleEditResposta}
+                onDuplicate={handleDuplicateResposta}
                 onTogglePause={togglePauseResposta}
-                onExecute={(resposta) => {
-                  // TODO: Implement chat selection for execution
-                  console.log('Execute resposta:', resposta)
-                }}
+                onExecute={handleExecuteResposta}
                 onDelete={deleteResposta}
               />
             </motion.div>
@@ -288,21 +331,40 @@ export default function RespostasRapidasPage() {
         </AnimatePresence>
       </div>
 
-      {/* Modals */}
-      {showCreateModal && (
+        {/* Modals */}
         <CriarRespostaModal
-          categorias={categorias}
-          onClose={() => setShowCreateModal(false)}
+          isOpen={showCreateModal}
+          onClose={() => {
+            setShowCreateModal(false)
+            setEditingResposta(null)
+          }}
           onSave={createResposta}
+          onUpdate={updateResposta}
+          categorias={categorias}
+          editingResposta={editingResposta}
         />
-      )}
 
-      {showCreateCategoryModal && (
         <CriarCategoriaModal
+          isOpen={showCreateCategoryModal}
           onClose={() => setShowCreateCategoryModal(false)}
           onSave={createCategoria}
         />
-      )}
+
+        <VisualizarRespostaModal
+          isOpen={showViewModal}
+          onClose={() => setShowViewModal(false)}
+          resposta={selectedResposta}
+          onEdit={() => {
+            setShowViewModal(false)
+            setShowCreateModal(true)
+          }}
+        />
+
+        <CriarComIAModal
+          isOpen={showAIModal}
+          onClose={() => setShowAIModal(false)}
+          onCreateResposta={createResposta}
+        />
     </div>
   )
 }

@@ -1,31 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { chatId: string } }
 ) {
   try {
+    console.log('🎵 SERVER: Recebendo requisição de áudio para chat:', params.chatId)
+    
     const formData = await request.formData()
     const file = formData.get('voice') as File
 
     if (!file) {
+      console.log('❌ SERVER: Nenhum arquivo de áudio encontrado no FormData')
       return NextResponse.json({ error: 'Nenhum áudio fornecido' }, { status: 400 })
     }
 
-    // Converter arquivo para FormData para enviar ao backend Go
-    const backendFormData = new FormData()
-    backendFormData.append('voice', file)
+    console.log('✅ SERVER: Arquivo de áudio encontrado:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
 
-    // Enviar diretamente para o backend Go (que salvará no droplet)
+    // Converter webm para ogg para melhor compatibilidade com WhatsApp
+    let finalFile = file
+    let finalExtension = 'ogg'
+    
+    if (file.type.includes('webm')) {
+      console.log('🔄 SERVER: Convertendo webm para ogg...')
+      const arrayBuffer = await file.arrayBuffer()
+      finalFile = new File([arrayBuffer], file.name.replace('.webm', '.ogg'), {
+        type: 'audio/ogg; codecs=opus'
+      })
+    }
+
+    // Upload do arquivo para Vercel Blob Storage
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substring(2, 15)
+    const fileName = `voice/${timestamp}_${randomId}.${finalExtension}`
+
+    console.log('☁️ SERVER: Fazendo upload para Vercel Blob Storage...', {
+      originalType: file.type,
+      finalType: finalFile.type,
+      fileName
+    })
+    
+    const blob = await put(fileName, finalFile, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
+
+    console.log('✅ SERVER: Upload concluído:', {
+      blobUrl: blob.url,
+      fileName: fileName,
+      size: file.size
+    })
+
+    // Enviar URL pública para o backend Go
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
     const token = request.headers.get('authorization')
 
     const response = await fetch(`${backendUrl}/api/whatsapp/chats/${params.chatId}/voice`, {
       method: 'POST',
       headers: {
-        'Authorization': token || ''
+        'Authorization': token || '',
+        'Content-Type': 'application/json'
       },
-      body: backendFormData
+      body: JSON.stringify({
+        audioUrl: blob.url
+      })
+    })
+
+    console.log('🎵 SERVER: Resposta do backend Go:', {
+      status: response.status,
+      statusText: response.statusText
     })
 
     if (!response.ok) {
@@ -37,6 +85,7 @@ export async function POST(
     const result = await response.json()
     return NextResponse.json({
       success: true,
+      blobUrl: blob.url,
       ...result
     })
 

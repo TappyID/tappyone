@@ -99,3 +99,27 @@ export function getStatusColor(status: string): string {
   
   return colors[status] || 'bg-gray-100 text-gray-800'
 }
+
+export function cleanPhoneNumber(phone: string): string {
+  if (!phone) return ''
+  
+  // Remove prefixo @c.us se existir
+  let cleaned = phone.replace('@c.us', '')
+  
+  // Remove código do país (55) se começar com ele
+  if (cleaned.startsWith('55') && cleaned.length > 11) {
+    cleaned = cleaned.substring(2)
+  }
+  
+  // Remove todos os caracteres não numéricos
+  cleaned = cleaned.replace(/\D/g, '')
+  
+  // Aplica formatação brasileira
+  if (cleaned.length === 11) {
+    return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+  } else if (cleaned.length === 10) {
+    return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
+  }
+  
+  return cleaned
+}

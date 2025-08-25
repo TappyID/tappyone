@@ -23,6 +23,7 @@ interface MessageContextMenuProps {
   onDelete: (message: WhatsAppMessage) => void
   onStar: (message: WhatsAppMessage) => void
   onCopy: (text: string) => void
+  isStarred?: boolean
 }
 
 export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
@@ -32,7 +33,8 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onEdit,
   onDelete,
   onStar,
-  onCopy
+  onCopy,
+  isStarred = false
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
@@ -166,8 +168,8 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
               onClick={() => handleAction(() => onStar(message))}
               className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 flex items-center gap-3 text-gray-700"
             >
-              <Star className="w-4 h-4 text-blue-600" />
-              Favoritar
+              <Star className={`w-4 h-4 ${isStarred ? 'text-yellow-500 fill-yellow-500' : 'text-blue-600'}`} />
+              {isStarred ? 'Remover favorito' : 'Favoritar'}
             </button>
 
             {hasText && (

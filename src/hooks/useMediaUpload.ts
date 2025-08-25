@@ -140,12 +140,29 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
     try {
       const formData = new FormData()
       formData.append('chatId', chatId)
-      formData.append('audio', audioBlob, 'voice_message.webm')
+      formData.append('voice', audioBlob, 'voice_message.webm')
+
+      console.log('🎵 ENVIANDO ÁUDIO:', {
+        chatId,
+        audioBlob: audioBlob,
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+        formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
+          key,
+          value: value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value
+        }))
+      })
 
       const response = await fetch(`/api/whatsapp/chats/${chatId}/voice`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
+      })
+
+      console.log('🎵 RESPOSTA ÁUDIO:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
       })
 
       if (!response.ok) {

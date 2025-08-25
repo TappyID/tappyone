@@ -1,8 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useTranslation } from '@/hooks/useTranslation'
+import { useFavorites } from '@/hooks/useFavorites'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import MediaSendModal from '@/components/ui/MediaSendModal'
+import SpecialMediaModal from '@/components/ui/SpecialMediaModal'
+import AudioMessageComponent from '@/components/AudioMessageComponent'
 import {
   Send,
   Paperclip,
@@ -27,6 +32,7 @@ import {
   Calendar,
   DollarSign,
   FileText,
+  StickyNote,
   Tag,
   Users,
   MapPin,
@@ -52,6 +58,7 @@ import {
   WifiOff,
   MessageSquare,
   FileSignature,
+  UserCheck,
   Hash,
   Monitor,
   Upload,
@@ -65,17 +72,18 @@ import EmojiPicker from '@/components/EmojiPicker'
 import { MessageContextMenu } from '@/components/MessageContextMenu'
 import { EditMessageModal } from '@/components/EditMessageModal'
 import ForwardMessageModal from '@/components/ForwardMessageModal'
-import { MediaSendModal } from '@/components/MediaSendModal'
 import MessageContent from '@/components/MessageContent'
 import InputLinkPreview from '@/components/InputLinkPreview'
 import { useMessageActions } from '@/hooks/useMessageActions'
-import AgendamentoModal from './modals/AgendamentoModal'
-import OrcamentoModal from './modals/OrcamentoModal'
+import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
+import CriarOrcamentoModal from '../../orcamentos/components/CriarOrcamentoModal'
 import AssinaturaModal from './modals/AssinaturaModal'
 import TagsModal from './modals/TagsModal'
 import VideoChamadaModal from './modals/VideoChamadaModal'
 import LigacaoModal from './modals/LigacaoModal'
 import CompartilharTelaModal from './modals/CompartilharTelaModal'
+import QuickActionsSidebar from './QuickActionsSidebar'
+import AnotacoesSidebar from './AnotacoesSidebar'
 
 interface ChatAreaProps {
   conversation: any
@@ -85,6 +93,16 @@ interface ChatAreaProps {
   onMarkAsRead?: (chatId: string) => void
   isLoading?: boolean
   isTyping?: boolean
+  isQuickActionsSidebarOpen?: boolean
+  onToggleQuickActionsSidebar?: () => void
+  isAnotacoesSidebarOpen?: boolean
+  onToggleAnotacoesSidebar?: () => void
+  // Contadores dos badges
+  notesCount?: number,
+  orcamentosCount?: number,
+  agendamentosCount?: number,
+  assinaturasCount?: number,
+  contactStatus?: 'synced' | 'error'
 }
 
 
@@ -100,20 +118,30 @@ const transformMessages = (wahaMessages: any[]) => {
     }),
     sender: msg.fromMe ? 'agent' : 'user',
     status: msg.status || 'sent',
-    type: msg.type || 'text',
+    type: msg.processedType || msg.type || 'text', // Usar processedType do backend primeiro
     mediaUrl: msg.mediaUrl || msg.url || null,
-    filename: msg.filename || msg.name || null
+    filename: msg.filename || msg.name || null,
+    mimetype: msg.mimetype || null
   }))
 }
 
-export default function ChatArea({ 
-  conversation, 
-  messages: propMessages, 
+export default function ChatArea({
+  conversation,
+  messages,
   onSendMessage,
   onTyping,
   onMarkAsRead,
   isLoading = false,
-  isTyping: propIsTyping = false 
+  isTyping = false,
+  isQuickActionsSidebarOpen = false,
+  onToggleQuickActionsSidebar,
+  isAnotacoesSidebarOpen = false,
+  onToggleAnotacoesSidebar,
+  notesCount = 0,
+  orcamentosCount = 0,
+  agendamentosCount = 0,
+  assinaturasCount = 0,
+  contactStatus = 'error'
 }: ChatAreaProps) {
   const [message, setMessage] = useState('')
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -215,15 +243,105 @@ export default function ChatArea({
     loadKanbanInfo()
   }, [conversation])
   
+  // Extrair chatId
+  const chatId = extractChatId(conversation)
+  
+  // Hook de tradução
+  const { translateMessage, translateMessages, selectedLanguage, setSelectedLanguage, isTranslating } = useTranslation()
+  
+  // Hook de favoritos
+  const { isStarred, toggleStar, loading: favoritesLoading } = useFavorites(chatId)
+
+  // Estado para mensagens traduzidas
+  const [translatedMessages, setTranslatedMessages] = useState<any[]>([])
+  
   // Transformar mensagens da WAHA API para o formato do componente
-  const messages = transformMessages(propMessages || [])
-  const [isTyping, setIsTyping] = useState(propIsTyping)
+  const transformedMessages = transformMessages(messages || [])
+  
+  // Usar mensagens traduzidas se disponíveis, senão usar originais
+  const displayMessages = translatedMessages.length > 0 ? translatedMessages : transformedMessages
+  
+  // Escutar mudanças de idioma
+  useEffect(() => {
+    const handleLanguageChange = async (event: CustomEvent) => {
+      console.log('🎯 ChatArea recebeu evento languageChanged:', event.detail)
+      const { languageCode } = event.detail
+      setSelectedLanguage(languageCode)
+      
+      if (languageCode === 'pt' || languageCode === 'pt-BR') {
+        // Voltar ao português original
+        console.log('🇧🇷 Voltando para português original')
+        setTranslatedMessages([])
+      } else {
+        // Traduzir mensagens para o novo idioma
+        console.log('🌍 Iniciando tradução das mensagens para:', languageCode, 'Total mensagens:', transformedMessages.length)
+        const translated = await translateMessages(transformedMessages, languageCode)
+        console.log('✅ Tradução concluída:', translated.length, 'mensagens')
+        setTranslatedMessages(translated)
+      }
+    }
+
+    console.log('👂 ChatArea registrando listener para languageChanged')
+    window.addEventListener('languageChanged', handleLanguageChange as EventListener)
+    
+    return () => {
+      console.log('🗑️ ChatArea removendo listener languageChanged')
+      window.removeEventListener('languageChanged', handleLanguageChange as EventListener)
+    }
+  }, [transformedMessages, translateMessages, setSelectedLanguage])
+  
+  // Traduzir mensagens apenas quando chat ativo mudar ou idioma mudar
+  const lastTranslationRef = useRef<{ chatId: string | null, language: string, messageCount: number }>({ 
+    chatId: null, 
+    language: 'pt-BR', 
+    messageCount: 0 
+  })
+  
+  useEffect(() => {
+    const shouldTranslate = (
+      selectedLanguage !== 'pt' && 
+      selectedLanguage !== 'pt-BR' && 
+      transformedMessages.length > 0 &&
+      (
+        lastTranslationRef.current.chatId !== chatId ||
+        lastTranslationRef.current.language !== selectedLanguage ||
+        lastTranslationRef.current.messageCount !== transformedMessages.length
+      )
+    )
+    
+    if (shouldTranslate) {
+      console.log('🌍 Traduzindo', transformedMessages.length, 'mensagens para:', selectedLanguage)
+      
+      translateMessages(transformedMessages, selectedLanguage).then(translated => {
+        setTranslatedMessages(translated)
+        
+        // Atualizar referência para evitar traduções desnecessárias
+        lastTranslationRef.current = {
+          chatId,
+          language: selectedLanguage,
+          messageCount: transformedMessages.length
+        }
+      }).catch(error => {
+        console.error('❌ Erro na tradução:', error)
+      })
+    } else if (selectedLanguage === 'pt' || selectedLanguage === 'pt-BR') {
+      // Limpar traduções quando voltar ao português
+      setTranslatedMessages([])
+      lastTranslationRef.current = {
+        chatId,
+        language: selectedLanguage,
+        messageCount: transformedMessages.length
+      }
+    }
+  }, [chatId, selectedLanguage, transformedMessages.length])
   const [showQuickActions, setShowQuickActions] = useState(false)
   
   // Estados para mídia
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null)
+  const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video' | 'document' | null>(null)
   
   // Estados para modais
   const [showAgendamentoModal, setShowAgendamentoModal] = useState(false)
@@ -236,11 +354,46 @@ export default function ChatArea({
   
   // Estados para novas funcionalidades
   const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const [showMediaModal, setShowMediaModal] = useState<'contact' | 'location' | 'poll' | null>(null)
+  const [showSendMediaModal, setShowSendMediaModal] = useState(false)
   const [showForwardModal, setShowForwardModal] = useState(false)
   const [messageToForward, setMessageToForward] = useState<any>(null)
+  
+  // Estados para envio de mídia com modal
+  const [showMediaSendModal, setShowMediaSendModal] = useState(false)
+  const [mediaSendType, setMediaSendType] = useState<'image' | 'video' | 'document'>('image')
   const [detectedLink, setDetectedLink] = useState<string | null>(null)
   const [replyingTo, setReplyingTo] = useState<any>(null)
+
+  // Função para buscar mensagens
+  const handleSearchMessages = async (query: string) => {
+    if (!query.trim() || !conversation) return
+    
+    setIsSearching(true)
+    setSearchQuery(query)
+    
+    try {
+      const chatId = extractChatId(conversation)
+      if (!chatId) return
+      
+      // Buscar nas mensagens carregadas (usar displayMessages para incluir traduzidas)
+      const filtered = displayMessages.filter(msg => 
+        msg.content.toLowerCase().includes(query.toLowerCase()) ||
+        (msg as any).caption?.toLowerCase().includes(query.toLowerCase())
+      )
+      
+      setSearchResults(filtered)
+      
+    } catch (error) {
+      console.error('Erro ao buscar mensagens:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
   const [editingMessage, setEditingMessage] = useState<any>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [starredMessages, setStarredMessages] = useState<Set<string>>(() => {
@@ -253,7 +406,6 @@ export default function ChatArea({
   })
   
   // Hook para ações de mensagem
-  const chatId = extractChatId(conversation)
   const messageActions = useMessageActions({ 
     chatId, 
     onMessageUpdate: () => {
@@ -365,20 +517,250 @@ export default function ChatArea({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showAttachmentMenu])
 
+  // Handler para seleção de arquivos
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'file') => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Resetar o input para permitir selecionar o mesmo arquivo novamente
+    event.target.value = ''
+
+    // Definir tipo baseado no arquivo selecionado
+    let fileType = type
+    if (type === 'file') {
+      // Detectar tipo específico baseado no MIME type
+      if (file.type.startsWith('image/')) {
+        fileType = 'image'
+      } else if (file.type.startsWith('video/')) {
+        fileType = 'video'
+      }
+    }
+
+    // Abrir modal de mídia com o arquivo selecionado
+    setSelectedMediaFile(file)
+    setSelectedMediaType(fileType as any)
+    setShowSendMediaModal(true)
+  }
+
+  // Handler para favoritar/desfavoritar mensagem
+  const toggleStarred = (messageId: string) => {
+    setStarredMessages(prev => {
+      const newStarred = new Set(prev)
+      if (newStarred.has(messageId)) {
+        newStarred.delete(messageId)
+      } else {
+        newStarred.add(messageId)
+      }
+      return newStarred
+    })
+  }
+
+  // Handler para envio de mídia com legenda
+  const handleMediaSend = async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
+    console.log('🚀 handleMediaSend chamado:', { file: file?.name, caption, mediaType, chatId })
+    
+    if (!file || !chatId) {
+      console.log('❌ Arquivo ou chatId não encontrado:', { file: !!file, chatId })
+      return
+    }
+
+    try {
+      // Criar FormData
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('chatId', chatId)
+      formData.append('session', `user_${conversation?.userId || 'default'}`)
+      
+      if (caption?.trim()) {
+        formData.append('caption', caption.trim())
+      }
+      
+      console.log('📦 FormData criado:', {
+        file: file.name,
+        chatId,
+        caption: caption?.trim() || 'sem caption'
+      })
+
+      // Determinar endpoint baseado no tipo
+      let endpoint = '/api/whatsapp/sendFile'
+      if (mediaType === 'image') {
+        endpoint = '/api/whatsapp/sendImage'
+      } else if (mediaType === 'video') {
+        endpoint = '/api/whatsapp/sendVideo'
+      }
+
+      const token = localStorage.getItem('token')
+      console.log('🌐 Fazendo requisição:', { 
+        endpoint, 
+        url: endpoint,
+        hasToken: !!token 
+      })
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      console.log('📡 Resposta da API:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok 
+      })
+
+      if (response.ok) {
+        console.log('✅ Mídia enviada com sucesso!')
+        
+        // Fechar modal e resetar estados
+        setShowSendMediaModal(false)
+        setSelectedMediaFile(null)
+        setSelectedMediaType(null)
+        
+        // Forçar reload das mensagens
+        window.location.reload()
+      } else {
+        const errorText = await response.text()
+        console.error('❌ Erro da API:', errorText)
+        throw new Error(`Erro ao enviar mídia: ${response.status} ${errorText}`)
+      }
+    } catch (error) {
+      console.error('💥 Erro ao enviar mídia:', error)
+      alert('Erro ao enviar mídia. Tente novamente.')
+    }
+  }
+
   // Handlers para modais
-  const handleAgendamentoSave = (agendamento: any) => {
-    console.log('Agendamento criado:', agendamento)
-    // TODO: Implementar salvamento no backend
+  const handleAgendamentoSave = async (agendamento: any) => {
+    try {
+      console.log('🚀 Criando agendamento:', agendamento)
+      
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      // Extrair número de telefone do chat ID para usar como contato_id
+      const contatoId = conversation?.id || agendamento.contato.id
+      const numeroTelefone = contatoId.replace('@c.us', '')
+      
+      // Converter formato UniversalAgendamentoData para formato backend
+      const data = {
+        titulo: agendamento.titulo,
+        descricao: agendamento.descricao,
+        inicio_em: `${agendamento.data}T${agendamento.hora_inicio}:00-03:00`,
+        fim_em: `${agendamento.data}T${agendamento.hora_fim}:00-03:00`,
+        link_meeting: agendamento.link_video,
+        contato_id: numeroTelefone,  // Enviar só o número, sem @c.us
+        contato: {
+          id: agendamento.contato.id,
+          nome: agendamento.contato.nome,
+          telefone: agendamento.contato.telefone,
+          email: agendamento.contato.email,
+          empresa: agendamento.contato.empresa,
+          cpf: agendamento.contato.cpf,
+          cnpj: agendamento.contato.cnpj,
+          cep: agendamento.contato.cep,
+          rua: agendamento.contato.rua,
+          numero: agendamento.contato.numero,
+          bairro: agendamento.contato.bairro,
+          cidade: agendamento.contato.cidade,
+          estado: agendamento.contato.estado,
+          pais: agendamento.contato.pais
+        }
+      }
+
+      console.log('📡 Dados para backend:', data)
+
+      const response = await fetch('/api/agendamentos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Agendamento criado com sucesso:', result)
+        setShowAgendamentoModal(false)
+        // TODO: Atualizar badge de agendamentos se necessário
+      } else {
+        console.error('❌ Erro ao criar agendamento:', response.statusText)
+        alert('Erro ao criar agendamento. Tente novamente.')
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar agendamento:', error)
+      alert('Erro ao criar agendamento. Verifique sua conexão.')
+    }
   }
 
-  const handleOrcamentoSave = (orcamento: any) => {
-    console.log('Orçamento criado:', orcamento)
-    // TODO: Implementar salvamento no backend
+  const handleOrcamentoSave = async (orcamento: any) => {
+    try {
+      console.log('🚀 Criando orçamento:', orcamento)
+      
+      const response = await fetch('/api/orcamentos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          titulo: orcamento.titulo,
+          data: new Date(orcamento.data).toISOString(),
+          tipo: orcamento.tipo,
+          observacao: orcamento.observacao || null,
+          contato_id: conversation?.id,
+          itens: orcamento.itens.map((item: any) => ({
+            nome: item.nome,
+            valor: parseFloat(item.valor.toString()),
+            quantidade: parseInt(item.quantidade.toString()),
+            subtotal: parseFloat(item.valor.toString()) * parseInt(item.quantidade.toString())
+          }))
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Orçamento criado com sucesso:', result)
+      } else {
+        console.error('❌ Erro ao criar orçamento:', response.statusText)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar orçamento:', error)
+    }
   }
 
-  const handleAssinaturaSave = (assinatura: any) => {
-    console.log('Assinatura criada:', assinatura)
-    // TODO: Implementar salvamento no backend
+  const handleAssinaturaSave = async (assinatura: any) => {
+    try {
+      console.log('🚀 Criando assinatura:', assinatura)
+      
+      const response = await fetch('/api/assinaturas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          nome: assinatura.nome,
+          valor: parseFloat(assinatura.valor.toString()),
+          renovacao: assinatura.renovacao,
+          forma_pagamento: assinatura.formaPagamento,
+          link_pagamento: assinatura.linkPagamento || null,
+          data_inicio: new Date(assinatura.dataInicio).toISOString(),
+          contato_id: conversation?.id
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Assinatura criada com sucesso:', result)
+      } else {
+        console.error('❌ Erro ao criar assinatura:', response.statusText)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar assinatura:', error)
+    }
   }
 
   const handleTagsSave = (tags: string[]) => {
@@ -430,9 +812,12 @@ export default function ChatArea({
   const getContactData = () => {
     if (!conversation) return null
     return {
+      id: conversation.id || `temp-${Date.now()}`,
       nome: conversation.name,
       telefone: conversation.phone || extractChatId(conversation),
-      avatar: conversation.profilePictureUrl
+      avatar: conversation.profilePictureUrl,
+      email: '',
+      empresa: ''
     }
   }
   
@@ -443,27 +828,107 @@ export default function ChatArea({
     inputRef.current?.focus()
   }
   
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'file') => {
     const file = event.target.files?.[0]
-    if (!file || !conversation) return
+    if (!file) return
+    
+    // Abrir modal para envio com texto
+    setMediaSendType(type === 'file' ? 'document' : type)
+    setShowMediaSendModal(true)
+    
+    // Simular seleção do arquivo no modal
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    if (fileInput && fileInput !== event.target) {
+      const dt = new DataTransfer()
+      dt.items.add(file)
+      fileInput.files = dt.files
+    }
+    
+    // Limpar input original
+    event.target.value = ''
+  }
+
+  // Função para envio de mídia com modal (usando métodos seguros)
+  const handleMediaSendWithModal = async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
+    if (!conversation) return
     
     const chatId = extractChatId(conversation)
     if (!chatId) return
     
     try {
-      if (type === 'image') {
+      // 1. Primeiro enviar o arquivo usando upload tradicional
+      if (mediaType === 'image') {
         await mediaUpload.sendImage(chatId, file)
-      } else if (type === 'video') {
+      } else if (mediaType === 'video') {
         await mediaUpload.sendVideo(chatId, file)
       } else {
         await mediaUpload.sendFile(chatId, file)
       }
+      
+      // 2. Se há caption, enviar como mensagem separada usando métodos seguros
+      if (caption.trim()) {
+        // Simular typewriting para evitar ban
+        const response = await fetch(`/api/whatsapp/chats/${chatId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            message: caption.trim()
+          })
+        })
+        
+        if (!response.ok) {
+          console.error('Erro ao enviar caption:', response.statusText)
+        }
+      }
+      
     } catch (error) {
-      console.error('Erro ao enviar arquivo:', error)
+      console.error('Erro ao enviar mídia com modal:', error)
+      throw error
     }
+  }
+
+  // Função para envio de mídia especial (contato, localização, enquete)
+  const handleSpecialMediaSend = async (data: any, caption: string) => {
+    if (!conversation) return
     
-    // Limpar input
-    event.target.value = ''
+    const chatId = extractChatId(conversation)
+    if (!chatId) return
+    
+    try {
+      // 1. Enviar o conteúdo especial
+      if (showMediaModal === 'contact') {
+        await messageActions.sendContact(data.contactId, data.name)
+      } else if (showMediaModal === 'location') {
+        await messageActions.sendLocation(data.latitude, data.longitude, data.title, data.address)
+      } else if (showMediaModal === 'poll') {
+        await messageActions.sendPoll(data.name, data.options, data.multipleAnswers)
+      }
+      
+      // 2. Se há caption, enviar como mensagem separada usando métodos seguros
+      if (caption.trim()) {
+        const response = await fetch(`/api/whatsapp/chats/${chatId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            message: caption.trim()
+          })
+        })
+        
+        if (!response.ok) {
+          console.error('Erro ao enviar caption:', response.statusText)
+        }
+      }
+      
+    } catch (error) {
+      console.error('Erro ao enviar mídia especial:', error)
+      throw error
+    }
   }
   
   const handleDrop = async (event: React.DragEvent) => {
@@ -733,33 +1198,31 @@ export default function ChatArea({
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowSearch(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Buscar Mensagens"
           >
-            <Search className="w-5 h-5 text-gray-600" />
+            <Search className="w-4 h-4 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white"></div>
           </motion.button>
           
-          {/* Resposta Rápida */}
-          <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
-            whileTap={{ scale: 0.95 }}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
-            title="Respostas Rápidas"
-          >
-            <MessageSquare className="w-5 h-5 text-gray-600" />
-            {/* Pin verde */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-          </motion.button>
+         
           
           {/* Agenda */}
           <motion.button
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAgendamentoModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Agendar"
           >
-            <Calendar className="w-5 h-5 text-gray-600" />
+            <Calendar className="w-4 h-4 text-gray-600" />
+            {/* Badge com contagem real */}
+            {agendamentosCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {agendamentosCount > 99 ? '99+' : agendamentosCount}
+              </span>
+            )}
           </motion.button>
           
           {/* Orçamento */}
@@ -767,21 +1230,72 @@ export default function ChatArea({
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowOrcamentoModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Orçamento"
           >
-            <DollarSign className="w-5 h-5 text-gray-600" />
+            <DollarSign className="w-4 h-4 text-gray-600" />
+            {/* Badge com contagem real */}
+            {orcamentosCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {orcamentosCount > 99 ? '99+' : orcamentosCount}
+              </span>
+            )}
           </motion.button>
           
-          {/* Assinatura */}
-          <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowAssinaturaModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+          <button
+            onClick={() => {}}
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Assinatura"
           >
-            <FileSignature className="w-5 h-5 text-gray-600" />
+            <FileSignature className="w-4 h-4 text-gray-600" />
+            {/* Badge com contagem real */}
+            {assinaturasCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {assinaturasCount > 99 ? '99+' : assinaturasCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              // Navegar para página de contatos com filtro
+              if (conversation?.id) {
+                window.open(`/dashboard/admin/contatos?search=${encodeURIComponent(conversation.id)}`, '_blank')
+              }
+            }}
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            title="Contato"
+          >
+            <UserCheck className="w-4 h-4 text-gray-600" />
+            {/* Badge de status do contato */}
+            <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ${
+              contactStatus === 'synced' ? 'bg-green-500' : 'bg-red-500'
+            }`}></div>
+          </button>
+
+          {/* Anotações */}
+          <motion.button
+            onClick={() => {
+              console.log('🔍 DEBUG: Botão Anotações clicado!')
+              console.log('🔍 onToggleAnotacoesSidebar:', onToggleAnotacoesSidebar)
+              console.log('🔍 isAnotacoesSidebarOpen:', isAnotacoesSidebarOpen)
+              if (onToggleAnotacoesSidebar) {
+                onToggleAnotacoesSidebar()
+                console.log('✅ Função chamada com sucesso!')
+              } else {
+                console.error('❌ onToggleAnotacoesSidebar não está definido!')
+              }
+            }}
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            title="Anotações"
+          >
+            <StickyNote className="w-4 h-4 text-gray-600" />
+            {/* Badge com contagem real */}
+            {notesCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {notesCount > 99 ? '99+' : notesCount}
+              </span>
+            )}
           </motion.button>
           
           {/* Badge Tag */}
@@ -789,39 +1303,47 @@ export default function ChatArea({
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowTagsModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Tags"
           >
-            <Hash className="w-5 h-5 text-gray-600" />
+            <Hash className="w-4 h-4 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-pink-500 rounded-full border border-white"></div>
           </motion.button>
           
           <motion.button
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowLigacaoModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Telefone"
           >
-            <Phone className="w-5 h-5 text-gray-600" />
+            <Phone className="w-4 h-4 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white"></div>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowVideoChamadaModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Vídeo Chamada"
           >
-            <Video className="w-5 h-5 text-gray-600" />
+            <Video className="w-4 h-4 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></div>
           </motion.button>
           
           <motion.button
             whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowCompartilharTelaModal(true)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
             title="Compartilhar Tela"
           >
-            <Monitor className="w-5 h-5 text-gray-600" />
+            <Monitor className="w-4 h-4 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-white"></div>
           </motion.button>
           
           {/* Badge do Kanban */}
@@ -851,10 +1373,22 @@ export default function ChatArea({
         </div>
       </motion.div>
 
+      {/* Indicador de Tradução */}
+      {selectedLanguage !== 'pt' && selectedLanguage !== 'pt-BR' && (
+        <div className="px-6 py-2 bg-blue-50 border-l-4 border-blue-500">
+          <div className="flex items-center gap-2 text-sm text-blue-700">
+            <Languages className="w-4 h-4" />
+            <span>
+              {isTranslating ? 'Traduzindo conversas...' : 'Conversas traduzidas automaticamente'}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Messages Area */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/30 to-white scrollbar-chat">
         <AnimatePresence>
-          {messages.map((msg, index) => (
+          {displayMessages.map((msg, index) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -959,39 +1493,75 @@ export default function ChatArea({
                         </p>
                       )}
                     </div>
-                  ) : (msg as any).mediaUrl && (
-                    (msg as any).mediaUrl.includes('.oga') ||
-                    (msg as any).mediaUrl.includes('.ogg') ||
-                    (msg as any).mediaUrl.includes('.mp3') ||
-                    (msg as any).mediaUrl.includes('.wav') ||
-                    (msg as any).mediaUrl.includes('.webm') ||
-                    (msg as any).mediaUrl.includes('.bin') ||
-                    msg.type === 'audio' || 
-                    (msg as any).mimetype?.includes('audio')
-                  ) ? (
+                  ) : (() => {
+                    // Log para debug de mensagens de áudio
+                    if (msg.type === 'audio' || (msg as any).mimetype?.includes('audio') || 
+                        ((msg as any).mediaUrl && (
+                          (msg as any).mediaUrl.includes('.oga') ||
+                          (msg as any).mediaUrl.includes('.ogg') ||
+                          (msg as any).mediaUrl.includes('.mp3') ||
+                          (msg as any).mediaUrl.includes('.wav') ||
+                          (msg as any).mediaUrl.includes('.webm') ||
+                          (msg as any).mediaUrl.includes('.bin')
+                        ))) {
+                      console.log('🎵 ÁUDIO DETECTADO:', {
+                        id: msg.id,
+                        type: msg.type,
+                        mediaUrl: (msg as any).mediaUrl,
+                        mimetype: (msg as any).mimetype,
+                        hasMedia: !!(msg as any).media,
+                        hasMediaData: !!(msg as any).media?.data
+                      })
+                    }
+                    
+                    return (msg as any).mediaUrl && (
+                      (msg as any).mediaUrl.includes('.oga') ||
+                      (msg as any).mediaUrl.includes('.ogg') ||
+                      (msg as any).mediaUrl.includes('.mp3') ||
+                      (msg as any).mediaUrl.includes('.wav') ||
+                      (msg as any).mediaUrl.includes('.webm') ||
+                      (msg as any).mediaUrl.includes('.bin') ||
+                      msg.type === 'audio' || 
+                      (msg as any).mimetype?.includes('audio')
+                    )
+                  })() ? (
                     <div className="mb-2">
-                      {/* Verificar se tem dados de mídia válidos */}
+                      {/* Usar dados base64 se disponíveis, senão usar URL */}
                       {(msg as any).media?.data ? (
-                        <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                          msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-50'
-                        }`}>
-                          <div className={`p-2 rounded-full ${
-                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                        <div className="mb-2">
+                          <div className={`p-4 rounded-lg ${
+                            msg.sender === 'agent' ? 'bg-white/10' : 'bg-blue-50'
                           }`}>
-                            <AudioLines className={`w-4 h-4 ${
-                              msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
-                            }`} />
+                            <div className="mb-3">
+                              <p className={`text-sm font-medium ${
+                                msg.sender === 'agent' ? 'text-white' : 'text-blue-700'
+                              }`}>
+                                🎤 Mensagem de Áudio
+                              </p>
+                            </div>
+                            <audio 
+                              controls 
+                              className="w-full h-10 rounded-lg" 
+                              preload="metadata"
+                              style={{ minHeight: '40px' }}
+                            >
+                              <source src={`data:${(msg as any).media.mimetype || 'audio/webm'};base64,${(msg as any).media.data}`} type="audio/webm" />
+                              <source src={`data:${(msg as any).media.mimetype || 'audio/ogg'};base64,${(msg as any).media.data}`} type="audio/ogg" />
+                              Áudio não suportado
+                            </audio>
                           </div>
-                          <audio 
-                            controls 
-                            className="w-full max-w-xs" 
-                            preload="metadata"
-                          >
-                            <source src={`data:${(msg as any).media.mimetype || 'audio/webm'};base64,${(msg as any).media.data}`} type="audio/webm" />
-                            <source src={`data:${(msg as any).media.mimetype || 'audio/ogg'};base64,${(msg as any).media.data}`} type="audio/ogg" />
-                            Áudio não suportado
-                          </audio>
                         </div>
+                      ) : (msg as any).mediaUrl ? (
+                        <AudioMessageComponent 
+                          message={{
+                            mediaUrl: (msg as any).mediaUrl,
+                            body: msg.content,
+                            caption: (msg as any).caption
+                          }}
+                          onTranscribe={(text) => {
+                            console.log('🎤 Transcrição recebida:', text)
+                          }}
+                        />
                       ) : (
                         <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
                           msg.sender === 'agent' ? 'bg-orange-50/10 border-orange-300/50' : 'bg-orange-50 border-orange-200'
@@ -1012,7 +1582,7 @@ export default function ChatArea({
                             <p className={`text-xs ${
                               msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600'
                             }`}>
-                              Arquivo não disponível (mensagem antiga)
+                              Arquivo não disponível
                             </p>
                           </div>
                         </div>
@@ -1023,31 +1593,183 @@ export default function ChatArea({
                         </p>
                       )}
                     </div>
-                  ) : msg.type === 'video' && (msg as any).mediaUrl ? (
+                  ) : (() => {
+                    // Debug para vídeos
+                    if (msg.type === 'video' || (msg as any).mimetype?.includes('video') || 
+                        (msg as any).mediaUrl?.includes('.mp4') || (msg as any).mediaUrl?.includes('.webm') ||
+                        (msg as any).mediaUrl?.includes('.mov') || (msg as any).mediaUrl?.includes('.avi')) {
+                      console.log('🎥 VÍDEO DEBUG:', {
+                        id: msg.id,
+                        type: msg.type,
+                        processedType: (msg as any).processedType,
+                        mediaUrl: (msg as any).mediaUrl,
+                        mimetype: (msg as any).mimetype,
+                        hasMedia: !!(msg as any).media,
+                        hasMediaData: !!(msg as any).media?.data
+                      })
+                      return true
+                    }
+                    return false
+                  })() ? (
                     <div className="mb-2">
-                      <video 
-                        controls 
-                        className="max-w-xs rounded-lg shadow-sm"
-                        preload="metadata"
-                      >
-                        <source src={(msg as any).mediaUrl} type="video/mp4" />
-                        <source src={(msg as any).mediaUrl} type="video/webm" />
-                        Seu navegador não suporta o elemento de vídeo.
-                      </video>
-                      {(msg.content || (msg as any).caption) && <p className="text-sm mt-2">{msg.content || (msg as any).caption}</p>}
+                      <div className={`p-3 rounded-lg ${
+                        msg.sender === 'agent' ? 'bg-white/5' : 'bg-gray-50'
+                      }`}>
+                        <div className={`flex items-center gap-2 mb-3 ${
+                          msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'
+                        }`}>
+                          <Video className="w-4 h-4" />
+                          <span className="text-sm font-medium">📹 Vídeo</span>
+                        </div>
+                        <video 
+                          controls 
+                          className="w-full max-w-sm rounded-lg shadow-sm"
+                          preload="metadata"
+                          poster=""
+                        >
+                          <source src={(msg as any).mediaUrl} type="video/mp4" />
+                          <source src={(msg as any).mediaUrl} type="video/webm" />
+                          <source src={(msg as any).mediaUrl} type="video/quicktime" />
+                          Seu navegador não suporta o elemento de vídeo.
+                        </video>
+                        {(msg.content || (msg as any).caption) && (
+                          <p className={`text-sm mt-3 ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
+                            {msg.content || (msg as any).caption}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  ) : msg.type === 'document' && (msg as any).mediaUrl ? (
+                  ) : (() => {
+                    // Debug para documentos
+                    if ((msg.type === 'document' || msg.type === 'file') || 
+                        (msg as any).mimetype?.includes('application/') || 
+                        (msg as any).mimetype?.includes('text/') ||
+                        (msg as any).mediaUrl?.includes('.pdf') || (msg as any).mediaUrl?.includes('.doc') ||
+                        (msg as any).mediaUrl?.includes('.txt') || (msg as any).mediaUrl?.includes('.xlsx')) {
+                      console.log('📄 DOCUMENTO DEBUG:', {
+                        id: msg.id,
+                        type: msg.type,
+                        processedType: (msg as any).processedType,
+                        mediaUrl: (msg as any).mediaUrl,
+                        mimetype: (msg as any).mimetype,
+                        filename: (msg as any).filename || (msg as any).fileName
+                      })
+                      return !!(msg as any).mediaUrl
+                    }
+                    return false
+                  })() ? (
                     <div className="mb-2">
-                      <a 
-                        href={(msg as any).mediaUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
-                      >
-                        <FileText className="w-4 h-4" />
-                        {(msg as any).fileName || (msg as any).filename || 'Documento'}
-                      </a>
-                      {(msg.content || (msg as any).caption) && <p className="text-sm mt-2">{msg.content || (msg as any).caption}</p>}
+                      <div className={`p-4 rounded-lg border ${
+                        msg.sender === 'agent' ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        {/* Header com ícone e tipo */}
+                        <div className={`flex items-center gap-3 mb-3 ${
+                          msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'
+                        }`}>
+                          <div className={`p-2 rounded-lg ${
+                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                          }`}>
+                            {(() => {
+                              const filename = (msg as any).fileName || (msg as any).filename || 'documento'
+                              const ext = filename.toLowerCase().split('.').pop()
+                              if (ext === 'pdf') return <FileText className="w-5 h-5 text-red-600" />
+                              if (['doc', 'docx'].includes(ext)) return <FileText className="w-5 h-5 text-blue-600" />
+                              if (['xls', 'xlsx'].includes(ext)) return <FileText className="w-5 h-5 text-green-600" />
+                              if (['txt'].includes(ext)) return <FileText className="w-5 h-5 text-gray-600" />
+                              return <File className={`w-5 h-5 ${msg.sender === 'agent' ? 'text-white' : 'text-gray-600'}`} />
+                            })()}
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm font-semibold ${
+                              msg.sender === 'agent' ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              📄 {(() => {
+                                const filename = (msg as any).fileName || (msg as any).filename || 'documento'
+                                const ext = filename.toLowerCase().split('.').pop()
+                                if (ext === 'pdf') return 'Documento PDF'
+                                if (['doc', 'docx'].includes(ext)) return 'Documento Word'
+                                if (['xls', 'xlsx'].includes(ext)) return 'Planilha Excel'
+                                if (['txt'].includes(ext)) return 'Arquivo de Texto'
+                                return 'Documento'
+                              })()}
+                            </p>
+                            <p className={`text-xs ${
+                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500'
+                            }`}>
+                              {(msg as any).fileName || (msg as any).filename || 'arquivo.pdf'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Preview/Thumbnail area */}
+                        <div className={`mb-4 p-4 rounded-lg border-2 border-dashed ${
+                          msg.sender === 'agent' ? 'border-white/20 bg-white/5' : 'border-gray-300 bg-gray-100'
+                        }`}>
+                          <div className="text-center">
+                            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-lg mb-3 ${
+                              msg.sender === 'agent' ? 'bg-white/20' : 'bg-gray-200'
+                            }`}>
+                              {(() => {
+                                const filename = (msg as any).fileName || (msg as any).filename || 'documento'
+                                const ext = filename.toLowerCase().split('.').pop()
+                                if (ext === 'pdf') return <div className="text-2xl">📄</div>
+                                if (['doc', 'docx'].includes(ext)) return <div className="text-2xl">📝</div>
+                                if (['xls', 'xlsx'].includes(ext)) return <div className="text-2xl">📊</div>
+                                if (['txt'].includes(ext)) return <div className="text-2xl">📋</div>
+                                return <div className="text-2xl">📁</div>
+                              })()}
+                            </div>
+                            <p className={`text-sm font-medium ${
+                              msg.sender === 'agent' ? 'text-white/80' : 'text-gray-700'
+                            }`}>
+                              Preview não disponível
+                            </p>
+                            <p className={`text-xs ${
+                              msg.sender === 'agent' ? 'text-white/60' : 'text-gray-500'
+                            }`}>
+                              Clique para fazer download
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Botão de download */}
+                        <a 
+                          href={(msg as any).mediaUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 hover:scale-[1.02] ${
+                            msg.sender === 'agent' 
+                              ? 'bg-white/10 hover:bg-white/20 text-white' 
+                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+                          }`}
+                        >
+                          <Download className="w-4 h-4" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Baixar arquivo</p>
+                            <p className={`text-xs ${
+                              msg.sender === 'agent' ? 'text-white/70' : 'text-blue-600'
+                            }`}>
+                              {(msg as any).fileName || (msg as any).filename || 'documento.pdf'}
+                            </p>
+                          </div>
+                          <div className={`p-1 rounded ${
+                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                          }`}>
+                            <Eye className="w-3 h-3" />
+                          </div>
+                        </a>
+
+                        {/* Caption */}
+                        {(msg.content || (msg as any).caption) && (
+                          <div className={`mt-3 pt-3 border-t ${
+                            msg.sender === 'agent' ? 'border-white/10' : 'border-gray-200'
+                          }`}>
+                            <p className={`text-sm ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
+                              {msg.content || (msg as any).caption}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <MessageContent 
@@ -1077,6 +1799,28 @@ export default function ChatArea({
                     
                     {/* Ícones de Ação - Aparecem no hover */}
                     <div className="flex items-center gap-1.5 overflow-hidden">
+                      {/* Botão de Favoritar */}
+                      <motion.button
+                        whileHover={{ 
+                          scale: 1.1,
+                          rotate: 15
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => toggleStarred(msg.id)}
+                        className={`
+                          p-1.5 rounded-full transition-all duration-200 ease-out shadow-sm
+                          ${starredMessages.has(msg.id)
+                            ? 'bg-yellow-400/30 text-yellow-500 hover:bg-yellow-400/40 border border-yellow-400/20'
+                            : msg.sender === 'agent' 
+                              ? 'bg-white/25 text-white hover:bg-white/35 border border-white/10' 
+                              : 'bg-gray-600/25 text-gray-600 hover:bg-gray-600/35 border border-gray-600/10'
+                          }
+                        `}
+                        title={starredMessages.has(msg.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                      >
+                        <Star className={`w-3.5 h-3.5 ${starredMessages.has(msg.id) ? 'fill-current' : ''}`} />
+                      </motion.button>
+
                       {/* Ícone de Tradução */}
                       <motion.button
                         whileHover={{ 
@@ -1096,66 +1840,76 @@ export default function ChatArea({
                         <Languages className="w-3.5 h-3.5" />
                       </motion.button>
 
-                      {/* Ícone de Transcrição de Áudio */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        animate={{
-                          scale: [1, 1.03, 1],
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                        className={`
-                          p-1.5 rounded-full transition-all duration-200 ease-out shadow-sm
-                          ${msg.sender === 'agent' 
-                            ? 'bg-white/25 text-white hover:bg-white/35 border border-white/10' 
-                            : 'bg-blue-600/25 text-blue-600 hover:bg-blue-600/35 border border-blue-600/10'
-                          }
-                        `}
-                        title="Transcrever áudio"
-                      >
-                        <AudioLines className="w-3.5 h-3.5" />
-                      </motion.button>
+                      {/* Ícone de Transcrição de Áudio - Só para áudios (removido duplicata) */}
+                      {(msg.type === 'audio' || (msg as any).mimetype?.includes('audio') || 
+                        ((msg as any).mediaUrl && (
+                          (msg as any).mediaUrl.includes('.oga') ||
+                          (msg as any).mediaUrl.includes('.ogg') ||
+                          (msg as any).mediaUrl.includes('.mp3') ||
+                          (msg as any).mediaUrl.includes('.wav') ||
+                          (msg as any).mediaUrl.includes('.webm')
+                        ))) && (
+                        <div className="flex items-center gap-1">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`
+                              p-1.5 rounded-full transition-all duration-200 ease-out shadow-sm
+                              ${msg.sender === 'agent' 
+                                ? 'bg-white/25 text-white hover:bg-white/35 border border-white/10' 
+                                : 'bg-blue-600/25 text-blue-600 hover:bg-blue-600/35 border border-blue-600/10'
+                              }
+                            `}
+                            title="Transcrever áudio"
+                          >
+                            <AudioLines className="w-3.5 h-3.5" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`
+                              p-1.5 rounded-full transition-all duration-200 ease-out shadow-sm
+                              ${msg.sender === 'agent' 
+                                ? 'bg-white/25 text-white hover:bg-white/35 border border-white/10' 
+                                : 'bg-orange-600/25 text-orange-600 hover:bg-orange-600/35 border border-orange-600/10'
+                              }
+                            `}
+                            title="Traduzir áudio"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </motion.button>
+                        </div>
+                      )}
 
-                      {/* Menu de Contexto */}
-                      <MessageContextMenu
-                        message={{
-                          ...msg,
-                          chatId: chatId || '',
-                          fromMe: msg.sender === 'agent',
-                          author: msg.sender === 'agent' ? 'agent' : 'user',
-                          body: msg.content
-                        } as any}
-                        onReply={(message) => setReplyingTo(message)}
-                        onForward={(message) => {
-                          setMessageToForward(message)
-                          setShowForwardModal(true)
-                        }}
-                        onEdit={(message) => {
-                          setEditingMessage(message)
-                          setShowEditModal(true)
-                        }}
-                        onDelete={(message) => messageActions.deleteMessage(message.id)}
-                        onStar={(message) => {
-                          messageActions.starMessage(message.id)
-                          const newStarred = new Set(starredMessages)
-                          if (newStarred.has(message.id)) {
-                            newStarred.delete(message.id)
-                          } else {
-                            newStarred.add(message.id)
-                          }
-                          setStarredMessages(newStarred)
-                          
-                          // Salvar no localStorage
-                          if (typeof window !== 'undefined' && conversation?.id) {
-                            localStorage.setItem(`starredMessages_${conversation.id}`, JSON.stringify(Array.from(newStarred)))
-                          }
-                        }}
-                        onCopy={(text) => messageActions.copyToClipboard(text)}
-                      />
+                      {/* Menu de Contexto - Não mostrar para mensagens de áudio */}
+                      {msg.type !== 'voice' && msg.type !== 'audio' && (
+                        <MessageContextMenu
+                          message={{
+                            ...msg,
+                            chatId: chatId || '',
+                            fromMe: msg.sender === 'agent',
+                            author: msg.sender === 'agent' ? 'agent' : 'user',
+                            body: msg.content
+                          } as any}
+                          isStarred={isStarred(msg.id)}
+                          onReply={(message) => setReplyingTo(message)}
+                          onForward={(message) => {
+                            setMessageToForward(message)
+                            setShowForwardModal(true)
+                          }}
+                          onEdit={(message) => {
+                            setEditingMessage(message)
+                            setShowEditModal(true)
+                          }}
+                          onDelete={(message) => messageActions.deleteMessage(message.id)}
+                          onStar={async (message) => {
+                            if (chatId) {
+                              await toggleStar(message.id, chatId)
+                            }
+                          }}
+                          onCopy={(text) => messageActions.copyToClipboard(text)}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1166,7 +1920,7 @@ export default function ChatArea({
 
         {/* Typing Indicator */}
         <AnimatePresence>
-          {isTyping && (
+          {isContactTyping && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1274,33 +2028,27 @@ export default function ChatArea({
           <motion.button
             whileHover={{ scale: 1.1, rotate: 180 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowQuickActions(!showQuickActions)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+            onClick={() => onToggleQuickActionsSidebar?.()}
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 relative"
             title="Ações Rápidas"
           >
             <MessageSquare className="w-5 h-5 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
           </motion.button>
 
-          {/* Emoji Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
-            title="Emojis"
-          >
-            <Smile className="w-5 h-5 text-gray-600" />
-          </motion.button>
 
           {/* Attachment Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 relative"
             title="Anexar arquivo"
           >
             <Paperclip className="w-5 h-5 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
           </motion.button>
 
           {/* Input Area */}
@@ -1348,6 +2096,8 @@ export default function ChatArea({
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
             
+
+            
             {/* Emoji Picker */}
             <EmojiPicker
               isOpen={showEmojiPicker}
@@ -1371,7 +2121,7 @@ export default function ChatArea({
                   <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 min-w-[280px]">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-gray-800">Anexar arquivo</h3>
+                      <h3 className="text-sm font-semibold text-gray-800">Anexar arquivos</h3>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -1498,13 +2248,25 @@ export default function ChatArea({
             )}
           </div>
 
-          {/* Audio Button */}
+          {/* Emoji Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 relative"
+            title="Emojis"
+          >
+            <Smile className="w-5 h-5 text-gray-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-white"></div>
+          </motion.button>
+
           {audioRecorder.isRecording ? (
             <div className="flex items-center gap-2">
-              {/* Tempo de gravação */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-100 rounded-lg">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-sm font-mono text-red-600">
+              {/* Indicador de gravação */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-red-100 rounded-xl">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-red-700">
                   {formatDuration(audioRecorder.duration)}
                 </span>
               </div>
@@ -1577,10 +2339,12 @@ export default function ChatArea({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-all duration-300"
+            className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-all duration-300 relative"
             title="Ativar IA"
           >
             <Bot className="w-5 h-5 text-blue-600" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white"></div>
           </motion.button>
 
           {/* Send Button */}
@@ -1598,18 +2362,20 @@ export default function ChatArea({
       </div>
       
       {/* Modais */}
-      <AgendamentoModal
+      <UniversalAgendamentoModal
         isOpen={showAgendamentoModal}
         onClose={() => setShowAgendamentoModal(false)}
         onSave={handleAgendamentoSave}
         contactData={getContactData()}
+        mode="create"
       />
       
-      <OrcamentoModal
+      <CriarOrcamentoModal
         isOpen={showOrcamentoModal}
         onClose={() => setShowOrcamentoModal(false)}
         onSave={handleOrcamentoSave}
         contactData={getContactData()}
+        disableContactFields={true}
       />
       
       <AssinaturaModal
@@ -1715,28 +2481,51 @@ export default function ChatArea({
         />
       )}
 
-      {/* Modal de Envio de Mídia Especial */}
-      {showMediaModal && chatId && (
+      {/* Modal de Envio de Mídia (Imagem/Vídeo/Documento) */}
+      {showSendMediaModal && (
         <MediaSendModal
-          type={showMediaModal}
-          chatId={chatId}
-          onClose={() => setShowMediaModal(null)}
-          onSend={async (data) => {
-            try {
-              if (showMediaModal === 'contact') {
-                await messageActions.sendContact(data.contactId, data.name)
-              } else if (showMediaModal === 'location') {
-                await messageActions.sendLocation(data.latitude, data.longitude, data.title, data.address)
-              } else if (showMediaModal === 'poll') {
-                await messageActions.sendPoll(data.name, data.options, data.multipleAnswers)
-              }
-              setShowMediaModal(null)
-            } catch (error) {
-              console.error('Erro ao enviar mídia:', error)
-            }
+          isOpen={showSendMediaModal}
+          onClose={() => {
+            setShowSendMediaModal(false)
+            setSelectedMediaFile(null)
+            setSelectedMediaType(null)
           }}
+          onSend={handleMediaSend}
+          mediaType={selectedMediaType || 'document'}
+          file={selectedMediaFile}
         />
       )}
+
+      {/* Modal de Mídia Especial (Contato/Localização/Enquete) */}
+      {showMediaModal && chatId && (
+        <SpecialMediaModal
+          isOpen={!!showMediaModal}
+          onClose={() => setShowMediaModal(null)}
+          type={showMediaModal}
+          chatId={chatId}
+          onSend={handleSpecialMediaSend}
+        />
+      )}
+
+      {/* Quick Actions Sidebar */}
+      <QuickActionsSidebar
+        isOpen={isQuickActionsSidebarOpen}
+        onClose={() => onToggleQuickActionsSidebar?.()}
+        activeChatId={conversation?.id || conversation?.jid}
+        onSelectAction={(action) => {
+          // Agora não precisa mais processar conteúdo aqui, pois a execução é automática
+          console.log('Resposta rápida executada:', action.title)
+        }}
+        selectedContact={conversation}
+      />
+
+      {/* Anotações Sidebar */}
+      <AnotacoesSidebar
+        isOpen={isAnotacoesSidebarOpen}
+        onClose={() => onToggleAnotacoesSidebar?.()}
+        activeChatId={conversation?.id || conversation?.jid}
+        selectedContact={conversation}
+      />
     </div>
   )
 }

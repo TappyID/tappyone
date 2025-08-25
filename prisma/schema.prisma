@@ -85,6 +85,14 @@ enum TipoCobranca {
   BOLETO
 }
 
+enum StatusOrcamento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  ENVIADO
+  CANCELADO
+}
+
 // Modelos
 model Usuario {
   id        String      @id @default(cuid())
@@ -141,6 +149,22 @@ model Contato {
   sobre             String?
   bloqueado         Boolean  @default(false)
   sessaoWhatsappId  String
+  
+  // Campos adicionais do contato
+  email             String?
+  empresa           String?
+  cpf               String?
+  cnpj              String?
+  
+  // Campos de endereço
+  cep               String?
+  rua               String?
+  numero            String?
+  bairro            String?
+  cidade            String?
+  estado            String?
+  pais              String?
+  
   criadoEm          DateTime @default(now())
   atualizadoEm      DateTime @updatedAt
 
@@ -151,6 +175,8 @@ model Contato {
   atendimentos   Atendimento[]
   agendamentos   Agendamento[]
   avaliacoesNps  AvaliacaoNps[]
+  orcamentos     Orcamento[]
+  anotacoes      Anotacao[]
 
   @@unique([numeroTelefone, sessaoWhatsappId])
   @@map("contatos")
@@ -533,4 +559,41 @@ model Cobranca {
   assinatura Assinatura? @relation(fields: [assinaturaId], references: [id])
 
   @@map("cobrancas")
+}
+
+model Orcamento {
+  id           String           @id @default(cuid())
+  titulo       String
+  descricao    String?
+  valor        Decimal
+  status       StatusOrcamento  @default(PENDENTE)
+  dataValidade DateTime?
+  observacoes  String?
+  usuarioId    String
+  contatoId    String
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+
+  // Relacionamentos
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+
+  @@map("orcamentos")
+}
+
+model Anotacao {
+  id           String   @id @default(cuid())
+  titulo       String
+  conteudo     String
+  importante   Boolean  @default(false)
+  usuarioId    String
+  contatoId    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+
+  @@map("anotacoes")
 }

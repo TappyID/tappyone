@@ -18,6 +18,7 @@ import {
   Save,
   Send
 } from 'lucide-react'
+import { cleanPhoneNumber } from '@/lib/utils'
 
 interface CriarOrcamentoModalProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ interface CriarOrcamentoModalProps {
     nome?: string
     telefone?: string
   }
+  disableContactFields?: boolean // Para desabilitar campos quando vem de contexto específico
 }
 
 interface ItemOrcamento {
@@ -56,7 +58,8 @@ export default function CriarOrcamentoModal({
   isOpen, 
   onClose, 
   onSave, 
-  contactData 
+  contactData,
+  disableContactFields = false
 }: CriarOrcamentoModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<OrcamentoData>({
@@ -69,7 +72,7 @@ export default function CriarOrcamentoModal({
     condicoes_pagamento: '',
     prazo_entrega: '',
     cliente: contactData?.nome || '',
-    telefone: contactData?.telefone || '',
+    telefone: contactData?.telefone ? cleanPhoneNumber(contactData.telefone) : '',
     desconto: 0,
     taxa_adicional: 0
   })
@@ -79,7 +82,7 @@ export default function CriarOrcamentoModal({
       setFormData(prev => ({
         ...prev,
         cliente: contactData.nome || '',
-        telefone: contactData.telefone || ''
+        telefone: cleanPhoneNumber(contactData.telefone || '')
       }))
     }
   }, [contactData])
@@ -102,7 +105,7 @@ export default function CriarOrcamentoModal({
       condicoes_pagamento: '',
       prazo_entrega: '',
       cliente: contactData?.nome || '',
-      telefone: contactData?.telefone || '',
+      telefone: contactData?.telefone ? cleanPhoneNumber(contactData.telefone) : '',
       desconto: 0,
       taxa_adicional: 0
     })
@@ -274,7 +277,10 @@ export default function CriarOrcamentoModal({
                               type="text"
                               value={formData.cliente}
                               onChange={(e) => handleChange('cliente', e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                              disabled={disableContactFields}
+                              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                                disableContactFields ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''
+                              }`}
                               placeholder="Nome do cliente"
                               required
                             />
@@ -288,7 +294,10 @@ export default function CriarOrcamentoModal({
                               type="tel"
                               value={formData.telefone}
                               onChange={(e) => handleChange('telefone', e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                              disabled={disableContactFields}
+                              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                                disableContactFields ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''
+                              }`}
                               placeholder="Telefone do cliente"
                               required
                             />

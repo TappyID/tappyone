@@ -13,7 +13,107 @@ export default function AtendimentosPage() {
   const [selectedConversation, setSelectedConversation] = useState<WhatsAppChat | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isQuickActionsSidebarOpen, setIsQuickActionsSidebarOpen] = useState(false)
+  const [isAnotacoesSidebarOpen, setIsAnotacoesSidebarOpen] = useState(false)
   const { actualTheme } = useTheme()
+  
+  // Estados para contadores de badges
+  const [notesCount, setNotesCount] = useState(0)
+  const [orcamentosCount, setOrcamentosCount] = useState(0)
+  const [agendamentosCount, setAgendamentosCount] = useState(0)
+  const [assinaturasCount, setAssinaturasCount] = useState(0)
+  const [contactStatus, setContactStatus] = useState<'synced' | 'error'>('error')
+  
+  // Funções para buscar contagens
+  const fetchNotesCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar anotações:', error)
+    }
+    return 0
+  }
+
+  const fetchOrcamentosCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar orçamentos:', error)
+    }
+    return 0
+  }
+
+  const fetchAgendamentosCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error)
+    }
+    return 0
+  }
+
+  const fetchAssinaturasCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar assinaturas:', error)
+    }
+    return 0
+  }
+
+  // Função para verificar status do contato
+  const checkContactStatus = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const numeroTelefone = chatId.replace('@c.us', '')
+      
+      const response = await fetch(`/api/contatos?numero_telefone=${numeroTelefone}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (Array.isArray(data) && data.length > 0) {
+          const contato = data[0]
+          if (contato.nome || contato.numero_telefone) {
+            return 'synced'
+          }
+        }
+      }
+      return 'error'
+    } catch (error) {
+      console.error('Erro ao verificar status do contato:', error)
+      return 'error'
+    }
+  }
   
   // Helper function para extrair chatId da estrutura da WAHA API
   const extractChatId = (conversation: WhatsAppChat): string | null => {
@@ -54,6 +154,38 @@ export default function AtendimentosPage() {
       }
       
       loadChatMessages(chatId)
+      
+      // Buscar contagens dos badges
+      const fetchBadgeCounts = async () => {
+        try {
+          const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, contactStatusResult] = await Promise.all([
+            fetchNotesCount(chatId),
+            fetchOrcamentosCount(chatId),
+            fetchAgendamentosCount(chatId),
+            fetchAssinaturasCount(chatId),
+            checkContactStatus(chatId)
+          ])
+          
+          setNotesCount(notesCountResult)
+          setOrcamentosCount(orcamentosCountResult)
+          setAgendamentosCount(agendamentosCountResult)
+          setAssinaturasCount(assinaturasCountResult)
+          setContactStatus(contactStatusResult)
+          
+          console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, status: ${contactStatusResult}`)
+        } catch (error) {
+          console.error('Erro ao buscar contagens:', error)
+        }
+      }
+      
+      fetchBadgeCounts()
+    } else {
+      // Reset contadores quando não há conversa selecionada
+      setNotesCount(0)
+      setOrcamentosCount(0)
+      setAgendamentosCount(0)
+      setAssinaturasCount(0)
+      setContactStatus('error')
     }
   }, [selectedConversation, loadChatMessages])
 
@@ -97,6 +229,7 @@ export default function AtendimentosPage() {
           isLoading={loading}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isQuickActionsSidebarOpen={isQuickActionsSidebarOpen}
         />
         
         {/* Área do Chat */}
@@ -125,6 +258,15 @@ export default function AtendimentosPage() {
             const chatId = extractChatId(selectedConversation)
             return chatId ? !!presence[chatId]?.isTyping : false
           })() : false}
+          isQuickActionsSidebarOpen={isQuickActionsSidebarOpen}
+          onToggleQuickActionsSidebar={() => setIsQuickActionsSidebarOpen(!isQuickActionsSidebarOpen)}
+          isAnotacoesSidebarOpen={isAnotacoesSidebarOpen}
+          onToggleAnotacoesSidebar={() => setIsAnotacoesSidebarOpen(!isAnotacoesSidebarOpen)}
+          notesCount={notesCount}
+          orcamentosCount={orcamentosCount}
+          agendamentosCount={agendamentosCount}
+          assinaturasCount={assinaturasCount}
+          contactStatus={contactStatus}
         />
       </div>
       

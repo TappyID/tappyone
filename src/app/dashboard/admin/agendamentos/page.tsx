@@ -30,8 +30,36 @@ import {
 } from 'lucide-react'
 import CalendarioSofisticado from './components/CalendarioSofisticado'
 import AgendamentoStats from './components/AgendamentoStats'
-import CriarAgendamentoModal from './components/CriarAgendamentoModal'
-import DetalhesAgendamentoModal from './components/DetalhesAgendamentoModal'
+import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
+
+interface AgendamentoBackend {
+  id: string
+  titulo: string
+  descricao?: string
+  inicioEm: string
+  fimEm: string
+  linkMeeting?: string
+  status: 'AGENDADO' | 'CONFIRMADO' | 'CANCELADO' | 'CONCLUIDO'
+  usuarioId: string
+  contatoId: string
+  contato?: {
+    id: string
+    nome: string
+    numeroTelefone?: string
+    email?: string
+    avatar?: string
+    empresa?: string
+    cpf?: string
+    cnpj?: string
+    cep?: string
+    rua?: string
+    numero?: string
+    bairro?: string
+    cidade?: string
+    estado?: string
+    pais?: string
+  }
+}
 
 interface Agendamento {
   id: string
@@ -46,15 +74,25 @@ interface Agendamento {
   contato: {
     id: string
     nome: string
+    numeroTelefone?: string
     telefone?: string
     email?: string
     avatar?: string
     empresa?: string
+    cpf?: string
+    cnpj?: string
+    cep?: string
+    rua?: string
+    numero?: string
+    bairro?: string
+    cidade?: string
+    estado?: string
+    pais?: string
   }
   local?: string
   link_video?: string
   observacoes?: string
-  lembrete?: number // minutos antes
+  lembrete?: number
   cor?: string
 }
 
@@ -69,150 +107,112 @@ export default function AgendamentosPage() {
   const [filtroTipo, setFiltroTipo] = useState<string>('todos')
   const [filtroStatus, setFiltroStatus] = useState<string>('todos')
 
-  // Mock data para agendamentos
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([
-    {
-      id: '1',
-      titulo: 'Reunião de Projeto',
-      descricao: 'Discussão sobre o novo sistema de CRM',
-      data: '2024-08-04',
-      hora_inicio: '09:00',
-      hora_fim: '10:30',
-      tipo: 'reuniao',
-      status: 'confirmado',
-      prioridade: 'alta',
-      contato: {
-        id: '1',
-        nome: 'João Silva',
-        telefone: '(11) 99999-9999',
-        email: 'joao@empresa.com',
-        empresa: 'Tech Solutions',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-      },
-      local: 'Sala de Reuniões A',
-      observacoes: 'Trazer documentos do projeto',
-      lembrete: 15,
-      cor: '#3b82f6'
-    },
-    {
-      id: '2',
-      titulo: 'Call com Cliente',
-      data: '2024-08-04',
-      hora_inicio: '14:00',
-      hora_fim: '15:00',
-      tipo: 'video',
-      status: 'agendado',
-      prioridade: 'media',
-      contato: {
-        id: '2',
-        nome: 'Maria Santos',
-        telefone: '(11) 88888-8888',
-        email: 'maria@startup.com',
-        empresa: 'StartupX',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
-      },
-      link_video: 'https://meet.google.com/abc-def-ghi',
-      lembrete: 10,
-      cor: '#10b981'
-    },
-    {
-      id: '3',
-      titulo: 'Coffee Meeting',
-      data: '2024-08-05',
-      hora_inicio: '16:00',
-      hora_fim: '17:00',
-      tipo: 'coffee',
-      status: 'agendado',
-      prioridade: 'baixa',
-      contato: {
-        id: '3',
-        nome: 'Pedro Costa',
-        telefone: '(11) 77777-7777',
-        email: 'pedro@agency.com',
-        empresa: 'Creative Agency',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-      },
-      local: 'Café Central',
-      cor: '#f59e0b'
-    },
-    {
-      id: '4',
-      titulo: 'Apresentação de Proposta',
-      data: '2024-08-06',
-      hora_inicio: '10:00',
-      hora_fim: '11:30',
-      tipo: 'presencial',
-      status: 'confirmado',
-      prioridade: 'alta',
-      contato: {
-        id: '4',
-        nome: 'Ana Oliveira',
-        telefone: '(11) 66666-6666',
-        email: 'ana@corporation.com',
-        empresa: 'Big Corporation',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-      },
-      local: 'Escritório do Cliente',
-      observacoes: 'Levar apresentação impressa',
-      lembrete: 30,
-      cor: '#8b5cf6'
-    },
-    {
-      id: '5',
-      titulo: 'Follow-up Vendas',
-      data: '2024-08-07',
-      hora_inicio: '15:30',
-      hora_fim: '16:00',
-      tipo: 'ligacao',
-      status: 'agendado',
-      prioridade: 'media',
-      contato: {
-        id: '5',
-        nome: 'Carlos Ferreira',
-        telefone: '(11) 55555-5555',
-        email: 'carlos@business.com',
-        empresa: 'Business Solutions',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
-      },
-      cor: '#ef4444'
-    }
-  ])
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
+  const [loadingData, setLoadingData] = useState(true)
 
-  // Mock data para contatos
-  const contatos = [
-    {
-      id: '1',
-      nome: 'João Silva',
-      telefone: '(11) 99999-9999',
-      email: 'joao@empresa.com',
-      empresa: 'Tech Solutions',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-    },
-    {
-      id: '2',
-      nome: 'Maria Santos',
-      telefone: '(11) 88888-8888',
-      email: 'maria@startup.com',
-      empresa: 'StartupX',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
-    },
-    {
-      id: '3',
-      nome: 'Pedro Costa',
-      telefone: '(11) 77777-7777',
-      email: 'pedro@agency.com',
-      empresa: 'Creative Agency',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+  const [contatos, setContatos] = useState<any[]>([])
+
+  // Função para transformar agendamento do backend para frontend
+  const transformAgendamento = (agendamento: AgendamentoBackend): Agendamento => {
+    const inicioEm = new Date(agendamento.inicioEm)
+    const fimEm = new Date(agendamento.fimEm)
+    
+    return {
+      id: agendamento.id,
+      titulo: agendamento.titulo,
+      descricao: agendamento.descricao,
+      data: inicioEm.toISOString().split('T')[0], // YYYY-MM-DD
+      hora_inicio: inicioEm.toTimeString().slice(0, 5), // HH:MM
+      hora_fim: fimEm.toTimeString().slice(0, 5), // HH:MM
+      tipo: 'reuniao', // default
+      status: agendamento.status.toLowerCase() as any,
+      prioridade: 'media', // default
+      contato: agendamento.contato ? {
+        id: agendamento.contato.id,
+        nome: agendamento.contato.nome,
+        numeroTelefone: agendamento.contato.numeroTelefone,
+        telefone: agendamento.contato.numeroTelefone,
+        email: agendamento.contato.email,
+        avatar: agendamento.contato.avatar,
+        empresa: agendamento.contato.empresa,
+        cpf: agendamento.contato.cpf,
+        cnpj: agendamento.contato.cnpj,
+        cep: agendamento.contato.cep,
+        rua: agendamento.contato.rua,
+        numero: agendamento.contato.numero,
+        bairro: agendamento.contato.bairro,
+        cidade: agendamento.contato.cidade,
+        estado: agendamento.contato.estado,
+        pais: agendamento.contato.pais
+      } : {
+        id: agendamento.contatoId,
+        nome: 'Contato não encontrado',
+        telefone: ''
+      },
+      link_video: agendamento.linkMeeting,
+      cor: '#3b82f6' // default
     }
-  ]
+  }
+
+  // Função para buscar agendamentos da API
+  const fetchAgendamentos = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/agendamentos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Agendamentos recebidos:', data)
+        const transformedData = (data || []).map(transformAgendamento)
+        console.log('Agendamentos transformados:', transformedData)
+        setAgendamentos(transformedData)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  // Função para buscar contatos da API
+  const fetchContatos = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/contatos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setContatos(data || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contatos:', error)
+    }
+  }
 
   useEffect(() => {
     if (!loading && !user) {
       window.location.href = '/login'
+    } else if (user && !loading) {
+      fetchAgendamentos()
+      fetchContatos()
     }
   }, [user, loading])
 
-  if (loading) {
+  if (loading || loadingData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#305e73]"></div>
@@ -224,22 +224,87 @@ export default function AgendamentosPage() {
     return null
   }
 
-  const handleCriarAgendamento = (novoAgendamento: Omit<Agendamento, 'id'>) => {
-    const agendamento: Agendamento = {
-      ...novoAgendamento,
-      id: Date.now().toString()
+  const handleCriarAgendamento = async (novoAgendamento: UniversalAgendamentoData) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      // Converter formato UniversalAgendamentoData para formato backend
+      const backendData = {
+        titulo: novoAgendamento.titulo,
+        descricao: novoAgendamento.descricao,
+        inicioEm: `${novoAgendamento.data}T${novoAgendamento.hora_inicio}:00`,
+        fimEm: `${novoAgendamento.data}T${novoAgendamento.hora_fim}:00`,
+        linkMeeting: novoAgendamento.link_video,
+        status: novoAgendamento.status.toUpperCase(),
+        contatoId: novoAgendamento.contato.id || `temp-${Date.now()}` // Se não tem ID, criar contato
+      }
+
+      const response = await fetch('/api/agendamentos', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(backendData)
+      })
+
+      if (response.ok) {
+        await fetchAgendamentos() // Recarregar lista
+        setShowCriarModal(false)
+      }
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error)
     }
-    setAgendamentos(prev => [...prev, agendamento])
   }
 
-  const handleEditarAgendamento = (agendamentoEditado: Agendamento) => {
-    setAgendamentos(prev => 
-      prev.map(ag => ag.id === agendamentoEditado.id ? agendamentoEditado : ag)
-    )
+  const handleEditarAgendamento = async (agendamentoEditado: Agendamento) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      console.log('🔥 Enviando para API:', JSON.stringify(agendamentoEditado, null, 2))
+
+      const response = await fetch(`/api/agendamentos/${agendamentoEditado.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(agendamentoEditado)
+      })
+
+      if (response.ok) {
+        console.log('✅ API retornou sucesso')
+        // Backend agora salva corretamente, podemos recarregar
+        await fetchAgendamentos()
+      } else {
+        console.error('❌ API retornou erro:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao editar agendamento:', error)
+    }
   }
 
-  const handleExcluirAgendamento = (id: string) => {
-    setAgendamentos(prev => prev.filter(ag => ag.id !== id))
+  const handleExcluirAgendamento = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch(`/api/agendamentos/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        await fetchAgendamentos() // Recarregar lista
+      }
+    } catch (error) {
+      console.error('Erro ao excluir agendamento:', error)
+    }
   }
 
   const handleAgendamentoClick = (agendamento: Agendamento) => {
@@ -286,7 +351,7 @@ export default function AgendamentosPage() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">Agendamentos</h1>
-                  <p className="text-gray-600">Gerencie seus compromissos e reuniões</p>
+                  <p className="text-gray-600">Gerencie suas reuniões</p>
                 </div>
               </div>
 
@@ -362,38 +427,132 @@ export default function AgendamentosPage() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="px-6 py-6">
-          <AgendamentoStats agendamentos={agendamentos} />
-        </div>
-
-        {/* Calendar */}
-        <div className="px-6 pb-6">
+            {/* Calendar */}
+            <div className="px-6 pb-6">
           <CalendarioSofisticado
             agendamentos={agendamentosFiltrados}
             selectedDate={selectedDate}
             onDateSelect={setSelectedDate}
             viewMode={viewMode}
             onAgendamentoClick={handleAgendamentoClick}
+            onAgendamentoMove={async (agendamentoId: string, newDate: string) => {
+              const agendamento = agendamentos.find(a => a.id === agendamentoId)
+              if (!agendamento) return
+
+              // Manter as horas originais, só mudar a data
+              const updatedAgendamento = {
+                ...agendamento,
+                data: newDate
+              }
+
+              // Atualizar localmente primeiro (otimistic update)
+              setAgendamentos(prev => prev.map(a => 
+                a.id === agendamentoId 
+                  ? updatedAgendamento 
+                  : a
+              ))
+
+              try {
+                await handleEditarAgendamento(updatedAgendamento)
+                console.log('Backend confirmou a mudança')
+              } catch (error) {
+                console.error('Erro no backend, revertendo:', error)
+                // Reverter se falhar
+                await fetchAgendamentos()
+              }
+            }}
             contatos={contatos}
           />
         </div>
 
-        {/* Modals */}
-        <CriarAgendamentoModal
+        {/* Stats */}
+        <div className="px-6 py-6">
+          <AgendamentoStats agendamentos={agendamentos} />
+        </div>
+
+    
+
+        {/* Modais */}
+        <UniversalAgendamentoModal
           isOpen={showCriarModal}
           onClose={() => setShowCriarModal(false)}
           onSave={handleCriarAgendamento}
           contatos={contatos}
           selectedDate={selectedDate}
+          mode="create"
         />
 
-        <DetalhesAgendamentoModal
+        <UniversalAgendamentoModal
           isOpen={showDetalhesModal}
           onClose={() => setShowDetalhesModal(false)}
-          agendamento={selectedAgendamento}
-          onEdit={handleEditarAgendamento}
-          onDelete={handleExcluirAgendamento}
+          editData={selectedAgendamento ? {
+            id: selectedAgendamento.id,
+            titulo: selectedAgendamento.titulo,
+            descricao: selectedAgendamento.descricao || '',
+            data: selectedAgendamento.data,
+            hora_inicio: selectedAgendamento.hora_inicio,
+            hora_fim: selectedAgendamento.hora_fim,
+            tipo: selectedAgendamento.tipo || 'reuniao',
+            status: selectedAgendamento.status,
+            prioridade: selectedAgendamento.prioridade || 'media',
+            contato: {
+              id: selectedAgendamento.contato?.id || '',
+              nome: selectedAgendamento.contato?.nome || '',
+              telefone: selectedAgendamento.contato?.numeroTelefone || '',
+              email: selectedAgendamento.contato?.email || '',
+              empresa: selectedAgendamento.contato?.empresa || '',
+              cpf: selectedAgendamento.contato?.cpf || '',
+              cnpj: selectedAgendamento.contato?.cnpj || '',
+              cep: selectedAgendamento.contato?.cep || '',
+              endereco: '',
+              bairro: selectedAgendamento.contato?.bairro || '',
+              rua: selectedAgendamento.contato?.rua || '',
+              numero: selectedAgendamento.contato?.numero || '',
+              estado: selectedAgendamento.contato?.estado || '',
+              cidade: selectedAgendamento.contato?.cidade || '',
+              pais: selectedAgendamento.contato?.pais || 'Brasil',
+              tags: []
+            },
+            local: selectedAgendamento.local || '',
+            link_video: selectedAgendamento.link_video || '',
+            observacoes: selectedAgendamento.observacoes || '',
+            lembrete: selectedAgendamento.lembrete || 15,
+            cor: selectedAgendamento.cor || '#3b82f6'
+          } : undefined}
+          mode="view"
+          onStatusChange={async (status) => {
+            if (selectedAgendamento) {
+              try {
+                await handleEditarAgendamento({
+                  ...selectedAgendamento,
+                  status
+                })
+                console.log('Status atualizado para:', status)
+                // Fechar modal após atualização bem-sucedida
+                setShowDetalhesModal(false)
+              } catch (error) {
+                console.error('Erro ao atualizar status:', error)
+              }
+            }
+          }}
+          onEdit={() => {
+            setShowDetalhesModal(false)
+            setShowCriarModal(true)
+          }}
+          onDelete={async () => {
+            if (selectedAgendamento) {
+              await handleExcluirAgendamento(selectedAgendamento.id)
+              setShowDetalhesModal(false)
+            }
+          }}
+          onShare={() => {
+            if (selectedAgendamento) {
+              const shareText = `Agendamento: ${selectedAgendamento.titulo}\nData: ${selectedAgendamento.data} ${selectedAgendamento.hora_inicio}-${selectedAgendamento.hora_fim}\nContato: ${selectedAgendamento.contato.nome}`
+              navigator.clipboard.writeText(shareText)
+              alert('Informações do agendamento copiadas!')
+            }
+          }}
+          onSave={async () => {}} // Não usado em modo view
         />
       </div>
     </AdminLayout>

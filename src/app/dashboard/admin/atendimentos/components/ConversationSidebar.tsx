@@ -39,6 +39,7 @@ interface ConversationSidebarProps {
   isLoading?: boolean
   isCollapsed?: boolean
   onToggleCollapse?: () => void
+  isQuickActionsSidebarOpen?: boolean
 }
 
 // Função para formatar timestamp
@@ -129,7 +130,8 @@ export default function ConversationSidebar({
   onSearchChange,
   isLoading = false,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  isQuickActionsSidebarOpen = false
 }: ConversationSidebarProps) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -335,7 +337,9 @@ export default function ConversationSidebar({
   return (
     <motion.div 
       animate={{ 
-        width: isCollapsed ? '80px' : '520px'
+        width: isCollapsed ? '80px' : '520px',
+        x: isQuickActionsSidebarOpen ? -520 : 0,
+        opacity: isQuickActionsSidebarOpen ? 0 : 1
       }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className="bg-gray-50/80 backdrop-blur-sm border-r border-gray-200/50 flex flex-col h-full overflow-hidden relative"

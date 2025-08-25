@@ -231,49 +231,49 @@ export default function DetalhesAgendamentoModal({
                       </h3>
                       
                       <div className="flex items-start gap-4">
-                        {agendamento.contato.avatar ? (
+                        {agendamento.contato?.avatar ? (
                           <img
                             src={agendamento.contato.avatar}
-                            alt={agendamento.contato.nome}
+                            alt={agendamento.contato?.nome || 'Contato'}
                             className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-lg"
                           />
                         ) : (
                           <div className="w-16 h-16 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
                             <span className="text-2xl font-bold text-white">
-                              {agendamento.contato.nome.charAt(0)}
+                              {agendamento.contato?.nome?.charAt(0) || '?'}
                             </span>
                           </div>
                         )}
                         
                         <div className="flex-1">
                           <h4 className="text-xl font-bold text-gray-900 mb-1">
-                            {agendamento.contato.nome}
+                            {agendamento.contato?.nome || 'Contato não encontrado'}
                           </h4>
-                          {agendamento.contato.empresa && (
+                          {agendamento.contato?.empresa && (
                             <p className="text-gray-600 mb-2">{agendamento.contato.empresa}</p>
                           )}
                           
                           <div className="space-y-2">
-                            {agendamento.contato.telefone && (
+                            {agendamento.contato?.telefone && (
                               <div className="flex items-center gap-2">
                                 <Phone className="w-4 h-4 text-gray-400" />
                                 <span className="text-gray-700">{agendamento.contato.telefone}</span>
                                 <motion.button
                                   whileHover={{ scale: 1.1 }}
-                                  onClick={() => copyToClipboard(agendamento.contato.telefone || '')}
+                                  onClick={() => copyToClipboard(agendamento.contato?.telefone || '')}
                                   className="p-1 hover:bg-gray-200 rounded"
                                 >
                                   <Copy className="w-3 h-3 text-gray-400" />
                                 </motion.button>
                               </div>
                             )}
-                            {agendamento.contato.email && (
+                            {agendamento.contato?.email && (
                               <div className="flex items-center gap-2">
                                 <span className="w-4 h-4 text-gray-400">@</span>
                                 <span className="text-gray-700">{agendamento.contato.email}</span>
                                 <motion.button
                                   whileHover={{ scale: 1.1 }}
-                                  onClick={() => copyToClipboard(agendamento.contato.email || '')}
+                                  onClick={() => copyToClipboard(agendamento.contato?.email || '')}
                                   className="p-1 hover:bg-gray-200 rounded"
                                 >
                                   <Copy className="w-3 h-3 text-gray-400" />

@@ -1,21 +1,23 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
-  ChevronLeft, 
-  ChevronRight, 
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
   Clock,
-  MapPin,
-  Video,
   Phone,
+  User,
+  MapPin,
+  ExternalLink,
+  Briefcase,
+  Heart,
   Users,
   Coffee,
-  Star,
+  Video,
   AlertTriangle,
-  CheckCircle,
-  Calendar,
-  Plus
+  CheckCircle
 } from 'lucide-react'
 
 interface Agendamento {
@@ -58,8 +60,10 @@ interface CalendarioSofisticadoProps {
   onDateSelect: (date: Date) => void
   viewMode: 'month' | 'week' | 'day'
   onAgendamentoClick: (agendamento: Agendamento) => void
+  onAgendamentoMove?: (agendamentoId: string, newDate: string) => Promise<void>
   contatos: Contato[]
 }
+
 
 export default function CalendarioSofisticado({
   agendamentos,
@@ -67,9 +71,10 @@ export default function CalendarioSofisticado({
   onDateSelect,
   viewMode,
   onAgendamentoClick,
+  onAgendamentoMove,
   contatos
 }: CalendarioSofisticadoProps) {
-  const [currentDate, setCurrentDate] = useState(selectedDate)
+  const [currentMonth, setCurrentMonth] = useState(selectedDate)
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
 
   const meses = [
@@ -100,6 +105,53 @@ export default function CalendarioSofisticado({
     alta: 'border-l-red-400'
   }
 
+  // Função para determinar cor do dot baseada no status dominante
+  const getStatusDotColor = (agendamentos: Agendamento[]) => {
+    if (agendamentos.length === 0) return 'bg-[#305e73]'
+    
+    // Contar status
+    const statusCount = agendamentos.reduce((acc, ag) => {
+      acc[ag.status] = (acc[ag.status] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    // Encontrar status dominante
+    const dominantStatus = Object.entries(statusCount)
+      .sort(([,a], [,b]) => b - a)[0][0] as keyof typeof statusColors
+    
+    // Mapear para cores dos dots
+    const dotColors = {
+      agendado: 'bg-yellow-500',
+      confirmado: 'bg-green-500', 
+      cancelado: 'bg-red-500',
+      concluido: 'bg-blue-500'
+    }
+    
+    return dotColors[dominantStatus] || 'bg-[#305e73]'
+  }
+
+  // Função para obter cor da borda baseada no status
+  const getStatusBorderColor = (status: string) => {
+    const borderColors = {
+      agendado: '#eab308', // yellow-500
+      confirmado: '#10b981', // green-500
+      cancelado: '#ef4444', // red-500
+      concluido: '#3b82f6' // blue-500
+    }
+    return borderColors[status as keyof typeof borderColors] || '#305e73'
+  }
+
+  // Função para mover agendamento
+  const moveAgendamento = async (agendamentoId: string, newDate: Date) => {
+    const dateString = newDate.toISOString().split('T')[0]
+    
+    // Encontrar agendamento e atualizar data
+    const agendamento = agendamentos.find(ag => ag.id === agendamentoId)
+    if (agendamento && onAgendamentoMove) {
+      await onAgendamentoMove(agendamentoId, dateString)
+    }
+  }
+
   // Gerar dias do mês
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -117,7 +169,11 @@ export default function CalendarioSofisticado({
       days.push({
         date: new Date(year, month - 1, prevMonth.getDate() - i),
         isCurrentMonth: false,
-        isToday: false
+        isToday: false,
+        onClick: () => {
+          const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+          setCurrentMonth(newDate)
+        }
       })
     }
 
@@ -147,13 +203,13 @@ export default function CalendarioSofisticado({
 
   // Navegar entre meses
   const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate)
+    const newDate = new Date(currentMonth)
     if (direction === 'prev') {
       newDate.setMonth(newDate.getMonth() - 1)
     } else {
       newDate.setMonth(newDate.getMonth() + 1)
     }
-    setCurrentDate(newDate)
+    setCurrentMonth(newDate)
   }
 
   // Obter agendamentos para uma data específica
@@ -167,22 +223,30 @@ export default function CalendarioSofisticado({
     const TipoIcon = tipoIcons[agendamento.tipo]
     
     return (
-      <motion.div
+      <div
         key={agendamento.id}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.02, y: -2 }}
-        onClick={() => onAgendamentoClick(agendamento)}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onAgendamentoClick(agendamento)
+        }}
+        draggable
+        onDragStart={(e: React.DragEvent) => {
+          e.stopPropagation()
+          e.dataTransfer.setData('agendamento-id', agendamento.id)
+          e.dataTransfer.effectAllowed = 'move'
+          // Adicionar dados extras para debug
+          e.dataTransfer.setData('text/plain', agendamento.titulo)
+        }}
         className={`
           relative p-2 rounded-lg border-l-4 cursor-pointer transition-all duration-200
           ${statusColors[agendamento.status]}
-          ${prioridadeColors[agendamento.prioridade]}
-          hover:shadow-md group
+          hover:shadow-md hover:scale-105 group transform
           ${isCompact ? 'mb-1' : 'mb-2'}
         `}
         style={{ 
           backgroundColor: agendamento.cor ? `${agendamento.cor}15` : undefined,
-          borderLeftColor: agendamento.cor || undefined
+          borderLeftColor: getStatusBorderColor(agendamento.status)
         }}
       >
         <div className="flex items-start gap-2">
@@ -191,13 +255,13 @@ export default function CalendarioSofisticado({
             {agendamento.contato.avatar ? (
               <img
                 src={agendamento.contato.avatar}
-                alt={agendamento.contato.nome}
+                alt={agendamento.contato?.nome || 'Contato'}
                 className="w-6 h-6 rounded-full object-cover border-2 border-white shadow-sm"
               />
             ) : (
               <div className="w-6 h-6 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-full flex items-center justify-center">
                 <span className="text-xs font-bold text-white">
-                  {agendamento.contato.nome.charAt(0)}
+                  {agendamento.contato?.nome?.charAt(0) || '?'}
                 </span>
               </div>
             )}
@@ -219,7 +283,7 @@ export default function CalendarioSofisticado({
               <span>{agendamento.hora_inicio}</span>
               {!isCompact && (
                 <span className="text-gray-500">
-                  • {agendamento.contato.nome}
+                  • {agendamento.contato?.nome || 'Contato não encontrado'}
                 </span>
               )}
             </div>
@@ -245,11 +309,11 @@ export default function CalendarioSofisticado({
 
         {/* Hover overlay com mais detalhes */}
         <div className="absolute inset-0 bg-black/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-      </motion.div>
+      </div>
     )
   }
 
-  const days = getDaysInMonth(currentDate)
+  const days = getDaysInMonth(currentMonth)
 
   if (viewMode === 'month') {
     return (
@@ -268,9 +332,7 @@ export default function CalendarioSofisticado({
               </motion.button>
               
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white">
-                  {meses[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h2>
+                <h2 className="text-xl font-bold text-white">{meses[currentMonth.getMonth()]} {currentMonth.getFullYear()}</h2>
                 <p className="text-white/80 text-sm">
                   {agendamentos.length} agendamentos este mês
                 </p>
@@ -288,7 +350,7 @@ export default function CalendarioSofisticado({
 
             <motion.button
               whileHover={{ scale: 1.05 }}
-              onClick={() => setCurrentDate(new Date())}
+              onClick={() => setCurrentMonth(new Date())}
               className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white font-medium transition-colors"
             >
               Hoje
@@ -314,21 +376,53 @@ export default function CalendarioSofisticado({
             const isHovered = hoveredDate === dateString
 
             return (
-              <motion.div
+              <div
                 key={index}
-                whileHover={{ scale: 1.02 }}
-                onClick={() => onDateSelect(day.date)}
-                onMouseEnter={() => setHoveredDate(dateString)}
-                onMouseLeave={() => setHoveredDate(null)}
                 className={`
                   min-h-[120px] p-2 border-r border-b border-gray-100 cursor-pointer transition-all duration-200
-                  ${!day.isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white hover:bg-gray-50'}
+                  ${!day.isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white text-gray-900'}
                   ${day.isToday ? 'bg-blue-50 border-blue-200' : ''}
-                  ${isSelected ? 'bg-[#305e73]/10 border-[#305e73]/30' : ''}
-                  ${isHovered ? 'shadow-lg' : ''}
+                  ${isHovered ? 'bg-blue-100 ring-2 ring-blue-300' : ''}
+                  hover:bg-gray-50 relative
                 `}
               >
-                <div className="flex items-center justify-between mb-2">
+                {/* Drop zone overlay - cobre toda a área */}
+                <div
+                  onClick={() => onDateSelect(day.date)}
+                  onMouseEnter={() => setHoveredDate(dateString)}
+                  onMouseLeave={() => setHoveredDate(null)}
+                  onDragOver={(e: React.DragEvent) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    e.dataTransfer.dropEffect = 'move'
+                    setHoveredDate(dateString)
+                  }}
+                  onDragLeave={(e: React.DragEvent) => {
+                    // Só remove hover se saiu da div inteira
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setHoveredDate(null)
+                    }
+                  }}
+                  onDrop={async (e: React.DragEvent) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    const agendamentoId = e.dataTransfer.getData('agendamento-id')
+                    console.log('🎯 DROP NA DATA:', dateString, agendamentoId)
+                    
+                    if (agendamentoId && onAgendamentoMove) {
+                      try {
+                        await moveAgendamento(agendamentoId, day.date)
+                        console.log('✅ Agendamento movido com sucesso!')
+                      } catch (error) {
+                        console.error('❌ Erro ao mover:', error)
+                      }
+                    }
+                    setHoveredDate(null)
+                  }}
+                  className="absolute inset-0 z-10"
+                />
+                
+                <div className="flex items-center justify-between mb-2 relative z-20">
                   <span className={`
                     text-sm font-medium
                     ${day.isToday ? 'bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center' : ''}
@@ -339,14 +433,14 @@ export default function CalendarioSofisticado({
                   
                   {dayAgendamentos.length > 0 && (
                     <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-[#305e73] rounded-full" />
+                      <div className={`w-2 h-2 rounded-full ${getStatusDotColor(dayAgendamentos)}`} />
                       <span className="text-xs text-gray-500">{dayAgendamentos.length}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Agendamentos do dia */}
-                <div className="space-y-1">
+                <div className="space-y-1 relative z-20">
                   {dayAgendamentos.slice(0, 3).map((agendamento) => (
                     renderAgendamento(agendamento, true)
                   ))}
@@ -387,7 +481,7 @@ export default function CalendarioSofisticado({
                     ))}
                   </div>
                 )}
-              </motion.div>
+              </div>
             )
           })}
         </div>

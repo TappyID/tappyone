@@ -14,9 +14,11 @@ import {
 interface ContatosTopBarProps {
   searchQuery: string
   onSearchChange: (query: string) => void
+  onExport: () => void
+  onImport: () => void
 }
 
-export default function ContatosTopBar({ searchQuery, onSearchChange }: ContatosTopBarProps) {
+export default function ContatosTopBar({ searchQuery, onSearchChange, onExport, onImport }: ContatosTopBarProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('todos')
   const [selectedTag, setSelectedTag] = useState<string>('todas')
   const [showFavoritosOnly, setShowFavoritosOnly] = useState(false)
@@ -80,6 +82,7 @@ export default function ContatosTopBar({ searchQuery, onSearchChange }: Contatos
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={onExport}
               className="px-4 py-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
@@ -89,6 +92,7 @@ export default function ContatosTopBar({ searchQuery, onSearchChange }: Contatos
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={onImport}
               className="px-4 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />

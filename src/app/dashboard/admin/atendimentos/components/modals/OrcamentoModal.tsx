@@ -7,7 +7,8 @@ import { X, DollarSign, Plus, Trash2, FileText, User, Phone, Calendar } from 'lu
 interface OrcamentoModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (orcamento: OrcamentoData) => void
+  onSave?: (orcamento: OrcamentoData) => void
+  chatId?: string
   contactData?: {
     nome?: string
     telefone?: string
@@ -35,8 +36,10 @@ export default function OrcamentoModal({
   isOpen, 
   onClose, 
   onSave, 
+  chatId,
   contactData 
 }: OrcamentoModalProps) {
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<OrcamentoData>({
     titulo: '',
     data: new Date().toISOString().split('T')[0],
@@ -46,6 +49,27 @@ export default function OrcamentoModal({
     cliente: contactData?.nome || '',
     telefone: contactData?.telefone || ''
   })
+
+  // API para criar orçamento
+  const apiCreateOrcamento = async (orcamentoData: any) => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token não encontrado')
+
+    const response = await fetch('/api/orcamentos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(orcamentoData),
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro ao criar orçamento')
+    }
+
+    return response.json()
+  }
 
   // Preencher dados do contato quando disponível
   useEffect(() => {
@@ -58,20 +82,54 @@ export default function OrcamentoModal({
     }
   }, [contactData])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
-    onClose()
-    // Reset form
-    setFormData({
-      titulo: '',
-      data: new Date().toISOString().split('T')[0],
-      tipo: 'orcamento',
-      itens: [{ id: '1', nome: '', valor: 0, quantidade: 1 }],
-      observacao: '',
-      cliente: contactData?.nome || '',
-      telefone: contactData?.telefone || ''
-    })
+    if (!chatId) return
+    
+    setLoading(true)
+    try {
+      // Preparar dados para o backend
+      const orcamentoData = {
+        titulo: formData.titulo,
+        data: new Date(formData.data).toISOString(),
+        tipo: formData.tipo,
+        observacao: formData.observacao || null,
+        contato_id: chatId, // JID do contato
+        itens: formData.itens.map(item => ({
+          nome: item.nome,
+          valor: item.valor,
+          quantidade: item.quantidade,
+          subtotal: item.valor * item.quantidade
+        }))
+      }
+
+      console.log('Criando orçamento:', orcamentoData)
+      
+      await apiCreateOrcamento(orcamentoData)
+      
+      // Callback opcional para compatibilidade
+      if (onSave) {
+        onSave(formData)
+      }
+      
+      onClose()
+      
+      // Reset form
+      setFormData({
+        titulo: '',
+        data: new Date().toISOString().split('T')[0],
+        tipo: 'orcamento',
+        itens: [{ id: '1', nome: '', valor: 0, quantidade: 1 }],
+        observacao: '',
+        cliente: contactData?.nome || '',
+        telefone: contactData?.telefone || ''
+      })
+    } catch (error) {
+      console.error('Erro ao criar orçamento:', error)
+      alert('Erro ao criar orçamento!')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (field: keyof Omit<OrcamentoData, 'itens'>, value: string) => {
