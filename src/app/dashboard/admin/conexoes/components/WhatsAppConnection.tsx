@@ -32,8 +32,25 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
 
   // Verificar status inicial quando componente carrega
   useEffect(() => {
+    if (!user?.id) return
+    
     // Verificar conexão no backend primeiro, depois WAHA API
     const initializeConnection = async () => {
+      console.log('🔄 Inicializando verificação de conexão para usuário:', user.id)
+      
+      // Primeiro verifica se há uma sessão salva no localStorage
+      const savedConnection = localStorage.getItem(`whatsapp_connection_${user.id}`)
+      if (savedConnection) {
+        const connectionData = JSON.parse(savedConnection)
+        console.log('💾 Conexão salva encontrada:', connectionData)
+        
+        if (connectionData.status === 'connected' && connectionData.timestamp > Date.now() - 30000) { // 30 segundos de cache
+          setStatus('connected')
+          onUpdate({ isConnected: true, isActive: true })
+          // Ainda verifica o backend para confirmar
+        }
+      }
+      
       const backendConnected = await checkBackendConnection()
       if (!backendConnected) {
         await checkSessionStatus()
@@ -41,16 +58,26 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     }
     
     initializeConnection()
-  }, []) // Remove dependency on status to prevent infinite loop
+  }, [user?.id]) // Depende apenas do user.id
 
-  // Verificar status periodicamente apenas quando necessário
+  // Verificar status periodicamente com diferentes intervalos
   useEffect(() => {
-    if (status === 'connecting' || status === 'qr_ready') {
-      const interval = setInterval(() => {
+    let interval: NodeJS.Timeout
+    
+    if (status === 'connecting') {
+      // Polling mais rápido quando conectando
+      interval = setInterval(() => {
         checkSessionStatus()
-      }, 5000)
-      
-      return () => clearInterval(interval)
+      }, 2000) // 2 segundos
+    } else if (status === 'qr_ready') {
+      // Polling muito rápido quando QR está sendo lido
+      interval = setInterval(() => {
+        checkSessionStatus()
+      }, 1000) // 1 segundo
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
     }
   }, [status])
 
@@ -174,6 +201,9 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         const qrUrl = URL.createObjectURL(blob)
         setQrCode(qrUrl)
         setShowQRModal(true)
+        
+        // Iniciar polling agressivo quando QR é mostrado
+        console.log('📱 QR Code exibido, iniciando polling rápido...')
       } else {
         throw new Error('Falha ao obter QR Code')
       }
@@ -188,21 +218,32 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       const token = localStorage.getItem('token')
       if (!token) return false
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/whatsapp`, {
+      console.log('🔍 Verificando conexão no backend...')
+      const response = await fetch(`/api/connections/whatsapp`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
 
+      console.log('📡 Resposta do backend:', response.status)
+
       if (response.ok) {
         const connection = await response.json()
-        console.log('Conexão no backend:', connection)
+        console.log('✅ Conexão no backend encontrada:', connection)
         
-        if (connection.status === 'connected') {
+        if (connection.status === 'connected' || connection.ativo) {
           setStatus('connected')
           setError(null)
           onUpdate({ isConnected: true, isActive: true })
+          
+          // Salvar no localStorage
+          localStorage.setItem(`whatsapp_connection_${user?.id}`, JSON.stringify({
+            status: 'connected',
+            timestamp: Date.now(),
+            sessionName: SESSION_NAME
+          }))
+          
           return true
         } else if (connection.status === 'connecting') {
           setStatus('connecting')
@@ -210,10 +251,14 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           await checkSessionStatus()
           return false
         }
+      } else if (response.status === 404) {
+        console.log('❌ Nenhuma conexão encontrada no backend')
+        // Limpar localStorage se não há conexão
+        localStorage.removeItem(`whatsapp_connection_${user?.id}`)
       }
       return false
     } catch (err) {
-      console.error('Erro ao verificar backend:', err)
+      console.error('❌ Erro ao verificar backend:', err)
       return false
     }
   }
@@ -239,11 +284,25 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           setShowQRModal(false)
           setError(null)
           onUpdate({ isConnected: true, isActive: true })
-          console.log('WhatsApp conectado com sucesso!', data.me)
+          
+          // Salvar no localStorage
+          localStorage.setItem(`whatsapp_connection_${user?.id}`, JSON.stringify({
+            status: 'connected',
+            timestamp: Date.now(),
+            sessionName: SESSION_NAME,
+            wahaStatus: data.status
+          }))
+          
+          console.log('✅ WhatsApp conectado com sucesso!', data.me)
+          
+          // Mostrar notificação de sucesso
+          showSuccessNotification()
+          
           return true
         } else if (data.status === 'SCAN_QR_CODE') {
           setStatus('qr_ready')
           setError(null)
+          console.log('📱 QR Code pronto para leitura')
           // QR Code foi atualizado, buscar novo QR
           try {
             await getQRCode()
@@ -270,9 +329,31 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       }
       return false
     } catch (err) {
-      console.error('Erro ao verificar status:', err)
+      console.error('❌ Erro ao verificar status:', err)
       return false
     }
+  }
+
+  // Mostrar notificação de sucesso
+  const showSuccessNotification = () => {
+    // Criar elemento de notificação
+    const notification = document.createElement('div')
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2'
+    notification.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      WhatsApp conectado com sucesso!
+    `
+    
+    document.body.appendChild(notification)
+    
+    // Remover após 3 segundos
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification)
+      }
+    }, 3000)
   }
 
   // Sincronizar status com backend
@@ -351,6 +432,9 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       setShowQRModal(false)
       setError(null)
       onUpdate({ isConnected: false, isActive: false })
+      
+      // Limpar localStorage
+      localStorage.removeItem(`whatsapp_connection_${user?.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao desconectar')
     }
