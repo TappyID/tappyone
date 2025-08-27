@@ -134,7 +134,6 @@ export function useWhatsAppData() {
       setError(null)
 
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       if (!token) {
         setError('Token de autenticação não encontrado')
@@ -142,16 +141,15 @@ export function useWhatsAppData() {
         return
       }
       
-      // Buscar chats e grupos em paralelo
-      
+      // Buscar chats e grupos em paralelo usando APIs do Next.js
       const [chatsResponse, groupsResponse] = await Promise.all([
-        fetch(`${backendUrl}/api/whatsapp/chats`, {
+        fetch(`/api/whatsapp/chats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${backendUrl}/api/whatsapp/groups`, {
+        fetch(`/api/whatsapp/groups`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -263,8 +261,8 @@ export function useWhatsAppData() {
         return
       }
 
-      // Buscar contatos
-      const contactsResponse = await fetch(`${backendUrl}/api/whatsapp/contacts`, {
+      // Buscar contatos usando API do Next.js
+      const contactsResponse = await fetch(`/api/whatsapp/contacts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -300,9 +298,8 @@ export function useWhatsAppData() {
         return []
       }
       
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
-      
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
+      // Usar API do Next.js em vez de chamada direta
+      const response = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -358,9 +355,8 @@ export function useWhatsAppData() {
         return []
       }
       
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
-      
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
+      // Usar API do Next.js em vez de chamada direta
+      const response = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -433,10 +429,9 @@ export function useWhatsAppData() {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
-      // 1. Marcar como visualizada (sendSeen)
-      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/seen`, {
+      // 1. Marcar como visualizada (sendSeen) - usar API do Next.js
+      await fetch(`/api/whatsapp/chats/${chatId}/seen`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -444,8 +439,8 @@ export function useWhatsAppData() {
         }
       })
 
-      // 2. Começar a digitar (startTyping)
-      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/typing/start`, {
+      // 2. Começar a digitar (startTyping) - usar API do Next.js
+      await fetch(`/api/whatsapp/chats/${chatId}/typing/start`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -457,8 +452,8 @@ export function useWhatsAppData() {
       const typingDelay = Math.min(Math.max(text.length * 50, 1000), 5000) // 50ms por char, min 1s, max 5s
       await new Promise(resolve => setTimeout(resolve, typingDelay))
 
-      // 4. Parar de digitar (stopTyping)
-      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/typing/stop`, {
+      // 4. Parar de digitar (stopTyping) - usar API do Next.js
+      await fetch(`/api/whatsapp/chats/${chatId}/typing/stop`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -466,8 +461,8 @@ export function useWhatsAppData() {
         }
       })
 
-      // 5. Enviar mensagem
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/messages`, {
+      // 5. Enviar mensagem - usar API do Next.js
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -493,9 +488,9 @@ export function useWhatsAppData() {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
-      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/read`, {
+      // Usar API do Next.js
+      await fetch(`/api/whatsapp/chats/${chatId}/read`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -523,9 +518,9 @@ export function useWhatsAppData() {
 
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/read`, {
+      // Usar API do Next.js
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/read`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
