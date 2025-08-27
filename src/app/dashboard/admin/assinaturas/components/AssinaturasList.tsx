@@ -3,24 +3,21 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   CreditCard, Star, Crown, Building, Calendar, DollarSign, 
-  MoreVertical, Play, Pause, Edit, Trash2, Mail, MessageSquare, 
-  ChevronDown, ChevronUp, User, Phone, CheckCircle, XCircle, 
-  AlertCircle, Clock, TrendingUp, BarChart3, Settings, Zap
+  Play, Pause, Edit, XCircle, CheckCircle, 
+  AlertCircle, Clock
 } from 'lucide-react'
-import { useState } from 'react'
-import { Assinatura } from '../page'
+import { AssinaturaDisplay } from '../page'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 interface AssinaturasListProps {
-  assinaturas: Assinatura[]
-  onUpdateAssinatura: (id: string, updates: Partial<Assinatura>) => void
+  assinaturas: AssinaturaDisplay[]
+  onUpdateAssinatura: (id: string, updates: Partial<AssinaturaDisplay>) => void
   onDeleteAssinatura: (id: string) => void
+  onEditAssinatura: (assinatura: AssinaturaDisplay) => void
 }
 
-export default function AssinaturasList({ assinaturas, onUpdateAssinatura, onDeleteAssinatura }: AssinaturasListProps) {
-  const [expandedAssinatura, setExpandedAssinatura] = useState<string | null>(null)
-  const [showMenuId, setShowMenuId] = useState<string | null>(null)
+export default function AssinaturasList({ assinaturas, onUpdateAssinatura, onDeleteAssinatura, onEditAssinatura }: AssinaturasListProps) {
 
   const getIconByTipo = (tipo: string) => {
     switch (tipo) {
@@ -50,7 +47,7 @@ export default function AssinaturasList({ assinaturas, onUpdateAssinatura, onDel
       case 'cancelada': return XCircle
       case 'pendente': return Clock
       case 'suspensa': return AlertCircle
-      default: return AlertCircle
+      default: return CheckCircle
     }
   }
 
@@ -90,33 +87,27 @@ export default function AssinaturasList({ assinaturas, onUpdateAssinatura, onDel
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
 
-  const toggleAssinaturaStatus = (assinatura: Assinatura) => {
+  const toggleAssinaturaStatus = (assinatura: AssinaturaDisplay) => {
     const newStatus = assinatura.status === 'ativa' ? 'suspensa' : 'ativa'
     onUpdateAssinatura(assinatura.id, { status: newStatus })
   }
 
   if (assinaturas.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl p-12 text-center shadow-lg border border-gray-100"
-      >
+      <div className="text-center py-12">
         <CreditCard className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-600 mb-2">Nenhuma assinatura encontrada</h3>
-        <p className="text-gray-500">Crie a primeira assinatura ou ajuste os filtros de busca.</p>
-      </motion.div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma assinatura encontrada</h3>
+        <p className="text-gray-500">Crie uma nova assinatura para começar.</p>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       <AnimatePresence>
         {assinaturas.map((assinatura, index) => {
-          const IconComponent = getIconByTipo(assinatura.plano.tipo)
+          const Icon = getIconByTipo(assinatura.plano.tipo)
           const StatusIcon = getStatusIcon(assinatura.status)
-          const isExpanded = expandedAssinatura === assinatura.id
-          const diasParaVencer = getDiasParaVencer(assinatura.dataVencimento)
 
           return (
             <motion.div
@@ -124,346 +115,127 @@ export default function AssinaturasList({ assinaturas, onUpdateAssinatura, onDel
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              whileHover={{ y: -4, scale: 1.02 }}
+              className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
             >
-              {/* Header */}
+              {/* Header com status */}
+              <div className={`h-2 ${
+                assinatura.status === 'ativa' ? 'bg-green-500' :
+                assinatura.status === 'expirada' ? 'bg-red-500' :
+                assinatura.status === 'suspensa' ? 'bg-orange-500' :
+                'bg-gray-400'
+              }`} />
+
               <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    {/* Avatar/Icon */}
-                    <div className="relative">
-                      {assinatura.contato.avatar ? (
-                        <img
-                          src={assinatura.contato.avatar}
-                          alt={assinatura.contato.nome}
-                          className="w-12 h-12 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#305e73] to-[#3a6d84] flex items-center justify-center">
-                          <User className="w-6 h-6 text-white" />
-                        </div>
-                      )}
-                      <div className={`absolute -bottom-1 -right-1 p-1 rounded-lg ${getTipoColor(assinatura.plano.tipo)}`}>
-                        <IconComponent className="w-3 h-3" />
-                      </div>
+                {/* Cliente e Status */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-xl ${
+                      assinatura.status === 'ativa' ? 'bg-green-50' :
+                      assinatura.status === 'expirada' ? 'bg-red-50' :
+                      assinatura.status === 'suspensa' ? 'bg-orange-50' :
+                      'bg-gray-50'
+                    }`}>
+                      <Icon className={`w-6 h-6 ${
+                        assinatura.status === 'ativa' ? 'text-green-600' :
+                        assinatura.status === 'expirada' ? 'text-red-600' :
+                        assinatura.status === 'suspensa' ? 'text-orange-600' :
+                        'text-gray-600'
+                      }`} />
                     </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {assinatura.contato.nome}
-                          </h3>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Phone className="w-4 h-4" />
-                            <span>{assinatura.contato.telefone}</span>
-                            {assinatura.contato.email && (
-                              <>
-                                <span>•</span>
-                                <Mail className="w-4 h-4" />
-                                <span>{assinatura.contato.email}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {/* Status */}
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${getStatusColor(assinatura.status)}`}>
-                            <StatusIcon className="w-3 h-3" />
-                            {assinatura.status.charAt(0).toUpperCase() + assinatura.status.slice(1)}
-                          </span>
-                          
-                          {/* Tipo */}
-                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${getTipoColor(assinatura.plano.tipo)}`}>
-                            {assinatura.plano.tipo.charAt(0).toUpperCase() + assinatura.plano.tipo.slice(1)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Plano Info */}
-                      <div className="bg-gray-50 rounded-xl p-4 mb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900">{assinatura.plano.nome}</h4>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-[#305e73]">
-                              R$ {assinatura.plano.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                            <div className="text-xs text-gray-600">{getPeriodoLabel(assinatura.plano.periodo)}</div>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{assinatura.plano.descricao}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {assinatura.plano.recursos.slice(0, 3).map((recurso, idx) => (
-                            <span key={idx} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                              {recurso}
-                            </span>
-                          ))}
-                          {assinatura.plano.recursos.length > 3 && (
-                            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                              +{assinatura.plano.recursos.length - 3} mais
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <div className="text-gray-600">Vencimento</div>
-                            <div className={`font-medium ${diasParaVencer <= 7 && diasParaVencer > 0 ? 'text-orange-600' : diasParaVencer <= 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                              {format(assinatura.dataVencimento, 'dd/MM/yyyy', { locale: ptBR })}
-                              {diasParaVencer > 0 && diasParaVencer <= 7 && (
-                                <span className="text-xs text-orange-600 ml-1">({diasParaVencer}d)</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <div className="text-gray-600">Total Pago</div>
-                            <div className="font-medium text-gray-900">
-                              R$ {assinatura.estatisticas.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <div className="text-gray-600">Dias Ativo</div>
-                            <div className="font-medium text-gray-900">{assinatura.estatisticas.diasAtivos}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <div className="text-gray-600">Último Acesso</div>
-                            <div className="font-medium text-gray-900">
-                              {format(assinatura.estatisticas.ultimoAcesso, 'dd/MM HH:mm', { locale: ptBR })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-lg">
+                        {assinatura.contato.nome}
+                      </h3>
+                      <p className="text-sm text-gray-500">{assinatura.plano.nome}</p>
                     </div>
                   </div>
+                  
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(assinatura.status)}`}>
+                    <StatusIcon className="w-3 h-3 inline mr-1" />
+                    {assinatura.status.charAt(0).toUpperCase() + assinatura.status.slice(1)}
+                  </span>
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 ml-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleAssinaturaStatus(assinatura)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        assinatura.status === 'ativa' 
-                          ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
-                          : 'bg-green-100 text-green-600 hover:bg-green-200'
-                      }`}
-                      title={assinatura.status === 'ativa' ? 'Suspender assinatura' : 'Ativar assinatura'}
-                    >
-                      {assinatura.status === 'ativa' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setExpandedAssinatura(isExpanded ? null : assinatura.id)}
-                      className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                    >
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </motion.button>
-
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowMenuId(showMenuId === assinatura.id ? null : assinatura.id)}
-                        className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </motion.button>
-
-                      {/* Menu dropdown */}
-                      <AnimatePresence>
-                        {showMenuId === assinatura.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-10"
-                          >
-                            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                              <Edit className="w-4 h-4" />
-                              Editar assinatura
-                            </button>
-                            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                              <Settings className="w-4 h-4" />
-                              Configurar mensagens
-                            </button>
-                            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                              <BarChart3 className="w-4 h-4" />
-                              Ver relatórios
-                            </button>
-                            <button 
-                              onClick={() => onDeleteAssinatura(assinatura.id)}
-                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Cancelar assinatura
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                {/* Valor e Período */}
+                <div className="mb-4">
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
+                    R$ {assinatura.plano.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    por {assinatura.plano.periodo}
                   </div>
                 </div>
-              </div>
 
-              {/* Expanded Content */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="border-t border-gray-100 bg-gray-50"
+                {/* Informações */}
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Vencimento:</span>
+                    <span className="font-medium text-gray-900">
+                      {format(assinatura.dataVencimento, 'dd/MM/yyyy', { locale: ptBR })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Pagamento:</span>
+                    <span className="font-medium text-gray-900 capitalize">
+                      {assinatura.formaPagamento}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Início:</span>
+                    <span className="font-medium text-gray-900">
+                      {format(assinatura.dataInicio, 'dd/MM/yyyy', { locale: ptBR })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ações */}
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleAssinaturaStatus(assinatura)}
+                    className={`flex-1 p-2 rounded-lg transition-colors text-sm font-medium ${
+                      assinatura.status === 'ativa' 
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
                   >
-                    <div className="p-6 space-y-6">
-                      {/* Configurações de Notificação */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <MessageSquare className="w-5 h-5" />
-                          Configurações de Mensagens
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div>
-                                <p className="font-medium text-gray-900">Lembrete de Vencimento</p>
-                                <p className="text-sm text-gray-600">
-                                  {assinatura.configuracoes.notificacoes.lembreteVencimento.diasAntes.join(', ')} dias antes
-                                </p>
-                              </div>
-                              <div className={`w-3 h-3 rounded-full ${assinatura.configuracoes.notificacoes.lembreteVencimento.ativo ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div>
-                                <p className="font-medium text-gray-900">Confirmação de Pagamento</p>
-                                <p className="text-sm text-gray-600">Mensagem automática</p>
-                              </div>
-                              <div className={`w-3 h-3 rounded-full ${assinatura.configuracoes.notificacoes.confirmacaoPagamento.ativo ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            </div>
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div>
-                                <p className="font-medium text-gray-900">Expiração de Assinatura</p>
-                                <p className="text-sm text-gray-600">Quando assinatura expira</p>
-                              </div>
-                              <div className={`w-3 h-3 rounded-full ${assinatura.configuracoes.notificacoes.expiracaoAssinatura.ativo ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div>
-                                <p className="font-medium text-gray-900">Suspensão de Serviço</p>
-                                <p className="text-sm text-gray-600">
-                                  {assinatura.configuracoes.notificacoes.suspensaoServico.diasAposSuspensao} dias após suspensão
-                                </p>
-                              </div>
-                              <div className={`w-3 h-3 rounded-full ${assinatura.configuracoes.notificacoes.suspensaoServico.ativo ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    {assinatura.status === 'ativa' ? (
+                      <>
+                        <Pause className="w-4 h-4 inline mr-1" />
+                        Pausar
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 inline mr-1" />
+                        Ativar
+                      </>
+                    )}
+                  </motion.button>
 
-                      {/* Limites de Uso */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <Zap className="w-5 h-5" />
-                          Limites de Uso
-                        </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="bg-white p-3 rounded-lg border">
-                            <div className="text-sm text-gray-600">Mensagens WhatsApp</div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {assinatura.estatisticas.usageStats.mensagensEnviadas.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              de {assinatura.configuracoes.limitesUso.mensagensWhatsapp.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="bg-white p-3 rounded-lg border">
-                            <div className="text-sm text-gray-600">Atendimentos</div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {assinatura.estatisticas.usageStats.atendimentosRealizados}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              de {assinatura.configuracoes.limitesUso.atendimentosSimultaneos}
-                            </div>
-                          </div>
-                          <div className="bg-white p-3 rounded-lg border">
-                            <div className="text-sm text-gray-600">Integrações</div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {assinatura.estatisticas.usageStats.integracoesUsadas}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              de {assinatura.configuracoes.limitesUso.integracoes}
-                            </div>
-                          </div>
-                          <div className="bg-white p-3 rounded-lg border">
-                            <div className="text-sm text-gray-600">Armazenamento</div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {assinatura.estatisticas.usageStats.armazenamentoUsado.toFixed(1)} GB
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              de {assinatura.configuracoes.limitesUso.armazenamento} GB
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => onEditAssinatura(assinatura)}
+                    className="p-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                    title="Editar"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </motion.button>
 
-                      {/* Histórico de Pagamentos */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <DollarSign className="w-5 h-5" />
-                          Histórico de Pagamentos
-                        </h4>
-                        <div className="space-y-2">
-                          {assinatura.historicoPagamentos.map((pagamento) => (
-                            <div key={pagamento.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full ${
-                                  pagamento.status === 'pago' ? 'bg-green-500' :
-                                  pagamento.status === 'pendente' ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`} />
-                                <div>
-                                  <div className="font-medium text-gray-900">
-                                    R$ {pagamento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {format(pagamento.data, 'dd/MM/yyyy', { locale: ptBR })} • {getFormaPagamentoLabel(pagamento.formaPagamento)}
-                                  </div>
-                                </div>
-                              </div>
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                pagamento.status === 'pago' ? 'bg-green-100 text-green-700' :
-                                pagamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-red-100 text-red-700'
-                              }`}>
-                                {pagamento.status.charAt(0).toUpperCase() + pagamento.status.slice(1)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => onDeleteAssinatura(assinatura.id)}
+                    className="p-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                    title="Cancelar"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              </div>
             </motion.div>
           )
         })}

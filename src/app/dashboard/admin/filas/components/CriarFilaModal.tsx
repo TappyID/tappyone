@@ -1,24 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Palette, Users, Bot, Kanban, MessageSquare, AlertCircle } from 'lucide-react'
+import { X, Palette, Users, Bot, Kanban, MessageSquare, AlertCircle, Loader2 } from 'lucide-react'
 import { Fila } from '../page'
+
+interface Atendente {
+  id: string
+  nome: string
+  email: string
+  tipo: string
+  ativo: boolean
+}
 
 interface CriarFilaModalProps {
   onClose: () => void
-  onCreateFila: (fila: Omit<Fila, 'id' | 'criadaEm' | 'atualizadaEm' | 'estatisticas'>) => void
+  onCreateFila: (fila: Omit<Fila, 'id' | 'criadoEm' | 'atualizadoEm' | 'estatisticas'>) => void
 }
 
 const coresPredefinidas = [
   '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', 
   '#EF4444', '#06B6D4', '#84CC16', '#F97316',
   '#EC4899', '#6366F1', '#14B8A6', '#F43F5E'
-]
-
-const mockAtendentes = [
-  'João Silva', 'Maria Santos', 'Pedro Costa', 'Ana Oliveira',
-  'Carlos Ferreira', 'Lucia Mendes', 'Rafael Lima', 'Fernanda Rocha'
 ]
 
 export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModalProps) {
@@ -28,17 +31,44 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
     cor: '#3B82F6',
     ordenacao: 1,
     ativa: true,
-    regras: {
-      chatBot: false,
-      kanban: false,
-      atendentes: [] as string[],
-      whatsappChats: false,
-      prioridade: 'media' as 'baixa' | 'media' | 'alta' | 'urgente'
-    }
+    chatBot: false,
+    kanban: false,
+    whatsappChats: false,
+    prioridade: 'MEDIA' as 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE',
+    atendentes: [] as string[]
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [currentStep, setCurrentStep] = useState(1)
+  const [atendentesDisponiveis, setAtendentesDisponiveis] = useState<Atendente[]>([])
+  const [loadingAtendentes, setLoadingAtendentes] = useState(false)
+
+  const fetchAtendentes = async () => {
+    setLoadingAtendentes(true)
+    try {
+      const response = await fetch('/api/atendentes', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAtendentesDisponiveis(data.filter((user: Atendente) => user.ativo))
+      } else {
+        console.error('Erro ao buscar atendentes:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar atendentes:', error)
+    } finally {
+      setLoadingAtendentes(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAtendentes()
+  }, [])
 
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {}
@@ -53,7 +83,7 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
     }
 
     if (step === 2) {
-      if (formData.regras.atendentes.length === 0) {
+      if (formData.atendentes.length === 0) {
         newErrors.atendentes = 'Selecione pelo menos um atendente'
       }
     }
@@ -75,19 +105,23 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
 
   const handleSubmit = () => {
     if (validateStep(currentStep)) {
-      onCreateFila(formData)
+      // Convert form data to match Fila interface
+      const filaData = {
+        ...formData,
+        atendentesIds: formData.atendentes // Send just the IDs to backend
+      }
+      // Remove the atendentes array since backend expects atendentesIds
+      const { atendentes, ...finalData } = filaData
+      onCreateFila(finalData as any)
     }
   }
 
-  const toggleAtendente = (atendente: string) => {
+  const toggleAtendente = (atendenteId: string) => {
     setFormData(prev => ({
       ...prev,
-      regras: {
-        ...prev.regras,
-        atendentes: prev.regras.atendentes.includes(atendente)
-          ? prev.regras.atendentes.filter(a => a !== atendente)
-          : [...prev.regras.atendentes, atendente]
-      }
+      atendentes: prev.atendentes.includes(atendenteId)
+        ? prev.atendentes.filter(a => a !== atendenteId)
+        : [...prev.atendentes, atendenteId]
     }))
   }
 
@@ -256,22 +290,22 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                     Prioridade da Fila
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    {(['baixa', 'media', 'alta', 'urgente'] as const).map((prioridade) => (
+                    {(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'] as const).map((prioridade) => (
                       <motion.button
                         key={prioridade}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setFormData(prev => ({
                           ...prev,
-                          regras: { ...prev.regras, prioridade }
+                          prioridade
                         }))}
                         className={`p-3 rounded-xl border-2 transition-all ${
-                          formData.regras.prioridade === prioridade
+                          formData.prioridade === prioridade
                             ? 'border-[#305e73] bg-[#305e73]/10 text-[#305e73]'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {prioridade.charAt(0).toUpperCase() + prioridade.slice(1)}
+                        {prioridade.charAt(0).toUpperCase() + prioridade.slice(1).toLowerCase()}
                       </motion.button>
                     ))}
                   </div>
@@ -293,17 +327,17 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                           key={integracao.key}
                           whileHover={{ scale: 1.01 }}
                           className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                            formData.regras[integracao.key as keyof typeof formData.regras]
+                            formData[integracao.key as keyof typeof formData]
                               ? 'border-[#305e73] bg-[#305e73]/10'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <input
                             type="checkbox"
-                            checked={formData.regras[integracao.key as keyof typeof formData.regras] as boolean}
+                            checked={formData[integracao.key as keyof typeof formData] as boolean}
                             onChange={(e) => setFormData(prev => ({
                               ...prev,
-                              regras: { ...prev.regras, [integracao.key]: e.target.checked }
+                              [integracao.key]: e.target.checked
                             }))}
                             className="sr-only"
                           />
@@ -323,36 +357,52 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                     <Users className="w-4 h-4 inline mr-2" />
                     Atendentes Responsáveis *
                   </label>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-3">
-                    {mockAtendentes.map((atendente) => (
-                      <motion.label
-                        key={atendente}
-                        whileHover={{ scale: 1.02 }}
-                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
-                          formData.regras.atendentes.includes(atendente)
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.regras.atendentes.includes(atendente)}
-                          onChange={() => toggleAtendente(atendente)}
-                          className="sr-only"
-                        />
-                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                          formData.regras.atendentes.includes(atendente)
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-gray-300'
-                        }`}>
-                          {formData.regras.atendentes.includes(atendente) && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          )}
+                  {loadingAtendentes ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                      <span className="ml-2 text-gray-600">Carregando atendentes...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-3">
+                      {atendentesDisponiveis.map((atendente) => (
+                        <motion.label
+                          key={atendente.id}
+                          whileHover={{ scale: 1.02 }}
+                          className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                            formData.atendentes.includes(atendente.id)
+                              ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                              : 'hover:bg-gray-50 border border-transparent'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.atendentes.includes(atendente.id)}
+                            onChange={() => toggleAtendente(atendente.id)}
+                            className="sr-only"
+                          />
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            formData.atendentes.includes(atendente.id)
+                              ? 'border-blue-500 bg-blue-500'
+                              : 'border-gray-300'
+                          }`}>
+                            {formData.atendentes.includes(atendente.id) && (
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{atendente.nome}</p>
+                            <p className="text-xs text-gray-500">{atendente.email}</p>
+                          </div>
+                        </motion.label>
+                      ))}
+                      {atendentesDisponiveis.length === 0 && (
+                        <div className="text-center py-4 text-gray-500">
+                          <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                          <p className="text-sm">Nenhum atendente disponível</p>
                         </div>
-                        <span className="text-sm">{atendente}</span>
-                      </motion.label>
-                    ))}
-                  </div>
+                      )}
+                    </div>
+                  )}
                   {errors.atendentes && (
                     <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
@@ -388,7 +438,7 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Prioridade:</span>
-                        <span className="ml-2 font-medium">{formData.regras.prioridade}</span>
+                        <span className="ml-2 font-medium">{formData.prioridade.charAt(0).toUpperCase() + formData.prioridade.slice(1).toLowerCase()}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Ordenação:</span>
@@ -399,16 +449,26 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                     <div>
                       <p className="text-gray-600 text-sm mb-2">Integrações:</p>
                       <div className="flex gap-2">
-                        {formData.regras.chatBot && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">ChatBot</span>}
-                        {formData.regras.kanban && <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Kanban</span>}
-                        {formData.regras.whatsappChats && <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">WhatsApp</span>}
+                        {formData.chatBot && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">ChatBot</span>}
+                        {formData.kanban && <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Kanban</span>}
+                        {formData.whatsappChats && <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">WhatsApp</span>}
+                        {!formData.chatBot && !formData.kanban && !formData.whatsappChats && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">Nenhuma integração</span>
+                        )}
                       </div>
                     </div>
 
                     <div>
-                      <p className="text-gray-600 text-sm mb-2">Atendentes ({formData.regras.atendentes.length}):</p>
+                      <p className="text-gray-600 text-sm mb-2">Atendentes ({formData.atendentes.length}):</p>
                       <div className="text-sm text-gray-700">
-                        {formData.regras.atendentes.join(', ')}
+                        {formData.atendentes.length > 0 ? (
+                          formData.atendentes.map(atendenteId => {
+                            const atendente = atendentesDisponiveis.find(a => a.id === atendenteId)
+                            return atendente ? atendente.nome : 'Atendente não encontrado'
+                          }).join(', ')
+                        ) : (
+                          <span className="text-gray-500">Nenhum atendente selecionado</span>
+                        )}
                       </div>
                     </div>
                   </div>

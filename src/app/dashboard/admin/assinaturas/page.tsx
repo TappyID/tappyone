@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react'
 import { AdminLayout } from '../components/AdminLayout'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import { useAssinaturas, type Assinatura } from '@/hooks/useAssinaturas'
 import AssinaturasHeader from './components/AssinaturasHeader'
 import AssinaturasStats from './components/AssinaturasStats'
 import AssinaturasFilters from './components/AssinaturasFilters'
 import AssinaturasList from './components/AssinaturasList'
 import CriarAssinaturaModal from './components/CriarAssinaturaModal'
 
-export interface Assinatura {
+// Interface compatível com mock data para os componentes
+export interface AssinaturaDisplay {
   id: string
   contato: {
     id: string
@@ -86,123 +88,55 @@ export interface Assinatura {
   }
 }
 
-// Mock data para assinaturas
-const mockAssinaturas: Assinatura[] = [
-  {
-    id: '1',
+// Função para converter dados do backend para formato de display
+const convertToDisplayFormat = (assinatura: Assinatura): AssinaturaDisplay => {
+  // Garantir que todos os valores são strings/números válidos
+  const nome = typeof assinatura.nome === 'string' ? assinatura.nome : 'Cliente';
+  const plano = typeof assinatura.plano === 'string' ? assinatura.plano : 'Plano Padrão';
+  const valor = typeof assinatura.valor === 'number' ? assinatura.valor : 0;
+  const status = typeof assinatura.status === 'string' ? assinatura.status : 'ativa';
+  const renovacao = typeof assinatura.renovacao === 'string' ? assinatura.renovacao : 'mensal';
+  const formaPagamento = typeof assinatura.forma_pagamento === 'string' ? assinatura.forma_pagamento : 'pix';
+
+  return {
+    id: String(assinatura.id),
     contato: {
-      id: 'c1',
-      nome: 'João Silva',
-      telefone: '+5511999887766',
-      email: 'joao@empresa.com',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+      id: String(assinatura.contato_id || ''),
+      nome: nome,
+      telefone: '',
+      email: ''
     },
     plano: {
-      nome: 'Premium Business',
-      tipo: 'premium',
-      valor: 299.90,
-      periodo: 'mensal',
-      descricao: 'Plano completo para empresas médias',
-      recursos: ['WhatsApp Business API', 'Kanban Avançado', 'Relatórios Detalhados', 'Suporte 24/7']
+      nome: plano,
+      tipo: 'custom',
+      valor: valor,
+      periodo: renovacao as any,
+      descricao: '',
+      recursos: []
     },
-    status: 'ativa',
-    dataInicio: new Date('2024-01-15'),
-    dataVencimento: new Date('2024-02-15'),
-    dataProximoPagamento: new Date('2024-02-15'),
-    formaPagamento: 'cartao',
-    valorPago: 299.90,
-    criadaEm: new Date('2024-01-15'),
-    atualizadaEm: new Date('2024-01-20'),
+    status: status as any,
+    dataInicio: new Date(assinatura.data_inicio || new Date()),
+    dataVencimento: assinatura.data_fim ? new Date(assinatura.data_fim) : new Date(),
+    dataProximoPagamento: assinatura.data_fim ? new Date(assinatura.data_fim) : new Date(),
+    formaPagamento: formaPagamento as any,
+    valorPago: valor,
+    criadaEm: new Date(assinatura.criado_em || new Date()),
+    atualizadaEm: new Date(assinatura.atualizado_em || new Date()),
     configuracoes: {
       renovacaoAutomatica: true,
       notificacoes: {
         lembreteVencimento: {
           ativo: true,
           diasAntes: [7, 3, 1],
-          mensagem: 'Olá {nome}! Sua assinatura {plano} vence em {dias} dias. Renove para continuar aproveitando nossos serviços.'
+          mensagem: 'Sua assinatura vence em {dias} dias.'
         },
         confirmacaoPagamento: {
           ativo: true,
-          mensagem: 'Pagamento confirmado! Sua assinatura {plano} foi renovada até {dataVencimento}. Obrigado!'
+          mensagem: 'Pagamento confirmado!'
         },
         expiracaoAssinatura: {
           ativo: true,
-          mensagem: 'Sua assinatura {plano} expirou. Renove agora para reativar todos os recursos.'
-        },
-        suspensaoServico: {
-          ativo: true,
-          diasAposSuspensao: 7,
-          mensagem: 'Serviços suspensos por falta de pagamento. Entre em contato para regularizar.'
-        }
-      },
-      limitesUso: {
-        mensagensWhatsapp: 10000,
-        atendimentosSimultaneos: 50,
-        integracoes: 10,
-        armazenamento: 100
-      }
-    },
-    historicoPagamentos: [
-      {
-        id: 'p1',
-        data: new Date('2024-01-15'),
-        valor: 299.90,
-        status: 'pago',
-        formaPagamento: 'cartao',
-        referencia: 'PAG-001'
-      }
-    ],
-    estatisticas: {
-      totalPago: 299.90,
-      diasAtivos: 30,
-      ultimoAcesso: new Date('2024-01-22T14:30:00'),
-      usageStats: {
-        mensagensEnviadas: 2450,
-        atendimentosRealizados: 89,
-        integracoesUsadas: 5,
-        armazenamentoUsado: 23.5
-      }
-    }
-  },
-  {
-    id: '2',
-    contato: {
-      id: 'c2',
-      nome: 'Maria Santos',
-      telefone: '+5511888776655',
-      email: 'maria@loja.com'
-    },
-    plano: {
-      nome: 'Básico Starter',
-      tipo: 'basico',
-      valor: 99.90,
-      periodo: 'mensal',
-      descricao: 'Plano ideal para pequenos negócios',
-      recursos: ['WhatsApp Web', 'Kanban Básico', 'Relatórios Simples']
-    },
-    status: 'expirada',
-    dataInicio: new Date('2023-12-01'),
-    dataVencimento: new Date('2024-01-01'),
-    dataProximoPagamento: new Date('2024-02-01'),
-    formaPagamento: 'pix',
-    valorPago: 99.90,
-    criadaEm: new Date('2023-12-01'),
-    atualizadaEm: new Date('2024-01-01'),
-    configuracoes: {
-      renovacaoAutomatica: false,
-      notificacoes: {
-        lembreteVencimento: {
-          ativo: true,
-          diasAntes: [5, 1],
-          mensagem: 'Oi {nome}! Sua assinatura vence em {dias} dias. Não perca o acesso!'
-        },
-        confirmacaoPagamento: {
-          ativo: true,
-          mensagem: 'Pagamento recebido! Assinatura renovada com sucesso.'
-        },
-        expiracaoAssinatura: {
-          ativo: true,
-          mensagem: 'Assinatura expirada. Renove para continuar usando nossos serviços.'
+          mensagem: 'Assinatura expirada.'
         },
         suspensaoServico: {
           ativo: false,
@@ -217,115 +151,41 @@ const mockAssinaturas: Assinatura[] = [
         armazenamento: 10
       }
     },
-    historicoPagamentos: [
-      {
-        id: 'p2',
-        data: new Date('2023-12-01'),
-        valor: 99.90,
-        status: 'pago',
-        formaPagamento: 'pix'
-      }
-    ],
+    historicoPagamentos: [],
     estatisticas: {
-      totalPago: 99.90,
-      diasAtivos: 31,
-      ultimoAcesso: new Date('2024-01-01T10:15:00'),
+      totalPago: valor,
+      diasAtivos: 0,
+      ultimoAcesso: new Date(),
       usageStats: {
-        mensagensEnviadas: 890,
-        atendimentosRealizados: 23,
-        integracoesUsadas: 2,
-        armazenamentoUsado: 5.2
-      }
-    }
-  },
-  {
-    id: '3',
-    contato: {
-      id: 'c3',
-      nome: 'Carlos Oliveira',
-      telefone: '+5511777665544',
-      email: 'carlos@tech.com',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-    },
-    plano: {
-      nome: 'Enterprise Pro',
-      tipo: 'enterprise',
-      valor: 899.90,
-      periodo: 'anual',
-      descricao: 'Solução completa para grandes empresas',
-      recursos: ['API Completa', 'Kanban Ilimitado', 'BI Avançado', 'Suporte Dedicado', 'Integrações Personalizadas']
-    },
-    status: 'ativa',
-    dataInicio: new Date('2024-01-01'),
-    dataVencimento: new Date('2025-01-01'),
-    dataProximoPagamento: new Date('2025-01-01'),
-    formaPagamento: 'transferencia',
-    valorPago: 8999.00,
-    desconto: 1800.00,
-    criadaEm: new Date('2024-01-01'),
-    atualizadaEm: new Date('2024-01-10'),
-    configuracoes: {
-      renovacaoAutomatica: true,
-      notificacoes: {
-        lembreteVencimento: {
-          ativo: true,
-          diasAntes: [30, 15, 7, 1],
-          mensagem: 'Prezado {nome}, sua assinatura Enterprise vence em {dias} dias. Nossa equipe entrará em contato.'
-        },
-        confirmacaoPagamento: {
-          ativo: true,
-          mensagem: 'Pagamento Enterprise confirmado! Assinatura renovada por mais 12 meses.'
-        },
-        expiracaoAssinatura: {
-          ativo: true,
-          mensagem: 'Assinatura Enterprise expirada. Entre em contato com nosso time comercial.'
-        },
-        suspensaoServico: {
-          ativo: true,
-          diasAposSuspensao: 15,
-          mensagem: 'Serviços Enterprise suspensos. Contate nosso suporte dedicado.'
-        }
-      },
-      limitesUso: {
-        mensagensWhatsapp: 100000,
-        atendimentosSimultaneos: 500,
-        integracoes: 50,
-        armazenamento: 1000
-      }
-    },
-    historicoPagamentos: [
-      {
-        id: 'p3',
-        data: new Date('2024-01-01'),
-        valor: 8999.00,
-        status: 'pago',
-        formaPagamento: 'transferencia',
-        referencia: 'TRF-ENT-001'
-      }
-    ],
-    estatisticas: {
-      totalPago: 8999.00,
-      diasAtivos: 22,
-      ultimoAcesso: new Date('2024-01-22T16:45:00'),
-      usageStats: {
-        mensagensEnviadas: 15600,
-        atendimentosRealizados: 234,
-        integracoesUsadas: 12,
-        armazenamentoUsado: 156.8
+        mensagensEnviadas: 0,
+        atendimentosRealizados: 0,
+        integracoesUsadas: 0,
+        armazenamentoUsado: 0
       }
     }
   }
-]
+}
 
 export default function AssinaturasPage() {
   const { user, isAuthenticated, loading } = useAuth()
   const router = useRouter()
-  const [assinaturas, setAssinaturas] = useState<Assinatura[]>(mockAssinaturas)
+  const { 
+    assinaturas, 
+    loading: assinaturasLoading, 
+    error,
+    createAssinatura,
+    updateAssinatura,
+    deleteAssinatura,
+    updateAssinaturaStatus
+  } = useAssinaturas()
+  
   const [searchQuery, setSearchQuery] = useState('')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<'todas' | 'ativa' | 'expirada' | 'cancelada' | 'pendente' | 'suspensa'>('todas')
+  const [filterStatus, setFilterStatus] = useState<string>('todas')
   const [filterTipo, setFilterTipo] = useState<string>('')
   const [filterPeriodo, setFilterPeriodo] = useState<string>('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingAssinatura, setEditingAssinatura] = useState<AssinaturaDisplay | null>(null)
+  const [displayAssinaturas, setDisplayAssinaturas] = useState<AssinaturaDisplay[]>([])
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -333,7 +193,28 @@ export default function AssinaturasPage() {
     }
   }, [isAuthenticated, loading, router])
 
-  if (loading) {
+  useEffect(() => {
+    try {
+      console.log('Dados recebidos do backend:', assinaturas)
+      if (assinaturas && Array.isArray(assinaturas) && assinaturas.length > 0) {
+        console.log('Convertendo assinaturas...')
+        const converted = assinaturas.map((item, index) => {
+          console.log(`Convertendo item ${index}:`, item)
+          return convertToDisplayFormat(item)
+        }).filter(Boolean)
+        console.log('Assinaturas convertidas:', converted)
+        setDisplayAssinaturas(converted)
+      } else {
+        console.log('Nenhuma assinatura para converter')
+        setDisplayAssinaturas([])
+      }
+    } catch (error) {
+      console.error('Erro ao converter assinaturas:', error)
+      setDisplayAssinaturas([])
+    }
+  }, [assinaturas])
+
+  if (loading || assinaturasLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#305e73]"></div>
@@ -345,7 +226,31 @@ export default function AssinaturasPage() {
     return null
   }
 
-  const filteredAssinaturas = assinaturas.filter(assinatura => {
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">Erro ao carregar assinaturas: {error}</p>
+          <p className="text-sm text-gray-600 mt-2">Verifique se o backend está rodando e tente novamente.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Se não há dados ainda, mostrar estado vazio
+  if (!assinaturasLoading && displayAssinaturas.length === 0 && assinaturas.length === 0) {
+    return (
+      <div className="p-8">
+        <div className="bg-white rounded-2xl p-12 text-center shadow-lg border border-gray-100">
+          <div className="text-gray-400 text-6xl mb-4">📋</div>
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">Nenhuma assinatura encontrada</h3>
+          <p className="text-gray-500">Crie a primeira assinatura para começar.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const filteredAssinaturas = displayAssinaturas.filter(assinatura => {
     const matchesSearch = assinatura.contato.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          assinatura.contato.telefone.includes(searchQuery) ||
                          assinatura.plano.nome.toLowerCase().includes(searchQuery.toLowerCase())
@@ -356,39 +261,64 @@ export default function AssinaturasPage() {
     return matchesSearch && matchesStatus && matchesTipo && matchesPeriodo
   })
 
-  const handleCreateAssinatura = (novaAssinatura: Omit<Assinatura, 'id' | 'criadaEm' | 'atualizadaEm' | 'historicoPagamentos' | 'estatisticas'>) => {
-    const assinatura: Assinatura = {
-      ...novaAssinatura,
-      id: Date.now().toString(),
-      criadaEm: new Date(),
-      atualizadaEm: new Date(),
-      historicoPagamentos: [],
-      estatisticas: {
-        totalPago: 0,
-        diasAtivos: 0,
-        ultimoAcesso: new Date(),
-        usageStats: {
-          mensagensEnviadas: 0,
-          atendimentosRealizados: 0,
-          integracoesUsadas: 0,
-          armazenamentoUsado: 0
-        }
+  const handleCreateAssinatura = async (novaAssinatura: any) => {
+    try {
+      console.log('Dados enviados para o backend:', novaAssinatura)
+      
+      if (editingAssinatura) {
+        // Atualizar assinatura existente
+        await updateAssinatura(editingAssinatura.id, {
+          nome: novaAssinatura.contato.nome || 'Cliente',
+          forma_pagamento: novaAssinatura.formaPagamento || 'pix',
+          valor: Number(novaAssinatura.plano.valor) || 0,
+          renovacao: novaAssinatura.plano.periodo || 'mensal'
+        })
+      } else {
+        // Criar nova assinatura
+        await createAssinatura({
+          nome: novaAssinatura.contato.nome || 'Cliente',
+          plano: novaAssinatura.plano.nome || 'Plano Padrão',
+          forma_pagamento: novaAssinatura.formaPagamento || 'pix',
+          valor: Number(novaAssinatura.plano.valor) || 0,
+          renovacao: novaAssinatura.plano.periodo || 'mensal',
+          data_inicio: new Date().toISOString(),
+          data_fim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          contato_id: "1" // ID padrão por enquanto
+        })
       }
+      
+      setShowCreateModal(false)
+      setEditingAssinatura(null)
+    } catch (err) {
+      console.error('Erro ao criar/atualizar assinatura:', err)
     }
-    setAssinaturas(prev => [...prev, assinatura])
-    setShowCreateModal(false)
   }
 
-  const handleUpdateAssinatura = (id: string, updates: Partial<Assinatura>) => {
-    setAssinaturas(prev => prev.map(assinatura => 
-      assinatura.id === id 
-        ? { ...assinatura, ...updates, atualizadaEm: new Date() }
-        : assinatura
-    ))
+  const handleUpdateAssinatura = async (id: string, updates: Partial<AssinaturaDisplay>) => {
+    try {
+      await updateAssinatura(id, updates)
+      // Atualizar o estado local
+      setDisplayAssinaturas(prev => 
+        prev.map(assinatura => 
+          assinatura.id === id ? { ...assinatura, ...updates } : assinatura
+        )
+      )
+    } catch (error) {
+      console.error('Erro ao atualizar assinatura:', error)
+    }
   }
 
-  const handleDeleteAssinatura = (id: string) => {
-    setAssinaturas(prev => prev.filter(assinatura => assinatura.id !== id))
+  const handleEditAssinatura = (assinatura: AssinaturaDisplay) => {
+    setEditingAssinatura(assinatura)
+    setShowCreateModal(true)
+  }
+
+  const handleDeleteAssinatura = async (id: string) => {
+    try {
+      await deleteAssinatura(id)
+    } catch (err) {
+      console.error('Erro ao excluir assinatura:', err)
+    }
   }
 
   return (
@@ -396,29 +326,39 @@ export default function AssinaturasPage() {
       <div className="p-8 space-y-8">
         <AssinaturasHeader onCreateAssinatura={() => setShowCreateModal(true)} />
         
-        <AssinaturasStats assinaturas={assinaturas} />
+        <AssinaturasStats assinaturas={filteredAssinaturas} />
         
         <AssinaturasFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
+          setFilterStatus={setFilterStatus as any}
           filterTipo={filterTipo}
           setFilterTipo={setFilterTipo}
           filterPeriodo={filterPeriodo}
           setFilterPeriodo={setFilterPeriodo}
         />
         
-        <AssinaturasList
+        <AssinaturasList 
           assinaturas={filteredAssinaturas}
           onUpdateAssinatura={handleUpdateAssinatura}
           onDeleteAssinatura={handleDeleteAssinatura}
+          onEditAssinatura={handleEditAssinatura}
         />
 
         {showCreateModal && (
           <CriarAssinaturaModal
-            onClose={() => setShowCreateModal(false)}
+            onClose={() => {
+              setShowCreateModal(false)
+              setEditingAssinatura(null)
+            }}
             onCreateAssinatura={handleCreateAssinatura}
+            editingAssinatura={editingAssinatura}
+            contatos={[
+              { id: '1', nome: 'João Silva', telefone: '+5519999887766', email: 'joao@empresa.com' },
+              { id: '2', nome: 'Maria Santos', telefone: '+5519888776655', email: 'maria@empresa.com' },
+              { id: '3', nome: 'Pedro Costa', telefone: '+5519777665544', email: 'pedro@empresa.com' }
+            ]}
           />
         )}
       </div>

@@ -257,23 +257,23 @@ export default function AnotacoesSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="fixed top-0 left-0 h-full w-[520px] bg-white shadow-2xl border-r border-gray-200 z-50 pt-20"
+          className="fixed top-0 left-0 h-full w-[520px] bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 shadow-2xl border-r border-orange-500/20 dark:border-orange-500/20 z-50 pt-20"
         >
           {/* Header */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-orange-200/50 dark:border-orange-500/20 bg-gradient-to-r from-orange-100/30 to-red-100/30 dark:from-orange-600/10 dark:to-red-600/10 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Anotações</h3>
+              <h3 className="font-semibold text-foreground">Anotações</h3>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-accent rounded-lg transition-colors"
               >
-                <X className="w-4 h-4 text-gray-500" />
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
             
             {/* Search */}
             <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar anotações..."
                 value={searchQuery}
@@ -302,20 +302,20 @@ export default function AnotacoesSidebar({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50"
+                  className="mb-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
                 >
                   <div className="space-y-3">
                     <Input
                       placeholder="Título da anotação..."
                       value={newAnotacao.titulo}
                       onChange={(e) => setNewAnotacao(prev => ({ ...prev, titulo: e.target.value }))}
-                      className="bg-white"
+                      className="bg-background"
                     />
                     <textarea
                       placeholder="Conteúdo da anotação..."
                       value={newAnotacao.conteudo}
                       onChange={(e) => setNewAnotacao(prev => ({ ...prev, conteudo: e.target.value }))}
-                      className="bg-white min-h-[80px] w-full px-3 py-2 border border-input rounded-md text-sm focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
+                      className="bg-background min-h-[80px] w-full px-3 py-2 border border-input rounded-md text-sm focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
                       rows={3}
                     />
                     <div className="flex items-center gap-2">
@@ -325,7 +325,7 @@ export default function AnotacoesSidebar({
                         onChange={(e) => setNewAnotacao(prev => ({ ...prev, importante: e.target.checked }))}
                         className="rounded"
                       />
-                      <label className="text-sm text-gray-700">Marcar como importante</label>
+                      <label className="text-sm text-foreground">Marcar como importante</label>
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleAddAnotacao} size="sm" className="flex-1" disabled={loading}>
@@ -365,8 +365,8 @@ export default function AnotacoesSidebar({
               ))}
               
               {filteredAnotacoes.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <StickyNote className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <StickyNote className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
                   <p>Nenhuma anotação encontrada</p>
                   <p className="text-sm">Clique em "Nova Anotação" para começar</p>
                 </div>
@@ -423,18 +423,18 @@ function AnotacaoCard({
     return (
       <motion.div
         layout
-        className="p-4 border border-blue-200 rounded-lg bg-blue-50"
+        className="p-4 border border-primary/20 rounded-lg bg-primary/5"
       >
         <div className="space-y-3">
           <Input
             value={editData.titulo}
             onChange={(e) => setEditData(prev => ({ ...prev, titulo: e.target.value }))}
-            className="bg-white"
+            className="bg-background"
           />
           <textarea
             value={editData.conteudo}
             onChange={(e) => setEditData(prev => ({ ...prev, conteudo: e.target.value }))}
-            className="bg-white min-h-[80px] w-full px-3 py-2 border border-input rounded-md text-sm focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
+            className="bg-background min-h-[80px] w-full px-3 py-2 border border-input rounded-md text-sm focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
             rows={3}
           />
           <div className="flex items-center gap-2">
@@ -444,7 +444,7 @@ function AnotacaoCard({
               onChange={(e) => setEditData(prev => ({ ...prev, importante: e.target.checked }))}
               className="rounded"
             />
-            <label className="text-sm text-gray-700">Marcar como importante</label>
+            <label className="text-sm text-foreground">Marcar como importante</label>
           </div>
           <div className="flex gap-2">
             <Button onClick={handleSave} size="sm" className="flex-1">
@@ -466,48 +466,48 @@ function AnotacaoCard({
       layout
       whileHover={{ scale: 1.02 }}
       onClick={onStartEdit}
-      className="p-4 border border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 cursor-pointer transition-all group"
+      className="p-4 border border-border rounded-lg hover:border-orange-400 hover:bg-orange-500/10 cursor-pointer transition-all group"
     >
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-medium text-gray-900 text-sm">{anotacao.titulo}</h4>
+        <h4 className="font-medium text-foreground text-sm">{anotacao.titulo}</h4>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => {
               e.stopPropagation()
               onStartEdit()
             }}
-            className="p-1 hover:bg-orange-200 rounded transition-colors"
+            className="p-1 hover:bg-orange-500/20 rounded transition-colors"
             title="Editar"
           >
-            <Edit3 className="w-3 h-3 text-orange-600" />
+            <Edit3 className="w-3 h-3 text-orange-500" />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation()
               onDelete()
             }}
-            className="p-1 hover:bg-red-200 rounded transition-colors"
+            className="p-1 hover:bg-red-500/20 rounded transition-colors"
             title="Excluir"
           >
-            <Trash2 className="w-3 h-3 text-red-600" />
+            <Trash2 className="w-3 h-3 text-red-500" />
           </button>
         </div>
       </div>
 
-      <p className="text-xs text-gray-600 mb-3 line-clamp-3">
+      <p className="text-xs text-muted-foreground mb-3 line-clamp-3">
         {anotacao.conteudo}
       </p>
 
       <div className="flex items-center justify-between">
         <div className="flex gap-1 flex-wrap">
           {anotacao.importante && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
               <Tag className="w-2 h-2 mr-1" />
               Importante
             </span>
           )}
         </div>
-        <div className="flex items-center text-xs text-gray-500">
+        <div className="flex items-center text-xs text-muted-foreground">
           <Clock className="w-3 h-3 mr-1" />
           {new Date(anotacao.atualizadoEm).toLocaleString('pt-BR', {
             day: '2-digit',

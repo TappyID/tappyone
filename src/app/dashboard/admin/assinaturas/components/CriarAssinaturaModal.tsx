@@ -2,15 +2,26 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard } from 'lucide-react'
-import { useState } from 'react'
-import { Assinatura } from '../page'
+import React, { useState, useEffect } from 'react'
+import { AssinaturaDisplay } from '../page'
+
+interface Contato {
+  id: string
+  nome: string
+  telefone?: string
+  email?: string
+  empresa?: string
+  avatar?: string
+}
 
 interface CriarAssinaturaModalProps {
   onClose: () => void
-  onCreateAssinatura: (assinatura: Omit<Assinatura, 'id' | 'criadaEm' | 'atualizadaEm' | 'historicoPagamentos' | 'estatisticas'>) => void
+  onCreateAssinatura: (assinatura: any) => void
+  editingAssinatura?: any
+  contatos?: Contato[]
 }
 
-export default function CriarAssinaturaModal({ onClose, onCreateAssinatura }: CriarAssinaturaModalProps) {
+export default function CriarAssinaturaModal({ onClose, onCreateAssinatura, editingAssinatura, contatos = [] }: CriarAssinaturaModalProps) {
   const [formData, setFormData] = useState({
     contato: {
       id: '',
@@ -20,19 +31,19 @@ export default function CriarAssinaturaModal({ onClose, onCreateAssinatura }: Cr
       avatar: ''
     },
     plano: {
-      nome: 'Premium Business',
-      tipo: 'premium' as 'basico' | 'premium' | 'enterprise',
-      valor: 299.90,
+      nome: '',
+      tipo: 'custom' as 'basico' | 'premium' | 'enterprise' | 'custom',
+      valor: 0,
       periodo: 'mensal' as const,
-      descricao: 'Plano completo para empresas',
-      recursos: ['WhatsApp Business API', 'Kanban Avançado', 'Relatórios Detalhados', 'Suporte 24/7']
+      descricao: '',
+      recursos: []
     },
     status: 'ativa' as const,
     dataInicio: new Date(),
     dataVencimento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 dias
     dataProximoPagamento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     formaPagamento: 'pix' as const,
-    valorPago: 299.90,
+    valorPago: 0,
     desconto: 0,
     configuracoes: {
       renovacaoAutomatica: true,
@@ -65,6 +76,63 @@ export default function CriarAssinaturaModal({ onClose, onCreateAssinatura }: Cr
     }
   })
 
+  const [selectedContato, setSelectedContato] = useState<Contato | null>(null)
+  const [searchContato, setSearchContato] = useState('')
+
+  // Filtrar contatos baseado na busca
+  const filteredContatos = contatos.filter(contato =>
+    contato.nome.toLowerCase().includes(searchContato.toLowerCase()) ||
+    contato.telefone?.includes(searchContato) ||
+    contato.email?.toLowerCase().includes(searchContato.toLowerCase())
+  )
+
+  // Atualizar formData quando contato é selecionado
+  useEffect(() => {
+    if (selectedContato) {
+      setFormData(prev => ({
+        ...prev,
+        contato: {
+          id: selectedContato.id,
+          nome: selectedContato.nome,
+          telefone: selectedContato.telefone || '',
+          email: selectedContato.email || '',
+          avatar: selectedContato.avatar || ''
+        }
+      }))
+    }
+  }, [selectedContato])
+
+  // Preencher dados quando editando
+  useEffect(() => {
+    if (editingAssinatura) {
+      setFormData({
+        contato: {
+          id: editingAssinatura.contato.id,
+          nome: editingAssinatura.contato.nome,
+          telefone: editingAssinatura.contato.telefone,
+          email: editingAssinatura.contato.email || '',
+          avatar: editingAssinatura.contato.avatar || ''
+        },
+        plano: {
+          nome: editingAssinatura.plano.nome,
+          tipo: editingAssinatura.plano.tipo,
+          valor: editingAssinatura.plano.valor,
+          periodo: editingAssinatura.plano.periodo,
+          descricao: editingAssinatura.plano.descricao || '',
+          recursos: editingAssinatura.plano.recursos || []
+        },
+        status: editingAssinatura.status,
+        dataInicio: new Date(editingAssinatura.dataInicio),
+        dataVencimento: new Date(editingAssinatura.dataVencimento),
+        dataProximoPagamento: new Date(editingAssinatura.dataProximoPagamento),
+        formaPagamento: editingAssinatura.formaPagamento,
+        valorPago: editingAssinatura.valorPago,
+        desconto: editingAssinatura.desconto || 0,
+        configuracoes: editingAssinatura.configuracoes || formData.configuracoes
+      })
+    }
+  }, [editingAssinatura])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -77,7 +145,7 @@ export default function CriarAssinaturaModal({ onClose, onCreateAssinatura }: Cr
       ...formData,
       contato: {
         ...formData.contato,
-        id: Date.now().toString()
+        id: editingAssinatura ? editingAssinatura.contato.id : Date.now().toString()
       }
     }
     
@@ -121,84 +189,239 @@ export default function CriarAssinaturaModal({ onClose, onCreateAssinatura }: Cr
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Seleção de Contato */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                👤 Selecionar Cliente
+              </h3>
+              
+              {/* Campo de busca */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome Completo *
+                  Buscar Contato
                 </label>
                 <input
                   type="text"
-                  required
-                  value={formData.contato.nome}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    contato: { ...prev.contato, nome: e.target.value }
-                  }))}
+                  value={searchContato}
+                  onChange={(e) => setSearchContato(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
-                  placeholder="Ex: João Silva"
+                  placeholder="Digite o nome, telefone ou email..."
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefone *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.contato.telefone}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    contato: { ...prev.contato, telefone: e.target.value }
-                  }))}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
-                  placeholder="Ex: +5511999887766"
-                />
-              </div>
-            </div>
+              {/* Lista de contatos */}
+              {filteredContatos.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-40 overflow-y-auto">
+                  {filteredContatos.map((contato) => (
+                    <motion.label
+                      key={contato.id}
+                      whileHover={{ scale: 1.02 }}
+                      className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        selectedContato?.id === contato.id
+                          ? 'border-[#305e73] bg-[#305e73]/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="contato"
+                        value={contato.id}
+                        checked={selectedContato?.id === contato.id}
+                        onChange={() => setSelectedContato(contato)}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center gap-3">
+                        {contato.avatar ? (
+                          <img
+                            src={contato.avatar}
+                            alt={contato.nome}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">
+                              {contato.nome.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{contato.nome}</div>
+                          {contato.telefone && (
+                            <div className="text-sm text-gray-500">{contato.telefone}</div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.label>
+                  ))}
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email (Opcional)
-              </label>
-              <input
-                type="email"
-                value={formData.contato.email}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  contato: { ...prev.contato, email: e.target.value }
-                }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
-                placeholder="Ex: joao@empresa.com"
-              />
+              {/* Contato selecionado ou campos manuais */}
+              {selectedContato ? (
+                <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                  <div className="flex items-center gap-3">
+                    {selectedContato.avatar ? (
+                      <img
+                        src={selectedContato.avatar}
+                        alt={selectedContato.nome}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold">
+                          {selectedContato.nome.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">{selectedContato.nome}</div>
+                      <div className="text-sm text-gray-600">{selectedContato.telefone}</div>
+                      {selectedContato.email && (
+                        <div className="text-sm text-gray-500">{selectedContato.email}</div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedContato(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nome Completo *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.contato.nome}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        contato: { ...prev.contato, nome: e.target.value }
+                      }))}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
+                      placeholder="Ex: João Silva"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Telefone *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.contato.telefone}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        contato: { ...prev.contato, telefone: e.target.value }
+                      }))}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
+                      placeholder="Ex: +5519999887766"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Plano
-                </label>
-                <select
-                  value={formData.plano.nome}
-                  onChange={(e) => {
-                    const planos = {
-                      'Básico Starter': { tipo: 'basico' as const, valor: 99.90 },
-                      'Premium Business': { tipo: 'premium' as const, valor: 299.90 },
-                      'Enterprise Pro': { tipo: 'enterprise' as const, valor: 899.90 }
-                    }
-                    const planoSelecionado = planos[e.target.value as keyof typeof planos]
-                    setFormData(prev => ({
-                      ...prev,
-                      plano: { ...prev.plano, nome: e.target.value, ...planoSelecionado },
-                      valorPago: planoSelecionado.valor
-                    }))
-                  }}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
-                >
-                  <option value="Básico Starter">Básico Starter</option>
-                  <option value="Premium Business">Premium Business</option>
-                  <option value="Enterprise Pro">Enterprise Pro</option>
-                </select>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Plano *
+                  </label>
+                  <select
+                    required
+                    value={formData.plano.tipo === 'custom' ? 'custom' : formData.plano.nome}
+                    onChange={(e) => {
+                      if (e.target.value === 'custom') {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          plano: { 
+                            ...prev.plano, 
+                            tipo: 'custom',
+                            nome: '',
+                            valor: 0,
+                            descricao: ''
+                          }
+                        }))
+                      } else {
+                        const planValues = {
+                          'Básico': { valor: 99.90, periodo: 'mensal' as const },
+                          'Premium': { valor: 199.90, periodo: 'mensal' as const },
+                          'Enterprise': { valor: 399.90, periodo: 'mensal' as const }
+                        }
+                        const selectedPlan = planValues[e.target.value as keyof typeof planValues]
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          plano: { 
+                            ...prev.plano, 
+                            nome: e.target.value,
+                            tipo: e.target.value.toLowerCase() as 'basico' | 'premium' | 'enterprise',
+                            valor: selectedPlan.valor,
+                            periodo: selectedPlan.periodo
+                          },
+                          valorPago: selectedPlan.valor
+                        }))
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Selecione um plano</option>
+                    <option value="Básico">Básico - R$ 99,90/mês</option>
+                    <option value="Premium">Premium - R$ 199,90/mês</option>
+                    <option value="Enterprise">Enterprise - R$ 399,90/mês</option>
+                    <option value="custom">✏️ Criar plano personalizado</option>
+                  </select>
+                </div>
+
+                {/* Campos para plano personalizado */}
+                {formData.plano.tipo === 'custom' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Plano *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.plano.nome}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          plano: { ...prev.plano, nome: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ex: Plano Especial..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Valor do Plano *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.plano.valor ? `R$ ${formData.plano.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+                        onChange={(e) => {
+                          // Remove tudo exceto números e vírgula/ponto
+                          const value = e.target.value.replace(/[^\d,\.]/g, '').replace(',', '.')
+                          const numericValue = parseFloat(value) || 0
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            plano: { ...prev.plano, valor: numericValue },
+                            valorPago: numericValue
+                          }))
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="R$ 0,00"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div>

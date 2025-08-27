@@ -11,28 +11,35 @@ import {
   ChevronDown,
   Search,
   Plus,
-  MoreVertical,
   Star,
-  Archive,
-  Trash2,
   Edit3,
-  Target,
-  Settings,
+  Trash2,
   MessageCircle,
   CreditCard,
   Columns,
+  Trello,
+  SortAsc,
+  MoreVertical,
+  Target,
+  CheckCircle,
+  AlertCircle,
+  Zap,
+  Sparkles,
+  X,
+  Bot,
+  Workflow,
   Eye,
   BarChart3,
   PlayCircle,
   PauseCircle,
-  Zap,
-  Trello,
-  Check,
-  X
+  Settings,
+  Archive
 } from 'lucide-react'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
-import { useTheme } from '@/contexts/ThemeContext'
 import { useKanban } from '@/hooks/useKanban'
+import { useTags } from '@/hooks/useTags'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 import CriarQuadroModal from './components/CriarQuadroModal'
 import { useRouter } from 'next/navigation'
 
@@ -49,7 +56,10 @@ export default function KanbanPage() {
   const [editingQuadroName, setEditingQuadroName] = useState('')
   const router = useRouter()
   const { actualTheme } = useTheme()
-  const { quadros, loading, error, createQuadro, createColuna, deleteQuadro, updateQuadro } = useKanban()
+  const { quadros, loading, error, createQuadro, fetchQuadros, deleteQuadro, createColuna, updateQuadro } = useKanban()
+  const { tags, getTagsByCategory, getTagColor } = useTags()
+  const { theme } = useTheme()
+  const { colorTheme } = useColorTheme()
   
   // Estado local para quadros com favoritos
   const [localQuadros, setLocalQuadros] = useState(quadros)
@@ -1066,7 +1076,7 @@ export default function KanbanPage() {
           </motion.div>
 
           {/* Grid de Quadros */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
             {loading ? (
               <div className="col-span-full flex items-center justify-center py-12">
                 <div className="text-center">
@@ -1215,69 +1225,135 @@ export default function KanbanPage() {
                     </div>
 
                     {/* Conteúdo Principal */}
-                    <div className="relative z-10 p-8">
-                      {/* Header Section */}
-                      <div className="flex items-start justify-between mb-8">
-                        <div className="flex-1">
-                          
-                          {/* Título com Ícone Flutuante */}
-                          <div className="flex items-start gap-4 mb-4">
-                            <motion.div 
-                              className="relative"
-                              animate={{ 
-                                y: [0, -5, 0],
-                                rotateZ: [0, 5, 0, -5, 0]
-                              }}
-                              transition={{
-                                duration: 4,
-                                repeat: Infinity,
-                                ease: "easeInOut"
+                    <div className="relative z-10 p-6">
+                      {/* Header Section Redesenhado */}
+                      <div className="mb-4">
+                        {/* Linha 1: Ícone e Ações */}
+                        <div className="flex items-center justify-between mb-4">
+                          {/* Ícone Principal */}
+                          <motion.div 
+                            className="relative"
+                            animate={{ 
+                              y: [0, -2, 0],
+                              rotateZ: [0, 2, 0, -2, 0]
+                            }}
+                            transition={{
+                              duration: 4,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                          >
+                            <div 
+                              className={`p-3 rounded-xl relative overflow-hidden ${
+                                actualTheme === 'dark'
+                                  ? 'bg-gradient-to-br from-blue-500/20 to-purple-600/20'
+                                  : 'bg-gradient-to-br from-blue-500/10 to-purple-600/10'
+                              }`}
+                              style={{
+                                border: actualTheme === 'dark'
+                                  ? '1px solid rgba(99, 102, 241, 0.3)'
+                                  : '1px solid rgba(99, 102, 241, 0.2)',
+                                boxShadow: `0 4px 16px ${actualTheme === 'dark' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)'}`
                               }}
                             >
-                              <div 
-                                className={`p-4 rounded-3xl relative overflow-hidden ${
-                                  actualTheme === 'dark'
-                                    ? 'bg-gradient-to-br from-blue-500/20 to-purple-600/20'
-                                    : 'bg-gradient-to-br from-blue-500/10 to-purple-600/10'
-                                }`}
-                                style={{
-                                  border: actualTheme === 'dark'
-                                    ? '1px solid rgba(99, 102, 241, 0.3)'
-                                    : '1px solid rgba(99, 102, 241, 0.2)',
-                                  boxShadow: `0 8px 32px ${actualTheme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.15)'}`
-                                }}
-                              >
-                                <Trello className={`w-6 h-6 relative z-10 ${
-                                  actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                                }`} />
-                                
-                                {/* Efeito shimmer */}
-                                <motion.div 
-                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
-                                  initial={{ x: '-100%' }}
-                                  animate={{ x: '200%' }}
-                                  transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                    repeatDelay: 2
-                                  }}
-                                />
-                              </div>
-                            </motion.div>
-                            
-                            <div className="flex-1">
-                              {editingQuadroId === quadro.id ? (
-                                <motion.input
-                                  initial={{ scale: 0.95, opacity: 0 }}
-                                  animate={{ scale: 1, opacity: 1 }}
-                                  type="text"
-                                  value={editingQuadroName}
-                                  onChange={(e) => setEditingQuadroName(e.target.value)}
-                                  onBlur={() => {
-                                    if (editingQuadroName !== quadro.nome) {
-                                      updateQuadro(quadro.id, { nome: editingQuadroName })
-                                    }
-                                    setEditingQuadroId(null)
+                              <Trello className={`w-5 h-5 relative z-10 ${
+                                actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                              }`} />
+                            </div>
+                          </motion.div>
+
+                          {/* Ícone de Automação */}
+                          <motion.div
+                            className={`p-2 rounded-xl ${
+                              actualTheme === 'dark'
+                                ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30'
+                                : 'bg-gradient-to-br from-purple-100 to-pink-100 border border-purple-200'
+                            }`}
+                            animate={{
+                              scale: [1, 1.05, 1],
+                              rotateY: [0, 180, 360]
+                            }}
+                            transition={{
+                              duration: 3,
+                              repeat: Infinity,
+                              delay: index * 0.3
+                            }}
+                          >
+                            <Bot className={`w-3 h-3 ${
+                              actualTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                            }`} />
+                          </motion.div>
+                        </div>
+
+                        {/* Linha 2: Tags/Badges */}
+                        <motion.div 
+                          className="flex flex-wrap items-center gap-2 mb-3"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 + (index * 0.1) }}
+                        >
+                          {/* Badge de Categoria/Nicho */}
+                          <span 
+                            className={`px-3 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-all duration-200 hover:scale-105 ${
+                              actualTheme === 'dark' 
+                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30' 
+                                : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log('Editar tags do quadro:', quadro.id)
+                            }}
+                          >
+                            {quadro.descricao || 'Vendas'}
+                          </span>
+
+                          {/* Badge de Fluxo */}
+                          <span 
+                            className={`px-3 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-all duration-200 hover:scale-105 ${
+                              actualTheme === 'dark' 
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30' 
+                                : 'bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log('Editar fluxo do quadro:', quadro.id)
+                            }}
+                          >
+                            Fluxo Principal
+                          </span>
+                          
+                          {/* Badge de ID/Identificação */}
+                          <span 
+                            className={`px-3 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-all duration-200 hover:scale-105 ${
+                              actualTheme === 'dark' 
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30' 
+                                : 'bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigator.clipboard.writeText(quadro.id)
+                              console.log('ID copiado:', quadro.id)
+                            }}
+                          >
+                            #{quadro.id.slice(-6).toUpperCase()}
+                          </span>
+                        </motion.div>
+                        
+                        {/* Linha 3: Título */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            {editingQuadroId === quadro.id ? (
+                              <motion.input
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                type="text"
+                                value={editingQuadroName}
+                                onChange={(e) => setEditingQuadroName(e.target.value)}
+                                onBlur={() => {
+                                  if (editingQuadroName !== quadro.nome) {
+                                    updateQuadro(quadro.id, { nome: editingQuadroName })
+                                  }
+                                  setEditingQuadroId(null)
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
@@ -1291,7 +1367,7 @@ export default function KanbanPage() {
                                     setEditingQuadroId(null)
                                   }
                                 }}
-                                className={`font-bold text-xl bg-transparent border-b-2 border-dashed outline-none w-full pb-2 ${
+                                className={`font-bold text-lg bg-transparent border-b-2 border-dashed outline-none w-full pb-1 ${
                                   actualTheme === 'dark' 
                                     ? 'text-white border-blue-400 focus:border-blue-300' 
                                     : 'text-gray-900 border-blue-600 focus:border-blue-700'
@@ -1299,47 +1375,42 @@ export default function KanbanPage() {
                                 onClick={(e) => e.stopPropagation()}
                                 autoFocus
                               />
-                              ) : (
-                                <div>
-                                  <motion.h3 
-                                    className={`font-bold text-xl leading-tight mb-2 cursor-pointer ${
-                                      actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                    }`}
-                                    onDoubleClick={(e) => {
-                                      e.stopPropagation()
-                                      setEditingQuadroId(quadro.id)
-                                      setEditingQuadroName(quadro.nome)
-                                    }}
-                                    whileHover={{ x: 3 }}
-                                  >
-                                    {quadro.nome}
-                                  </motion.h3>
-                                  
-                                  {/* Linha decorativa */}
-                                  <motion.div 
-                                    className={`h-1 rounded-full ${
-                                      actualTheme === 'dark'
-                                        ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-transparent'
-                                        : 'bg-gradient-to-r from-blue-600 via-purple-600 to-transparent'
-                                    }`}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: '75%' }}
-                                    transition={{ 
-                                      duration: 1.2, 
-                                      delay: 0.5 + (index * 0.1),
-                                      ease: "easeOut"
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
+                            ) : (
+                              <motion.h3 
+                                className={`font-bold text-lg leading-tight cursor-pointer ${
+                                  actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                }`}
+                                onDoubleClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingQuadroId(quadro.id)
+                                  setEditingQuadroName(quadro.nome)
+                                }}
+                                whileHover={{ x: 2 }}
+                              >
+                                {quadro.nome}
+                              </motion.h3>
+                            )}
+                            
+                            {/* Linha decorativa */}
+                            <motion.div 
+                              className={`h-0.5 rounded-full mt-1 ${
+                                actualTheme === 'dark'
+                                  ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-transparent'
+                                  : 'bg-gradient-to-r from-blue-600 via-purple-600 to-transparent'
+                              }`}
+                              initial={{ width: 0 }}
+                              animate={{ width: '65%' }}
+                              transition={{ 
+                                duration: 1.2, 
+                                delay: 0.5 + (index * 0.1),
+                                ease: "easeOut"
+                              }}
+                            />
                           </div>
-                          
-                        </div>
-                        
-                        {/* Botões de Ação */}
-                        <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-                          <motion.button
+
+                          {/* Botões de Ação */}
+                          <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                            <motion.button
                             onClick={(e) => {
                               e.stopPropagation()
                               const newFavorito = !quadro.favorito
@@ -1347,7 +1418,7 @@ export default function KanbanPage() {
                                 q.id === quadro.id ? { ...q, favorito: newFavorito } : q
                               ))
                             }}
-                            className={`p-3 rounded-2xl transition-all duration-300 ${
+                            className={`p-2 rounded-xl transition-all duration-300 ${
                               quadro.favorito
                                 ? actualTheme === 'dark'
                                   ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 text-yellow-400 shadow-lg shadow-yellow-500/20'
@@ -1378,7 +1449,7 @@ export default function KanbanPage() {
                               } : {}}
                               transition={{ duration: 0.6 }}
                             >
-                              <Star className={`w-5 h-5 ${quadro.favorito ? 'fill-current' : ''}`} />
+                              <Star className={`w-4 h-4 ${quadro.favorito ? 'fill-current' : ''}`} />
                             </motion.div>
                           </motion.button>
                           
@@ -1388,7 +1459,7 @@ export default function KanbanPage() {
                               setEditingQuadroId(quadro.id)
                               setEditingQuadroName(quadro.nome)
                             }}
-                            className={`p-3 rounded-2xl transition-all duration-300 ${
+                            className={`p-2 rounded-xl transition-all duration-300 ${
                               actualTheme === 'dark'
                                 ? 'bg-white/10 text-gray-400 hover:bg-blue-500/10 hover:text-blue-400'
                                 : 'bg-gray-100/80 text-gray-500 hover:bg-blue-50 hover:text-blue-600'
@@ -1401,16 +1472,38 @@ export default function KanbanPage() {
                             whileHover={{ scale: 1.1, rotateZ: -10 }}
                             whileTap={{ scale: 0.9 }}
                           >
-                            <Edit3 className="w-5 h-5" />
+                            <Edit3 className="w-4 h-4" />
                           </motion.button>
+                          
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteQuadro(quadro.id)
+                            }}
+                            className={`p-2 rounded-xl transition-all duration-300 ${
+                              actualTheme === 'dark'
+                                ? 'bg-white/10 text-gray-400 hover:bg-red-500/10 hover:text-red-400'
+                                : 'bg-gray-100/80 text-gray-500 hover:bg-red-50 hover:text-red-600'
+                            }`}
+                            style={{
+                              border: actualTheme === 'dark'
+                                ? '1px solid rgba(255, 255, 255, 0.1)'
+                                : '1px solid rgba(0, 0, 0, 0.05)'
+                            }}
+                            whileHover={{ scale: 1.1, rotateZ: 10 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </motion.button>
+                          </div>
                         </div>
                       </div>
                       
                       {/* Descrição */}
                       {quadro.descricao && (
                         <motion.p 
-                          className={`text-sm mb-8 leading-relaxed line-clamp-2 ${
-                            actualTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                          className={`text-xs mb-4 leading-relaxed line-clamp-1 opacity-75 ${
+                            actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                           }`}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1421,7 +1514,7 @@ export default function KanbanPage() {
                       )}
                       
                       {/* Estatísticas - Grid Horizontal */}
-                      <div className="grid grid-cols-3 gap-6 mb-8">
+                      <div className="grid grid-cols-3 gap-4 mb-6">
                         {[
                           { icon: MessageCircle, value: conversas, label: 'Conversas', color: 'blue' },
                           { icon: CreditCard, value: cards, label: 'Cards', color: 'green' },
@@ -1429,65 +1522,65 @@ export default function KanbanPage() {
                         ].map((stat, statIndex) => (
                           <motion.div
                             key={stat.label}
-                            className={`relative p-5 rounded-3xl backdrop-blur-sm ${
+                            className={`relative p-3 rounded-2xl backdrop-blur-sm ${
                               actualTheme === 'dark'
-                                ? 'bg-gradient-to-br from-white/10 to-white/5'
-                                : 'bg-gradient-to-br from-white/80 to-white/60'
+                                ? 'bg-gradient-to-br from-white/8 to-white/4'
+                                : 'bg-gradient-to-br from-white/90 to-white/70'
                             }`}
                             style={{
                               border: actualTheme === 'dark'
-                                ? '1px solid rgba(255, 255, 255, 0.1)'
-                                : '1px solid rgba(0, 0, 0, 0.05)'
+                                ? '1px solid rgba(255, 255, 255, 0.08)'
+                                : '1px solid rgba(0, 0, 0, 0.04)'
                             }}
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ 
-                              delay: 0.8 + (statIndex * 0.2) + (index * 0.05), 
+                              delay: 0.8 + (statIndex * 0.1) + (index * 0.02), 
                               type: "spring",
-                              stiffness: 200 
+                              stiffness: 300 
                             }}
                             whileHover={{ 
-                              scale: 1.05,
-                              y: -5,
-                              transition: { duration: 0.2 }
+                              scale: 1.02,
+                              y: -2,
+                              transition: { duration: 0.15 }
                             }}
                           >
                             <div className="text-center">
                               <motion.div
-                                className="flex justify-center mb-3"
+                                className="flex justify-center mb-2"
                                 animate={{ 
                                   rotateY: [0, 360],
-                                  scale: [1, 1.1, 1]
+                                  scale: [1, 1.05, 1]
                                 }}
                                 transition={{
-                                  duration: 3,
+                                  duration: 4,
                                   repeat: Infinity,
-                                  delay: statIndex * 0.5
+                                  delay: statIndex * 0.3
                                 }}
                               >
-                                <stat.icon className={`w-6 h-6 ${
-                                  actualTheme === 'dark' 
-                                    ? `text-${stat.color}-400` 
-                                    : `text-${stat.color}-600`
+                                <stat.icon className={`w-4 h-4 ${
+                                  stat.color === 'blue' ? (actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600') :
+                                  stat.color === 'green' ? (actualTheme === 'dark' ? 'text-emerald-400' : 'text-emerald-600') :
+                                  (actualTheme === 'dark' ? 'text-purple-400' : 'text-purple-600')
                                 }`} />
                               </motion.div>
                               
                               <motion.div 
-                                className={`text-2xl font-bold mb-1 ${
+                                className={`text-lg font-bold mb-0.5 ${
                                   actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
                                 }`}
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ 
-                                  delay: 1 + (statIndex * 0.1) + (index * 0.05),
+                                  delay: 1 + (statIndex * 0.05) + (index * 0.02),
                                   type: "spring"
                                 }}
                               >
                                 {stat.value}
                               </motion.div>
                               
-                              <div className={`text-xs uppercase tracking-wider font-medium ${
-                                actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              <div className={`text-[10px] uppercase tracking-wider font-medium ${
+                                actualTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
                               }`}>
                                 {stat.label}
                               </div>

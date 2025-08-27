@@ -1,6 +1,7 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import AdminLayout from './components/AdminLayout'
+import AnalyticsHub from './components/AnalyticsHub'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Users, 
@@ -25,7 +26,7 @@ import {
   CartesianGrid,
   Tooltip
 } from 'recharts'
-import AdminLayout from './components/AdminLayout'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -188,221 +189,14 @@ export default function AdminDashboard() {
         ))}
       </motion.div>
 
-      {/* Charts Grid */}
-      <motion.div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.5 }}
-      >
-        {/* Revenue Chart */}
-        <motion.div
-          whileHover={{ y: -2, transition: { duration: 0.2 } }}
-        >
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#305e73]" />
-                  <span className="text-gray-900 font-semibold">Receita Mensal</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">R$ 87.4K</p>
-                  <p className="text-sm text-green-600 font-medium">+12.5% vs mês anterior</p>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={revenueData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="month" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                      tickFormatter={(value) => `${value}K`}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value) => [`R$ ${value}K`, 'Receita']}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#305e73" 
-                      strokeWidth={3}
-                      dot={{ fill: '#305e73', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: '#305e73', strokeWidth: 2, fill: 'white' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Users Growth Chart */}
-        <motion.div
-          whileHover={{ y: -2, transition: { duration: 0.2 } }}
-        >
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-[#305e73]" />
-                  <span className="text-gray-900 font-semibold">Crescimento de Usuários</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">1,234</p>
-                  <p className="text-sm text-green-600 font-medium">+8.2% este mês</p>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={usersData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#305e73" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#305e73" stopOpacity={0.05}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="month" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value) => [value, 'Usuários']}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="users" 
-                      stroke="#305e73" 
-                      strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#colorUsers)" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
-
-      {/* Performance Metrics Chart */}
+      {/* Analytics Hub */}
       <motion.div
         className="mt-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.0, duration: 0.5 }}
       >
-        <motion.div
-          whileHover={{ y: -2, transition: { duration: 0.2 } }}
-        >
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-[#305e73]" />
-                  <span className="text-gray-900 font-semibold">Performance do Sistema</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">98.5%</p>
-                  <p className="text-sm text-green-600 font-medium">Uptime médio</p>
-                </div>
-              </CardTitle>
-              <CardDescription>
-                Métricas de performance e disponibilidade dos últimos 7 dias
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={performanceData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                    />
-                    <YAxis 
-                      yAxisId="left"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                      tickFormatter={(value) => `${value}ms`}
-                    />
-                    <YAxis 
-                      yAxisId="right" 
-                      orientation="right"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                      tickFormatter={(value) => `${value}%`}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value, name) => [
-                        name === 'responseTime' ? `${value}ms` : `${value}%`,
-                        name === 'responseTime' ? 'Tempo de Resposta' : 'Uptime'
-                      ]}
-                    />
-                    <Bar 
-                      yAxisId="left"
-                      dataKey="responseTime" 
-                      fill="#305e73" 
-                      opacity={0.3}
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Line 
-                      yAxisId="right"
-                      type="monotone" 
-                      dataKey="uptime" 
-                      stroke="#305e73" 
-                      strokeWidth={3}
-                      dot={{ fill: '#305e73', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: '#305e73', strokeWidth: 2, fill: 'white' }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <AnalyticsHub />
       </motion.div>
     </AdminLayout>
   )

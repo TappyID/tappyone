@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
 
 export async function GET(request: NextRequest) {
   console.log('📋 [KANBAN QUADROS] GET route foi chamado!')
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const token = authHeader.substring(7)
+    const token = authHeader.substring(7) // Remove "Bearer "
     const body = await request.json()
     console.log('📋 [KANBAN QUADROS] Body parseado para criação de quadro')
 

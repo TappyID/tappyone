@@ -675,7 +675,6 @@ function SortableAgendamentoItem({ agend, index, columnColor, theme }: {
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      style={style}
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.1 }}

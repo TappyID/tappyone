@@ -22,13 +22,13 @@ import {
   Users
 } from 'lucide-react'
 import { useState } from 'react'
-import { Atendente } from '../page'
+import { AtendenteComStats } from '@/hooks/useAtendentes'
 import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 interface AtendentesListProps {
-  atendentes: Atendente[]
-  onUpdateAtendente: (id: string, updates: Partial<Atendente>) => void
+  atendentes: AtendenteComStats[]
+  onUpdateAtendente: (id: string, updates: Partial<AtendenteComStats>) => void
 }
 
 export default function AtendentesList({ atendentes, onUpdateAtendente }: AtendentesListProps) {

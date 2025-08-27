@@ -117,6 +117,8 @@ model Usuario {
   avaliacoesNps     AvaliacaoNps[]
   assinaturas       Assinatura[]
   cobrancas         Cobranca[]
+  contratos         Contrato[]
+  fluxosNos         FluxoNo[] @relation("FluxoNoUsuario")
 
   @@map("usuarios")
 }
@@ -277,6 +279,7 @@ model Quadro {
   colunas Coluna[]
   tags    QuadroTag[]
   fluxos  Fluxo[]
+  fluxosNos FluxoNo[] @relation("FluxoNoQuadro")
 
   @@map("quadros")
 }
@@ -309,6 +312,7 @@ model Coluna {
   quadro   Quadro    @relation(fields: [quadroId], references: [id], onDelete: Cascade)
   agenteIa AgenteIa? @relation(fields: [agenteIaId], references: [id])
   cards    Card[]
+  fluxosNos FluxoNo[] @relation("FluxoNoColuna")
 
   @@map("colunas")
 }
@@ -372,13 +376,36 @@ model AgenteIa {
   ativo        Boolean  @default(true)
   temperatura  Float    @default(0.7)
   maxTokens    Int      @default(1000)
+  nicho        String?
+  usoTokens    Int      @default(0)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   // Relacionamentos
   colunas Coluna[]
+  fluxosNos FluxoNo[] @relation("FluxoNoAgente")
 
   @@map("agentes_ia")
+}
+
+model Contrato {
+  id           String   @id @default(cuid())
+  nome         String
+  descricao    String?
+  conteudo     String   // Conteúdo do contrato
+  rubrica      String?  // Local da rubrica
+  assinatura   String?  // Dados da assinatura
+  valor        Decimal?
+  ativo        Boolean  @default(true)
+  usuarioId    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  usuario      Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  orcamentos   Orcamento[] @relation("OrcamentoContrato")
+
+  @@map("contratos")
 }
 
 model Atendimento {
@@ -473,15 +500,23 @@ model Fluxo {
 model FluxoNo {
   id           String   @id @default(cuid())
   nome         String
-  tipo         String   // "trigger", "condition", "action", "message"
+  tipo         String   // "trigger", "condition", "action", "message", "kanban", "agente", "webhook", "delay", "file", "audio", "image"
   configuracao Json     // Configuração específica do nó
   posicao      Json     // Posição no canvas (x, y)
   fluxoId      String
+  agenteIaId   String?  // Para nodes que usam agente IA
+  quadroId     String?  // Para nodes que interagem com kanban
+  colunaId     String?  // Para mover cards entre colunas
+  usuarioId    String?  // Para atribuir atendente
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   // Relacionamentos
   fluxo        Fluxo          @relation(fields: [fluxoId], references: [id], onDelete: Cascade)
+  agenteIa     AgenteIa?      @relation("FluxoNoAgente", fields: [agenteIaId], references: [id])
+  quadro       Quadro?        @relation("FluxoNoQuadro", fields: [quadroId], references: [id])
+  coluna       Coluna?        @relation("FluxoNoColuna", fields: [colunaId], references: [id])
+  usuario      Usuario?       @relation("FluxoNoUsuario", fields: [usuarioId], references: [id])
   conexoesDe   FluxoConexao[] @relation("FluxoConexaoDe")
   conexoesPara FluxoConexao[] @relation("FluxoConexaoPara")
 
@@ -571,12 +606,14 @@ model Orcamento {
   observacoes  String?
   usuarioId    String
   contatoId    String
+  contratoId   String?
   criadoEm     DateTime         @default(now())
   atualizadoEm DateTime         @updatedAt
 
   // Relacionamentos
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato  Contato   @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  contrato Contrato? @relation("OrcamentoContrato", fields: [contratoId], references: [id])
 
   @@map("orcamentos")
 }

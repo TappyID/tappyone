@@ -160,33 +160,41 @@
     background-clip: content-box;
   }
   
-  /* Scrollbar para área do chat - mais sutil */
+  /* Scrollbar para área do chat - azul dark sofisticado */
   .scrollbar-chat {
-    scrollbar-width: thin;
-    scrollbar-color: #e5e7eb transparent;
+    scrollbar-width: auto;
+    scrollbar-color: #1e40af transparent;
   }
   
   .scrollbar-chat::-webkit-scrollbar {
-    width: 6px;
+    width: 12px;
   }
   
   .scrollbar-chat::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(30, 64, 175, 0.1);
     border-radius: 10px;
+    margin: 4px;
   }
   
   .scrollbar-chat::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
     border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
     transition: all 0.3s ease;
+    min-height: 30px;
   }
   
   .scrollbar-chat::-webkit-scrollbar-thumb:hover {
-    background: #273155;
-    box-shadow: 0 0 10px rgba(39, 49, 85, 0.3);
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #1e40af 100%);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.5);
+    transform: scale(1.05);
   }
   
   .scrollbar-chat::-webkit-scrollbar-thumb:active {
-    background: #1e2442;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #1e40af 100%);
+    box-shadow: 0 2px 6px rgba(30, 64, 175, 0.7);
+    transform: scale(0.98);
   }
 }

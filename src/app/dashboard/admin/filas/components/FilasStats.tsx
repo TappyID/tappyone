@@ -16,10 +16,12 @@ interface FilasStatsProps {
 }
 
 export default function FilasStats({ filas }: FilasStatsProps) {
+  const safeFilas = Array.isArray(filas) ? filas : []
+  
   const stats = [
     {
       title: 'Total de Filas',
-      value: filas.length,
+      value: safeFilas.length,
       icon: GitBranch,
       color: 'from-[#305e73] to-[#244659]',
       change: '+2 este mês',
@@ -27,7 +29,7 @@ export default function FilasStats({ filas }: FilasStatsProps) {
     },
     {
       title: 'Filas Ativas',
-      value: filas.filter(f => f.ativa).length,
+      value: safeFilas.filter(f => f.ativa).length,
       icon: CheckCircle,
       color: 'from-green-500 to-green-600',
       change: '100% operacional',
@@ -35,7 +37,7 @@ export default function FilasStats({ filas }: FilasStatsProps) {
     },
     {
       title: 'Conversas Ativas',
-      value: filas.reduce((acc, f) => acc + f.estatisticas.conversasAtivas, 0),
+      value: safeFilas.reduce((acc, f) => acc + (f.estatisticas?.conversasAtivas || 0), 0),
       icon: MessageSquare,
       color: 'from-purple-500 to-purple-600',
       change: '+15% hoje',
@@ -43,7 +45,7 @@ export default function FilasStats({ filas }: FilasStatsProps) {
     },
     {
       title: 'Tempo Médio',
-      value: `${filas.length > 0 ? (filas.reduce((acc, f) => acc + f.estatisticas.tempoMedioResposta, 0) / filas.length).toFixed(1) : 0}min`,
+      value: `${safeFilas.length > 0 ? (safeFilas.reduce((acc, f) => acc + (f.estatisticas?.tempoMedioResposta || 0), 0) / safeFilas.length).toFixed(1) : 0}min`,
       icon: Clock,
       color: 'from-orange-500 to-orange-600',
       change: '-12% esta semana',

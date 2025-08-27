@@ -77,26 +77,7 @@ const menuItems = [
     icon: Users,
     color: 'text-teal-600',
     isSubmenu: true,
-    children: [
-      {
-        title: 'Em atendimento',
-        icon: UserCheck,
-        href: '/dashboard/admin/atendentes/em-atendimento',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Online',
-        icon: Circle,
-        href: '/dashboard/admin/atendentes/online',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Offline',
-        icon: UserX,
-        href: '/dashboard/admin/atendentes/offline',
-        color: 'text-teal-600'
-      }
-    ]
+   
   },
   {
     title: 'Contatos',
@@ -155,19 +136,19 @@ const menuItems = [
       {
         title: 'Fluxo de Bot',
         icon: Bot,
-        href: '/dashboard/admin/fluxo-bot',
+        href: '/dashboard/admin/fluxograma',
         color: 'text-teal-600'
       },
       {
         title: 'Fluxo de I.A',
         icon: Brain,
-        href: '/dashboard/admin/fluxo-ia',
+        href: '/dashboard/admin/fluxograma',
         color: 'text-teal-600'
       },
       {
         title: 'Fluxo do Kanban',
         icon: GitBranch,
-        href: '/dashboard/admin/fluxo-kanban',
+        href: '/dashboard/admin/fluxograma',
         color: 'text-teal-600'
       }
     ]
@@ -181,27 +162,28 @@ const menuItems = [
       {
         title: 'Administradores',
         icon: UsersIcon,
-        href: '/dashboard/admin/usuarios/administradores',
+        href: '/dashboard/admin/usuarios/',
         color: 'text-teal-600'
       },
       {
         title: 'Atendentes',
         icon: Users,
-        href: '/dashboard/admin/usuarios/atendentes',
+        href: '/dashboard/admin/usuarios/',
+        color: 'text-teal-600'
+      },
+      {
+        title: 'Afiliados',
+        icon: Users,
+        href: '/dashboard/admin/usuarios/',
         color: 'text-teal-600'
       },
       {
         title: 'Assinantes',
         icon: CreditCard,
-        href: '/dashboard/admin/usuarios/assinantes',
+        href: '/dashboard/admin/usuarios/',
         color: 'text-teal-600'
       },
-      {
-        title: 'Permissões',
-        icon: Settings,
-        href: '/dashboard/admin/usuarios/permissoes',
-        color: 'text-teal-600'
-      }
+     
     ]
   },
   {

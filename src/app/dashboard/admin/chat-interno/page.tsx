@@ -20,7 +20,9 @@ import {
   UserPlus,
   Activity,
   Clock,
-  Shield
+  Shield,
+  X,
+  ChevronDown
 } from 'lucide-react'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import AtendentesLista from './components/AtendentesLista'
@@ -37,7 +39,11 @@ const mockAtendentes = [
     cargo: 'Atendente Senior',
     ultimaMsg: 'Preciso de ajuda com um cliente...',
     ultimaAtividade: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
-    naoLidas: 2
+    naoLidas: 2,
+    fila: 'Suporte Premium',
+    tag: 'VIP',
+    indiceNCS: 98.5,
+    prioridade: 'alta' as 'alta' | 'media' | 'baixa'
   },
   {
     id: '2',
@@ -48,7 +54,11 @@ const mockAtendentes = [
     cargo: 'Atendente',
     ultimaMsg: 'Relatório enviado!',
     ultimaAtividade: new Date(Date.now() - 15 * 60 * 1000), // 15 min ago
-    naoLidas: 0
+    naoLidas: 0,
+    fila: 'Suporte Geral',
+    tag: 'Técnico',
+    indiceNCS: 87.2,
+    prioridade: 'media' as 'alta' | 'media' | 'baixa'
   },
   {
     id: '3',
@@ -82,7 +92,8 @@ export default function ChatInternoPage() {
   const [selectedAtendente, setSelectedAtendente] = useState<string | null>(null)
   const [atendentes, setAtendentes] = useState(mockAtendentes)
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'todos' | 'online' | 'ocupado' | 'ausente' | 'offline'>('todos')
+  const [statusFilter, setStatusFilter] = useState<string>('todos')
+  const [showSearchFilter, setShowSearchFilter] = useState<boolean>(false)
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -116,7 +127,7 @@ export default function ChatInternoPage() {
   const selectedAtendenteData = atendentes.find(a => a.id === selectedAtendente)
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50/30">
+    <div className={`h-screen w-screen overflow-hidden ${actualTheme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50/30'}`}>
       {/* TopBar Original com Melhorias */}
       <div className="relative">
         <AtendimentosTopBar 
@@ -172,69 +183,211 @@ export default function ChatInternoPage() {
       
       {/* Layout Principal */}
       <div className="flex h-[calc(100vh-80px)]">
-        {/* Sidebar Melhorada */}
+        {/* Sidebar Ultra Melhorada - Mais Larga */}
         <motion.div 
-          className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg"
+          className={`w-96 ${actualTheme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col shadow-2xl backdrop-blur-xl`}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           {/* Header da Sidebar */}
-          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#305e73]" />
-                Equipe ({filteredAtendentes.length})
-              </h3>
-              <motion.button 
-                className="p-1.5 hover:bg-white rounded-lg transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+          <div className={`p-6 border-b ${actualTheme === 'dark' ? 'border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900' : 'border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/50'}`}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <motion.div 
+                  className={`p-2 rounded-xl ${actualTheme === 'dark' ? 'bg-blue-600/20' : 'bg-blue-100'} shadow-lg`}
+                  whileHover={{ scale: 1.05, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
+                  <Users className={`w-5 h-5 ${actualTheme === 'dark' ? 'text-blue-400' : 'text-[#305e73]'}`} />
+                </motion.div>
+                <div>
+                  <h3 className={`font-bold text-lg ${actualTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    Equipe
+                  </h3>
+                  <p className={`text-sm ${actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {filteredAtendentes.length} membros
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Badge de Notificações */}
+                <motion.div 
+                  className="relative"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${actualTheme === 'dark' ? 'bg-red-600/20 text-red-400' : 'bg-red-100 text-red-700'} border ${actualTheme === 'dark' ? 'border-red-600/30' : 'border-red-200'}`}>
+                    {atendentes.filter(a => a.naoLidas > 0).length} novas
+                  </div>
+                  <motion.div 
+                    className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </motion.div>
+                
+                {/* Botão de Busca/Filtro Unificado */}
+                <motion.button 
+                  onClick={() => setShowSearchFilter(!showSearchFilter)}
+                  className={`p-2.5 rounded-xl transition-all duration-200 ${actualTheme === 'dark' ? 'hover:bg-gray-700 bg-gray-800' : 'hover:bg-white bg-white/50'} shadow-lg border ${actualTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  title="Buscar e Filtrar"
+                >
+                  <Search className={`w-4 h-4 ${actualTheme === 'dark' ? 'text-blue-400' : 'text-[#305e73]'}`} />
+                </motion.button>
+                
+                {/* Botão Adicionar */}
+                <motion.button 
+                  className={`p-2.5 rounded-xl transition-all duration-200 ${actualTheme === 'dark' ? 'hover:bg-gray-700 bg-gray-800' : 'hover:bg-white bg-white/50'} shadow-lg border ${actualTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <UserPlus className={`w-4 h-4 ${actualTheme === 'dark' ? 'text-blue-400' : 'text-[#305e73]'}`} />
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Modal de Busca e Filtros */}
+            {showSearchFilter && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={() => setShowSearchFilter(false)}
               >
-                <UserPlus className="w-4 h-4 text-[#305e73]" />
-              </motion.button>
-            </div>
-            
-            {/* Barra de Busca Melhorada */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar atendentes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#305e73]/20 focus:border-[#305e73] transition-all"
-              />
-            </div>
-            
-            {/* Filtros de Status */}
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { key: 'todos', label: 'Todos', icon: Users, color: 'gray' },
-                { key: 'online', label: 'Online', icon: Activity, color: 'emerald' },
-                { key: 'ocupado', label: 'Ocupado', icon: Clock, color: 'yellow' },
-                { key: 'ausente', label: 'Ausente', icon: Archive, color: 'orange' }
-              ].map((filter) => {
-                const Icon = filter.icon
-                const isActive = statusFilter === filter.key
-                return (
-                  <motion.button
-                    key={filter.key}
-                    onClick={() => setStatusFilter(filter.key as any)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      isActive
-                        ? `bg-${filter.color}-100 text-${filter.color}-700 border border-${filter.color}-200`
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {filter.label}
-                  </motion.button>
-                )
-              })}
-            </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`w-full max-w-lg rounded-3xl shadow-2xl backdrop-blur-xl border ${
+                    actualTheme === 'dark'
+                      ? 'bg-gray-900/95 border-gray-700/50'
+                      : 'bg-white/95 border-gray-200/50'
+                  }`}
+                >
+                  {/* Header */}
+                  <div className={`p-6 border-b ${actualTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                    <div className="flex items-center justify-between">
+                      <h3 className={`text-lg font-bold ${actualTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        Buscar e Filtrar
+                      </h3>
+                      <motion.button
+                        onClick={() => setShowSearchFilter(false)}
+                        className={`p-2 rounded-xl ${actualTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <X className={`w-4 h-4 ${actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo */}
+                  <div className="p-6 space-y-6">
+                    {/* Barra de Busca */}
+                    <div>
+                      <label className={`block text-sm font-semibold mb-3 ${actualTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Buscar Atendentes
+                      </label>
+                      <div className="relative">
+                        <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 ${actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-400'} transition-colors`} />
+                        <input
+                          type="text"
+                          placeholder="Digite o nome, email ou cargo..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className={`w-full pl-12 pr-4 py-3.5 ${actualTheme === 'dark' ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-[#305e73]'} border rounded-2xl focus:outline-none focus:ring-2 ${actualTheme === 'dark' ? 'focus:ring-blue-500/20' : 'focus:ring-[#305e73]/20'} transition-all duration-200 shadow-lg backdrop-blur-sm`}
+                        />
+                        {searchQuery && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => setSearchQuery('')}
+                            className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${actualTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+                          >
+                            <X className="w-3 h-3 text-gray-400" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filtros de Status */}
+                    <div>
+                      <label className={`block text-sm font-semibold mb-3 ${actualTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Filtrar por Status
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { key: 'todos', label: 'Todos', icon: Users, color: 'gray', count: filteredAtendentes.length },
+                          { key: 'online', label: 'Online', icon: Activity, color: 'emerald', count: atendentes.filter(a => a.status === 'online').length },
+                          { key: 'ocupado', label: 'Ocupado', icon: Clock, color: 'yellow', count: atendentes.filter(a => a.status === 'ocupado').length },
+                          { key: 'ausente', label: 'Ausente', icon: Archive, color: 'orange', count: atendentes.filter(a => a.status === 'ausente').length }
+                        ].map((filter) => {
+                          const Icon = filter.icon
+                          const isActive = statusFilter === filter.key
+                          return (
+                            <motion.button
+                              key={filter.key}
+                              onClick={() => setStatusFilter(filter.key as any)}
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                                isActive
+                                  ? actualTheme === 'dark'
+                                    ? `bg-${filter.color}-600/20 text-${filter.color}-400 border border-${filter.color}-500/30`
+                                    : `bg-${filter.color}-100 text-${filter.color}-700 border border-${filter.color}-200`
+                                  : actualTheme === 'dark'
+                                  ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border border-transparent'
+                                  : 'bg-gray-50/50 text-gray-600 hover:bg-gray-100/50 border border-transparent'
+                              }`}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Icon className="w-4 h-4" />
+                              <span className="flex-1 text-left">{filter.label}</span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                isActive
+                                  ? actualTheme === 'dark'
+                                    ? `bg-${filter.color}-500/30 text-${filter.color}-300`
+                                    : `bg-${filter.color}-200 text-${filter.color}-800`
+                                  : actualTheme === 'dark'
+                                  ? 'bg-gray-700 text-gray-300'
+                                  : 'bg-gray-200 text-gray-700'
+                              }`}>
+                                {filter.count}
+                              </span>
+                            </motion.button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className={`p-6 border-t ${actualTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm ${actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {filteredAtendentes.length} atendentes encontrados
+                      </span>
+                      <motion.button
+                        onClick={() => setShowSearchFilter(false)}
+                        className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
+                          actualTheme === 'dark'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-[#305e73] hover:bg-[#244a5a] text-white'
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Aplicar
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
           </div>
           
           <AtendentesLista
@@ -246,15 +399,16 @@ export default function ChatInternoPage() {
 
         {/* Área de Chat Melhorada */}
         <motion.div 
-          className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 to-blue-50/20"
+          className={`flex-1 flex flex-col ${actualTheme === 'dark' ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50' : 'bg-gradient-to-br from-gray-50 to-blue-50/20'}`}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          {selectedAtendenteData ? (
-            <ChatInternoArea
-              atendente={selectedAtendenteData}
+          {selectedAtendente ? (
+            <ChatInternoArea 
+              atendente={atendentes.find(a => a.id === selectedAtendente)!}
               currentUser={user}
+              isDark={actualTheme === 'dark'}
             />
           ) : (
             <motion.div

@@ -1,13 +1,14 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Users, UserPlus, Crown } from 'lucide-react'
+import { Users, UserPlus, Crown, Download } from 'lucide-react'
 
 interface AtendentesHeaderProps {
   onCreateClick: () => void
+  onExportClick: () => void
 }
 
-export default function AtendentesHeader({ onCreateClick }: AtendentesHeaderProps) {
+export default function AtendentesHeader({ onCreateClick, onExportClick }: AtendentesHeaderProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -69,21 +70,39 @@ export default function AtendentesHeader({ onCreateClick }: AtendentesHeaderProp
           </motion.div>
         </div>
 
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6 }}
-          whileHover={{ 
-            scale: 1.05,
-            boxShadow: "0 10px 25px rgba(48, 94, 115, 0.3)"
-          }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onCreateClick}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-        >
-          <UserPlus className="w-5 h-5" />
-          Novo Atendente
-        </motion.button>
+        <div className="flex items-center gap-3">
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.6 }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: "0 8px 20px rgba(59, 130, 246, 0.3)"
+            }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onExportClick}
+            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Download className="w-5 h-5" />
+            Exportar
+          </motion.button>
+
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.7 }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: "0 10px 25px rgba(48, 94, 115, 0.3)"
+            }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onCreateClick}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <UserPlus className="w-5 h-5" />
+            Novo Atendente
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   )

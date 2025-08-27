@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import MediaSendModal from '@/components/ui/MediaSendModal'
 import SpecialMediaModal from '@/components/ui/SpecialMediaModal'
 import AudioMessageComponent from '@/components/AudioMessageComponent'
+import EditTextModal from './EditTextModal'
 import {
   Send,
   Paperclip,
@@ -396,6 +397,9 @@ export default function ChatArea({
   }
   const [editingMessage, setEditingMessage] = useState<any>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showEditTextModal, setShowEditTextModal] = useState(false)
+  const [editingText, setEditingText] = useState('')
+  const [editingAction, setEditingAction] = useState<any>(null)
   const [starredMessages, setStarredMessages] = useState<Set<string>>(() => {
     // Carregar mensagens favoritadas do localStorage
     if (typeof window !== 'undefined') {
@@ -1114,29 +1118,29 @@ export default function ChatArea({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white">
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="w-24 h-24 bg-gradient-to-br from-[#273155] to-[#2a3660] rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <User className="w-12 h-12 text-white" />
+          <div className="w-24 h-24 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-600/50">
+            <User className="w-12 h-12 text-slate-200" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Selecione uma conversa</h3>
-          <p className="text-gray-600">Escolha uma conversa da lista para começar a atender</p>
+          <h3 className="text-xl font-semibold text-slate-100 mb-2">Selecione uma conversa</h3>
+          <p className="text-slate-400">Escolha uma conversa da lista para começar a atender</p>
         </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Chat Header */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="h-16 bg-white border-b border-gray-200/50 px-6 flex items-center justify-between backdrop-blur-sm"
+        className="h-16 bg-white dark:bg-slate-800/50 backdrop-blur-sm border-b border-gray-200 dark:border-slate-700/50 px-6 flex items-center justify-between shadow-lg"
       >
         <div className="flex items-center gap-4">
           {/* Avatar */}
@@ -1144,7 +1148,7 @@ export default function ChatArea({
             className="relative"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-[#273155] to-[#2a3660] rounded-xl flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl flex items-center justify-center overflow-hidden border border-slate-600/50">
               {conversation.profilePictureUrl ? (
                 <img 
                   src={conversation.profilePictureUrl} 
@@ -1176,12 +1180,12 @@ export default function ChatArea({
 
           {/* User Info */}
           <div>
-            <h3 className="font-semibold text-gray-900">{conversation.name}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-slate-100">{conversation.name}</h3>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
-                isOnline(extractChatId(conversation) || '') ? 'bg-green-500' : 'bg-gray-400'
+                isOnline(extractChatId(conversation) || '') ? 'bg-green-500' : 'bg-slate-400'
               }`} />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-slate-300">
                 {isOnline(extractChatId(conversation) || '') ? 'Online' : 'Offline'}
                 {isContactTyping(extractChatId(conversation) || '') && ' • digitando...'}
               </span>
@@ -1195,28 +1199,28 @@ export default function ChatArea({
         <div className="flex items-center gap-2">
           {/* Buscar Mensagens */}
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowSearch(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Buscar Mensagens"
           >
-            <Search className="w-4 h-4 text-gray-600" />
+            <Search className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white"></div>
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
           </motion.button>
           
          
           
           {/* Agenda */}
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAgendamentoModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Agendar"
           >
-            <Calendar className="w-4 h-4 text-gray-600" />
+            <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge com contagem real */}
             {agendamentosCount > 0 && (
               <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -1227,13 +1231,13 @@ export default function ChatArea({
           
           {/* Orçamento */}
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowOrcamentoModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Orçamento"
           >
-            <DollarSign className="w-4 h-4 text-gray-600" />
+            <DollarSign className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge com contagem real */}
             {orcamentosCount > 0 && (
               <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -1244,10 +1248,10 @@ export default function ChatArea({
           
           <button
             onClick={() => {}}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Assinatura"
           >
-            <FileSignature className="w-4 h-4 text-gray-600" />
+            <FileSignature className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge com contagem real */}
             {assinaturasCount > 0 && (
               <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -1263,12 +1267,12 @@ export default function ChatArea({
                 window.open(`/dashboard/admin/contatos?search=${encodeURIComponent(conversation.id)}`, '_blank')
               }
             }}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Contato"
           >
-            <UserCheck className="w-4 h-4 text-gray-600" />
+            <UserCheck className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge de status do contato */}
-            <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ${
+            <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-background ${
               contactStatus === 'synced' ? 'bg-green-500' : 'bg-red-500'
             }`}></div>
           </button>
@@ -1286,10 +1290,10 @@ export default function ChatArea({
                 console.error('❌ onToggleAnotacoesSidebar não está definido!')
               }
             }}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Anotações"
           >
-            <StickyNote className="w-4 h-4 text-gray-600" />
+            <StickyNote className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge com contagem real */}
             {notesCount > 0 && (
               <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -1300,50 +1304,50 @@ export default function ChatArea({
           
           {/* Badge Tag */}
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowTagsModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Tags"
           >
-            <Hash className="w-4 h-4 text-gray-600" />
+            <Hash className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-pink-500 rounded-full border border-white"></div>
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-pink-500 rounded-full border border-background"></div>
           </motion.button>
           
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowLigacaoModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Telefone"
           >
-            <Phone className="w-4 h-4 text-gray-600" />
+            <Phone className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white"></div>
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowVideoChamadaModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Vídeo Chamada"
           >
-            <Video className="w-4 h-4 text-gray-600" />
+            <Video className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></div>
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-background"></div>
           </motion.button>
           
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#f3f4f6' }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowCompartilharTelaModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 relative"
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Compartilhar Tela"
           >
-            <Monitor className="w-4 h-4 text-gray-600" />
+            <Monitor className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-white"></div>
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-background"></div>
           </motion.button>
           
           {/* Badge do Kanban */}
@@ -1363,8 +1367,8 @@ export default function ChatArea({
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="inline-flex items-center px-3 py-1 text-xs text-gray-600 rounded-full font-medium shadow-sm ml-2 flex-shrink-0"
-              style={{ backgroundColor: '#e5e7eb' }}
+              className="inline-flex items-center px-3 py-1 text-xs text-slate-300 rounded-full font-medium shadow-sm ml-2 flex-shrink-0"
+              style={{ backgroundColor: '#64748b' }}
             >
               <Tag className="w-3 h-3 mr-1" />
               Carregando...
@@ -1375,8 +1379,8 @@ export default function ChatArea({
 
       {/* Indicador de Tradução */}
       {selectedLanguage !== 'pt' && selectedLanguage !== 'pt-BR' && (
-        <div className="px-6 py-2 bg-blue-50 border-l-4 border-blue-500">
-          <div className="flex items-center gap-2 text-sm text-blue-700">
+        <div className="px-6 py-2 bg-blue-500/20 backdrop-blur-sm border-l-4 border-blue-400">
+          <div className="flex items-center gap-2 text-sm text-blue-200">
             <Languages className="w-4 h-4" />
             <span>
               {isTranslating ? 'Traduzindo conversas...' : 'Conversas traduzidas automaticamente'}
@@ -1386,7 +1390,7 @@ export default function ChatArea({
       )}
 
       {/* Messages Area */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/30 to-white scrollbar-chat">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-white/80 to-gray-50/90 dark:from-slate-800/20 dark:to-slate-900/30 backdrop-blur-sm scrollbar-chat">
         <AnimatePresence>
           {displayMessages.map((msg, index) => (
             <motion.div
@@ -1405,9 +1409,9 @@ export default function ChatArea({
                 <div 
                   className={`p-3 rounded-lg ${
                     msg.sender === 'agent' 
-                      ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-white shadow-lg' 
-                      : 'bg-white border border-gray-200'
-                  } max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl shadow-sm`}
+                      ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg border border-blue-500/30' 
+                      : 'bg-white/95 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-slate-100 shadow-sm dark:shadow-2xl'
+                  } max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl`}
                   onDoubleClick={() => {
                     if (msg.sender === 'agent' && msg.type === 'text') {
                       setEditingMessage(msg)
@@ -1421,30 +1425,30 @@ export default function ChatArea({
                   {msg.type === 'location' || (msg as any).location ? (
                     <div className="mb-2">
                       <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                        msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-50'
+                        msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-100/90 dark:bg-slate-700/60 backdrop-blur-sm'
                       }`}>
                         <div className={`p-2 rounded-full ${
-                          msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                          msg.sender === 'agent' ? 'bg-white/20' : 'bg-gray-200/80 dark:bg-slate-600/60'
                         }`}>
                           <MapPin className={`w-4 h-4 ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
+                            msg.sender === 'agent' ? 'text-white' : 'text-gray-700 dark:text-slate-200'
                           }`} />
                         </div>
                         <div className="flex-1">
                           <div className={`font-medium text-sm ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-gray-900'
+                            msg.sender === 'agent' ? 'text-white' : 'text-gray-800 dark:text-slate-100'
                           }`}>
                             {(msg as any).location?.title || msg.content || 'Localização'}
                           </div>
                           {(msg as any).location?.address && (
                             <div className={`text-xs mt-1 ${
-                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500'
+                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-600 dark:text-slate-300'
                             }`}>
                               {(msg as any).location.address}
                             </div>
                           )}
                           <div className={`text-xs mt-1 ${
-                            msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500'
+                            msg.sender === 'agent' ? 'text-white/70' : 'text-gray-600 dark:text-slate-300'
                           }`}>
                             Lat: {(msg as any).location?.latitude || (msg as any).latitude}, 
                             Lng: {(msg as any).location?.longitude || (msg as any).longitude}
@@ -1457,11 +1461,11 @@ export default function ChatArea({
                             window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank')
                           }}
                           className={`p-2 rounded-full hover:bg-opacity-80 transition-colors ${
-                            msg.sender === 'agent' ? 'bg-white/20 hover:bg-white/30' : 'bg-blue-100 hover:bg-blue-200'
+                            msg.sender === 'agent' ? 'bg-white/20 hover:bg-white/30' : 'bg-slate-600/50 hover:bg-slate-500/50'
                           }`}
                         >
                           <ExternalLink className={`w-3 h-3 ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600'
+                            msg.sender === 'agent' ? 'text-white' : 'text-slate-200'
                           }`} />
                         </button>
                       </div>
@@ -1821,24 +1825,7 @@ export default function ChatArea({
                         <Star className={`w-3.5 h-3.5 ${starredMessages.has(msg.id) ? 'fill-current' : ''}`} />
                       </motion.button>
 
-                      {/* Ícone de Tradução */}
-                      <motion.button
-                        whileHover={{ 
-                          scale: 1.1,
-                          rotate: 10
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`
-                          p-1.5 rounded-full transition-all duration-200 ease-out shadow-sm
-                          ${msg.sender === 'agent' 
-                            ? 'bg-white/25 text-white hover:bg-white/35 border border-white/10' 
-                            : 'bg-blue-600/25 text-blue-600 hover:bg-blue-600/35 border border-blue-600/10'
-                          }
-                        `}
-                        title="Traduzir mensagem"
-                      >
-                        <Languages className="w-3.5 h-3.5" />
-                      </motion.button>
+                     
 
                       {/* Ícone de Transcrição de Áudio - Só para áudios (removido duplicata) */}
                       {(msg.type === 'audio' || (msg as any).mimetype?.includes('audio') || 
@@ -1981,8 +1968,8 @@ export default function ChatArea({
 
       {/* Message Input */}
       <div 
-        className={`p-6 bg-white border-t border-gray-200/50 relative ${
-          dragOver ? 'bg-blue-50 border-blue-300' : ''
+        className={`p-6 bg-background border-t border-border relative ${
+          dragOver ? 'bg-blue-500/10 border-blue-400' : ''
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -1990,10 +1977,10 @@ export default function ChatArea({
       >
         {/* Drag Overlay */}
         {dragOver && (
-          <div className="absolute inset-0 bg-blue-100/80 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-blue-500/20 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10">
             <div className="text-center">
               <Upload className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <p className="text-blue-600 font-medium">Solte os arquivos aqui</p>
+              <p className="text-blue-500 font-medium">Solte os arquivos aqui</p>
             </div>
           </div>
         )}
@@ -2029,12 +2016,12 @@ export default function ChatArea({
             whileHover={{ scale: 1.1, rotate: 180 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onToggleQuickActionsSidebar?.()}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 relative"
+            className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300 relative"
             title="Ações Rápidas"
           >
-            <MessageSquare className="w-5 h-5 text-gray-600" />
+            <MessageSquare className="w-5 h-5 text-foreground" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-background"></div>
           </motion.button>
 
 
@@ -2043,31 +2030,31 @@ export default function ChatArea({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 relative"
+            className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300 relative"
             title="Anexar arquivo"
           >
-            <Paperclip className="w-5 h-5 text-gray-600" />
+            <Paperclip className="w-5 h-5 text-foreground" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
           </motion.button>
 
           {/* Input Area */}
           <div className="flex-1 relative">
             {/* Reply Preview */}
             {replyingTo && (
-              <div className="mb-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <div className="mb-2 p-3 bg-blue-500/10 border-l-4 border-blue-500 rounded-r-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="text-sm text-blue-600 font-medium">
+                    <div className="text-sm text-blue-500 font-medium">
                       Respondendo para {replyingTo.sender === 'agent' ? 'Você' : replyingTo.author}
                     </div>
-                    <div className="text-sm text-gray-600 truncate">
+                    <div className="text-sm text-muted-foreground truncate">
                       {replyingTo.body || replyingTo.content}
                     </div>
                   </div>
                   <button
                     onClick={() => setReplyingTo(null)}
-                    className="ml-2 text-gray-400 hover:text-gray-600"
+                    className="ml-2 text-muted-foreground hover:text-foreground"
                   >
                     ✕
                   </button>
@@ -2093,7 +2080,7 @@ export default function ChatArea({
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Digite sua mensagem..."
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-foreground placeholder:text-muted-foreground"
             />
             
 
@@ -2118,17 +2105,17 @@ export default function ChatArea({
                 data-attachment-menu
                 onClick={(e) => e.stopPropagation()}
               >
-                  <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 min-w-[280px]">
+                  <div className="bg-background rounded-2xl shadow-2xl border border-border p-4 min-w-[280px]">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-gray-800">Anexar arquivos</h3>
+                      <h3 className="text-sm font-semibold text-foreground">Anexar arquivos</h3>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setShowAttachmentMenu(false)}
-                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        className="p-1 hover:bg-accent rounded-full transition-colors"
                       >
-                        <X className="w-4 h-4 text-gray-500" />
+                        <X className="w-4 h-4 text-muted-foreground" />
                       </motion.button>
                     </div>
                     
@@ -2136,110 +2123,110 @@ export default function ChatArea({
                     <div className="grid grid-cols-2 gap-3">
                       {/* Imagem */}
                       <motion.button
-                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           imageInputRef.current?.click()
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <ImageIcon className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Imagem</span>
-                        <span className="text-xs text-gray-500">JPG, PNG, GIF</span>
+                        <span className="text-sm font-medium text-foreground">Imagem</span>
+                        <span className="text-xs text-muted-foreground">JPG, PNG, GIF</span>
                       </motion.button>
                       
                       {/* Vídeo */}
                       <motion.button
-                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           videoInputRef.current?.click()
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-purple-400 hover:bg-purple-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Play className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Vídeo</span>
-                        <span className="text-xs text-gray-500">MP4, AVI, MOV</span>
+                        <span className="text-sm font-medium text-foreground">Vídeo</span>
+                        <span className="text-xs text-muted-foreground">MP4, AVI, MOV</span>
                       </motion.button>
                       
                       {/* Arquivo */}
                       <motion.button
-                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           fileInputRef.current?.click()
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-green-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <FileText className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Documento</span>
-                        <span className="text-xs text-gray-500">PDF, DOC, TXT</span>
+                        <span className="text-sm font-medium text-foreground">Documento</span>
+                        <span className="text-xs text-muted-foreground">PDF, DOC, TXT</span>
                       </motion.button>
                       
                       {/* Contato */}
                       <motion.button
-                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setShowMediaModal('contact')
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Contact className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Contato</span>
-                        <span className="text-xs text-gray-500">Enviar vCard</span>
+                        <span className="text-sm font-medium text-foreground">Contato</span>
+                        <span className="text-xs text-muted-foreground">Enviar vCard</span>
                       </motion.button>
                       
                       {/* Localização */}
                       <motion.button
-                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setShowMediaModal('location')
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-green-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <MapPin className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Localização</span>
-                        <span className="text-xs text-gray-500">Enviar local</span>
+                        <span className="text-sm font-medium text-foreground">Localização</span>
+                        <span className="text-xs text-muted-foreground">Enviar local</span>
                       </motion.button>
                       
                       {/* Enquete */}
                       <motion.button
-                        whileHover={{ scale: 1.02, backgroundColor: '#f3f4f6' }}
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setShowMediaModal('poll')
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-300 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-purple-400 hover:bg-purple-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Users className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">Enquete</span>
-                        <span className="text-xs text-gray-500">Criar votação</span>
+                        <span className="text-sm font-medium text-foreground">Enquete</span>
+                        <span className="text-xs text-muted-foreground">Criar votação</span>
                       </motion.button>
                     </div>
                     
                     {/* Footer */}
-                    <div className="mt-4 pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 text-center">
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground text-center">
                         Arraste e solte arquivos aqui ou clique para selecionar
                       </p>
                     </div>
@@ -2253,20 +2240,20 @@ export default function ChatArea({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 relative"
+            className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300 relative"
             title="Emojis"
           >
-            <Smile className="w-5 h-5 text-gray-600" />
+            <Smile className="w-5 h-5 text-foreground" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-white"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-background"></div>
           </motion.button>
 
           {audioRecorder.isRecording ? (
             <div className="flex items-center gap-2">
               {/* Indicador de gravação */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-100 rounded-xl">
+              <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 rounded-xl">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-red-700">
+                <span className="text-sm font-medium text-red-500">
                   {formatDuration(audioRecorder.duration)}
                 </span>
               </div>
@@ -2276,28 +2263,28 @@ export default function ChatArea({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={audioRecorder.pauseRecording}
-                className="p-3 bg-yellow-100 hover:bg-yellow-200 rounded-xl transition-all duration-300"
+                className="p-3 bg-yellow-500/10 hover:bg-yellow-500/20 rounded-xl transition-all duration-300"
                 title="Pausar gravação"
               >
-                <Pause className="w-5 h-5 text-yellow-600" />
+                <Pause className="w-5 h-5 text-yellow-500" />
               </motion.button>
               
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAudioRecord}
-                className="p-3 bg-red-100 hover:bg-red-200 rounded-xl transition-all duration-300"
+                className="p-3 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all duration-300"
                 title="Parar gravação"
               >
-                <Square className="w-5 h-5 text-red-600" />
+                <Square className="w-5 h-5 text-red-500" />
               </motion.button>
             </div>
           ) : audioRecorder.audioBlob ? (
             <div className="flex items-center gap-2">
               {/* Preview do áudio */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-green-100 rounded-lg">
-                <Mic className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-green-600">
+              <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 rounded-lg">
+                <Mic className="w-4 h-4 text-green-500" />
+                <span className="text-sm text-green-500">
                   {formatDuration(audioRecorder.duration)}
                 </span>
               </div>
@@ -2307,20 +2294,20 @@ export default function ChatArea({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSendAudio}
-                className="p-3 bg-green-100 hover:bg-green-200 rounded-xl transition-all duration-300"
+                className="p-3 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all duration-300"
                 title="Enviar áudio"
               >
-                <Send className="w-5 h-5 text-green-600" />
+                <Send className="w-5 h-5 text-green-500" />
               </motion.button>
               
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={audioRecorder.clearRecording}
-                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+                className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300"
                 title="Cancelar"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-foreground" />
               </motion.button>
             </div>
           ) : (
@@ -2328,10 +2315,10 @@ export default function ChatArea({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleAudioRecord}
-              className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300"
+              className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300"
               title="Gravar áudio"
             >
-              <Mic className="w-5 h-5 text-gray-600" />
+              <Mic className="w-5 h-5 text-foreground" />
             </motion.button>
           )}
 
@@ -2339,12 +2326,12 @@ export default function ChatArea({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-all duration-300 relative"
+            className="p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all duration-300 relative"
             title="Ativar IA"
           >
-            <Bot className="w-5 h-5 text-blue-600" />
+            <Bot className="w-5 h-5 text-blue-500" />
             {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-background"></div>
           </motion.button>
 
           {/* Send Button */}
@@ -2353,7 +2340,7 @@ export default function ChatArea({
             whileTap={{ scale: 0.95 }}
             onClick={sendMessage}
             disabled={!message.trim()}
-            className="p-3 bg-gradient-to-r from-[#273155] to-[#2a3660] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-3 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Enviar mensagem"
           >
             <Send className="w-5 h-5" />
@@ -2513,8 +2500,29 @@ export default function ChatArea({
         onClose={() => onToggleQuickActionsSidebar?.()}
         activeChatId={conversation?.id || conversation?.jid}
         onSelectAction={(action) => {
-          // Agora não precisa mais processar conteúdo aqui, pois a execução é automática
-          console.log('Resposta rápida executada:', action.title)
+          // Abre modal de edição para permitir edição antes do envio
+          const textContent = action.originalData?.acoes?.find(a => a.tipo === 'texto')?.conteudo?.texto || action.content
+          setEditingText(textContent)
+          setEditingAction(action)
+          setShowEditTextModal(true)
+        }}
+        onEditAction={(action) => {
+          // Abre modal de edição diretamente
+          const textContent = action.originalData?.acoes?.find(a => a.tipo === 'texto')?.conteudo?.texto || action.content
+          setEditingText(textContent)
+          setEditingAction(action)
+          setShowEditTextModal(true)
+        }}
+        onScheduleAction={(action) => {
+          // TODO: Implementar agendamento
+          console.log('Agendar ação:', action.title)
+          alert('Funcionalidade de agendamento em desenvolvimento')
+        }}
+        onCreateWithAI={() => {
+          // Abre modal de edição para gerar novo texto com IA
+          setEditingText('')
+          setEditingAction(null)
+          setShowEditTextModal(true)
         }}
         selectedContact={conversation}
       />
@@ -2525,6 +2533,24 @@ export default function ChatArea({
         onClose={() => onToggleAnotacoesSidebar?.()}
         activeChatId={conversation?.id || conversation?.jid}
         selectedContact={conversation}
+      />
+
+      {/* Edit Text Modal */}
+      <EditTextModal
+        isOpen={showEditTextModal}
+        onClose={() => {
+          setShowEditTextModal(false)
+          setEditingText('')
+          setEditingAction(null)
+        }}
+        onSend={(text) => {
+          if (conversation?.id) {
+            onSendMessage?.(text)
+          }
+        }}
+        initialText={editingText}
+        contactName={conversation?.name || conversation?.pushname}
+        actionTitle={editingAction?.title}
       />
     </div>
   )

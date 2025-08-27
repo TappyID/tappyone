@@ -2,10 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { CreditCard, Users, DollarSign, Calendar, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from 'lucide-react'
-import { Assinatura } from '../page'
+import { AssinaturaDisplay } from '../page'
 
 interface AssinaturasStatsProps {
-  assinaturas: Assinatura[]
+  assinaturas: AssinaturaDisplay[]
 }
 
 export default function AssinaturasStats({ assinaturas }: AssinaturasStatsProps) {
@@ -33,7 +33,7 @@ export default function AssinaturasStats({ assinaturas }: AssinaturasStatsProps)
       return acc + valorMensal
     }, 0)
 
-  const receitaTotal = assinaturas.reduce((acc, assinatura) => acc + assinatura.estatisticas.totalPago, 0)
+  const receitaTotal = assinaturas.reduce((acc, assinatura) => acc + (assinatura.plano.valor || 0), 0)
   
   // Assinaturas que vencem nos próximos 7 dias
   const proximoVencimento = assinaturas.filter(a => {

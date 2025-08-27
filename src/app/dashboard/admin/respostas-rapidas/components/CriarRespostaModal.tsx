@@ -20,7 +20,8 @@ import {
   Trash2, 
   Music 
 } from 'lucide-react'
-import { AudioRecorder } from '../../../../../components/shared/AudioRecorder'
+import { AudioRecorder } from '@/components/shared/AudioRecorder'
+import MediaUpload from '@/components/shared/MediaUpload'
 
 interface CreateRespostaRequest {
   titulo: string
@@ -131,8 +132,22 @@ export default function CriarRespostaModal({
                 processedConteudo = parsed
               }
             } catch (e) {
-              processedConteudo = acao.conteudo
+              // Se não conseguir fazer parse, tratar como texto simples ou objeto
+              if (acao.tipo === 'texto') {
+                processedConteudo = { texto: acao.conteudo }
+              } else {
+                processedConteudo = acao.conteudo
+              }
             }
+          }
+          
+          // Log para debug de ações de áudio
+          if (acao.tipo === 'audio') {
+            console.log('🎵 Carregando ação de áudio:', {
+              tipo: acao.tipo,
+              conteudo: processedConteudo,
+              originalConteudo: acao.conteudo
+            })
           }
           
           return {
@@ -435,12 +450,18 @@ export default function CriarRespostaModal({
 
         {acao.tipo === 'audio' && (
           <div className="space-y-4">
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+              Debug: currentAudioUrl = "{acao.conteudo.url || 'EMPTY'}"
+              <br/>
+              Conteúdo completo: {JSON.stringify(acao.conteudo)}
+            </div>
             <AudioRecorder
               onAudioReady={async (file, url) => {
                 console.log('🎵 onAudioReady chamado:', { fileName: file.name, fileSize: file.size, localUrl: url })
                 try {
                   const formData = new FormData()
-                  formData.append('audio', file)
+                  formData.append('file', file)
                   
                   console.log('🔄 Fazendo upload para blob storage...')
                   const response = await fetch('/api/upload/blob', {
@@ -483,6 +504,7 @@ export default function CriarRespostaModal({
                 })
               }}
               currentAudioUrl={acao.conteudo.url}
+              key={`audio-${index}-${acao.conteudo.url || 'empty'}`}
             />
             
             {/* Opção alternativa: Upload de arquivo de áudio */}
@@ -497,7 +519,7 @@ export default function CriarRespostaModal({
                     if (file) {
                       try {
                         const formData = new FormData()
-                        formData.append('audio', file)
+                        formData.append('file', file)
                         
                         const response = await fetch('/api/upload/blob', {
                           method: 'POST',
@@ -543,6 +565,38 @@ export default function CriarRespostaModal({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {(acao.tipo === 'imagem' || acao.tipo === 'video') && (
+          <div className="space-y-3">
+            <MediaUpload
+              type={acao.tipo === 'imagem' ? 'image' : 'video'}
+              onUpload={(file, url) => {
+                updateAcaoConteudo(index, { 
+                  ...acao.conteudo, 
+                  url: url || '',
+                  filename: file.name 
+                })
+              }}
+              onRemove={() => {
+                updateAcaoConteudo(index, { 
+                  ...acao.conteudo, 
+                  url: '', 
+                  filename: '' 
+                })
+              }}
+              currentFile={acao.conteudo.url}
+              currentFileName={acao.conteudo.filename}
+              maxSizeMB={50}
+            />
+            <input
+              type="text"
+              placeholder="Descrição (opcional)..."
+              value={acao.conteudo.caption || ''}
+              onChange={(e) => updateAcaoConteudo(index, { ...acao.conteudo, caption: e.target.value })}
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none"
+            />
           </div>
         )}
 

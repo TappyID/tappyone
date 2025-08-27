@@ -17,16 +17,23 @@ export interface Fila {
   cor: string
   ordenacao: number
   ativa: boolean
-  criadaEm: Date
-  atualizadaEm: Date
-  regras: {
-    chatBot: boolean
-    kanban: boolean
-    atendentes: string[]
-    whatsappChats: boolean
-    prioridade: 'baixa' | 'media' | 'alta' | 'urgente'
-  }
-  estatisticas: {
+  prioridade: 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE'
+  chatBot: boolean
+  kanban: boolean
+  whatsappChats: boolean
+  criadoEm: string
+  atualizadoEm: string
+  atendentes?: Array<{
+    id: string
+    filaId: string
+    usuarioId: string
+    usuario: {
+      id: string
+      nome: string
+      email: string
+    }
+  }>
+  estatisticas?: {
     totalConversas: number
     conversasAtivas: number
     tempoMedioResposta: number
@@ -34,93 +41,49 @@ export interface Fila {
   }
 }
 
-// Mock data para filas
-const mockFilas: Fila[] = [
-  {
-    id: '1',
-    nome: 'Suporte Técnico',
-    descricao: 'Fila para atendimentos de suporte técnico e resolução de problemas',
-    cor: '#3B82F6',
-    ordenacao: 1,
-    ativa: true,
-    criadaEm: new Date('2024-01-15'),
-    atualizadaEm: new Date('2024-01-20'),
-    regras: {
-      chatBot: true,
-      kanban: true,
-      atendentes: ['atendente1', 'atendente2'],
-      whatsappChats: true,
-      prioridade: 'alta'
-    },
-    estatisticas: {
-      totalConversas: 1250,
-      conversasAtivas: 23,
-      tempoMedioResposta: 4.5,
-      satisfacao: 4.2
-    }
-  },
-  {
-    id: '2',
-    nome: 'Vendas Premium',
-    descricao: 'Fila especializada para leads qualificados e vendas de alto valor',
-    cor: '#10B981',
-    ordenacao: 2,
-    ativa: true,
-    criadaEm: new Date('2024-01-10'),
-    atualizadaEm: new Date('2024-01-22'),
-    regras: {
-      chatBot: false,
-      kanban: true,
-      atendentes: ['vendedor1', 'vendedor2', 'gerente1'],
-      whatsappChats: true,
-      prioridade: 'urgente'
-    },
-    estatisticas: {
-      totalConversas: 890,
-      conversasAtivas: 15,
-      tempoMedioResposta: 2.1,
-      satisfacao: 4.8
-    }
-  },
-  {
-    id: '3',
-    nome: 'Atendimento Geral',
-    descricao: 'Fila padrão para atendimentos gerais e dúvidas básicas',
-    cor: '#8B5CF6',
-    ordenacao: 3,
-    ativa: true,
-    criadaEm: new Date('2024-01-05'),
-    atualizadaEm: new Date('2024-01-18'),
-    regras: {
-      chatBot: true,
-      kanban: false,
-      atendentes: ['atendente3', 'atendente4', 'atendente5'],
-      whatsappChats: true,
-      prioridade: 'media'
-    },
-    estatisticas: {
-      totalConversas: 2100,
-      conversasAtivas: 45,
-      tempoMedioResposta: 8.2,
-      satisfacao: 3.9
-    }
-  }
-]
+// Mock data será substituído por dados reais do backend
+const mockFilas: Fila[] = []
 
 export default function FilasPage() {
   const { user, isAuthenticated, loading } = useAuth()
   const router = useRouter()
-  const [filas, setFilas] = useState<Fila[]>(mockFilas)
+  const [filas, setFilas] = useState<Fila[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'todas' | 'ativas' | 'inativas'>('todas')
   const [filterPrioridade, setFilterPrioridade] = useState<string>('')
   const [filterIntegracao, setFilterIntegracao] = useState<string>('')
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login')
+  const fetchFilas = async () => {
+    try {
+      const response = await fetch('/api/filas', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setFilas(Array.isArray(data.data) ? data.data : [])
+      } else {
+        console.error('Erro ao buscar filas:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar filas:', error)
     }
+  }
+
+  useEffect(() => {
+    if (loading) return
+    
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
+    
+    // Buscar filas quando autenticado
+    fetchFilas()
   }, [isAuthenticated, loading, router])
 
   if (loading) {
@@ -135,48 +98,86 @@ export default function FilasPage() {
     return null
   }
 
-  const filteredFilas = filas.filter(fila => {
-    const matchesSearch = fila.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         fila.descricao.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFilas = (Array.isArray(filas) ? filas : []).filter(fila => {
+    const matchesSearch = (fila.nome || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (fila.descricao || '').toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = filterStatus === 'todas' || 
                          (filterStatus === 'ativas' && fila.ativa) ||
                          (filterStatus === 'inativas' && !fila.ativa)
-    const matchesPrioridade = !filterPrioridade || fila.regras.prioridade === filterPrioridade
+    const matchesPrioridade = !filterPrioridade || fila.prioridade === filterPrioridade
     const matchesIntegracao = !filterIntegracao || 
-                             (filterIntegracao === 'chatbot' && fila.regras.chatBot) ||
-                             (filterIntegracao === 'kanban' && fila.regras.kanban) ||
-                             (filterIntegracao === 'whatsapp' && fila.regras.whatsappChats)
+                             (filterIntegracao === 'chatbot' && fila.chatBot) ||
+                             (filterIntegracao === 'kanban' && fila.kanban) ||
+                             (filterIntegracao === 'whatsapp' && fila.whatsappChats)
     
     return matchesSearch && matchesStatus && matchesPrioridade && matchesIntegracao
   })
 
-  const handleCreateFila = (novaFila: Omit<Fila, 'id' | 'criadaEm' | 'atualizadaEm' | 'estatisticas'>) => {
-    const fila: Fila = {
-      ...novaFila,
-      id: Date.now().toString(),
-      criadaEm: new Date(),
-      atualizadaEm: new Date(),
-      estatisticas: {
-        totalConversas: 0,
-        conversasAtivas: 0,
-        tempoMedioResposta: 0,
-        satisfacao: 0
+  const handleCreateFila = async (novaFila: Omit<Fila, 'id' | 'criadoEm' | 'atualizadoEm' | 'estatisticas'>) => {
+    try {
+      const response = await fetch('/api/filas', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(novaFila)
+      })
+
+      if (response.ok) {
+        const novaFilaCriada = await response.json()
+        setFilas(prev => [...(Array.isArray(prev) ? prev : []), novaFilaCriada])
+        setShowCreateModal(false)
+      } else {
+        console.error('Erro ao criar fila:', response.status)
       }
+    } catch (error) {
+      console.error('Erro ao criar fila:', error)
     }
-    setFilas(prev => [...prev, fila])
-    setShowCreateModal(false)
   }
 
-  const handleUpdateFila = (id: string, updates: Partial<Fila>) => {
-    setFilas(prev => prev.map(fila => 
-      fila.id === id 
-        ? { ...fila, ...updates, atualizadaEm: new Date() }
-        : fila
-    ))
+  const handleUpdateFila = async (id: string, updates: Partial<Fila>) => {
+    try {
+      const response = await fetch(`/api/filas/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates)
+      })
+
+      if (response.ok) {
+        const filaAtualizada = await response.json()
+        setFilas(prev => prev.map(fila => 
+          fila.id === id ? filaAtualizada : fila
+        ))
+      } else {
+        console.error('Erro ao atualizar fila:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar fila:', error)
+    }
   }
 
-  const handleDeleteFila = (id: string) => {
-    setFilas(prev => prev.filter(fila => fila.id !== id))
+  const handleDeleteFila = async (id: string) => {
+    try {
+      const response = await fetch(`/api/filas/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (response.ok) {
+        setFilas(prev => prev.filter(fila => fila.id !== id))
+      } else {
+        console.error('Erro ao deletar fila:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao deletar fila:', error)
+    }
   }
 
   return (

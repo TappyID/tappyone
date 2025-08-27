@@ -2,21 +2,22 @@
 
 import { motion } from 'framer-motion'
 import { Users, UserCheck, Clock, MessageCircle, TrendingUp, Activity } from 'lucide-react'
-import { Atendente } from '../page'
+import { AtendenteComStats } from '@/hooks/useAtendentes'
 
 interface AtendentesStatsProps {
-  atendentes: Atendente[]
+  atendentes: AtendenteComStats[]
 }
 
 export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
   const stats = {
     total: atendentes.length,
-    online: atendentes.filter(a => a.status === 'online').length,
-    emAtendimento: atendentes.filter(a => a.statusAtendimento === 'em_atendimento').length,
-    atendimentosHoje: atendentes.reduce((acc, a) => acc + a.estatisticas.atendimentosHoje, 0),
-    tempoMedioResposta: atendentes.reduce((acc, a) => acc + a.estatisticas.tempoMedioAtendimento, 0) / atendentes.length || 0,
-    avaliacaoMedia: atendentes.reduce((acc, a) => acc + a.estatisticas.avaliacaoMedia, 0) / atendentes.length || 0,
-    ticketsPendentes: atendentes.reduce((acc, a) => acc + a.estatisticas.ticketsPendentes, 0)
+    ativo: atendentes.filter(a => a.ativo).length,
+    inativo: atendentes.filter(a => !a.ativo).length,
+    conversasAtivas: atendentes.reduce((acc, a) => acc + (a.estatisticas?.conversasAtivas || 0), 0),
+    totalConversas: atendentes.reduce((acc, a) => acc + (a.estatisticas?.totalConversas || 0), 0),
+    emAndamento: atendentes.reduce((acc, a) => acc + (a.estatisticas?.emAndamento || 0), 0),
+    concluidas: atendentes.reduce((acc, a) => acc + (a.estatisticas?.concluidas || 0), 0),
+    ticketsPendentes: atendentes.reduce((acc, a) => acc + (a.estatisticas?.ticketsPendentes || 0), 0)
   }
 
   const statCards = [
@@ -30,49 +31,49 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       trend: '+2 este mês'
     },
     {
-      title: 'Online Agora',
-      value: stats.online,
+      title: 'Ativos',
+      value: stats.ativo,
       icon: Activity,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
       textColor: 'text-green-700',
-      trend: `${Math.round((stats.online / stats.total) * 100)}% da equipe`
+      trend: `${Math.round((stats.ativo / stats.total) * 100)}% da equipe`
     },
     {
-      title: 'Em Atendimento',
-      value: stats.emAtendimento,
+      title: 'Inativos',
+      value: stats.inativo,
       icon: UserCheck,
-      color: 'from-orange-500 to-orange-600',
-      bgColor: 'bg-orange-50',
-      textColor: 'text-orange-700',
-      trend: 'Ativos agora'
+      color: 'from-red-500 to-red-600',
+      bgColor: 'bg-red-50',
+      textColor: 'text-red-700',
+      trend: `${Math.round((stats.inativo / stats.total) * 100)}% da equipe`
     },
     {
-      title: 'Atendimentos Hoje',
-      value: stats.atendimentosHoje,
+      title: 'Conversas Ativas',
+      value: stats.conversasAtivas,
       icon: MessageCircle,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-700',
-      trend: '+15% vs ontem'
+      trend: 'Em tempo real'
     },
     {
-      title: 'Tempo Médio',
-      value: `${stats.tempoMedioResposta.toFixed(1)}min`,
+      title: 'Total Conversas',
+      value: stats.totalConversas,
       icon: Clock,
       color: 'from-indigo-500 to-indigo-600',
       bgColor: 'bg-indigo-50',
       textColor: 'text-indigo-700',
-      trend: '-2min vs ontem'
+      trend: 'Todas as conversas'
     },
     {
-      title: 'Avaliação Média',
-      value: stats.avaliacaoMedia.toFixed(1),
+      title: 'Em Andamento',
+      value: stats.emAndamento,
       icon: TrendingUp,
       color: 'from-[#305e73] to-[#3a6d84]',
       bgColor: 'bg-gray-50',
       textColor: 'text-[#305e73]',
-      trend: '⭐ Excelente'
+      trend: 'Aguardando resposta'
     }
   ]
 
@@ -135,7 +136,7 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
             </div>
 
             {/* Indicador de status para cards específicos */}
-            {stat.title === 'Online Agora' && (
+            {stat.title === 'Ativos' && (
               <motion.div
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -143,7 +144,7 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
               />
             )}
 
-            {stat.title === 'Em Atendimento' && stats.emAtendimento > 0 && (
+            {stat.title === 'Inativos' && stats.inativo > 0 && (
               <motion.div
                 animate={{ 
                   scale: [1, 1.2, 1],

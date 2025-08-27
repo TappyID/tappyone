@@ -3,18 +3,16 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, X, Download, RefreshCw, Users, Activity } from 'lucide-react'
 import { useState } from 'react'
-import { Atendente } from '../page'
+import { AtendenteComStats } from '@/hooks/useAtendentes'
 
 interface AtendentesFiltersProps {
   filters: {
     search: string
     status: string
-    statusAtendimento: string
-    departamento: string
-    cargo: string
+    tipo: string
   }
   onFiltersChange: (filters: any) => void
-  atendentes: Atendente[]
+  atendentes: AtendenteComStats[]
 }
 
 export default function AtendentesFilters({ filters, onFiltersChange, atendentes }: AtendentesFiltersProps) {
@@ -22,38 +20,32 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
 
   const statusOptions = [
     { value: 'todos', label: 'Todos Status', color: 'text-gray-600' },
-    { value: 'online', label: 'Online', color: 'text-green-600' },
-    { value: 'ocupado', label: 'Ocupado', color: 'text-yellow-600' },
-    { value: 'ausente', label: 'Ausente', color: 'text-orange-600' },
-    { value: 'offline', label: 'Offline', color: 'text-gray-500' }
+    { value: 'ativo', label: 'Ativo', color: 'text-green-600' },
+    { value: 'inativo', label: 'Inativo', color: 'text-red-600' }
   ]
 
-  const statusAtendimentoOptions = [
-    { value: 'todos', label: 'Todos', color: 'text-gray-600' },
-    { value: 'disponivel', label: 'Disponível', color: 'text-green-600' },
-    { value: 'em_atendimento', label: 'Em Atendimento', color: 'text-blue-600' },
-    { value: 'em_pausa', label: 'Em Pausa', color: 'text-yellow-600' },
-    { value: 'finalizando', label: 'Finalizando', color: 'text-purple-600' }
+  const tipoOptions = [
+    { value: 'todos', label: 'Todos Tipos', color: 'text-gray-600' },
+    { value: 'ADMIN', label: 'Admin', color: 'text-purple-600' },
+    { value: 'ATENDENTE_COMERCIAL', label: 'Comercial', color: 'text-blue-600' },
+    { value: 'ATENDENTE_FINANCEIRO', label: 'Financeiro', color: 'text-green-600' },
+    { value: 'ATENDENTE_SUPORTE', label: 'Suporte', color: 'text-orange-600' },
+    { value: 'ASSINANTE', label: 'Assinante', color: 'text-indigo-600' }
   ]
 
-  const departamentos = Array.from(new Set(atendentes.map(a => a.departamento)))
-  const cargos = Array.from(new Set(atendentes.map(a => a.cargo)))
+  // Dados reais não possuem departamentos e cargos
 
   const clearFilters = () => {
     onFiltersChange({
       search: '',
       status: 'todos',
-      statusAtendimento: 'todos',
-      departamento: 'todos',
-      cargo: 'todos'
+      tipo: 'todos'
     })
   }
 
   const hasActiveFilters = filters.search || 
     filters.status !== 'todos' || 
-    filters.statusAtendimento !== 'todos' ||
-    filters.departamento !== 'todos' ||
-    filters.cargo !== 'todos'
+    filters.tipo !== 'todos'
 
   return (
     <motion.div
@@ -76,10 +68,10 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
             />
           </div>
 
-          {/* Status Online */}
+          {/* Status Ativo/Inativo */}
           <div className="flex gap-2">
             {statusOptions.slice(1).map((status) => {
-              const count = atendentes.filter(a => a.status === status.value).length
+              const count = atendentes.filter(a => status.value === 'ativo' ? a.ativo : !a.ativo).length
               const isActive = filters.status === status.value
               
               return (
@@ -98,9 +90,7 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
                   }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${
-                    status.value === 'online' ? 'bg-green-400' :
-                    status.value === 'ocupado' ? 'bg-yellow-400' :
-                    status.value === 'ausente' ? 'bg-orange-400' : 'bg-gray-400'
+                    status.value === 'ativo' ? 'bg-green-400' : 'bg-red-400'
                   } ${isActive ? 'bg-white' : ''}`} />
                   <span className="text-sm font-medium">{status.label}</span>
                   <span className={`text-xs px-2 py-1 rounded-full ${
@@ -149,23 +139,23 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
           </div>
         </div>
 
-        {/* Status de Atendimento */}
+        {/* Tipo de Usuário */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 mr-2">Status de Atendimento:</span>
-          {statusAtendimentoOptions.map((status) => {
-            const count = status.value === 'todos' 
+          <span className="text-sm font-medium text-gray-700 mr-2">Tipo de Usuário:</span>
+          {tipoOptions.map((tipo) => {
+            const count = tipo.value === 'todos' 
               ? atendentes.length 
-              : atendentes.filter(a => a.statusAtendimento === status.value).length
-            const isActive = filters.statusAtendimento === status.value
+              : atendentes.filter(a => a.tipo === tipo.value).length
+            const isActive = filters.tipo === tipo.value
             
             return (
               <motion.button
-                key={status.value}
+                key={tipo.value}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onFiltersChange({ 
                   ...filters, 
-                  statusAtendimento: status.value 
+                  tipo: tipo.value 
                 })}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
                   isActive 
@@ -173,7 +163,7 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <span>{status.label}</span>
+                <span>{tipo.label}</span>
                 <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                   isActive ? 'bg-white/20 text-white' : 'bg-white text-gray-500'
                 }`}>
@@ -184,53 +174,7 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
           })}
         </div>
 
-        {/* Filtros avançados */}
-        <AnimatePresence>
-          {showAdvanced && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="border-t border-gray-200 pt-4 space-y-4"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Departamento
-                  </label>
-                  <select
-                    value={filters.departamento}
-                    onChange={(e) => onFiltersChange({ ...filters, departamento: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
-                  >
-                    <option value="todos">Todos os Departamentos</option>
-                    {departamentos.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cargo
-                  </label>
-                  <select
-                    value={filters.cargo}
-                    onChange={(e) => onFiltersChange({ ...filters, cargo: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
-                  >
-                    <option value="todos">Todos os Cargos</option>
-                    {cargos.map(cargo => (
-                      <option key={cargo} value={cargo}>
-                        {cargo.charAt(0).toUpperCase() + cargo.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Filtros avançados - removidos pois dados reais não possuem departamento/cargo */}
 
         {/* Limpar filtros */}
         {hasActiveFilters && (

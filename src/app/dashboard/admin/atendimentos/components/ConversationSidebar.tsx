@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   MessageCircle, 
@@ -24,7 +25,13 @@ import {
   Wifi,
   WifiOff,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  SortAsc,
+  SortDesc,
+  ArrowUpDown,
+  DollarSign,
+  Calendar,
+  Hash
 } from 'lucide-react'
 import { usePresence } from '@/hooks/usePresence'
 import { usePresencePolling } from '@/hooks/usePresencePolling'
@@ -138,21 +145,64 @@ export default function ConversationSidebar({
   const { getChatPresence, isOnline, isTyping } = usePresence()
   const [selectedQueue, setSelectedQueue] = useState('todas')
   const [showQueueDropdown, setShowQueueDropdown] = useState(false)
+  const [selectedTag, setSelectedTag] = useState('todas')
+  const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const [sortBy, setSortBy] = useState('recent')
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
   
-  // Fechar dropdown ao clicar fora
+  // Refs for dropdown positioning
+  const queueButtonRef = useRef<HTMLButtonElement>(null)
+  const tagButtonRef = useRef<HTMLButtonElement>(null)
+  const sortButtonRef = useRef<HTMLButtonElement>(null)
+  const [queueDropdownPosition, setQueueDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [tagDropdownPosition, setTagDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [sortDropdownPosition, setSortDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  
+  // Calculate dropdown positions
+  const updateDropdownPosition = (buttonRef: React.RefObject<HTMLButtonElement>, setPosition: Function) => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + 8, // 8px abaixo do botão
+        left: rect.left,
+        width: rect.width
+      })
+    }
+  }
+  
+  // Update positions when dropdowns open
+  useEffect(() => {
+    if (showQueueDropdown) updateDropdownPosition(queueButtonRef, setQueueDropdownPosition)
+  }, [showQueueDropdown])
+  
+  useEffect(() => {
+    if (showTagDropdown) updateDropdownPosition(tagButtonRef, setTagDropdownPosition)
+  }, [showTagDropdown])
+  
+  useEffect(() => {
+    if (showSortDropdown) updateDropdownPosition(sortButtonRef, setSortDropdownPosition)
+  }, [showSortDropdown])
+
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
       if (!target.closest('[data-queue-dropdown]')) {
         setShowQueueDropdown(false)
       }
+      if (!target.closest('[data-tag-dropdown]')) {
+        setShowTagDropdown(false)
+      }
+      if (!target.closest('[data-sort-dropdown]')) {
+        setShowSortDropdown(false)
+      }
     }
     
-    if (showQueueDropdown) {
+    if (showQueueDropdown || showTagDropdown || showSortDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showQueueDropdown])
+  }, [showQueueDropdown, showTagDropdown, showSortDropdown])
 
   
   // Opções de filas mock
@@ -162,6 +212,25 @@ export default function ConversationSidebar({
     { value: 'suporte', label: 'Suporte' },
     { value: 'financeiro', label: 'Financeiro' },
     { value: 'marketing', label: 'Marketing' }
+  ]
+  
+  // Opções de tags mock
+  const tagOptions = [
+    { value: 'todas', label: 'Tags' },
+    { value: 'vip', label: 'VIP' },
+    { value: 'urgente', label: 'Urgente' },
+    { value: 'pendente', label: 'Pendente' },
+    { value: 'resolvido', label: 'Resolvido' }
+  ]
+  
+  // Opções de ordenação
+  const sortOptions = [
+    { value: 'recent', label: 'Mais Recente', icon: Calendar },
+    { value: 'oldest', label: 'Mais Antigo', icon: Calendar },
+    { value: 'budget_high', label: 'Orçamento Maior', icon: DollarSign },
+    { value: 'budget_low', label: 'Orçamento Menor', icon: DollarSign },
+    { value: 'tag', label: 'Por Tag', icon: Tag },
+    { value: 'name', label: 'Por Nome', icon: Hash }
   ]
   
   // Cache para evitar requests desnecessários
@@ -320,7 +389,30 @@ export default function ConversationSidebar({
                          (activeFilter === 'read' && conv.unread === 0) ||
                          (activeFilter === 'groups' && conv.type === 'group')
     
-    return matchesSearch && matchesFilter
+    const matchesQueue = selectedQueue === 'todas' // TODO: implementar filtro real de filas
+    const matchesTag = selectedTag === 'todas' // TODO: implementar filtro real de tags
+    
+    return matchesSearch && matchesFilter && matchesQueue && matchesTag
+  }).sort((a, b) => {
+    // Implementar ordenação baseada em sortBy
+    switch (sortBy) {
+      case 'recent':
+        return new Date(b.originalChat?.timestamp || 0).getTime() - new Date(a.originalChat?.timestamp || 0).getTime()
+      case 'oldest':
+        return new Date(a.originalChat?.timestamp || 0).getTime() - new Date(b.originalChat?.timestamp || 0).getTime()
+      case 'budget_high':
+        // TODO: implementar ordenação por orçamento quando disponível
+        return 0
+      case 'budget_low':
+        // TODO: implementar ordenação por orçamento quando disponível
+        return 0
+      case 'tag':
+        return (a.badge?.text || '').localeCompare(b.badge?.text || '')
+      case 'name':
+        return a.name.localeCompare(b.name)
+      default:
+        return 0
+    }
   })
 
   // Configurar polling de presença para chats visíveis
@@ -342,16 +434,16 @@ export default function ConversationSidebar({
         opacity: isQuickActionsSidebarOpen ? 0 : 1
       }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="bg-gray-50/80 backdrop-blur-sm border-r border-gray-200/50 flex flex-col h-full overflow-hidden relative"
+      className="bg-background/95 backdrop-blur-xl border-r border-border flex flex-col h-full overflow-hidden relative shadow-2xl"
     >
       {/* Collapsed State - Floating Expand Button */}
       {isCollapsed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-start pt-6 bg-gradient-to-b from-white/90 to-gray-50/90 backdrop-blur-sm z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-start pt-6 bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-sm z-10">
           <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: '#3b82f6' }}
+            whileHover={{ scale: 1.1, backgroundColor: '#1e293b' }}
             whileTap={{ scale: 0.95 }}
             onClick={onToggleCollapse}
-            className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg mb-4"
+            className="p-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-white rounded-full shadow-lg mb-4 border border-gray-300 dark:border-slate-600/50"
             title="Expandir sidebar"
           >
             <PanelLeftOpen className="w-6 h-6" />
@@ -359,14 +451,14 @@ export default function ConversationSidebar({
           
           {/* Vertical Icons */}
           <div className="flex flex-col gap-4 items-center">
-            <div className="p-2 bg-white/80 rounded-lg shadow-sm">
-              <MessageCircle className="w-5 h-5 text-gray-600" />
+            <div className="p-2 bg-gray-200/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-300/50 dark:border-slate-700/50">
+              <MessageCircle className="w-5 h-5 text-gray-700 dark:text-slate-200" />
             </div>
-            <div className="p-2 bg-white/80 rounded-lg shadow-sm">
-              <Users className="w-5 h-5 text-gray-600" />
+            <div className="p-2 bg-gray-200/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-300/50 dark:border-slate-700/50">
+              <Users className="w-5 h-5 text-gray-700 dark:text-slate-200" />
             </div>
-            <div className="p-2 bg-white/80 rounded-lg shadow-sm">
-              <Search className="w-5 h-5 text-gray-600" />
+            <div className="p-2 bg-gray-200/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-300/50 dark:border-slate-700/50">
+              <Search className="w-5 h-5 text-gray-700 dark:text-slate-200" />
             </div>
           </div>
         </div>
@@ -379,9 +471,9 @@ export default function ConversationSidebar({
         className={isCollapsed ? "pointer-events-none" : ""}
       >
         {/* Filters Header */}
-        <div className="p-4 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+        <div className="p-4 pb-2 border-b border-border bg-card/30 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-semibold text-foreground">Conversas</h2>
             <div className="flex items-center gap-3">
             {/* Select Filas Elegante */}
             <motion.div 
@@ -390,89 +482,101 @@ export default function ConversationSidebar({
               whileTap={{ scale: 0.98 }}
               data-queue-dropdown
             >
-              <div className="relative bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-[1px] rounded-lg shadow-lg">
+              <div className="relative bg-gradient-to-r from-purple-400 via-violet-500 to-purple-600 p-[1px] rounded-lg shadow-lg">
                 <motion.button
+                  ref={queueButtonRef}
                   onClick={() => setShowQueueDropdown(!showQueueDropdown)}
-                  className="bg-white rounded-lg px-3 py-2 flex items-center gap-2 min-w-[120px] hover:bg-gray-50 transition-colors"
+                  className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[120px] hover:bg-accent transition-colors border border-border"
                 >
-                  <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full" />
-                  <span className="text-sm font-medium text-gray-700 flex-1 text-left">
+                  <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-full" />
+                  <span className="text-sm font-medium text-foreground flex-1 text-left">
                     {queueOptions.find(q => q.value === selectedQueue)?.label}
                   </span>
                   <motion.div
                     animate={{ rotate: showQueueDropdown ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   </motion.div>
                 </motion.button>
               </div>
-              
-              {/* Dropdown customizado */}
-              <AnimatePresence>
-                {showQueueDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-[9999]"
-                  >
-                    <div className="py-1">
-                      {queueOptions.map((option, index) => (
-                        <motion.button
-                          key={option.value}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          onClick={() => {
-                            setSelectedQueue(option.value)
-                            setShowQueueDropdown(false)
-                          }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 flex items-center gap-2 ${
-                            selectedQueue === option.value ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 font-medium' : 'text-gray-700'
-                          }`}
-                        >
-                          {selectedQueue === option.value && (
-                            <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full" />
-                          )}
-                          {selectedQueue !== option.value && <div className="w-2" />}
-                          {option.label}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
             
+            {/* Filtro de Tags */}
+            <motion.div 
+              className="relative"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              data-tag-dropdown
+            >
+              <div className="relative bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 p-[1px] rounded-lg shadow-lg">
+                <motion.button
+                  ref={tagButtonRef}
+                  onClick={() => setShowTagDropdown(!showTagDropdown)}
+                  className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[100px] hover:bg-accent transition-colors border border-border"
+                >
+                  <Tag className="w-3 h-3 text-emerald-400" />
+                  <span className="text-sm font-medium text-foreground flex-1 text-left">
+                    {tagOptions.find(t => t.value === selectedTag)?.label}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: showTagDropdown ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  </motion.div>
+                </motion.button>
+              </div>
+            </motion.div>
+            
+            {/* Ordenação com Modal */}
+            <motion.div 
+              className="relative"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              data-sort-dropdown
+            >
+              <motion.button
+                ref={sortButtonRef}
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="p-2 bg-card/80 backdrop-blur-sm hover:bg-accent rounded-lg transition-colors border border-border shadow-lg"
+                whileHover={{ scale: 1.1, rotate: 180 }}
+              >
+                <ArrowUpDown className="w-5 h-5 text-emerald-400" />
+              </motion.button>
+            </motion.div>
+            
+            {/* Filtros Toggle */}
             <motion.button
-              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilters(!showFilters)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+              title="Mostrar/Ocultar filtros"
             >
-              <Filter className="w-5 h-5 text-gray-600" />
+              <Filter className="w-5 h-5 text-muted-foreground" />
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={onToggleCollapse}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
               title={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
             >
               {isCollapsed ? (
-                <PanelLeftOpen className="w-5 h-5 text-gray-600" />
+                <PanelLeftOpen className="w-5 h-5 text-muted-foreground" />
               ) : (
-                <PanelLeftClose className="w-5 h-5 text-gray-600" />
+                <PanelLeftClose className="w-5 h-5 text-muted-foreground" />
               )}
             </motion.button>
+            </div>
           </div>
         </div>
-
+        
         {/* Filter Tabs */}
-        <div className="flex gap-1 bg-gray-100/80 p-1 rounded-xl backdrop-blur-sm">
+        <div className="p-4 pt-2 relative z-[10]">
+          <div className="flex gap-1 bg-card/50 p-1 rounded-xl backdrop-blur-sm border border-border/30 relative z-[10]">
           {filters.map((filter) => (
             <motion.button
               key={filter.id}
@@ -481,8 +585,8 @@ export default function ConversationSidebar({
               onClick={() => setActiveFilter(filter.id)}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                 activeFilter === filter.id
-                  ? 'bg-white text-[#273155] shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
               <filter.icon className="w-4 h-4" />
@@ -490,19 +594,19 @@ export default function ConversationSidebar({
               {filter.count > 0 && (
                 <span className={`px-1.5 py-0.5 text-xs rounded-full ${
                   activeFilter === filter.id
-                    ? 'bg-[#273155] text-white'
-                    : 'bg-gray-300 text-gray-700'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
                 }`}>
                   {filter.count}
                 </span>
               )}
             </motion.button>
           ))}
+          </div>
         </div>
-      </div>
 
-      {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto scrollbar-custom">
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto scrollbar-custom">
         <AnimatePresence mode="popLayout">
           {filteredConversations.map((conversation, index) => (
             <motion.div
@@ -511,12 +615,12 @@ export default function ConversationSidebar({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: -100 }}
               transition={{ delay: index * 0.05 }}
-              whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.8)' }}
+              whileHover={{ x: 4, backgroundColor: 'rgba(51, 65, 85, 0.3)' }}
               onClick={() => onSelectConversation(conversation.originalChat)}
-              className={`relative p-4 border-b border-gray-200/30 cursor-pointer transition-all duration-300 ${
+              className={`relative p-4 border-b border-border cursor-pointer transition-all duration-300 ${
                 selectedConversation?.id === conversation.id
-                  ? 'bg-[#273155]/10 border-l-4 border-l-[#273155]'
-                  : 'hover:bg-white/60'
+                  ? 'bg-accent/30 border-l-4 border-l-primary'
+                  : 'hover:bg-accent/20'
               }`}
             >
               {/* Pinned Indicator */}
@@ -526,7 +630,7 @@ export default function ConversationSidebar({
                   animate={{ scale: 1 }}
                   className="absolute top-2 right-2"
                 >
-                  <Pin className="w-3 h-3 text-[#273155] fill-current" />
+                  <Pin className="w-3 h-3 text-blue-400 fill-current" />
                 </motion.div>
               )}
 
@@ -534,7 +638,7 @@ export default function ConversationSidebar({
                 {/* Avatar */}
                 <div className="relative">
                   <motion.div 
-                    className="w-12 h-12 bg-gradient-to-br from-[#273155] to-[#2a3660] rounded-xl flex items-center justify-center shadow-lg overflow-hidden"
+                    className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-800 rounded-xl flex items-center justify-center shadow-lg overflow-hidden border border-gray-300/50 dark:border-slate-600/50"
                     whileHover={{ scale: 1.05, rotate: 5 }}
                   >
                     {conversation.originalChat?.profilePictureUrl ? (
@@ -552,9 +656,9 @@ export default function ConversationSidebar({
                     ) : null}
                     <div className={`${conversation.originalChat?.profilePictureUrl ? 'hidden' : ''} flex items-center justify-center w-full h-full`}>
                       {conversation.type === 'group' ? (
-                        <Users className="w-6 h-6 text-white" />
+                        <Users className="w-6 h-6 text-gray-600 dark:text-white" />
                       ) : (
-                        <User className="w-6 h-6 text-white" />
+                        <User className="w-6 h-6 text-gray-600 dark:text-white" />
                       )}
                     </div>
                   </motion.div>
@@ -574,8 +678,8 @@ export default function ConversationSidebar({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 truncate">{conversation.name}</h3>
-                    <span className="text-xs text-gray-500 ml-2">{conversation.timestamp}</span>
+                    <h3 className="font-semibold text-foreground truncate">{conversation.name}</h3>
+                    <span className="text-xs text-muted-foreground ml-2">{conversation.timestamp}</span>
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
@@ -607,7 +711,7 @@ export default function ConversationSidebar({
                         </motion.div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-600 truncate flex-1">{conversation.lastMessage}</p>
+                      <p className="text-sm text-muted-foreground truncate flex-1">{conversation.lastMessage || 'Última mensagem vista'}</p>
                     )}
                     {/* Badge Mock */}
                     <motion.span
@@ -630,7 +734,7 @@ export default function ConversationSidebar({
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ delay: i * 0.1 }}
-                          className="px-2 py-1 text-xs bg-[#273155]/10 text-[#273155] rounded-full font-medium"
+                          className="px-2 py-1 text-xs bg-muted/50 text-muted-foreground rounded-full font-medium"
                         >
                           {tag}
                         </motion.span>
@@ -642,7 +746,7 @@ export default function ConversationSidebar({
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         whileHover={{ scale: 1.1 }}
-                        className="w-6 h-6 bg-[#273155] text-white text-xs rounded-full flex items-center justify-center font-bold"
+                        className="w-6 h-6 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold"
                       >
                         {conversation.unread > 9 ? '9+' : conversation.unread}
                       </motion.div>
@@ -656,51 +760,188 @@ export default function ConversationSidebar({
                 className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
                 whileHover={{ scale: 1.1 }}
               >
-                <MoreVertical className="w-4 h-4 text-gray-400" />
+                <MoreVertical className="w-4 h-4 text-slate-400" />
               </motion.div>
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {/* Empty State */}
-        {filteredConversations.length === 0 && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center h-64 text-gray-500"
-          >
-            <MessageCircle className="w-12 h-12 mb-4 text-gray-300" />
-            <p className="text-lg font-medium mb-2">Nenhuma conversa encontrada</p>
-            <p className="text-sm text-center">
-              {searchQuery ? 'Tente ajustar sua busca' : 'Suas conversas aparecerão aqui'}
-            </p>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Quick Actions Footer */}
-      <div className="p-4 border-t border-gray-200/50 bg-white/50 backdrop-blur-sm">
-        <div className="flex gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05, backgroundColor: '#273155', color: 'white' }}
-            whileTap={{ scale: 0.95 }}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gray-100 hover:bg-[#273155] text-gray-700 hover:text-white rounded-lg transition-all duration-300"
-          >
-            <Phone className="w-4 h-4" />
-            <span className="text-sm font-medium">Ligar</span>
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05, backgroundColor: '#273155', color: 'white' }}
-            whileTap={{ scale: 0.95 }}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gray-100 hover:bg-[#273155] text-gray-700 hover:text-white rounded-lg transition-all duration-300"
-          >
-            <Video className="w-4 h-4" />
-            <span className="text-sm font-medium">Vídeo</span>
-          </motion.button>
+          {/* Empty State */}
+          {filteredConversations.length === 0 && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center h-64 text-slate-400"
+            >
+              <MessageCircle className="w-12 h-12 mb-4 text-slate-600" />
+              <p className="text-lg font-medium mb-2 text-slate-200">Nenhuma conversa encontrada</p>
+              <p className="text-sm text-center">
+                {searchQuery ? 'Tente ajustar sua busca' : 'Suas conversas aparecerão aqui'}
+              </p>
+            </motion.div>
+          )}
         </div>
-      </div>
+
+        {/* Quick Actions Footer */}
+        <div className="p-4 border-t border-gray-200/50 dark:border-slate-700/50 bg-gray-50/80 dark:bg-slate-800/30 backdrop-blur-sm">
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-gray-50 dark:bg-emerald-600/20 dark:hover:bg-emerald-500 text-gray-600 hover:text-gray-700 dark:text-emerald-300 dark:hover:text-white rounded-lg transition-all duration-300 border border-gray-200 dark:border-emerald-500/30 shadow-sm dark:shadow-emerald-500/20"
+            >
+              <Phone className="w-4 h-4" />
+              <span className="text-sm font-medium">Ligar</span>
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-blue-600/20 dark:hover:bg-blue-500 text-gray-600 hover:text-gray-700 dark:text-blue-300 dark:hover:text-white rounded-lg transition-all duration-300 border border-gray-200 dark:border-blue-500/30 shadow-sm dark:shadow-blue-500/20"
+            >
+              <Video className="w-4 h-4" />
+              <span className="text-sm font-medium">Vídeo</span>
+            </motion.button>
+          </div>
+        </div>
       </motion.div>
+
+      {/* PORTALS para dropdowns - renderiza no body */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showQueueDropdown && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-slate-700/50 overflow-hidden z-[999999]"
+              style={{
+                top: queueDropdownPosition.top,
+                left: queueDropdownPosition.left,
+                width: queueDropdownPosition.width || 120
+              }}
+              data-queue-dropdown
+            >
+              <div className="py-1">
+                {queueOptions.map((option, index) => (
+                  <motion.button
+                    key={option.value}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => {
+                      setSelectedQueue(option.value)
+                      setShowQueueDropdown(false)
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-violet-500/20 transition-all duration-200 flex items-center gap-2 ${
+                      selectedQueue === option.value ? 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-400 font-medium' : 'text-slate-300'
+                    }`}
+                  >
+                    {selectedQueue === option.value && (
+                      <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-full" />
+                    )}
+                    {selectedQueue !== option.value && <div className="w-2" />}
+                    {option.label}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showTagDropdown && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-slate-700/50 overflow-hidden z-[999999]"
+              style={{
+                top: tagDropdownPosition.top,
+                left: tagDropdownPosition.left,
+                width: tagDropdownPosition.width || 100
+              }}
+              data-tag-dropdown
+            >
+              <div className="py-1">
+                {tagOptions.map((option, index) => (
+                  <motion.button
+                    key={option.value}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => {
+                      setSelectedTag(option.value)
+                      setShowTagDropdown(false)
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-500/20 transition-all duration-200 flex items-center gap-2 ${
+                      selectedTag === option.value ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-400 font-medium' : 'text-slate-300'
+                    }`}
+                  >
+                    {selectedTag === option.value && (
+                      <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-full" />
+                    )}
+                    {selectedTag !== option.value && <div className="w-2" />}
+                    {option.label}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showSortDropdown && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed w-48 bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-slate-700/50 overflow-hidden z-[999999]"
+              style={{
+                top: sortDropdownPosition.top,
+                left: sortDropdownPosition.left - 192 + (sortDropdownPosition.width || 0) // Alinha à direita
+              }}
+              data-sort-dropdown
+            >
+              <div className="py-1">
+                {sortOptions.map((option, index) => {
+                  const IconComponent = option.icon
+                  return (
+                    <motion.button
+                      key={option.value}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => {
+                        setSortBy(option.value)
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-500/20 transition-all duration-200 flex items-center gap-3 ${
+                        sortBy === option.value ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-400 font-medium' : 'text-slate-300'
+                      }`}
+                    >
+                      <IconComponent className={`w-4 h-4 ${
+                        sortBy === option.value ? 'text-emerald-400' : 'text-slate-400'
+                      }`} />
+                      {option.label}
+                    </motion.button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   )
 }

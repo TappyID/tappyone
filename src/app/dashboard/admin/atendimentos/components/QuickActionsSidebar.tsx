@@ -24,7 +24,10 @@ import {
   Mic,
   Video,
   FileText,
-  Settings
+  Settings,
+  Edit,
+  Bot,
+  Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,9 +39,9 @@ const Badge = ({ children, variant = 'default', className = '' }: {
 }) => {
   const baseClasses = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium'
   const variantClasses = {
-    default: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-gray-100 text-gray-800',
-    outline: 'border border-gray-300 text-gray-700'
+    default: 'bg-primary/10 text-primary',
+    secondary: 'bg-muted text-muted-foreground',
+    outline: 'border border-border text-muted-foreground'
   }
   return (
     <span className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
@@ -69,6 +72,9 @@ interface QuickActionsSidebarProps {
   onSelectAction: (action: QuickAction) => void
   selectedContact?: any
   activeChatId?: string // Chat ativo atual
+  onEditAction?: (action: QuickAction) => void
+  onScheduleAction?: (action: QuickAction) => void
+  onCreateWithAI?: () => void
 }
 
 // Mock data - depois vamos buscar da API
@@ -118,7 +124,10 @@ export default function QuickActionsSidebar({
   onClose, 
   onSelectAction, 
   selectedContact,
-  activeChatId
+  activeChatId,
+  onEditAction,
+  onScheduleAction,
+  onCreateWithAI
 }: QuickActionsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -290,13 +299,13 @@ export default function QuickActionsSidebar({
 
   const getTypeColor = (type: QuickAction['type']) => {
     switch (type) {
-      case 'text': return 'bg-blue-100 text-blue-700'
-      case 'pix': return 'bg-green-100 text-green-700'
-      case 'image': return 'bg-purple-100 text-purple-700'
-      case 'audio': return 'bg-orange-100 text-orange-700'
-      case 'video': return 'bg-red-100 text-red-700'
-      case 'document': return 'bg-gray-100 text-gray-700'
-      default: return 'bg-blue-100 text-blue-700'
+      case 'text': return 'bg-blue-500/20 text-blue-600 dark:bg-blue-500/30 dark:text-blue-400'
+      case 'pix': return 'bg-green-500/20 text-green-600 dark:bg-green-500/30 dark:text-green-400'
+      case 'image': return 'bg-purple-500/20 text-purple-600 dark:bg-purple-500/30 dark:text-purple-400'
+      case 'audio': return 'bg-orange-500/20 text-orange-600 dark:bg-orange-500/30 dark:text-orange-400'
+      case 'video': return 'bg-red-500/20 text-red-600 dark:bg-red-500/30 dark:text-red-400'
+      case 'document': return 'bg-slate-500/20 text-slate-600 dark:bg-slate-500/30 dark:text-slate-400'
+      default: return 'bg-blue-500/20 text-blue-600 dark:bg-blue-500/30 dark:text-blue-400'
     }
   }
 
@@ -308,19 +317,19 @@ export default function QuickActionsSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={`fixed top-0 left-0 h-full w-[520px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 left-0 h-full w-[520px] bg-background border-r border-border shadow-2xl transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } border-r border-gray-200 z-50 pt-20`}
+      } z-50 pt-20`}
         >
           {/* Header */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-border bg-muted/30">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Respostas Rápidas</h3>
+              <h3 className="font-semibold text-foreground">Respostas Rápidas</h3>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-accent rounded-lg transition-colors"
               >
-                <X className="w-4 h-4 text-gray-500" />
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
             
@@ -328,7 +337,7 @@ export default function QuickActionsSidebar({
 
             {/* Search */}
             <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar ações rápidas..."
                 value={searchQuery}
@@ -367,14 +376,14 @@ export default function QuickActionsSidebar({
               <div key={category} className="mb-4">
                 <button
                   onClick={() => toggleCategory(category)}
-                  className="flex items-center gap-2 w-full text-left p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="flex items-center gap-2 w-full text-left p-2 hover:bg-accent/50 rounded-lg transition-colors"
                 >
                   {expandedCategories.has(category) ? (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   )}
-                  <span className="font-medium text-gray-700">{category}</span>
+                  <span className="font-medium text-foreground">{category}</span>
                   <Badge variant="secondary" className="ml-auto text-xs">
                     {actions.length}
                   </Badge>
@@ -395,80 +404,105 @@ export default function QuickActionsSidebar({
                             key={action.id}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => handleActionSelect(action)}
-                            className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all group"
+                            className="p-4 border border-border rounded-xl hover:border-primary hover:bg-accent/50 cursor-pointer transition-all group bg-card shadow-sm"
                           >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <div className={`p-1 rounded ${getTypeColor(action.type)}`}>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${getTypeColor(action.type)}`}>
                                   {getTypeIcon(action.type)}
                                 </div>
-                                <span className="font-medium text-gray-900 text-sm">
-                                  {action.title}
-                                </span>
+                                <div>
+                                  <span className="font-semibold text-foreground text-sm block">
+                                    {action.title}
+                                  </span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    {/* Status Badge */}
+                                    {action.isAutomatic && (
+                                      <Badge className="text-xs px-2 py-0.5 bg-green-500/20 text-green-600 dark:bg-green-500/30 dark:text-green-400">
+                                        <Zap className="w-3 h-3 mr-1" />
+                                        Auto
+                                      </Badge>
+                                    )}
+                                    {action.isPaused && (
+                                      <Badge className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-500/30 dark:text-yellow-400">
+                                        <Clock className="w-3 h-3 mr-1" />
+                                        Pausada
+                                      </Badge>
+                                    )}
+                                    <span className="text-xs text-muted-foreground">
+                                      {action.usageCount} usos
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                {/* Status da auto-resposta */}
+                              
+                              {/* Action Buttons */}
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onEditAction?.(action)
+                                  }}
+                                  className="p-1.5 bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 dark:bg-blue-500/30 dark:text-blue-400 rounded-lg transition-colors"
+                                  title="Editar resposta"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onScheduleAction?.(action)
+                                  }}
+                                  className="p-1.5 bg-purple-500/20 text-purple-600 hover:bg-purple-500/30 dark:bg-purple-500/30 dark:text-purple-400 rounded-lg transition-colors"
+                                  title="Agendar envio"
+                                >
+                                  <Calendar className="w-3 h-3" />
+                                </button>
                                 <button
                                   onClick={(e) => handleToggleAutomatic(action, e)}
-                                  className={`p-1 rounded-full transition-colors ${
+                                  className={`p-1.5 rounded-lg transition-colors ${
                                     action.isAutomatic 
-                                      ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                                      ? 'bg-green-500/20 text-green-600 hover:bg-green-500/30 dark:bg-green-500/30 dark:text-green-400' 
                                       : action.isPaused 
-                                      ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
-                                      : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                      ? 'bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/30 dark:bg-yellow-500/30 dark:text-yellow-400'
+                                      : 'bg-muted text-muted-foreground hover:bg-muted hover:text-foreground'
                                   }`}
-                                  title={action.isAutomatic ? 'Auto-resposta ativa' : action.isPaused ? 'Pausada' : 'Inativa'}
+                                  title={action.isAutomatic ? 'Desativar automático' : action.isPaused ? 'Despausar' : 'Ativar automático'}
                                 >
-                                  {action.isAutomatic ? (
-                                    <Zap className="w-3 h-3" />
-                                  ) : action.isPaused ? (
-                                    <Clock className="w-3 h-3" />
-                                  ) : (
-                                    <Zap className="w-3 h-3" />
-                                  )}
+                                  <Zap className="w-3 h-3" />
                                 </button>
-                                <span className="text-xs text-gray-500">
-                                  {action.usageCount}
-                                </span>
                               </div>
                             </div>
 
-                            <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                               {action.content}
                             </p>
 
                             <div className="flex items-center justify-between">
                               <div className="flex gap-1 flex-wrap">
-                                {/* Status Badge */}
-                                {action.isAutomatic && (
-                                  <Badge className="text-xs px-1 py-0 bg-green-100 text-green-700">
-                                    Auto
-                                  </Badge>
-                                )}
-                                {action.isPaused && (
-                                  <Badge className="text-xs px-1 py-0 bg-yellow-100 text-yellow-700">
-                                    Pausada
-                                  </Badge>
-                                )}
                                 {/* Keywords/Tags */}
-                                {(action.tags || []).slice(0, 2).map(tag => (
-                                  <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
+                                {(action.tags || []).slice(0, 3).map(tag => (
+                                  <Badge key={tag} variant="outline" className="text-xs px-2 py-0.5">
                                     {tag}
                                   </Badge>
                                 ))}
-                                {(action.tags || []).length > 2 && (
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
-                                    +{(action.tags || []).length - 2}
+                                {(action.tags || []).length > 3 && (
+                                  <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                    +{(action.tags || []).length - 3}
                                   </Badge>
                                 )}
                               </div>
                               <Button
-                                size="sm"
-                                className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                size="sm"   
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleActionSelect(action)
+                                }}
+                                className="h-7 px-3 opacity-0 group-hover:opacity-100 transition-opacity bg-primary hover:bg-primary/90"
                                 title="Enviar agora"
                               >
-                                <Send className="w-3 h-3" />
+                                <Send className="w-3 h-3 mr-1" />
+                                Enviar
                               </Button>
                             </div>
                           </motion.div>
@@ -482,8 +516,24 @@ export default function QuickActionsSidebar({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <Button className="w-full" size="sm">
+          <div className="p-4 border-t border-border bg-muted/30 space-y-2">
+            <Button 
+              className="w-full" 
+              size="sm"
+              onClick={() => onCreateWithAI?.()}
+            >
+              <Bot className="w-4 h-4 mr-2" />
+              Criar com IA
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              size="sm"
+              onClick={() => {
+                // Redirect to respostas-rapidas page
+                window.location.href = '/dashboard/admin/respostas-rapidas'
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Nova Ação Rápida
             </Button>
