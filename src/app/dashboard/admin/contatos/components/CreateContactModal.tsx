@@ -262,7 +262,7 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
       if (editContact) {
         // Atualizar contato existente
         console.log('🔄 Atualizando contato:', editContact.id)
-        response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/${editContact.id}`, {
+        response = await fetch(`/api/contatos/${editContact.id}`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(contactData)

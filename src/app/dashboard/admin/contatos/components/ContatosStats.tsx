@@ -23,7 +23,7 @@ export default function ContatosStats() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/stats`, {
+      const response = await fetch(`/api/contatos/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }

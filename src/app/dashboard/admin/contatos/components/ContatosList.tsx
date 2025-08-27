@@ -184,7 +184,7 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/${id}`, {
+      const response = await fetch(`/api/contatos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

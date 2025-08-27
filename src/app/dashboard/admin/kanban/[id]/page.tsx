@@ -1573,21 +1573,19 @@ export default function QuadroPage() {
     
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       await fileLogger.log({
         component: 'Kanban',
         action: 'loadChatsManual_config',
         data: { 
           hasToken: !!token, 
-          backendUrl, 
           userId: user?.id,
           tokenLength: token?.length || 0
         },
         userId: user?.id
       })
       
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats`, {
+      const response = await fetch(`/api/whatsapp/chats`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1693,7 +1691,7 @@ export default function QuadroPage() {
             status: response.status, 
             statusText: response.statusText,
             error: errorText,
-            url: `${backendUrl}/api/whatsapp/chats`
+            url: `/api/whatsapp/chats`
           },
           userId: user?.id
         })
@@ -2347,7 +2345,7 @@ export default function QuadroPage() {
     
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/coluna/${selectedColumn.id}/color`, {
+      const response = await fetch(`/api/kanban/coluna/${selectedColumn.id}/color`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -2391,7 +2389,7 @@ export default function QuadroPage() {
     // Persistir no backend
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/coluna/reorder`, {
+      const response = await fetch(`/api/kanban/coluna/reorder`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -2420,7 +2418,7 @@ export default function QuadroPage() {
   const persistirMovimentoCard = async (cardId: string, sourceColumnId: string, targetColumnId: string, newIndex?: number) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/card-movement`, {
+      const response = await fetch(`/api/kanban/card-movement`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2468,7 +2466,7 @@ export default function QuadroPage() {
   const carregarMetadados = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/${id}/metadata`, {
+      const response = await fetch(`/api/kanban/${id}/metadata`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -2798,7 +2796,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
     })
     
     const token = localStorage.getItem('token')
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/column-edit`, {
+    const response = await fetch(`/api/kanban/column-edit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2833,7 +2831,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
       })
       
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/column-delete`, {
+      const response = await fetch(`/api/kanban/column-delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2868,7 +2866,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
     
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/quadros/${id}`, {
+      const response = await fetch(`/api/kanban/quadros/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -2900,7 +2898,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
   const handleSaveQuadroDescription = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/quadros/${id}`, {
+      const response = await fetch(`/api/kanban/quadros/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -3174,7 +3172,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
   const handleAddColuna = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban/column-create`, {
+      const response = await fetch(`/api/kanban/column-create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

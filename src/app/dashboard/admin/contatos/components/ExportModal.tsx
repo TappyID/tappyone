@@ -29,7 +29,7 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
     setIsExporting(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/export?format=${exportFormat}`, {
+      const response = await fetch(`/api/contatos/export?format=${exportFormat}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

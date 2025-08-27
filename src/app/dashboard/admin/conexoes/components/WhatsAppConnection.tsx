@@ -362,7 +362,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/whatsapp/sync/${SESSION_NAME}`, {
+      await fetch(`/api/connections/whatsapp/sync/${SESSION_NAME}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -383,7 +383,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       const connectionStatus = status === 'connected' ? 'connected' : 
                               status === 'connecting' ? 'connecting' : 'disconnected'
 
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections`, {
+      await fetch(`/api/connections`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -419,7 +419,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       // Desconectar no backend
       const token = localStorage.getItem('token')
       if (token) {
-        await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/whatsapp/${SESSION_NAME}`, {
+        await fetch(`/api/connections/whatsapp/${SESSION_NAME}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

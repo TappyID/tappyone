@@ -249,10 +249,9 @@ export default function ConversationSidebar({
     
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
       // Buscar todos os quadros do usuário apenas se necessário
-      const quadrosResponse = await fetch(`${backendUrl}/api/kanban/quadros`, {
+      const quadrosResponse = await fetch(`/api/kanban/quadros`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -271,7 +270,7 @@ export default function ConversationSidebar({
       // Para cada quadro, buscar os metadados para encontrar o chat
       for (const quadro of quadros) {
         try {
-          const metadataResponse = await fetch(`${backendUrl}/api/kanban/${quadro.id}/metadata`, {
+          const metadataResponse = await fetch(`/api/kanban/${quadro.id}/metadata`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -286,7 +285,7 @@ export default function ConversationSidebar({
               const cardInfo = cardMetadata[chatId]
               
               // Buscar informações completas do quadro (incluindo colunas)
-              const quadroResponse = await fetch(`${backendUrl}/api/kanban/quadros/${quadro.id}`, {
+              const quadroResponse = await fetch(`/api/kanban/quadros/${quadro.id}`, {
                 headers: {
                   'Authorization': `Bearer ${token}`
                 }

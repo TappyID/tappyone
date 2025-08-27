@@ -115,7 +115,7 @@ const ContactActionModal: React.FC<ContactActionModalProps> = ({
     setLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/${contact.id}`, {
+      const response = await fetch(`/api/contatos/${contact.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

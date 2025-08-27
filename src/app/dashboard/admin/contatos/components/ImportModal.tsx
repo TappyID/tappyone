@@ -62,7 +62,7 @@ export default function ImportModal({ isOpen, onClose, onSuccess }: ImportModalP
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contatos/import`, {
+      const response = await fetch(`/api/contatos/import`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
