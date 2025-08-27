@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
+
 export async function POST(request: NextRequest) {
   try {
     const { prompt, context, type = 'response' } = await request.json()

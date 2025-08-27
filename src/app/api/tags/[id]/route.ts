@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
 
 export async function PUT(
   request: NextRequest,
@@ -14,7 +14,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Token de autorização não fornecido' }, { status: 401 })
     }
 
-    console.log('🏷️ [API ROUTE] Atualizando tag:', { id: params.id, nome: body.nome })
+    console.log(' [API ROUTE] Atualizando tag:', { id: params.id, nome: body.nome })
     const response = await fetch(`${BACKEND_URL}/api/tags/${params.id}`, {
       method: 'PUT',
       headers: {
@@ -26,15 +26,15 @@ export async function PUT(
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('❌ [API ROUTE] Erro do backend ao atualizar tag:', { status: response.status, error })
+      console.error(' [API ROUTE] Erro do backend ao atualizar tag:', { status: response.status, error })
       return NextResponse.json({ error: 'Erro ao atualizar tag' }, { status: response.status })
     }
 
     const data = await response.json()
-    console.log('✅ [API ROUTE] Tag atualizada com sucesso:', data)
+    console.log(' [API ROUTE] Tag atualizada com sucesso:', data)
     return NextResponse.json(data)
   } catch (error) {
-    console.error('❌ Erro na API de tags:', error)
+    console.error(' Erro na API de tags:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
@@ -50,7 +50,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Token de autorização não fornecido' }, { status: 401 })
     }
 
-    console.log('🏷️ [API ROUTE] Deletando tag:', { id: params.id })
+    console.log(' [API ROUTE] Deletando tag:', { id: params.id })
     const response = await fetch(`${BACKEND_URL}/api/tags/${params.id}`, {
       method: 'DELETE',
       headers: {
@@ -60,14 +60,14 @@ export async function DELETE(
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('❌ [API ROUTE] Erro do backend ao deletar tag:', { status: response.status, error })
+      console.error(' [API ROUTE] Erro do backend ao deletar tag:', { status: response.status, error })
       return NextResponse.json({ error: 'Erro ao deletar tag' }, { status: response.status })
     }
 
-    console.log('✅ [API ROUTE] Tag deletada com sucesso')
+    console.log(' [API ROUTE] Tag deletada com sucesso')
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('❌ Erro na API de tags:', error)
+    console.error(' Erro na API de tags:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

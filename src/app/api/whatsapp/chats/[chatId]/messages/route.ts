@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
 
 export async function GET(
   request: NextRequest,
@@ -8,16 +8,16 @@ export async function GET(
 ) {
   try {
     const { chatId } = params
-    console.log('🔍 [WHATSAPP MESSAGES] GET route chamado para chat:', chatId)
+    console.log(' [WHATSAPP MESSAGES] GET route chamado para chat:', chatId)
     
     const authHeader = request.headers.get('Authorization')
     if (!authHeader) {
-      console.log('❌ [WHATSAPP MESSAGES] Token não fornecido')
+      console.log(' [WHATSAPP MESSAGES] Token não fornecido')
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    console.log('🔑 [WHATSAPP MESSAGES] Token encontrado')
-    console.log('📡 [WHATSAPP MESSAGES] Fazendo chamada para backend:', `${BACKEND_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`)
+    console.log(' [WHATSAPP MESSAGES] Token encontrado')
+    console.log(' [WHATSAPP MESSAGES] Fazendo chamada para backend:', `${BACKEND_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`)
 
     // Proxy para o backend Go
     const response = await fetch(`${BACKEND_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
@@ -28,11 +28,11 @@ export async function GET(
       }
     })
 
-    console.log('📡 [WHATSAPP MESSAGES] Status da resposta do backend:', response.status)
+    console.log(' [WHATSAPP MESSAGES] Status da resposta do backend:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [WHATSAPP MESSAGES] Erro do backend:', response.status, errorText)
+      console.error(' [WHATSAPP MESSAGES] Erro do backend:', response.status, errorText)
       return NextResponse.json(
         { error: `Erro do backend: ${response.status}` },
         { status: response.status }
@@ -40,11 +40,11 @@ export async function GET(
     }
 
     const data = await response.json()
-    console.log('✅ [WHATSAPP MESSAGES] Dados obtidos do backend:', data?.length || 0, 'mensagens')
+    console.log(' [WHATSAPP MESSAGES] Dados obtidos do backend:', data?.length || 0, 'mensagens')
     
     return NextResponse.json(data)
   } catch (error) {
-    console.error('❌ [WHATSAPP MESSAGES] Erro interno:', error)
+    console.error(' [WHATSAPP MESSAGES] Erro interno:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -58,7 +58,7 @@ export async function POST(
 ) {
   try {
     const { chatId } = params
-    console.log('📝 [WHATSAPP MESSAGES] POST route chamado para chat:', chatId)
+    console.log(' [WHATSAPP MESSAGES] POST route chamado para chat:', chatId)
     
     const authHeader = request.headers.get('Authorization')
     if (!authHeader) {
@@ -66,7 +66,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    console.log('📝 [WHATSAPP MESSAGES] Dados recebidos:', body)
+    console.log(' [WHATSAPP MESSAGES] Dados recebidos:', body)
 
     // Proxy para o backend Go
     const response = await fetch(`${BACKEND_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages`, {
@@ -78,11 +78,11 @@ export async function POST(
       body: JSON.stringify(body)
     })
 
-    console.log('📡 [WHATSAPP MESSAGES] Status POST backend:', response.status)
+    console.log(' [WHATSAPP MESSAGES] Status POST backend:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [WHATSAPP MESSAGES] Erro POST backend:', response.status, errorText)
+      console.error(' [WHATSAPP MESSAGES] Erro POST backend:', response.status, errorText)
       return NextResponse.json(
         { error: `Erro do backend: ${response.status}` },
         { status: response.status }
@@ -90,10 +90,10 @@ export async function POST(
     }
 
     const data = await response.json()
-    console.log('✅ [WHATSAPP MESSAGES] POST concluído:', data)
+    console.log(' [WHATSAPP MESSAGES] POST concluído:', data)
     return NextResponse.json(data)
   } catch (error) {
-    console.error('❌ [WHATSAPP MESSAGES] Erro POST interno:', error)
+    console.error(' [WHATSAPP MESSAGES] Erro POST interno:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

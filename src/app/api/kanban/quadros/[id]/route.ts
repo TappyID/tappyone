@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  console.log('📋 [KANBAN QUADRO ID] GET route foi chamado para ID:', params.id)
+  console.log(' [KANBAN QUADRO ID] GET route foi chamado para ID:', params.id)
   
   try {
     const authHeader = request.headers.get('authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ [KANBAN QUADRO ID] Token não encontrado no header')
+      console.log(' [KANBAN QUADRO ID] Token não encontrado no header')
       return NextResponse.json(
         { error: 'Token de autorização não encontrado' },
         { status: 401 }
@@ -20,10 +20,10 @@ export async function GET(
     }
 
     const token = authHeader.substring(7)
-    console.log('📋 [KANBAN QUADRO ID] Token extraído do header')
+    console.log(' [KANBAN QUADRO ID] Token extraído do header')
 
     const backendUrl = `${BACKEND_URL}/api/kanban/quadros/${params.id}`
-    console.log('📋 [KANBAN QUADRO ID] Enviando para backend:', backendUrl)
+    console.log(' [KANBAN QUADRO ID] Enviando para backend:', backendUrl)
 
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -33,11 +33,11 @@ export async function GET(
       },
     })
 
-    console.log('📡 [KANBAN QUADRO ID] Status da resposta do backend:', response.status)
+    console.log(' [KANBAN QUADRO ID] Status da resposta do backend:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [KANBAN QUADRO ID] Erro do backend:', response.status, errorText)
+      console.error(' [KANBAN QUADRO ID] Erro do backend:', response.status, errorText)
       return NextResponse.json(
         { error: `Erro do backend: ${response.status} - ${errorText}` },
         { status: response.status }
@@ -45,11 +45,11 @@ export async function GET(
     }
 
     const data = await response.json()
-    console.log('✅ [KANBAN QUADRO ID] Quadro obtido com sucesso')
+    console.log(' [KANBAN QUADRO ID] Quadro obtido com sucesso')
     
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
-    console.error('❌ [KANBAN QUADRO ID] Erro na API proxy:', error)
+    console.error(' [KANBAN QUADRO ID] Erro na API proxy:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -61,13 +61,13 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  console.log('📋 [KANBAN QUADRO ID] PUT route foi chamado para ID:', params.id)
+  console.log(' [KANBAN QUADRO ID] PUT route foi chamado para ID:', params.id)
   
   try {
     const authHeader = request.headers.get('authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ [KANBAN QUADRO ID] Token não encontrado no header')
+      console.log(' [KANBAN QUADRO ID] Token não encontrado no header')
       return NextResponse.json(
         { error: 'Token de autorização não encontrado' },
         { status: 401 }
@@ -76,10 +76,10 @@ export async function PUT(
 
     const token = authHeader.substring(7)
     const body = await request.json()
-    console.log('📋 [KANBAN QUADRO ID] Body parseado para atualização de quadro')
+    console.log(' [KANBAN QUADRO ID] Body parseado para atualização de quadro')
 
     const backendUrl = `${BACKEND_URL}/api/kanban/quadros/${params.id}`
-    console.log('📋 [KANBAN QUADRO ID] Enviando PUT para backend:', backendUrl)
+    console.log(' [KANBAN QUADRO ID] Enviando PUT para backend:', backendUrl)
 
     const response = await fetch(backendUrl, {
       method: 'PUT',
@@ -90,11 +90,11 @@ export async function PUT(
       body: JSON.stringify(body),
     })
 
-    console.log('📡 [KANBAN QUADRO ID] Status da resposta do backend:', response.status)
+    console.log(' [KANBAN QUADRO ID] Status da resposta do backend:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [KANBAN QUADRO ID] Erro do backend:', response.status, errorText)
+      console.error(' [KANBAN QUADRO ID] Erro do backend:', response.status, errorText)
       return NextResponse.json(
         { error: `Erro do backend: ${response.status} - ${errorText}` },
         { status: response.status }
@@ -102,11 +102,11 @@ export async function PUT(
     }
 
     const data = await response.json()
-    console.log('✅ [KANBAN QUADRO ID] Quadro atualizado com sucesso')
+    console.log(' [KANBAN QUADRO ID] Quadro atualizado com sucesso')
     
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
-    console.error('❌ [KANBAN QUADRO ID] Erro na API proxy:', error)
+    console.error(' [KANBAN QUADRO ID] Erro na API proxy:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -118,13 +118,13 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  console.log('📋 [KANBAN QUADRO ID] DELETE route foi chamado para ID:', params.id)
+  console.log(' [KANBAN QUADRO ID] DELETE route foi chamado para ID:', params.id)
   
   try {
     const authHeader = request.headers.get('authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ [KANBAN QUADRO ID] Token não encontrado no header')
+      console.log(' [KANBAN QUADRO ID] Token não encontrado no header')
       return NextResponse.json(
         { error: 'Token de autorização não encontrado' },
         { status: 401 }
@@ -132,10 +132,10 @@ export async function DELETE(
     }
 
     const token = authHeader.substring(7)
-    console.log('📋 [KANBAN QUADRO ID] Token extraído do header')
+    console.log(' [KANBAN QUADRO ID] Token extraído do header')
 
     const backendUrl = `${BACKEND_URL}/api/kanban/quadros/${params.id}`
-    console.log('📋 [KANBAN QUADRO ID] Enviando DELETE para backend:', backendUrl)
+    console.log(' [KANBAN QUADRO ID] Enviando DELETE para backend:', backendUrl)
 
     const response = await fetch(backendUrl, {
       method: 'DELETE',
@@ -145,22 +145,22 @@ export async function DELETE(
       },
     })
 
-    console.log('📡 [KANBAN QUADRO ID] Status da resposta do backend:', response.status)
+    console.log(' [KANBAN QUADRO ID] Status da resposta do backend:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [KANBAN QUADRO ID] Erro do backend:', response.status, errorText)
+      console.error(' [KANBAN QUADRO ID] Erro do backend:', response.status, errorText)
       return NextResponse.json(
         { error: `Erro do backend: ${response.status} - ${errorText}` },
         { status: response.status }
       )
     }
 
-    console.log('✅ [KANBAN QUADRO ID] Quadro deletado com sucesso')
+    console.log(' [KANBAN QUADRO ID] Quadro deletado com sucesso')
     
     return NextResponse.json({ message: 'Quadro deletado com sucesso' }, { status: 200 })
   } catch (error) {
-    console.error('❌ [KANBAN QUADRO ID] Erro na API proxy:', error)
+    console.error(' [KANBAN QUADRO ID] Erro na API proxy:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
