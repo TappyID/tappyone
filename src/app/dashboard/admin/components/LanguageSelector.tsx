@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { Languages, Check } from 'lucide-react'
+import ReactCountryFlag from 'react-country-flag'
 import { TopBarButton } from './TopBarButton'
 
 interface Language {
@@ -13,14 +14,11 @@ interface Language {
 }
 
 const languages: Language[] = [
-  { code: 'pt', name: 'Português (Brasil)', flag: '🇧🇷', nativeName: 'Português' },
-  { code: 'en', name: 'English (US)', flag: '🇺🇸', nativeName: 'English' },
-  { code: 'es', name: 'Español', flag: '🇪🇸', nativeName: 'Español' },
-  { code: 'hi', name: 'Hindi (भारत)', flag: '🇮🇳', nativeName: 'हिन्दी' },
-  { code: 'pt-ao', name: 'Português (Angola)', flag: '🇦🇴', nativeName: 'Português' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷', nativeName: 'Français' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪', nativeName: 'Deutsch' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹', nativeName: 'Italiano' }
+  { code: 'pt-BR', name: 'Português (Brasil)', flag: 'BR', nativeName: 'Português' },
+  { code: 'en-US', name: 'English (US)', flag: 'US', nativeName: 'English' },
+  { code: 'es-ES', name: 'Español', flag: 'ES', nativeName: 'Español' },
+  { code: 'hi-IN', name: 'Hindi (भारत)', flag: 'IN', nativeName: 'हिन्दी' },
+  { code: 'fr-FR', name: 'Français', flag: 'FR', nativeName: 'Français' }
 ]
 
 interface LanguageSelectorProps {
@@ -48,12 +46,37 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
   }
 
   return (
-    <TopBarButton
-      icon={Languages}
-      onClick={() => setIsOpen(!isOpen)}
-      sidebarCollapsed={sidebarCollapsed}
-      tooltip={`Idioma: ${selectedLanguage.nativeName}`}
-    >
+    <div className="relative">
+      <motion.button
+        whileHover={{ scale: 1.1, rotate: 10 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 ${
+          sidebarCollapsed 
+            ? 'bg-gray-100/80 border-gray-200/60 hover:bg-gray-200/80 text-gray-700' 
+            : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+        }`}
+        title={`Idioma: ${selectedLanguage.nativeName}`}
+      >
+        <Languages className="w-4 h-4" />
+      </motion.button>
+      
+      {/* Badge com bandeira do idioma ativo */}
+      <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border ${
+        selectedLanguage.code !== 'pt-BR' 
+          ? 'bg-gradient-to-br from-green-400 to-green-600 border-green-300/30 animate-pulse' 
+          : 'bg-gradient-to-br from-indigo-400 to-indigo-600 border-indigo-300/30'
+      }`}>
+        <ReactCountryFlag
+          countryCode={selectedLanguage.flag}
+          svg
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '2px'
+          }}
+        />
+      </div>
       {/* Dropdown */}
       <AnimatePresence>
         {isOpen && (
@@ -91,7 +114,15 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="relative">
-                    <span className="text-2xl drop-shadow-sm">{language.flag}</span>
+                    <ReactCountryFlag
+                      countryCode={language.flag}
+                      svg
+                      style={{
+                        width: '24px',
+                        height: '18px',
+                        borderRadius: '2px'
+                      }}
+                    />
                     {selectedLanguage.code === language.code && (
                       <motion.div
                         className="absolute -top-1 -right-1 w-3 h-3 bg-[#273155] rounded-full flex items-center justify-center"
@@ -134,6 +165,6 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
           </motion.div>
         )}
       </AnimatePresence>
-    </TopBarButton>
+    </div>
   )
 }

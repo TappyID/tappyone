@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": "2025-08-27T00:02:18.208Z",
+    "timestamp": "2025-08-27T02:15:11.665Z",
     "component": "Kanban",
     "action": "loadChatsManual_response",
     "data": {
@@ -10,10 +10,11 @@
       "headers": {
         "content-type": "application/json; charset=utf-8"
       }
-    }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:19.505Z",
+    "timestamp": "2025-08-27T02:15:12.705Z",
     "component": "Kanban",
     "action": "loadChatsManual_data_received",
     "data": {
@@ -154,15 +155,16 @@
           "name": ""
         },
         {
-          "conversationTimestamp": 1756252085,
+          "conversationTimestamp": 1756259522,
           "id": "status@broadcast",
           "name": ""
         }
       ]
-    }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:19.918Z",
+    "timestamp": "2025-08-27T02:15:12.854Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -174,10 +176,11 @@
       "orcamentosDetalhesCount": 0,
       "orcamentosDetalhesData": [],
       "contactStatus": "synced"
-    }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:20.167Z",
+    "timestamp": "2025-08-27T02:15:13.215Z",
     "component": "Kanban",
     "action": "loadAllCounts_final_data",
     "data": {
@@ -192,10 +195,11 @@
       },
       "totalOrcamentosCards": 1,
       "cardsWithOrcamentos": []
-    }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:26.752Z",
+    "timestamp": "2025-08-27T02:15:13.406Z",
     "component": "Kanban",
     "action": "loadChatsManual_chats_transformed",
     "data": {
@@ -232,19 +236,21 @@
         "",
         ""
       ]
-    }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:26.831Z",
+    "timestamp": "2025-08-27T02:15:13.530Z",
     "component": "Kanban",
     "action": "loadChatsManual_success",
     "data": {
       "finalChatCount": 24,
       "success": true
-    }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:26.959Z",
+    "timestamp": "2025-08-27T02:15:13.595Z",
     "component": "Kanban",
     "action": "loadAllCounts_started",
     "data": {
@@ -254,7 +260,19 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:27.077Z",
+    "timestamp": "2025-08-27T02:15:13.792Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-27T02:15:13.874Z",
     "component": "Kanban",
     "action": "loadAllCounts_cards_mapped",
     "data": {
@@ -297,7 +315,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:27.820Z",
+    "timestamp": "2025-08-27T02:15:15.208Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -313,7 +331,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:28.688Z",
+    "timestamp": "2025-08-27T02:15:16.689Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -329,7 +347,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:29.330Z",
+    "timestamp": "2025-08-27T02:15:18.187Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -345,7 +363,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:30.045Z",
+    "timestamp": "2025-08-27T02:15:19.637Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -361,7 +379,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:30.711Z",
+    "timestamp": "2025-08-27T02:15:22.416Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -377,7 +395,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:31.440Z",
+    "timestamp": "2025-08-27T02:15:23.570Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -393,7 +411,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:32.164Z",
+    "timestamp": "2025-08-27T02:15:24.703Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -714,7 +732,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:32.906Z",
+    "timestamp": "2025-08-27T02:15:25.977Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -883,7 +901,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:33.550Z",
+    "timestamp": "2025-08-27T02:15:27.046Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -899,7 +917,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:34.296Z",
+    "timestamp": "2025-08-27T02:15:28.257Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -915,7 +933,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:34.957Z",
+    "timestamp": "2025-08-27T02:15:29.492Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -931,7 +949,7 @@
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   },
   {
-    "timestamp": "2025-08-27T00:02:35.671Z",
+    "timestamp": "2025-08-27T02:15:30.674Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -943,753 +961,6 @@
       "orcamentosDetalhesCount": 0,
       "orcamentosDetalhesData": [],
       "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:36.471Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991089999@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:37.285Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554396532909@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:37.971Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "68268672970970@lid",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:38.627Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "status@broadcast",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:39.488Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996064455@c.us",
-      "notesCount": 1,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:40.171Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996595684@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:41.024Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997262826@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:41.706Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554233018124@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:42.426Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "2349162389789@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:43.147Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996721979@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:43.998Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997402648@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 1,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:44.791Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554396159222@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
-  },
-  {
-    "timestamp": "2025-08-27T00:02:44.879Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_final_data",
-    "data": {
-      "notesCounts": {
-        "0@c.us": 0,
-        "558004940140@c.us": 0,
-        "5518997089040@c.us": 0,
-        "5518997974883@c.us": 0,
-        "5518996417510@c.us": 0,
-        "5518997062635@c.us": 0,
-        "5518997200106@c.us": 6,
-        "5518981248008@c.us": 0,
-        "5518991222983@c.us": 0,
-        "5518996066756@c.us": 2,
-        "555597149934@c.us": 0,
-        "120363419442598806@g.us": 0,
-        "5518991089999@c.us": 0,
-        "554396532909@c.us": 0,
-        "68268672970970@lid": 0,
-        "status@broadcast": 0,
-        "5518996064455@c.us": 1,
-        "5518996595684@c.us": 0,
-        "5518997262826@c.us": 0,
-        "554233018124@c.us": 0,
-        "2349162389789@c.us": 0,
-        "5518996721979@c.us": 0,
-        "5518997402648@c.us": 0,
-        "554396159222@c.us": 0
-      },
-      "orcamentosCounts": {
-        "0@c.us": 0,
-        "558004940140@c.us": 0,
-        "5518997089040@c.us": 0,
-        "5518997974883@c.us": 0,
-        "5518996417510@c.us": 0,
-        "5518997062635@c.us": 0,
-        "5518997200106@c.us": 2,
-        "5518981248008@c.us": 1,
-        "5518991222983@c.us": 0,
-        "5518996066756@c.us": 0,
-        "555597149934@c.us": 0,
-        "120363419442598806@g.us": 0,
-        "5518991089999@c.us": 0,
-        "554396532909@c.us": 0,
-        "68268672970970@lid": 0,
-        "status@broadcast": 0,
-        "5518996064455@c.us": 0,
-        "5518996595684@c.us": 0,
-        "5518997262826@c.us": 0,
-        "554233018124@c.us": 0,
-        "2349162389789@c.us": 0,
-        "5518996721979@c.us": 0,
-        "5518997402648@c.us": 0,
-        "554396159222@c.us": 0
-      },
-      "orcamentosDetalhes": {
-        "0@c.us": [],
-        "558004940140@c.us": [],
-        "5518997089040@c.us": [],
-        "5518997974883@c.us": [],
-        "5518996417510@c.us": [],
-        "5518997062635@c.us": [],
-        "5518997200106@c.us": [
-          {
-            "id": "b57130cb-2958-41de-ad03-348f560a8083",
-            "criadoEm": "2025-08-23T12:54:35.506118Z",
-            "atualizadoEm": "2025-08-23T12:54:35.506118Z",
-            "titulo": "dsadsadas",
-            "data": "2025-08-23T00:00:00Z",
-            "tipo": "orcamento",
-            "observacao": "fdsfds",
-            "valorTotal": 321,
-            "status": "PENDENTE",
-            "usuarioId": "ce065849-4fa7-4757-a2cb-5581cfec9225",
-            "contatoId": "045f7500-b4d5-4a68-bf4f-2158b0a5ede7",
-            "usuario": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "email": "",
-              "nome": "",
-              "telefone": null,
-              "avatar": null,
-              "tipo": "",
-              "ativo": false
-            },
-            "contato": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "numeroTelefone": "",
-              "nome": null,
-              "fotoPerfil": null,
-              "sobre": null,
-              "bloqueado": false,
-              "sessaoWhatsappId": "",
-              "email": null,
-              "empresa": null,
-              "cpf": null,
-              "cnpj": null,
-              "cep": null,
-              "rua": null,
-              "numero": null,
-              "bairro": null,
-              "cidade": null,
-              "estado": null,
-              "pais": null,
-              "favorito": false,
-              "sessaoWhatsapp": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "nomeSessao": "",
-                "numeroTelefone": null,
-                "status": "",
-                "codigoQr": null,
-                "urlWebhook": null,
-                "ativo": false,
-                "usuarioId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false
-                }
-              }
-            },
-            "itens": [
-              {
-                "id": "ddda7aa5-6707-4a4b-8c30-6daa7fcc0bbc",
-                "criadoEm": "2025-08-23T12:54:35.555927Z",
-                "atualizadoEm": "2025-08-23T12:54:35.555927Z",
-                "nome": "dsad",
-                "valor": 321,
-                "quantidade": 1,
-                "subtotal": 321,
-                "orcamentoId": "b57130cb-2958-41de-ad03-348f560a8083",
-                "orcamento": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "titulo": "",
-                  "data": "0001-01-01T00:00:00Z",
-                  "tipo": "",
-                  "observacao": null,
-                  "valorTotal": 0,
-                  "status": "",
-                  "usuarioId": "",
-                  "contatoId": "",
-                  "usuario": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "email": "",
-                    "nome": "",
-                    "telefone": null,
-                    "avatar": null,
-                    "tipo": "",
-                    "ativo": false
-                  },
-                  "contato": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "numeroTelefone": "",
-                    "nome": null,
-                    "fotoPerfil": null,
-                    "sobre": null,
-                    "bloqueado": false,
-                    "sessaoWhatsappId": "",
-                    "email": null,
-                    "empresa": null,
-                    "cpf": null,
-                    "cnpj": null,
-                    "cep": null,
-                    "rua": null,
-                    "numero": null,
-                    "bairro": null,
-                    "cidade": null,
-                    "estado": null,
-                    "pais": null,
-                    "favorito": false,
-                    "sessaoWhatsapp": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "nomeSessao": "",
-                      "numeroTelefone": null,
-                      "status": "",
-                      "codigoQr": null,
-                      "urlWebhook": null,
-                      "ativo": false,
-                      "usuarioId": "",
-                      "usuario": {
-                        "id": "",
-                        "criadoEm": "0001-01-01T00:00:00Z",
-                        "atualizadoEm": "0001-01-01T00:00:00Z",
-                        "email": "",
-                        "nome": "",
-                        "telefone": null,
-                        "avatar": null,
-                        "tipo": "",
-                        "ativo": false
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "id": "deaa7100-824f-40a3-84e6-3329d1bb3b32",
-            "criadoEm": "2025-08-22T17:09:33.20694Z",
-            "atualizadoEm": "2025-08-22T17:09:33.20694Z",
-            "titulo": "dsadsadas",
-            "data": "2025-08-19T00:00:00Z",
-            "tipo": "venda",
-            "observacao": "dasdsa",
-            "valorTotal": 321,
-            "status": "PENDENTE",
-            "usuarioId": "ce065849-4fa7-4757-a2cb-5581cfec9225",
-            "contatoId": "045f7500-b4d5-4a68-bf4f-2158b0a5ede7",
-            "usuario": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "email": "",
-              "nome": "",
-              "telefone": null,
-              "avatar": null,
-              "tipo": "",
-              "ativo": false
-            },
-            "contato": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "numeroTelefone": "",
-              "nome": null,
-              "fotoPerfil": null,
-              "sobre": null,
-              "bloqueado": false,
-              "sessaoWhatsappId": "",
-              "email": null,
-              "empresa": null,
-              "cpf": null,
-              "cnpj": null,
-              "cep": null,
-              "rua": null,
-              "numero": null,
-              "bairro": null,
-              "cidade": null,
-              "estado": null,
-              "pais": null,
-              "favorito": false,
-              "sessaoWhatsapp": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "nomeSessao": "",
-                "numeroTelefone": null,
-                "status": "",
-                "codigoQr": null,
-                "urlWebhook": null,
-                "ativo": false,
-                "usuarioId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false
-                }
-              }
-            },
-            "itens": [
-              {
-                "id": "ff490b7a-cb92-4743-a347-f882c3309f87",
-                "criadoEm": "2025-08-22T17:09:33.247995Z",
-                "atualizadoEm": "2025-08-22T17:09:33.247995Z",
-                "nome": "dsadsa",
-                "valor": 321,
-                "quantidade": 1,
-                "subtotal": 321,
-                "orcamentoId": "deaa7100-824f-40a3-84e6-3329d1bb3b32",
-                "orcamento": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "titulo": "",
-                  "data": "0001-01-01T00:00:00Z",
-                  "tipo": "",
-                  "observacao": null,
-                  "valorTotal": 0,
-                  "status": "",
-                  "usuarioId": "",
-                  "contatoId": "",
-                  "usuario": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "email": "",
-                    "nome": "",
-                    "telefone": null,
-                    "avatar": null,
-                    "tipo": "",
-                    "ativo": false
-                  },
-                  "contato": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "numeroTelefone": "",
-                    "nome": null,
-                    "fotoPerfil": null,
-                    "sobre": null,
-                    "bloqueado": false,
-                    "sessaoWhatsappId": "",
-                    "email": null,
-                    "empresa": null,
-                    "cpf": null,
-                    "cnpj": null,
-                    "cep": null,
-                    "rua": null,
-                    "numero": null,
-                    "bairro": null,
-                    "cidade": null,
-                    "estado": null,
-                    "pais": null,
-                    "favorito": false,
-                    "sessaoWhatsapp": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "nomeSessao": "",
-                      "numeroTelefone": null,
-                      "status": "",
-                      "codigoQr": null,
-                      "urlWebhook": null,
-                      "ativo": false,
-                      "usuarioId": "",
-                      "usuario": {
-                        "id": "",
-                        "criadoEm": "0001-01-01T00:00:00Z",
-                        "atualizadoEm": "0001-01-01T00:00:00Z",
-                        "email": "",
-                        "nome": "",
-                        "telefone": null,
-                        "avatar": null,
-                        "tipo": "",
-                        "ativo": false
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ],
-        "5518981248008@c.us": [
-          {
-            "id": "a080a91e-34a6-44f5-906b-452d92f9593b",
-            "criadoEm": "2025-08-23T10:57:20.397893Z",
-            "atualizadoEm": "2025-08-23T10:57:20.397893Z",
-            "titulo": "dsadsa",
-            "data": "2025-08-23T00:00:00Z",
-            "tipo": "orcamento",
-            "observacao": "dsa",
-            "valorTotal": 321,
-            "status": "PENDENTE",
-            "usuarioId": "ce065849-4fa7-4757-a2cb-5581cfec9225",
-            "contatoId": "45eb84e0-5725-4a4b-a862-01995cf68761",
-            "usuario": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "email": "",
-              "nome": "",
-              "telefone": null,
-              "avatar": null,
-              "tipo": "",
-              "ativo": false
-            },
-            "contato": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "numeroTelefone": "",
-              "nome": null,
-              "fotoPerfil": null,
-              "sobre": null,
-              "bloqueado": false,
-              "sessaoWhatsappId": "",
-              "email": null,
-              "empresa": null,
-              "cpf": null,
-              "cnpj": null,
-              "cep": null,
-              "rua": null,
-              "numero": null,
-              "bairro": null,
-              "cidade": null,
-              "estado": null,
-              "pais": null,
-              "favorito": false,
-              "sessaoWhatsapp": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "nomeSessao": "",
-                "numeroTelefone": null,
-                "status": "",
-                "codigoQr": null,
-                "urlWebhook": null,
-                "ativo": false,
-                "usuarioId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false
-                }
-              }
-            },
-            "itens": [
-              {
-                "id": "3cec169b-e424-4d1c-bfc6-758c415bef56",
-                "criadoEm": "2025-08-23T10:57:20.438361Z",
-                "atualizadoEm": "2025-08-23T10:57:20.438361Z",
-                "nome": "dasd",
-                "valor": 321,
-                "quantidade": 1,
-                "subtotal": 321,
-                "orcamentoId": "a080a91e-34a6-44f5-906b-452d92f9593b",
-                "orcamento": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "titulo": "",
-                  "data": "0001-01-01T00:00:00Z",
-                  "tipo": "",
-                  "observacao": null,
-                  "valorTotal": 0,
-                  "status": "",
-                  "usuarioId": "",
-                  "contatoId": "",
-                  "usuario": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "email": "",
-                    "nome": "",
-                    "telefone": null,
-                    "avatar": null,
-                    "tipo": "",
-                    "ativo": false
-                  },
-                  "contato": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "numeroTelefone": "",
-                    "nome": null,
-                    "fotoPerfil": null,
-                    "sobre": null,
-                    "bloqueado": false,
-                    "sessaoWhatsappId": "",
-                    "email": null,
-                    "empresa": null,
-                    "cpf": null,
-                    "cnpj": null,
-                    "cep": null,
-                    "rua": null,
-                    "numero": null,
-                    "bairro": null,
-                    "cidade": null,
-                    "estado": null,
-                    "pais": null,
-                    "favorito": false,
-                    "sessaoWhatsapp": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "nomeSessao": "",
-                      "numeroTelefone": null,
-                      "status": "",
-                      "codigoQr": null,
-                      "urlWebhook": null,
-                      "ativo": false,
-                      "usuarioId": "",
-                      "usuario": {
-                        "id": "",
-                        "criadoEm": "0001-01-01T00:00:00Z",
-                        "atualizadoEm": "0001-01-01T00:00:00Z",
-                        "email": "",
-                        "nome": "",
-                        "telefone": null,
-                        "avatar": null,
-                        "tipo": "",
-                        "ativo": false
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ],
-        "5518991222983@c.us": [],
-        "5518996066756@c.us": [],
-        "555597149934@c.us": [],
-        "120363419442598806@g.us": [],
-        "5518991089999@c.us": [],
-        "554396532909@c.us": [],
-        "68268672970970@lid": [],
-        "status@broadcast": [],
-        "5518996064455@c.us": [],
-        "5518996595684@c.us": [],
-        "5518997262826@c.us": [],
-        "554233018124@c.us": [],
-        "2349162389789@c.us": [],
-        "5518996721979@c.us": [],
-        "5518997402648@c.us": [],
-        "554396159222@c.us": []
-      },
-      "totalOrcamentosCards": 24,
-      "cardsWithOrcamentos": [
-        {
-          "cardId": "5518997200106@c.us",
-          "count": 2
-        },
-        {
-          "cardId": "5518981248008@c.us",
-          "count": 1
-        }
-      ]
     },
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   }

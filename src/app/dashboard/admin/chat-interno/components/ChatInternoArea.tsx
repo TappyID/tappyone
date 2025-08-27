@@ -23,10 +23,13 @@ import {
   Star,
   AlertCircle,
   Timer,
-  Tag
+  Tag,
+  BarChart3,
+  TrendingUp
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { FileUploadModal, PhotoModal, AudioModal, SalesModal, NCSModal, VideoCallModal, PhoneCallModal, AttendantInfoModal } from './MicroModals'
 
 interface Atendente {
   id: string
@@ -119,6 +122,14 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
   const [novaMensagem, setNovaMensagem] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showFileModal, setShowFileModal] = useState(false)
+  const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const [showAudioModal, setShowAudioModal] = useState(false)
+  const [showSalesModal, setShowSalesModal] = useState(false)
+  const [showNCSModal, setShowNCSModal] = useState(false)
+  const [showVideoCallModal, setShowVideoCallModal] = useState(false)
+  const [showPhoneCallModal, setShowPhoneCallModal] = useState(false)
+  const [showAttendantInfoModal, setShowAttendantInfoModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -183,122 +194,135 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
   return (
     <div className="h-full flex flex-col">
       {/* Header do Chat */}
-      <div className={`${isDark ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' : 'bg-white border-gray-200'} border-b p-4`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img
-                src={atendente.avatar}
-                alt={atendente.nome}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${statusConfig[atendente.status].color}`} />
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{atendente.nome}</h3>
-                {atendente.prioridade === 'alta' && (
-                  <motion.div 
-                    className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    Alta
-                  </motion.div>
-                )}
-                {atendente.naoLidas > 0 && (
-                  <motion.div 
-                    className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-medium animate-pulse"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    {atendente.naoLidas}
-                  </motion.div>
-                )}
-              </div>
-              <div className={`flex items-center gap-3 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                <div className="flex items-center gap-1">
-                  <span>{atendente.cargo}</span>
-                  <Circle className={`w-2 h-2 fill-current ${statusConfig[atendente.status].color.replace('bg-', 'text-')}`} />
-                  <span>{statusConfig[atendente.status].label}</span>
-                </div>
-                {atendente.fila && (
-                  <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    <span className="text-xs">{atendente.fila}</span>
-                  </div>
-                )}
-                {atendente.tag && (
-                  <div className="flex items-center gap-1">
-                    <Tag className="w-3 h-3" />
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{atendente.tag}</span>
-                  </div>
-                )}
-                {atendente.indiceNCS && (
-                  <div className="flex items-center gap-1">
-                    <Hash className="w-3 h-3" />
-                    <span className="text-xs font-mono">{atendente.indiceNCS}</span>
-                  </div>
-                )}
-              </div>
+      <div className={`${isDark ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' : 'bg-white border-gray-200'} border-b px-6 py-4 flex items-center justify-between shadow-sm`}>
+        <div className="flex items-center gap-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowAttendantInfoModal(true)}
+            className="flex items-center gap-3"
+          >
+            <img 
+              src={atendente.avatar} 
+              alt={atendente.nome}
+              className="w-12 h-12 rounded-full ring-2 ring-[#305e73]/20"
+            />
+          </motion.button>
+          <div>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {atendente.nome}
+            </h3>
+            <div className="flex items-center gap-3 text-sm">
+              <span className={`flex items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  atendente.status === 'online' ? 'bg-green-500' : 
+                  atendente.status === 'ocupado' ? 'bg-red-500' : 'bg-gray-400'
+                }`} />
+                {statusConfig[atendente.status].label}
+              </span>
+              {atendente.fila && (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'
+                }`}>
+                  Fila: {atendente.fila}
+                </span>
+              )}
+              {atendente.tag && (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-700'
+                }`}>
+                  {atendente.tag}
+                </span>
+              )}
+              {atendente.indiceNCS && (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
+                }`}>
+                  NCS: {atendente.indiceNCS}
+                </span>
+              )}
             </div>
           </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* Botão Videochamada */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowVideoCallModal(true)}
+            className={`p-2.5 ${isDark ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/20' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'} rounded-xl transition-all duration-300`}
+            title="Videochamada"
+          >
+            <Video className="w-5 h-5" />
+          </motion.button>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`relative p-2 ${isDark ? 'text-gray-400 hover:text-green-400 hover:bg-green-500/20' : 'text-gray-600 hover:text-green-600 hover:bg-green-50'} rounded-lg transition-colors`}
-                title="Ligar"
-              >
-                <Phone className="w-5 h-5" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              </motion.button>
+          {/* Botão Ligação */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowPhoneCallModal(true)}
+            className={`p-2.5 ${isDark ? 'text-gray-400 hover:text-green-400 hover:bg-green-500/20' : 'text-gray-600 hover:text-green-600 hover:bg-green-50'} rounded-xl transition-all duration-300`}
+            title="Ligação"
+          >
+            <Phone className="w-5 h-5" />
+          </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`relative p-2 ${isDark ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/20' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
-                title="Videochamada"
-              >
-                <Video className="w-5 h-5" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full" />
-              </motion.button>
+          {/* Botão Ver Vendas */}
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowSalesModal(true)}
+            className={`relative p-2.5 ${isDark ? 'text-gray-400 hover:text-green-400 hover:bg-green-500/20' : 'text-gray-600 hover:text-green-600 hover:bg-green-50'} rounded-xl transition-all duration-300`}
+            title="Ver vendas"
+          >
+            <BarChart3 className="w-5 h-5" />
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"
+            />
+          </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`relative p-2 ${isDark ? 'text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/20' : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'} rounded-lg transition-colors`}
-                title="Marcar como favorito"
-              >
-                <Star className="w-5 h-5" />
-              </motion.button>
+          {/* Botão Ver NCS */}
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowNCSModal(true)}
+            className={`relative p-2.5 ${isDark ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/20' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'} rounded-xl transition-all duration-300`}
+            title="Ver índice NCS"
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+              98
+            </span>
+          </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`relative p-2 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'} rounded-lg transition-colors`}
-                title="Informações"
-              >
-                <Info className="w-5 h-5" />
-                {atendente.indiceNCS && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                    !
-                  </div>
-                )}
-              </motion.button>
+          {/* Botão Informações */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowAttendantInfoModal(true)}
+            className={`relative p-2.5 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'} rounded-xl transition-all duration-300`}
+            title="Informações"
+          >
+            <Info className="w-5 h-5" />
+            {atendente.indiceNCS && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                !
+              </div>
+            )}
+          </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`p-2 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'} rounded-lg transition-colors`}
-                title="Mais opções"
-              >
-                <MoreVertical className="w-5 h-5" />
-              </motion.button>
-            </div>
-          </div>
+          {/* Botão Mais Opções */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`p-2.5 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'} rounded-xl transition-all duration-300`}
+            title="Mais opções"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </motion.button>
         </div>
       </div>
 
@@ -407,12 +431,13 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
 
       {/* Input de Mensagem */}
       <div className={`${isDark ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' : 'bg-white border-gray-200'} border-t px-6 py-4 shadow-lg`}>
-        <div className="flex items-end gap-4">
+        <div className="flex items-center gap-4">
           {/* Botões de Anexo */}
           <div className="flex items-center gap-2">
             <motion.button
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.9 }}
+              onClick={() => setShowFileModal(true)}
               className={`relative p-2.5 ${isDark ? 'text-gray-400 hover:text-[#4a90e2] hover:bg-blue-500/20' : 'text-gray-600 hover:text-[#305e73] hover:bg-blue-50'} rounded-xl transition-all duration-300`}
               title="Anexar arquivos"
             >
@@ -423,6 +448,7 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
             <motion.button
               whileHover={{ scale: 1.1, rotate: -5 }}
               whileTap={{ scale: 0.9 }}
+              onClick={() => setShowPhotoModal(true)}
               className={`relative p-2.5 ${isDark ? 'text-gray-400 hover:text-[#4a90e2] hover:bg-blue-500/20' : 'text-gray-600 hover:text-[#305e73] hover:bg-blue-50'} rounded-xl transition-all duration-300`}
               title="Enviar imagem"
             >
@@ -433,6 +459,7 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
+              onClick={() => setShowAudioModal(true)}
               className={`relative p-2.5 ${isDark ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/20' : 'text-gray-600 hover:text-red-600 hover:bg-red-50'} rounded-xl transition-all duration-300`}
               title="Gravar áudio"
             >
@@ -463,7 +490,7 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
                 whileHover={{ scale: 1.1, rotate: 10 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-all duration-300 ${
+                className={`absolute right-3 top-3 p-1.5 rounded-lg transition-all duration-300 ${
                   isDark 
                     ? 'text-gray-400 hover:text-[#4a90e2] hover:bg-gray-600/50'
                     : 'text-gray-500 hover:text-[#305e73] hover:bg-white'
@@ -475,23 +502,70 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
             </div>
           </div>
 
-          {/* Botão Enviar */}
+          {/* Botão de Enviar Áudio Rápido */}
           <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={enviarMensagem}
-            disabled={!novaMensagem.trim()}
-            className={`p-3 rounded-2xl transition-all duration-300 shadow-lg ${
-              novaMensagem.trim()
-                ? 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white hover:shadow-xl'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-            title="Enviar mensagem"
+            onClick={() => setShowAudioModal(true)}
+            className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-300 shadow-lg"
+            title="Gravar áudio rápido"
+          >
+            <Mic className="w-5 h-5" />
+          </motion.button>
+
+          {/* Botão de Enviar */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="p-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] hover:from-[#2a5266] hover:to-[#345f77] text-white rounded-xl transition-all duration-300 shadow-lg"
           >
             <Send className="w-5 h-5" />
           </motion.button>
         </div>
       </div>
+
+      {/* Micro Modals */}
+      <FileUploadModal 
+        isOpen={showFileModal} 
+        onClose={() => setShowFileModal(false)} 
+        isDark={isDark} 
+      />
+      <PhotoModal 
+        isOpen={showPhotoModal} 
+        onClose={() => setShowPhotoModal(false)} 
+        isDark={isDark} 
+      />
+      <AudioModal 
+        isOpen={showAudioModal} 
+        onClose={() => setShowAudioModal(false)} 
+        isDark={isDark} 
+      />
+      <SalesModal 
+        isOpen={showSalesModal} 
+        onClose={() => setShowSalesModal(false)} 
+        isDark={isDark} 
+      />
+      <NCSModal 
+        isOpen={showNCSModal} 
+        onClose={() => setShowNCSModal(false)} 
+        isDark={isDark} 
+      />
+      <VideoCallModal 
+        isOpen={showVideoCallModal} 
+        onClose={() => setShowVideoCallModal(false)} 
+        isDark={isDark} 
+      />
+      <PhoneCallModal 
+        isOpen={showPhoneCallModal} 
+        onClose={() => setShowPhoneCallModal(false)} 
+        isDark={isDark} 
+      />
+      <AttendantInfoModal 
+        isOpen={showAttendantInfoModal} 
+        onClose={() => setShowAttendantInfoModal(false)} 
+        isDark={isDark} 
+        atendente={atendente}
+      />
     </div>
   )
 }
