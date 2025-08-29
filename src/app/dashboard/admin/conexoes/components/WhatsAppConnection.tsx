@@ -146,7 +146,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
                 }
               },
               webhooks: [{
-                url: `https://server.tappy.id/webhooks/whatsapp`,
+                url: `https://crm.tappy.id/api/webhooks/whatsapp`,
                 events: ['message', 'session.status'],
                 hmac: null,
                 retries: {
@@ -190,7 +190,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
                 }
               },
               webhooks: [{
-                url: `https://server.tappy.id/webhooks/whatsapp`,
+                url: `https://crm.tappy.id/api/webhooks/whatsapp`,
                 events: ['message', 'session.status'],
                 hmac: null,
                 retries: {
@@ -243,18 +243,134 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       setStatus('disconnected')
+      // Tentar obter QR Code - pode funcionar com GOWS
+      const getQRCode = async () => {
+        try {
+          console.log(' Tentando obter QR Code via API...')
+          const response = await fetch(`${API_BASE}/${SESSION_NAME}/auth/qr?format=image`, {
+            headers: {
+              'Accept': 'image/png',
+              'X-Api-Key': API_KEY
+            }
+          })
+
+          if (response.ok) {
+            const blob = await response.blob()
+            const qrUrl = URL.createObjectURL(blob)
+            setQrCode(qrUrl)
+            setShowQRModal(true)
+            
+            console.log(' QR Code obtido com sucesso!')
+            return
+          } else {
+            console.log(' Endpoint /auth/qr retornou:', response.status)
+          }
+        } catch (err) {
+          console.log(' Erro ao tentar /auth/qr:', err)
+        }
+
+        // Fallback: Tentar endpoint alternativo do GOWS
+        try {
+          console.log(' Tentando endpoint alternativo /screenshot...')
+          const response = await fetch(`${API_BASE}/${SESSION_NAME}/screenshot`, {
+            headers: {
+              'Accept': 'image/png',
+              'X-Api-Key': API_KEY
+            }
+          })
+
+          if (response.ok) {
+            const blob = await response.blob()
+            const qrUrl = URL.createObjectURL(blob)
+            setQrCode(qrUrl)
+            setShowQRModal(true)
+            
+            console.log(' QR Code obtido via screenshot!')
+            return
+          }
+        } catch (err) {
+          console.log(' Screenshot também falhou:', err)
+        }
+
+        // Último fallback: instruções nos logs
+        console.log(' QR Code disponível apenas nos logs do servidor')
+        setError('QR Code disponível nos logs. Execute: docker logs backend-waha-1')
+      }
     }
   }
 
-  // Obter QR Code
+  // Obter QR Code - tentar múltiplas abordagens
   const getQRCode = async () => {
-    console.log(' QR Code não disponível via API no engine GOWS')
-    console.log(' Para ver o QR Code, execute no servidor:')
-    console.log(' docker logs backend-waha-1 | grep -A 20 "QR CODE"')
-    
-    // Mostrar modal com instruções
-    setError('QR Code disponível nos logs do servidor. Execute: docker logs backend-waha-1')
-    setShowQRModal(false)
+    try {
+      console.log('📱 Tentando obter QR Code via /auth/qr...')
+      const response = await fetch(`${API_BASE}/${SESSION_NAME}/auth/qr?format=image`, {
+        headers: {
+          'Accept': 'image/png',
+          'X-Api-Key': API_KEY
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const qrUrl = URL.createObjectURL(blob)
+        setQrCode(qrUrl)
+        setShowQRModal(true)
+        console.log('✅ QR Code obtido via /auth/qr!')
+        return
+      } else {
+        console.log('❌ /auth/qr retornou:', response.status)
+      }
+    } catch (err) {
+      console.log('❌ Erro /auth/qr:', err)
+    }
+
+    // Fallback 1: Tentar screenshot
+    try {
+      console.log('🔄 Tentando /screenshot...')
+      const response = await fetch(`${API_BASE}/${SESSION_NAME}/screenshot`, {
+        headers: {
+          'Accept': 'image/png',
+          'X-Api-Key': API_KEY
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const qrUrl = URL.createObjectURL(blob)
+        setQrCode(qrUrl)
+        setShowQRModal(true)
+        console.log('✅ QR Code obtido via screenshot!')
+        return
+      }
+    } catch (err) {
+      console.log('❌ Screenshot falhou:', err)
+    }
+
+    // Fallback 2: Tentar endpoint direto do GOWS
+    try {
+      console.log('🔄 Tentando /qr direto...')
+      const response = await fetch(`${API_BASE}/${SESSION_NAME}/qr`, {
+        headers: {
+          'Accept': 'image/png',
+          'X-Api-Key': API_KEY
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const qrUrl = URL.createObjectURL(blob)
+        setQrCode(qrUrl)
+        setShowQRModal(true)
+        console.log('✅ QR Code obtido via /qr!')
+        return
+      }
+    } catch (err) {
+      console.log('❌ /qr direto falhou:', err)
+    }
+
+    // Último recurso: instruções dos logs
+    console.log('📋 QR Code disponível apenas nos logs')
+    setError('QR Code não disponível via API. Verifique logs: docker logs backend-waha-1')
   }
 
   // Verificar conexão no backend primeiro
