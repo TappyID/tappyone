@@ -22,7 +22,7 @@ services:
       - tappyone-network
 
   waha:
-    image: devlikeapro/waha-plus:chrome
+    image: devlikeapro/waha-plus:gows
     ports:
       - "3000:3000"
     environment:

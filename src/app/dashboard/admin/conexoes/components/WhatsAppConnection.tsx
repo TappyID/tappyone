@@ -132,7 +132,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
               }
             },
             webhooks: [{
-              url: `http://localhost:8081/webhooks/whatsapp`,
+              url: `https://server.tappy.id/webhooks/whatsapp`,
               events: ['message', 'session.status'],
               hmac: null,
               retries: {
@@ -175,7 +175,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
                 }
               },
               webhooks: [{
-                url: `http://localhost:8081/webhooks/whatsapp`,
+                url: `https://server.tappy.id/webhooks/whatsapp`,
                 events: ['message', 'session.status'],
                 hmac: null,
                 retries: {

@@ -20,12 +20,18 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body)
     })
 
-    const data = await response.json()
-
     if (!response.ok) {
-      return NextResponse.json(data, { status: response.status })
+      // Se não é JSON válido (como 404 HTML), retornar erro genérico
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch {
+        errorData = { error: `Backend error: ${response.status}` }
+      }
+      return NextResponse.json(errorData, { status: response.status })
     }
 
+    const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
     console.error('Erro ao criar conexão:', error)
