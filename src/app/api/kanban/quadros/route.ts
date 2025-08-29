@@ -11,23 +11,17 @@ export async function GET(request: NextRequest) {
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('❌ [KANBAN QUADROS] Token não encontrado no header')
-      return NextResponse.json(
-        { error: 'Token de autorização não encontrado' },
-        { status: 401 }
-      )
     }
 
-    const token = authHeader.substring(7) // Remove "Bearer "
-    console.log('📋 [KANBAN QUADROS] Token extraído do header')
-
-    console.log('📋 [KANBAN QUADROS] Enviando para backend:', `${BACKEND_URL}/api/kanban/quadros`)
+    console.log('🔑 [KANBAN QUADROS] Token encontrado')
+    console.log('📡 [KANBAN QUADROS] Fazendo chamada para backend:', `${BACKEND_URL}/api/kanban/quadros`)
 
     const response = await fetch(`${BACKEND_URL}/api/kanban/quadros`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      }
     })
 
     console.log('📡 [KANBAN QUADROS] Status da resposta do backend:', response.status)
