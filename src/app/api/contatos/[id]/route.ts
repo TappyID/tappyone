@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
+    const backendUrl = process.env.BACKEND_URL || 'https://server.tappy.id'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
+    const backendUrl = process.env.BACKEND_URL || 'https://server.tappy.id'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {

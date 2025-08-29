@@ -138,3 +138,4 @@ dump.rdb
 .local/
 
 .vercel
+.env*.local

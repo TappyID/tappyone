@@ -57,7 +57,7 @@ export async function POST(
     })
 
     // Enviar URL pública para o backend Go
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
+    const backendUrl = process.env.BACKEND_URL || 'https://server.tappy.id'
     const token = request.headers.get('authorization')
 
     const response = await fetch(`${backendUrl}/api/whatsapp/chats/${params.chatId}/voice`, {

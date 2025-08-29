@@ -21,7 +21,7 @@ export async function POST(
     }
 
     // Enviar diretamente para o backend Go (que salvará no droplet)
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
+    const backendUrl = process.env.BACKEND_URL || 'https://server.tappy.id'
     const token = request.headers.get('authorization')
 
     const response = await fetch(`${backendUrl}/api/whatsapp/chats/${params.chatId}/image`, {
