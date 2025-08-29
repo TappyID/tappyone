@@ -106,7 +106,8 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         return
       }
 
-      const response = await fetch(`${API_BASE}/sessions`, {
+      // Primeiro tentar POST, se falhar com 422 (já existe), usar PUT
+      let response = await fetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,6 +147,50 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           }
         })
       })
+
+      // Se sessão já existe (422), usar PUT para atualizar
+      if (response.status === 422) {
+        console.log('🔄 Sessão já existe, usando PUT para atualizar...')
+        response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Api-Key': API_KEY
+          },
+          body: JSON.stringify({
+            start: true,
+            config: {
+              metadata: {
+                'user.id': user.id,
+                'user.email': user.email,
+                'user.name': user.nome,
+                'company': 'TappyOne CRM'
+              },
+              debug: false,
+              noweb: {
+                store: {
+                  enabled: true,
+                  fullSync: false
+                }
+              },
+              webhooks: [{
+                url: `http://localhost:8081/webhooks/whatsapp`,
+                events: ['message', 'session.status'],
+                hmac: null,
+                retries: {
+                  delaySeconds: 2,
+                  attempts: 15
+                },
+                customHeaders: [{
+                  name: 'Authorization',
+                  value: `Bearer ${token}`
+                }]
+              }]
+            }
+          })
+        })
+      }
 
       if (response.ok) {
         const data = await response.json()
