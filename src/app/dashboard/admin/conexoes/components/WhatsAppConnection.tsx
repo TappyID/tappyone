@@ -408,25 +408,65 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   // Desconectar sessão
   const disconnectSession = async () => {
     try {
-      // Desconectar da WAHA API
-      await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
+      setStatus('connecting') // Mostrar loading durante desconexão
+      setError(null)
+      
+      console.log('🔄 Iniciando desconexão...')
+      
+      // Desconectar da WAHA API primeiro
+      console.log('📡 Desconectando da WAHA API...')
+      const wahaResponse = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
         method: 'DELETE',
         headers: {
           'X-Api-Key': API_KEY
         }
       })
       
+      if (!wahaResponse.ok && wahaResponse.status !== 404) {
+        console.error('❌ Erro ao desconectar da WAHA:', wahaResponse.status)
+        throw new Error(`Erro ao desconectar da WAHA: ${wahaResponse.status}`)
+      }
+      
+      console.log('✅ WAHA desconectada com sucesso')
+      
       // Desconectar no backend
       const token = localStorage.getItem('token')
       if (token) {
-        await fetch(`/api/connections/whatsapp/${SESSION_NAME}`, {
+        console.log('📡 Desconectando do backend...')
+        const backendResponse = await fetch(`/api/connections/whatsapp/${SESSION_NAME}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
+        
+        if (!backendResponse.ok && backendResponse.status !== 404) {
+          console.error('❌ Erro ao desconectar do backend:', backendResponse.status)
+          throw new Error(`Erro ao desconectar do backend: ${backendResponse.status}`)
+        }
+        
+        console.log('✅ Backend desconectado com sucesso')
       }
       
+      // Aguardar um momento para garantir que a desconexão foi processada
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Verificar se realmente desconectou
+      const stillConnected = await checkSessionStatus()
+      if (stillConnected) {
+        console.warn('⚠️ Sessão ainda ativa após desconexão, forçando...')
+        // Tentar novamente
+        await fetch(`${API_BASE}/sessions/${SESSION_NAME}/stop`, {
+          method: 'POST',
+          headers: {
+            'X-Api-Key': API_KEY
+          }
+        })
+        
+        await new Promise(resolve => setTimeout(resolve, 2000))
+      }
+      
+      // Atualizar estado apenas após confirmação
       setStatus('disconnected')
       setQrCode(null)
       setShowQRModal(false)
@@ -435,8 +475,20 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       
       // Limpar localStorage
       localStorage.removeItem(`whatsapp_connection_${user?.id}`)
+      
+      console.log('✅ Desconexão concluída com sucesso!')
+      
     } catch (err) {
+      console.error('❌ Erro durante desconexão:', err)
       setError(err instanceof Error ? err.message : 'Erro ao desconectar')
+      setStatus('error')
+      
+      // Mesmo com erro, tentar limpar o estado local
+      setTimeout(() => {
+        setStatus('disconnected')
+        onUpdate({ isConnected: false, isActive: false })
+        localStorage.removeItem(`whatsapp_connection_${user?.id}`)
+      }, 3000)
     }
   }
 
