@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://server.tappy.id'
+const BACKEND_URL = process.env.BACKEND_URL || 'https://server.tappy.id'
 
 export async function GET(
   request: NextRequest,
