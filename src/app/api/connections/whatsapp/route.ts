@@ -13,10 +13,10 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('🔑 [CONNECTIONS WHATSAPP] Token encontrado')
-    console.log('📡 [CONNECTIONS WHATSAPP] Fazendo chamada para backend:', `${BACKEND_URL}/api/whatsapp/sessions`)
+    console.log('📡 [CONNECTIONS WHATSAPP] Fazendo chamada para backend:', `${BACKEND_URL}/api/connections/whatsapp`)
 
     // Proxy para o backend Go
-    const response = await fetch(`${BACKEND_URL}/api/whatsapp/sessions`, {
+    const response = await fetch(`${BACKEND_URL}/api/connections/whatsapp`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     console.log('📝 [CONNECTIONS WHATSAPP] Dados recebidos:', body)
 
     // Proxy para o backend Go
-    const response = await fetch(`${BACKEND_URL}/api/whatsapp/sessions`, {
+    const response = await fetch(`${BACKEND_URL}/api/connections/whatsapp`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
