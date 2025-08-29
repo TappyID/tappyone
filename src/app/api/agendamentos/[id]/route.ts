@@ -16,7 +16,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    // Converter campos do frontend para backend
+    // Converter campos do frontend para backends
     const backendBody = {
       ...body,
       // Se há data, converter para inicioEm (formato camelCase que o backend Go espera)
