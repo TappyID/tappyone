@@ -106,47 +106,62 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         return
       }
 
-      // Primeiro tentar POST, se falhar com 422 (já existe), usar PUT
-      let response = await fetch(`${API_BASE}/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Api-Key': API_KEY
-        },
-        body: JSON.stringify({
-          name: SESSION_NAME,
-          start: true,
-          config: {
-            metadata: {
-              'user.id': user.id,
-              'user.email': user.email,
-              'user.name': user.nome,
-              'company': 'TappyOne CRM'
-            },
-            debug: false,
-            noweb: {
-              store: {
-                enabled: true,
-                fullSync: false
-              }
-            },
-            webhooks: [{
-              url: `https://server.tappy.id/webhooks/whatsapp`,
-              events: ['message', 'session.status'],
-              hmac: null,
-              retries: {
-                delaySeconds: 2,
-                attempts: 15
-              },
-              customHeaders: [{
-                name: 'Authorization',
-                value: `Bearer ${token}`
-              }]
-            }]
-          }
-        })
+      // Primeiro verificar se sessão já existe
+      let response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
+        headers: { 'X-Api-Key': API_KEY }
       })
+
+      if (response.ok) {
+        // Sessão existe, apenas iniciar
+        console.log('📱 Sessão já existe, iniciando...')
+        response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}/start`, {
+          method: 'POST',
+          headers: { 'X-Api-Key': API_KEY }
+        })
+      } else {
+        // Sessão não existe, criar nova
+        console.log('📱 Criando nova sessão...')
+        response = await fetch(`${API_BASE}/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Api-Key': API_KEY
+          },
+          body: JSON.stringify({
+            name: SESSION_NAME,
+            start: true,
+            config: {
+              metadata: {
+                'user.id': user.id,
+                'user.email': user.email,
+                'user.name': user.nome,
+                'company': 'TappyOne CRM'
+              },
+              debug: false,
+              noweb: {
+                store: {
+                  enabled: true,
+                  fullSync: false
+                }
+              },
+              webhooks: [{
+                url: `https://server.tappy.id/webhooks/whatsapp`,
+                events: ['message', 'session.status'],
+                hmac: null,
+                retries: {
+                  delaySeconds: 2,
+                  attempts: 15
+                },
+                customHeaders: [{
+                  name: 'Authorization',
+                  value: `Bearer ${token}`
+                }]
+              }]
+            }
+          })
+        })
+      }
 
       // Se sessão já existe (422), usar PUT para atualizar
       if (response.status === 422) {
@@ -233,28 +248,13 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
 
   // Obter QR Code
   const getQRCode = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/${SESSION_NAME}/auth/qr?format=image`, {
-        headers: {
-          'Accept': 'image/png',
-          'X-Api-Key': API_KEY
-        }
-      })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        const qrUrl = URL.createObjectURL(blob)
-        setQrCode(qrUrl)
-        setShowQRModal(true)
-        
-        // Iniciar polling agressivo quando QR é mostrado
-        console.log('📱 QR Code exibido, iniciando polling rápido...')
-      } else {
-        throw new Error('Falha ao obter QR Code')
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao obter QR Code')
-    }
+    console.log(' QR Code não disponível via API no engine GOWS')
+    console.log(' Para ver o QR Code, execute no servidor:')
+    console.log(' docker logs backend-waha-1 | grep -A 20 "QR CODE"')
+    
+    // Mostrar modal com instruções
+    setError('QR Code disponível nos logs do servidor. Execute: docker logs backend-waha-1')
+    setShowQRModal(false)
   }
 
   // Verificar conexão no backend primeiro
