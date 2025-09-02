@@ -435,6 +435,11 @@ function DroppableArea({
             return total + cardOrcamentos.length
           }, 0)
           
+          const totalAgendamentos = coluna.cards.reduce((total: number, card: any) => {
+            const cardAgendamentos = agendamentosData?.[card.id] || []
+            return total + cardAgendamentos.length
+          }, 0)
+          
           const totalValor = coluna.cards.reduce((total: number, card: any) => {
             const cardOrcamentos = orcamentosData?.[card.id] || []
             const cardTotal = cardOrcamentos.reduce((sum: number, orc: any) => {
@@ -444,44 +449,79 @@ function DroppableArea({
             return total + cardTotal
           }, 0)
 
-          // Só renderizar se houver orçamentos
-          if (totalOrcamentos === 0) return null
+          // Só renderizar se houver orçamentos ou agendamentos
+          if (totalOrcamentos === 0 && totalAgendamentos === 0) return null
+          
           return (
-            <motion.div
-              className="mb-4 px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
-              style={{
-                background: theme === 'dark' 
-                  ? `linear-gradient(135deg, ${coluna.cor}20 0%, ${coluna.cor}10 100%)`
-                  : `linear-gradient(135deg, ${coluna.cor}15 0%, ${coluna.cor}08 100%)`,
-                borderColor: `${coluna.cor}60`,
-                borderWidth: '2px'
-              }}
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              whileHover={{ 
-                scale: 1.02,
-                borderColor: `${coluna.cor}80`
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-3.5 h-3.5" style={{ color: coluna.cor }} />
-                  <span className={`text-xs font-medium ${
-                    theme === 'dark' ? 'text-white' : 'text-gray-800'
-                  }`}>
-                    {totalOrcamentos} orçamento{totalOrcamentos !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div className="text-sm font-bold" style={{ color: coluna.cor }}>
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                    minimumFractionDigits: 2
-                  }).format(totalValor)}
-                </div>
-              </div>
-            </motion.div>
+            <div className="mb-4 space-y-2">
+              {/* Resumo de Orçamentos */}
+              {totalOrcamentos > 0 && (
+                <motion.div
+                  className="px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
+                  style={{
+                    background: theme === 'dark'
+                      ? `linear-gradient(135deg, ${coluna.cor}15 0%, rgba(0,0,0,0.3) 100%)`
+                      : `linear-gradient(135deg, ${coluna.cor}10 0%, rgba(255,255,255,0.8) 100%)`,
+                    borderColor: theme === 'dark' ? '#334155' : '#e2e8f0'
+                  }}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <DollarSign 
+                        className="w-4 h-4" 
+                        style={{ color: coluna.cor }}
+                      />
+                      <span className={`text-xs font-medium ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {totalOrcamentos} orçamento{totalOrcamentos !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold" style={{ color: coluna.cor }}>
+                      {totalValor.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              
+              {/* Resumo de Agendamentos */}
+              {totalAgendamentos > 0 && (
+                <motion.div
+                  className="px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
+                  style={{
+                    background: theme === 'dark'
+                      ? `linear-gradient(135deg, #8B5CF615 0%, rgba(0,0,0,0.3) 100%)`
+                      : `linear-gradient(135deg, #8B5CF610 0%, rgba(255,255,255,0.8) 100%)`,
+                    borderColor: theme === 'dark' ? '#334155' : '#e2e8f0'
+                  }}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar 
+                        className="w-4 h-4 text-purple-500"
+                      />
+                      <span className={`text-xs font-medium ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {totalAgendamentos} agendamento{totalAgendamentos !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-purple-500">
+                      {totalAgendamentos} total
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
           )
         })()}
         
@@ -704,15 +744,27 @@ function SortableAgendamentoItem({ agend, index, columnColor, theme }: {
       </div>
       <div className="flex justify-between items-center mt-1">
         <span className="text-xs opacity-60">
-          {agend.dataHora ? new Date(agend.dataHora).toLocaleDateString('pt-BR') : 'Data não definida'}
+          {agend.inicio_em ? new Date(agend.inicio_em).toLocaleDateString('pt-BR') : 
+           agend.dataHora ? new Date(agend.dataHora).toLocaleDateString('pt-BR') : 
+           'Data não definida'}
         </span>
         <span className="text-xs opacity-60">
-          {agend.dataHora ? new Date(agend.dataHora).toLocaleTimeString('pt-BR', { 
+          {agend.inicio_em ? new Date(agend.inicio_em).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }) : agend.dataHora ? new Date(agend.dataHora).toLocaleTimeString('pt-BR', { 
             hour: '2-digit', 
             minute: '2-digit' 
           }) : '--:--'}
         </span>
       </div>
+      {agend.descricao && (
+        <div className="mt-1">
+          <span className="text-xs opacity-60">
+            {agend.descricao}
+          </span>
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -1786,13 +1838,20 @@ export default function QuadroPage() {
         const result = await response.json()
         setShowAgendamentoModal(false)
         
-        // Refrescar contagem de agendamentos após salvar
+        // Refrescar contagem e dados detalhados de agendamentos após salvar
         if (selectedCard?.id) {
           setTimeout(async () => {
             const count = await fetchAgendamentosCount(selectedCard.id)
+            const detalhes = await fetchAgendamentosDetails(selectedCard.id)
+            
             setAgendamentosCount(prev => ({
               ...prev,
               [selectedCard.id]: count
+            }))
+            
+            setAgendamentosData(prev => ({
+              ...prev,
+              [selectedCard.id]: detalhes
             }))
           }, 500)
         }
@@ -1829,8 +1888,8 @@ export default function QuadroPage() {
           nome: item.nome,
           descricao: item.descricao || '',
           quantidade: item.quantidade,
-          valor_unitario: item.valor,
-          valor_total: item.valor * item.quantidade
+          valor: item.valor, // Backend espera 'valor' não 'valor_unitario'
+          subtotal: item.valor * item.quantidade
         })),
         observacoes: data.observacao,
         condicoes_pagamento: data.condicoes_pagamento,
@@ -1853,13 +1912,21 @@ export default function QuadroPage() {
         console.log('✅ Orçamento criado com sucesso')
         setShowOrcamentoModal(false)
         
-        // Refrescar contagem de orçamentos após salvar
+        // Refrescar dados de orçamentos após salvar
         if (selectedCard?.id) {
           setTimeout(async () => {
+            // Atualizar contagem
             const count = await fetchOrcamentosCount(selectedCard.id)
             setOrcamentosCount(prev => ({
               ...prev,
               [selectedCard.id]: count
+            }))
+            
+            // Atualizar dados detalhados para exibição nos cards
+            const detalhes = await fetchOrcamentosDetalhes(selectedCard.id)
+            setOrcamentosData(prev => ({
+              ...prev,
+              [selectedCard.id]: detalhes
             }))
           }, 500)
         }
