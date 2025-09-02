@@ -244,7 +244,7 @@ export default function CriarAgenteModal({
                   {/* Nome */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nome do Agente *
+                      Nome do Agente
                     </label>
                     <input
                       type="text"
