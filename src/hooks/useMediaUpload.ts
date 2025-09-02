@@ -81,7 +81,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/image`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/image`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -113,7 +114,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/file`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/file`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -153,7 +155,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         }))
       })
 
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/voice`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/voice`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -191,7 +194,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/video`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/video`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData
@@ -224,7 +228,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         formData.append('caption', caption)
       }
 
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/media`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/media`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData

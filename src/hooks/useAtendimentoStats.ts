@@ -19,7 +19,9 @@ export function useAtendimentoStats() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const baseURL = '/api/atendimentos'
+  const baseURL = process.env.NODE_ENV === 'development' 
+    ? 'http://159.65.34.199:8081/api/atendimentos'
+    : 'http://159.65.34.199:8081/api/atendimentos'
 
   const fetchStats = useCallback(async () => {
     if (!token) return

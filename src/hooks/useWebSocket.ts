@@ -76,7 +76,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
       // Construir URL WebSocket com token como query parameter
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const backendUrl = window.location.origin
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
       const wsUrl = backendUrl.replace(/^https?:/, wsProtocol) + `/ws?token=${encodeURIComponent(token)}`
       
       console.log('WebSocket: Connecting to', wsUrl)

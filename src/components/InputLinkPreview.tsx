@@ -44,7 +44,9 @@ export default function InputLinkPreview({ url, onRemove, className = '' }: Inpu
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/link-preview`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      
+      const response = await fetch(`${backendUrl}/api/link-preview`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -16,7 +16,8 @@ export function useMessageActions({ chatId, onMessageUpdate }: UseMessageActions
       throw new Error('Token não encontrado')
     }
 
-    const response = await fetch(`/api/whatsapp${endpoint}`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+    const response = await fetch(`${backendUrl}/api/whatsapp${endpoint}`, {
       method,
       headers: {
         'Authorization': `Bearer ${token}`,

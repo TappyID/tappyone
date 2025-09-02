@@ -57,11 +57,11 @@ export function useInfiniteMessages({
         throw new Error('Token não encontrado')
       }
 
-      const backendUrl = '/api'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
       const currentOffset = reset ? 0 : offset
       
       const response = await fetch(
-        `${backendUrl}/whatsapp/chats/${encodeURIComponent(chatId)}/messages?limit=${pageSize}&offset=${currentOffset}`,
+        `${backendUrl}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages?limit=${pageSize}&offset=${currentOffset}`,
         {
           method: 'GET',
           headers: {

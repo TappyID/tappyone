@@ -1585,8 +1585,7 @@ export default function QuadroPage() {
         userId: user?.id
       })
       
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats`, {
+      const response = await fetch(`/api/whatsapp/chats`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1632,15 +1631,11 @@ export default function QuadroPage() {
             chatId = chat.id.id || chat.id._serialized || chat.id.user || JSON.stringify(chat.id)
           }
           
-          // Buscar foto de perfil usando o endpoint correto da WAHA API
+          // Buscar foto de perfil usando API route do Next.js
           try {
-            const wahaApiUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001/api'
-            const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
-            const sessionName = `user_${user?.id}` // Usando user do contexto de auth
-            
-            const pictureResponse = await fetch(`${wahaApiUrl}/${sessionName}/chats/${chatId}/picture`, {
+            const pictureResponse = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}/picture`, {
               headers: {
-                'X-Api-Key': wahaApiKey,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             })
@@ -1692,7 +1687,7 @@ export default function QuadroPage() {
             status: response.status, 
             statusText: response.statusText,
             error: errorText,
-            url: `${backendUrl}/api/whatsapp/chats`
+            url: `/api/whatsapp/chats`
           },
           userId: user?.id
         })

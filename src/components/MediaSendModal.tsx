@@ -164,7 +164,9 @@ export const MediaSendModal: React.FC<MediaSendModalProps> = ({
       setContactsLoading(true)
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`/api/whatsapp/contacts`, {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+        
+        const response = await fetch(`${backendUrl}/api/whatsapp/contacts`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
