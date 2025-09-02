@@ -82,14 +82,16 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Buscar foto de perfil usando o mesmo método do useWhatsAppData
+      // Buscar foto de perfil usando nossa API route interna
       let profilePictureUrl = contact.profilePictureUrl || contact.profilePicUrl || ''
       
       if (!profilePictureUrl && contactId) {
         try {
-          const pictureResponse = await fetch(`${WAHA_API_URL}/${sessionName}/chats/${contactId}/picture`, {
+          // Fazer chamada interna para nossa própria API route
+          const baseUrl = process.env.NEXTAUTH_URL || `${request.nextUrl.protocol}//${request.nextUrl.host}`
+          const pictureResponse = await fetch(`${baseUrl}/api/whatsapp/chats/${encodeURIComponent(contactId)}/picture`, {
             headers: {
-              'X-Api-Key': WAHA_API_KEY,
+              'Authorization': request.headers.get('Authorization') || '',
               'Content-Type': 'application/json'
             }
           })
