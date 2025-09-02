@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    console.log('Criando orçamento:', body)
+    console.log('💾 [ORCAMENTOS] Criando orçamento:', JSON.stringify(body, null, 2))
+    console.log('📡 [ORCAMENTOS] Fazendo chamada para backend:', `${BACKEND_URL}/api/orcamentos`)
 
     const response = await fetch(`${BACKEND_URL}/api/orcamentos`, {
       method: 'POST',
@@ -82,17 +83,20 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     })
 
+    console.log('📡 [ORCAMENTOS] Status da resposta do backend:', response.status)
+    
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Erro do backend:', response.status, errorText)
+      console.error('❌ [ORCAMENTOS] Erro do backend:', response.status, errorText)
+      console.error('❌ [ORCAMENTOS] Dados enviados:', JSON.stringify(body, null, 2))
       return NextResponse.json(
-        { error: `Erro do backend: ${response.status}` },
+        { error: `Erro do backend: ${response.status} - ${errorText}` },
         { status: response.status }
       )
     }
 
     const data = await response.json()
-    console.log('Orçamento criado:', data)
+    console.log('✅ [ORCAMENTOS] Orçamento criado no backend:', data)
     
     return NextResponse.json(data, { status: 201 })
   } catch (error) {

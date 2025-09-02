@@ -1814,18 +1814,29 @@ export default function QuadroPage() {
       const contatoId = selectedCard?.id || data.contato?.id
       const numeroTelefone = contatoId.replace('@c.us', '')
       
-      // Preparar dados do orçamento para o backend
+      // Preparar dados do orçamento para o backend (formato correto)
       const orcamentoData = {
+        Data: `${data.data}T00:00:00Z`, // Backend espera ISO 8601 com timestamp
         titulo: data.titulo,
-        descricao: data.observacao,
-        valorTotal: data.itens.reduce((total: number, item: any) => total + (item.valor * item.quantidade), 0),
-        status: 'pendente',
-        dataVencimento: data.data_validade,
-        condicoesPagamento: data.condicoes_pagamento,
-        prazoEntrega: data.prazo_entrega,
+        cliente_nome: data.cliente || 'Cliente',
+        cliente_telefone: numeroTelefone,
+        data_criacao: data.data,
+        data_validade: data.data_validade,
+        tipo: data.tipo || 'orcamento',
+        status: 'rascunho',
+        valor_total: data.itens.reduce((total: number, item: any) => total + (item.valor * item.quantidade), 0),
+        itens: data.itens.map((item: any) => ({
+          nome: item.nome,
+          descricao: item.descricao || '',
+          quantidade: item.quantidade,
+          valor_unitario: item.valor,
+          valor_total: item.valor * item.quantidade
+        })),
+        observacoes: data.observacao,
+        condicoes_pagamento: data.condicoes_pagamento,
+        prazo_entrega: data.prazo_entrega,
         desconto: data.desconto || 0,
-        taxaAdicional: data.taxa_adicional || 0,
-        itens: data.itens,
+        taxa_adicional: data.taxa_adicional || 0,
         contato_id: numeroTelefone
       }
 
