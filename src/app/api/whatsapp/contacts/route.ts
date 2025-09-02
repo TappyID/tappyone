@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const WAHA_API_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001/api'
+const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
 const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
 export async function GET(request: NextRequest) {
@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
 
     // Try different WAHA API endpoints for contacts
     const possibleEndpoints = [
-      `${WAHA_API_URL}/${sessionName}/contacts`,
-      `${WAHA_API_URL}/${sessionName}/chats`,
-      `${WAHA_API_URL}/sessions/${sessionName}/contacts`,
-      `${WAHA_API_URL}/sessions/${sessionName}/chats`
+      `${WAHA_URL}/api/${sessionName}/contacts`,
+      `${WAHA_URL}/api/${sessionName}/chats`,
+      `${WAHA_URL}/api/sessions/${sessionName}/contacts`,
+      `${WAHA_URL}/api/sessions/${sessionName}/chats`
     ]
 
     let response: Response | null = null

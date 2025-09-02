@@ -1802,25 +1802,66 @@ export default function QuadroPage() {
       }
     } catch (error) {
       console.error('❌ Erro ao criar agendamento:', error)
-      alert('Erro ao criar agendamento. Verifique sua conexão.')
     }
   }
   
   const handleOrcamentoSave = async (data: any) => {
-    setShowOrcamentoModal(false)
-    
-    // Refrescar contagem de orçamentos após salvar
-    if (selectedCard?.id) {
-      setTimeout(async () => {
-        const count = await fetchOrcamentosCount(selectedCard.id)
-        setOrcamentosCount(prev => ({
-          ...prev,
-          [selectedCard.id]: count
-        }))
-      }, 500)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      // Extrair número de telefone do chat ID para usar como contato_id
+      const contatoId = selectedCard?.id || data.contato?.id
+      const numeroTelefone = contatoId.replace('@c.us', '')
+      
+      // Preparar dados do orçamento para o backend
+      const orcamentoData = {
+        titulo: data.titulo,
+        descricao: data.observacao,
+        valorTotal: data.itens.reduce((total: number, item: any) => total + (item.valor * item.quantidade), 0),
+        status: 'pendente',
+        dataVencimento: data.data_validade,
+        condicoesPagamento: data.condicoes_pagamento,
+        prazoEntrega: data.prazo_entrega,
+        desconto: data.desconto || 0,
+        taxaAdicional: data.taxa_adicional || 0,
+        itens: data.itens,
+        contato_id: numeroTelefone
+      }
+
+      const response = await fetch('/api/orcamentos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(orcamentoData)
+      })
+
+      if (response.ok) {
+        console.log('✅ Orçamento criado com sucesso')
+        setShowOrcamentoModal(false)
+        
+        // Refrescar contagem de orçamentos após salvar
+        if (selectedCard?.id) {
+          setTimeout(async () => {
+            const count = await fetchOrcamentosCount(selectedCard.id)
+            setOrcamentosCount(prev => ({
+              ...prev,
+              [selectedCard.id]: count
+            }))
+          }, 500)
+        }
+      } else {
+        console.error('❌ Erro ao criar orçamento:', response.statusText)
+        alert('Erro ao criar orçamento. Tente novamente.')
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar orçamento:', error)
+      alert('Erro ao criar orçamento. Verifique sua conexão.')
     }
   }
-  
+
   const handleAssinaturaSave = async (data: any) => {
     setShowAssinaturaModal(false)
     

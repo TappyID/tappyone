@@ -4133,5 +4133,398 @@
       ]
     },
     "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:54.935Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_started",
+    "data": {
+      "timestamp": "2025-09-02T20:59:54.935Z"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:55.372Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:56.161Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {
+      "status": 200,
+      "ok": true,
+      "statusText": "OK",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Tue, 02 Sep 2025 20:59:56 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
+      }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:56.249Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_data_received",
+    "data": {
+      "type": "object",
+      "isArray": true,
+      "length": 24,
+      "sample": [
+        {
+          "conversationTimestamp": 1755003680,
+          "id": "0@c.us",
+          "name": ""
+        },
+        {
+          "conversationTimestamp": 1755622792,
+          "id": "120363419442598806@g.us",
+          "name": "Empresa"
+        },
+        {
+          "conversationTimestamp": 1755099018,
+          "id": "2349162389789@c.us",
+          "name": "2349162389789"
+        }
+      ],
+      "rawData": [
+        {
+          "conversationTimestamp": 1755003680,
+          "id": "0@c.us",
+          "name": ""
+        },
+        {
+          "conversationTimestamp": 1755622792,
+          "id": "120363419442598806@g.us",
+          "name": "Empresa"
+        },
+        {
+          "conversationTimestamp": 1755099018,
+          "id": "2349162389789@c.us",
+          "name": "2349162389789"
+        },
+        {
+          "conversationTimestamp": 1756845017,
+          "id": "5518981248008@c.us",
+          "name": "Champ"
+        },
+        {
+          "conversationTimestamp": 1753819268,
+          "id": "5518991089999@c.us",
+          "name": "Ane Caroline"
+        },
+        {
+          "conversationTimestamp": 1755483540,
+          "id": "5518991222983@c.us",
+          "name": "+55 18 99122-2983"
+        },
+        {
+          "conversationTimestamp": 1756343420,
+          "id": "5518991608009@c.us",
+          "name": "Gilberto"
+        },
+        {
+          "conversationTimestamp": 1756845200,
+          "id": "5518996064455@c.us",
+          "name": "Willian"
+        },
+        {
+          "conversationTimestamp": 1753713183,
+          "id": "5518996066756@c.us",
+          "name": "Clarice"
+        },
+        {
+          "conversationTimestamp": 1756776819,
+          "id": "5518996417510@c.us",
+          "name": "Emporio"
+        },
+        {
+          "conversationTimestamp": 1756572627,
+          "id": "5518996595684@c.us",
+          "name": "Loh"
+        },
+        {
+          "conversationTimestamp": 1756154428,
+          "id": "5518996721979@c.us",
+          "name": "romeuribeirosdias"
+        },
+        {
+          "conversationTimestamp": 1755535304,
+          "id": "5518997062635@c.us",
+          "name": "Marcio"
+        },
+        {
+          "conversationTimestamp": 1753877276,
+          "id": "5518997089040@c.us",
+          "name": "Renan Matos"
+        },
+        {
+          "conversationTimestamp": 1756831836,
+          "id": "5518997200106@c.us",
+          "name": "Vyzer"
+        },
+        {
+          "conversationTimestamp": 1755533382,
+          "id": "5518997262826@c.us",
+          "name": "Guilherme"
+        },
+        {
+          "conversationTimestamp": 1756663175,
+          "id": "5518997402648@c.us",
+          "name": "Gusta"
+        },
+        {
+          "conversationTimestamp": 1756812215,
+          "id": "5518997974883@c.us",
+          "name": "Yan"
+        },
+        {
+          "conversationTimestamp": 1755267381,
+          "id": "554233018124@c.us",
+          "name": "Gilson Estamos buscando um desenvolvedor para projeto pontual!  A Agência TG09 está contratando um desenvolvedor web freelancer para criação de uma Landing Page profissional + página de contratação com cálculo automático e envio de dados.     Objetivo do Projeto:  Criar uma landing page moderna, leve e com foco em conversão para o nosso produto Rádio TG09 Indoor.  Também será necessário desenvolver uma segunda página de contratação e aceite, onde o cliente:  •\tEscolhe o plano (6 ou 12 meses)  •\tInforma número de lojas  •\tVê o valor total calculado automaticamente  •\tPreenche os dados  •\tAceita os termos via checkbox  •\tEnvia o formulário  •\tE recebe o contrato por e-mail      O que já temos pronto:  •\tDomínio e hospedagem ativa  •\tEstrutura da landing e textos finalizados  •\tIdentidade visual (logo, fontes, cores)  •\tVídeo principal e depoimentos de clientes     Precisamos que o desenvolvedor:  •\tCrie a landing com estrutura responsiva (mobile e desktop)  •\tImplemente o formulário com cálculo automático do plano  •\tConfigure o envio dos dados por e-mail e/ou WhatsApp  •\tIntegre o contrato com dados preenchidos + aceite  •\tEntregue o projeto com boa usabilidade e performance     Contato para proposta ou dúvidas: WhatsApp – Gilson / TG09"
+        },
+        {
+          "conversationTimestamp": 1756414182,
+          "id": "554396159222@c.us",
+          "name": "Lucas"
+        },
+        {
+          "conversationTimestamp": 1756846367,
+          "id": "554396532909@c.us",
+          "name": "Mae"
+        },
+        {
+          "conversationTimestamp": 1754096619,
+          "id": "558004940140@c.us",
+          "name": "558004940140"
+        },
+        {
+          "conversationTimestamp": 1756824840,
+          "id": "68268672970970@lid",
+          "name": ""
+        },
+        {
+          "conversationTimestamp": 1756824853,
+          "id": "68268672970970@c.us",
+          "name": ""
+        }
+      ]
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:56.884Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_chats_transformed",
+    "data": {
+      "count": 24,
+      "firstChat": {
+        "conversationTimestamp": 1755003680,
+        "id": "0@c.us",
+        "name": "",
+        "profilePictureUrl": null
+      },
+      "allChatNames": [
+        "",
+        "Empresa",
+        "2349162389789",
+        "Champ",
+        "Ane Caroline",
+        "+55 18 99122-2983",
+        "Gilberto",
+        "Willian",
+        "Clarice",
+        "Emporio",
+        "Loh",
+        "romeuribeirosdias",
+        "Marcio",
+        "Renan Matos",
+        "Vyzer",
+        "Guilherme",
+        "Gusta",
+        "Yan",
+        "Gilson Estamos buscando um desenvolvedor para projeto pontual!  A Agência TG09 está contratando um desenvolvedor web freelancer para criação de uma Landing Page profissional + página de contratação com cálculo automático e envio de dados.     Objetivo do Projeto:  Criar uma landing page moderna, leve e com foco em conversão para o nosso produto Rádio TG09 Indoor.  Também será necessário desenvolver uma segunda página de contratação e aceite, onde o cliente:  •\tEscolhe o plano (6 ou 12 meses)  •\tInforma número de lojas  •\tVê o valor total calculado automaticamente  •\tPreenche os dados  •\tAceita os termos via checkbox  •\tEnvia o formulário  •\tE recebe o contrato por e-mail      O que já temos pronto:  •\tDomínio e hospedagem ativa  •\tEstrutura da landing e textos finalizados  •\tIdentidade visual (logo, fontes, cores)  •\tVídeo principal e depoimentos de clientes     Precisamos que o desenvolvedor:  •\tCrie a landing com estrutura responsiva (mobile e desktop)  •\tImplemente o formulário com cálculo automático do plano  •\tConfigure o envio dos dados por e-mail e/ou WhatsApp  •\tIntegre o contrato com dados preenchidos + aceite  •\tEntregue o projeto com boa usabilidade e performance     Contato para proposta ou dúvidas: WhatsApp – Gilson / TG09",
+        "Lucas",
+        "Mae",
+        "558004940140",
+        "",
+        ""
+      ]
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:57.249Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_success",
+    "data": {
+      "finalChatCount": 24,
+      "success": true
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:57.322Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:57.326Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 24
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:57.376Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 24,
+      "uniqueCardIds": 24,
+      "sampleCardIds": [
+        "5518991089999@c.us",
+        "5518996066756@c.us",
+        "68268672970970@lid",
+        "68268672970970@c.us",
+        "5518996417510@c.us"
+      ],
+      "allCardIds": [
+        "5518991089999@c.us",
+        "5518996066756@c.us",
+        "68268672970970@lid",
+        "68268672970970@c.us",
+        "5518996417510@c.us",
+        "120363419442598806@g.us",
+        "5518991608009@c.us",
+        "554233018124@c.us",
+        "5518997262826@c.us",
+        "5518997402648@c.us",
+        "5518996595684@c.us",
+        "554396159222@c.us",
+        "554396532909@c.us",
+        "5518997062635@c.us",
+        "5518997089040@c.us",
+        "5518996721979@c.us",
+        "5518997200106@c.us",
+        "5518997974883@c.us",
+        "2349162389789@c.us",
+        "5518981248008@c.us",
+        "5518991222983@c.us",
+        "5518996064455@c.us",
+        "558004940140@c.us",
+        "0@c.us"
+      ]
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:58.800Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T20:59:58.816Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T21:00:00.701Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518991089999@c.us",
+      "notesCount": 1,
+      "orcamentosCount": 0,
+      "agendamentosCount": 1,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T21:00:03.637Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996066756@c.us",
+      "notesCount": 2,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-09-02T21:00:06.506Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "68268672970970@lid",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 1,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
   }
 ]
