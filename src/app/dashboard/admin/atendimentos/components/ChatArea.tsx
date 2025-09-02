@@ -802,8 +802,7 @@ export default function ChatArea({
       if (!token) return
       
       // Chamar backend direto
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
-      await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/seen`, {
+      await fetch(`/api/whatsapp/chats/${chatId}/seen`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -875,8 +874,7 @@ export default function ChatArea({
       // 2. Se há caption, enviar como mensagem separada usando métodos seguros
       if (caption.trim()) {
         // Simular typewriting para evitar ban
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
-        const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/messages`, {
+        const response = await fetch(`/api/whatsapp/chats/${chatId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -917,8 +915,7 @@ export default function ChatArea({
       
       // 2. Se há caption, enviar como mensagem separada usando métodos seguros
       if (caption.trim()) {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
-        const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/messages`, {
+        const response = await fetch(`/api/whatsapp/chats/${chatId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

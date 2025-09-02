@@ -36,9 +36,8 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
         throw new Error('Token não encontrado')
       }
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
       const response = await fetch(
-        `${backendUrl}/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages/search?q=${encodeURIComponent(searchQuery)}&limit=50`,
+        `/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages/search?q=${encodeURIComponent(searchQuery)}&limit=50`,
         {
           method: 'GET',
           headers: {
