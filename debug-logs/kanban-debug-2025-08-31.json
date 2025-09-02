@@ -1,0 +1,263 @@
+[
+  {
+    "timestamp": "2025-08-31T12:31:28.228Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:28.229Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_started",
+    "data": {
+      "timestamp": "2025-08-31T12:31:28.229Z"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:28.906Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:33.147Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:33.163Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:34.880Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {
+      "status": 500,
+      "ok": false,
+      "statusText": "Internal Server Error",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Sun, 31 Aug 2025 12:31:34 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
+      }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:34.903Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_api_error",
+    "data": {
+      "status": 500,
+      "statusText": "Internal Server Error",
+      "error": "{\"error\":\"Erro do backend: 500\"}",
+      "url": "/api/whatsapp/chats"
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:34.920Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "ce065849-4fa7-4757-a2cb-5581cfec9225"
+  },
+  {
+    "timestamp": "2025-08-31T12:31:39.192Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:39.192Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_started",
+    "data": {
+      "timestamp": "2025-08-31T12:31:39.192Z"
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:39.223Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:39.237Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_config",
+    "data": {
+      "hasToken": true,
+      "tokenLength": 363
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:42.391Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:42.406Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:42.575Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:42.575Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_started",
+    "data": {
+      "timestamp": "2025-08-31T12:31:42.575Z"
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:42.608Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:42.621Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_config",
+    "data": {
+      "hasToken": true,
+      "tokenLength": 363
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:45.297Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    }
+  },
+  {
+    "timestamp": "2025-08-31T12:31:45.312Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    }
+  }
+]

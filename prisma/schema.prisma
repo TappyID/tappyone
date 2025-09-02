@@ -1,0 +1,636 @@
+// Schema do Prisma para o CRM TappyOne
+// Saiba mais em: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum TipoUsuario {
+  ADMIN
+  ATENDENTE_FINANCEIRO
+  ATENDENTE_COMERCIAL
+  ATENDENTE_JURIDICO
+  ATENDENTE_SUPORTE
+  ATENDENTE_VENDAS
+  ASSINANTE
+  AFILIADO
+}
+
+enum StatusSessao {
+  DESCONECTADO
+  CONECTANDO
+  CONECTADO
+  AUTENTICADO
+  FALHOU
+}
+
+enum TipoMensagem {
+  TEXTO
+  IMAGEM
+  ARQUIVO
+  AUDIO
+  VIDEO
+  LOCALIZACAO
+  CONTATO
+  ENQUETE
+  RESPOSTA_BOTAO
+}
+
+enum StatusMensagem {
+  PENDENTE
+  ENVIADO
+  ENTREGUE
+  LIDO
+  FALHOU
+}
+
+enum StatusAtendimento {
+  AGUARDANDO
+  EM_ANDAMENTO
+  FINALIZADO
+  CANCELADO
+}
+
+enum StatusAgendamento {
+  AGENDADO
+  CONFIRMADO
+  REALIZADO
+  CANCELADO
+  REAGENDADO
+}
+
+enum StatusPlano {
+  ATIVO
+  INATIVO
+  CANCELADO
+  SUSPENSO
+}
+
+enum StatusCobranca {
+  PENDENTE
+  PAGO
+  VENCIDO
+  CANCELADO
+}
+
+enum TipoCobranca {
+  PIX
+  CARTAO
+  BOLETO
+}
+
+enum StatusOrcamento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  ENVIADO
+  CANCELADO
+}
+
+// Modelos
+model Usuario {
+  id        String      @id @default(cuid())
+  email     String      @unique
+  nome      String
+  telefone  String?
+  avatar    String?
+  tipo      TipoUsuario
+  ativo     Boolean     @default(true)
+  criadoEm  DateTime    @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  sessoes           SessaoWhatsApp[]
+  atendimentosAgente Atendimento[]    @relation("AtendimentoAgente")
+  atendimentosUsuario Atendimento[]   @relation("AtendimentoUsuario")
+  quadros           Quadro[]
+  respostasRapidas  RespostaRapida[]
+  agendamentos      Agendamento[]
+  mensagensEnviadas MensagemInterna[] @relation("MensagemInternaRemetente")
+  mensagensRecebidas MensagemInterna[] @relation("MensagemInternaDestinatario")
+  avaliacoesNps     AvaliacaoNps[]
+  assinaturas       Assinatura[]
+  cobrancas         Cobranca[]
+  contratos         Contrato[]
+  fluxosNos         FluxoNo[] @relation("FluxoNoUsuario")
+
+  @@map("usuarios")
+}
+
+model SessaoWhatsApp {
+  id            String       @id @default(cuid())
+  nomeSessao    String       @unique
+  numeroTelefone String?
+  status        StatusSessao @default(DESCONECTADO)
+  codigoQr      String?
+  urlWebhook    String?
+  ativo         Boolean      @default(true)
+  usuarioId     String
+  criadoEm      DateTime     @default(now())
+  atualizadoEm  DateTime     @updatedAt
+
+  // Relacionamentos
+  usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contatos Contato[]
+  conversas Conversa[]
+
+  @@map("sessoes_whatsapp")
+}
+
+model Contato {
+  id                String   @id @default(cuid())
+  numeroTelefone    String
+  nome              String?
+  fotoPerfil        String?
+  sobre             String?
+  bloqueado         Boolean  @default(false)
+  sessaoWhatsappId  String
+  
+  // Campos adicionais do contato
+  email             String?
+  empresa           String?
+  cpf               String?
+  cnpj              String?
+  
+  // Campos de endereço
+  cep               String?
+  rua               String?
+  numero            String?
+  bairro            String?
+  cidade            String?
+  estado            String?
+  pais              String?
+  
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  // Relacionamentos
+  sessaoWhatsapp SessaoWhatsApp @relation(fields: [sessaoWhatsappId], references: [id], onDelete: Cascade)
+  conversas      Conversa[]
+  tags           ContatoTag[]
+  atendimentos   Atendimento[]
+  agendamentos   Agendamento[]
+  avaliacoesNps  AvaliacaoNps[]
+  orcamentos     Orcamento[]
+  anotacoes      Anotacao[]
+
+  @@unique([numeroTelefone, sessaoWhatsappId])
+  @@map("contatos")
+}
+
+model Conversa {
+  id                   String    @id @default(cuid())
+  idConversa           String    // ID da conversa no WhatsApp
+  nome                 String?
+  ehGrupo              Boolean   @default(false)
+  fotoPerfil           String?
+  ultimaMensagem       String?
+  horarioUltimaMensagem DateTime?
+  mensagensNaoLidas    Int       @default(0)
+  arquivada            Boolean   @default(false)
+  sessaoWhatsappId     String
+  contatoId            String?
+  criadoEm             DateTime  @default(now())
+  atualizadoEm         DateTime  @updatedAt
+
+  // Relacionamentos
+  sessaoWhatsapp SessaoWhatsApp @relation(fields: [sessaoWhatsappId], references: [id], onDelete: Cascade)
+  contato        Contato?       @relation(fields: [contatoId], references: [id])
+  mensagens      Mensagem[]
+  atendimentos   Atendimento[]
+  cards          Card[]
+
+  @@unique([idConversa, sessaoWhatsappId])
+  @@map("conversas")
+}
+
+model Mensagem {
+  id              String         @id @default(cuid())
+  idMensagem      String         // ID da mensagem no WhatsApp
+  conversaId      String
+  deMim           Boolean
+  tipo            TipoMensagem
+  conteudo        String?
+  urlMidia        String?
+  legenda         String?
+  status          StatusMensagem @default(PENDENTE)
+  timestamp       DateTime
+  respostaParaId  String?
+  encaminhada     Boolean        @default(false)
+  favorita        Boolean        @default(false)
+  criadoEm        DateTime       @default(now())
+
+  // Relacionamentos
+  conversa    Conversa   @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  respostaPara Mensagem? @relation("RespostaMensagem", fields: [respostaParaId], references: [id])
+  respostas   Mensagem[] @relation("RespostaMensagem")
+
+  @@unique([idMensagem, conversaId])
+  @@map("mensagens")
+}
+
+model Tag {
+  id           String   @id @default(cuid())
+  nome         String   @unique
+  cor          String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  contatos ContatoTag[]
+  quadros  QuadroTag[]
+
+  @@map("tags")
+}
+
+model ContatoTag {
+  id        String   @id @default(cuid())
+  contatoId String
+  tagId     String
+  criadoEm  DateTime @default(now())
+
+  // Relacionamentos
+  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contatoId, tagId])
+  @@map("contato_tags")
+}
+
+model Quadro {
+  id           String   @id @default(cuid())
+  nome         String
+  cor          String
+  descricao    String?
+  posicao      Int
+  ativo        Boolean  @default(true)
+  usuarioId    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  usuario Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  colunas Coluna[]
+  tags    QuadroTag[]
+  fluxos  Fluxo[]
+  fluxosNos FluxoNo[] @relation("FluxoNoQuadro")
+
+  @@map("quadros")
+}
+
+model QuadroTag {
+  id       String @id @default(cuid())
+  quadroId String
+  tagId    String
+
+  // Relacionamentos
+  quadro Quadro @relation(fields: [quadroId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([quadroId, tagId])
+  @@map("quadro_tags")
+}
+
+model Coluna {
+  id           String   @id @default(cuid())
+  nome         String
+  cor          String?
+  posicao      Int
+  quadroId     String
+  agenteIaId   String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  quadro   Quadro    @relation(fields: [quadroId], references: [id], onDelete: Cascade)
+  agenteIa AgenteIa? @relation(fields: [agenteIaId], references: [id])
+  cards    Card[]
+  fluxosNos FluxoNo[] @relation("FluxoNoColuna")
+
+  @@map("colunas")
+}
+
+model Card {
+  id               String    @id @default(cuid())
+  nome             String
+  descricao        String?
+  posicao          Int
+  colunaId         String
+  conversaId       String
+  prioridade       Int       @default(0)
+  dataVencimento   DateTime?
+  ativo            Boolean   @default(true)
+  criadoEm         DateTime  @default(now())
+  atualizadoEm     DateTime  @updatedAt
+
+  // Relacionamentos
+  coluna           Coluna             @relation(fields: [colunaId], references: [id], onDelete: Cascade)
+  conversa         Conversa           @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  respostasRapidas CardRespostaRapida[]
+
+  @@map("cards")
+}
+
+model RespostaRapida {
+  id           String   @id @default(cuid())
+  titulo       String
+  conteudo     String
+  ativo        Boolean  @default(true)
+  usuarioId    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  usuario Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cards   CardRespostaRapida[]
+
+  @@map("respostas_rapidas")
+}
+
+model CardRespostaRapida {
+  id               String @id @default(cuid())
+  cardId           String
+  respostaRapidaId String
+
+  // Relacionamentos
+  card           Card           @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  respostaRapida RespostaRapida @relation(fields: [respostaRapidaId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, respostaRapidaId])
+  @@map("card_respostas_rapidas")
+}
+
+model AgenteIa {
+  id           String   @id @default(cuid())
+  nome         String
+  descricao    String?
+  prompt       String
+  modelo       String   @default("deepseek")
+  ativo        Boolean  @default(true)
+  temperatura  Float    @default(0.7)
+  maxTokens    Int      @default(1000)
+  nicho        String?
+  usoTokens    Int      @default(0)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  colunas Coluna[]
+  fluxosNos FluxoNo[] @relation("FluxoNoAgente")
+
+  @@map("agentes_ia")
+}
+
+model Contrato {
+  id           String   @id @default(cuid())
+  nome         String
+  descricao    String?
+  conteudo     String   // Conteúdo do contrato
+  rubrica      String?  // Local da rubrica
+  assinatura   String?  // Dados da assinatura
+  valor        Decimal?
+  ativo        Boolean  @default(true)
+  usuarioId    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  usuario      Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  orcamentos   Orcamento[] @relation("OrcamentoContrato")
+
+  @@map("contratos")
+}
+
+model Atendimento {
+  id           String             @id @default(cuid())
+  titulo       String
+  descricao    String?
+  status       StatusAtendimento  @default(AGUARDANDO)
+  prioridade   Int                @default(0)
+  agenteId     String?
+  usuarioId    String?
+  contatoId    String
+  conversaId   String
+  iniciadoEm   DateTime?
+  finalizadoEm DateTime?
+  criadoEm     DateTime           @default(now())
+  atualizadoEm DateTime           @updatedAt
+
+  // Relacionamentos
+  agente   Usuario? @relation("AtendimentoAgente", fields: [agenteId], references: [id])
+  usuario  Usuario? @relation("AtendimentoUsuario", fields: [usuarioId], references: [id])
+  contato  Contato  @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  conversa Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  @@map("atendimentos")
+}
+
+model Agendamento {
+  id           String            @id @default(cuid())
+  titulo       String
+  descricao    String?
+  inicioEm     DateTime
+  fimEm        DateTime
+  status       StatusAgendamento @default(AGENDADO)
+  usuarioId    String
+  contatoId    String
+  criadoEm     DateTime          @default(now())
+  atualizadoEm DateTime          @updatedAt
+
+  // Relacionamentos
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+
+  @@map("agendamentos")
+}
+
+model MensagemInterna {
+  id         String   @id @default(cuid())
+  conteudo   String
+  remetenteId String
+  destinatarioId String
+  lida       Boolean  @default(false)
+  criadoEm   DateTime @default(now())
+
+  // Relacionamentos
+  remetente    Usuario @relation("MensagemInternaRemetente", fields: [remetenteId], references: [id], onDelete: Cascade)
+  destinatario Usuario @relation("MensagemInternaDestinatario", fields: [destinatarioId], references: [id], onDelete: Cascade)
+
+  @@map("mensagens_internas")
+}
+
+model AvaliacaoNps {
+  id        String   @id @default(cuid())
+  pontuacao Int      // 0-10
+  feedback  String?
+  usuarioId String
+  contatoId String
+  criadoEm  DateTime @default(now())
+
+  // Relacionamentos
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+
+  @@map("avaliacoes_nps")
+}
+
+model Fluxo {
+  id           String   @id @default(cuid())
+  nome         String
+  descricao    String?
+  ativo        Boolean  @default(true)
+  quadroId     String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  quadro Quadro    @relation(fields: [quadroId], references: [id], onDelete: Cascade)
+  nos    FluxoNo[]
+  
+  @@map("fluxos")
+}
+
+model FluxoNo {
+  id           String   @id @default(cuid())
+  nome         String
+  tipo         String   // "trigger", "condition", "action", "message", "kanban", "agente", "webhook", "delay", "file", "audio", "image"
+  configuracao Json     // Configuração específica do nó
+  posicao      Json     // Posição no canvas (x, y)
+  fluxoId      String
+  agenteIaId   String?  // Para nodes que usam agente IA
+  quadroId     String?  // Para nodes que interagem com kanban
+  colunaId     String?  // Para mover cards entre colunas
+  usuarioId    String?  // Para atribuir atendente
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  fluxo        Fluxo          @relation(fields: [fluxoId], references: [id], onDelete: Cascade)
+  agenteIa     AgenteIa?      @relation("FluxoNoAgente", fields: [agenteIaId], references: [id])
+  quadro       Quadro?        @relation("FluxoNoQuadro", fields: [quadroId], references: [id])
+  coluna       Coluna?        @relation("FluxoNoColuna", fields: [colunaId], references: [id])
+  usuario      Usuario?       @relation("FluxoNoUsuario", fields: [usuarioId], references: [id])
+  conexoesDe   FluxoConexao[] @relation("FluxoConexaoDe")
+  conexoesPara FluxoConexao[] @relation("FluxoConexaoPara")
+
+  @@map("fluxo_nos")
+}
+
+model FluxoConexao {
+  id     String @id @default(cuid())
+  deId   String
+  paraId String
+
+  // Relacionamentos
+  de   FluxoNo @relation("FluxoConexaoDe", fields: [deId], references: [id], onDelete: Cascade)
+  para FluxoNo @relation("FluxoConexaoPara", fields: [paraId], references: [id], onDelete: Cascade)
+
+  @@unique([deId, paraId])
+  @@map("fluxo_conexoes")
+}
+
+model Plano {
+  id           String      @id @default(cuid())
+  nome         String
+  descricao    String?
+  preco        Decimal
+  intervalo    String      // "monthly", "yearly"
+  funcionalidades Json     // Lista de funcionalidades
+  ativo        Boolean     @default(true)
+  criadoEm     DateTime    @default(now())
+  atualizadoEm DateTime    @updatedAt
+
+  // Relacionamentos
+  assinaturas Assinatura[]
+
+  @@map("planos")
+}
+
+model Assinatura {
+  id             String       @id @default(cuid())
+  usuarioId      String
+  planoId        String
+  status         StatusPlano  @default(ATIVO)
+  dataInicio     DateTime
+  dataFim        DateTime?
+  canceladoEm    DateTime?
+  motivoCancelamento String?
+  criadoEm       DateTime     @default(now())
+  atualizadoEm   DateTime     @updatedAt
+
+  // Relacionamentos
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  plano     Plano      @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  cobrancas Cobranca[]
+
+  @@map("assinaturas")
+}
+
+model Cobranca {
+  id            String         @id @default(cuid())
+  usuarioId     String
+  assinaturaId  String?
+  valor         Decimal
+  tipo          TipoCobranca
+  status        StatusCobranca @default(PENDENTE)
+  dataVencimento DateTime
+  pagoEm        DateTime?
+  chavePix      String?
+  dadosBoleto   Json?          // Dados do boleto
+  dadosCartao   Json?          // Dados do cartão
+  descricao     String?
+  criadoEm      DateTime       @default(now())
+  atualizadoEm  DateTime       @updatedAt
+
+  // Relacionamentos
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  assinatura Assinatura? @relation(fields: [assinaturaId], references: [id])
+
+  @@map("cobrancas")
+}
+
+model Orcamento {
+  id           String           @id @default(cuid())
+  titulo       String
+  descricao    String?
+  valor        Decimal
+  status       StatusOrcamento  @default(PENDENTE)
+  dataValidade DateTime?
+  observacoes  String?
+  usuarioId    String
+  contatoId    String
+  contratoId   String?
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+
+  // Relacionamentos
+  usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato  Contato   @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  contrato Contrato? @relation("OrcamentoContrato", fields: [contratoId], references: [id])
+
+  @@map("orcamentos")
+}
+
+model Anotacao {
+  id           String   @id @default(cuid())
+  titulo       String
+  conteudo     String
+  importante   Boolean  @default(false)
+  usuarioId    String
+  contatoId    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contato Contato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+
+  @@map("anotacoes")
+}

@@ -1,0 +1,1302 @@
+'use client'
+
+import React from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Play, 
+  GitBranch, 
+  Zap, 
+  MessageSquare, 
+  Download, 
+  Users, 
+  ArrowRight, 
+  Clock, 
+  Target, 
+  Webhook, 
+  BarChart3, 
+  Filter, 
+  Settings, 
+  Calendar, 
+  PlusCircle, 
+  DollarSign, 
+  Timer, 
+  CheckCircle, 
+  Copy, 
+  AlertCircle, 
+  FileText, 
+  MessageCircle, 
+  Brain, 
+  Eye, 
+  Shield, 
+  Volume2, 
+  Phone, 
+  MapPin, 
+  ChevronDown, 
+  ChevronRight, 
+  Upload, 
+  Plus, 
+  Bot, 
+  Bell, 
+  Send, 
+  Database, 
+  X, 
+  Info 
+} from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useState } from 'react'
+
+// Types for Flow Nodes
+export type NodeType = 
+  // Triggers específicos
+  | 'trigger-whatsapp-message'
+  | 'trigger-whatsapp-media' 
+  | 'trigger-new-contact'
+  | 'trigger-kanban-move'
+  | 'trigger-schedule'
+  | 'trigger-keyword'
+  | 'trigger-webhook'
+  
+  // Condições
+  | 'condition-text-contains'
+  | 'condition-time-range'
+  | 'condition-contact-field'
+  
+  // Ações CRM
+  | 'action-whatsapp-text'
+  | 'action-whatsapp-media'
+  | 'action-whatsapp-template'
+  | 'action-kanban-move'
+  | 'action-kanban-create'
+  | 'action-contact-update'
+  | 'action-contact-tag'
+  | 'action-ia-process'
+  | 'action-resposta-rapida'
+  | 'action-agendamento-create'
+  | 'action-orcamento-create'
+  | 'action-contract-generate'
+  | 'action-notification-send'
+  | 'action-delay-wait'
+  | 'action-webhook-call'
+  | 'action-database-update'
+  | 'action-payment-pix'
+  | 'action-email-send'
+  | 'action-sms-send'
+  | 'action-follow-up'
+  | 'action-lead-qualify'
+  | 'action-meeting-schedule'
+  | 'action-crm-log'
+  | 'action-ticket-create'
+  | 'action-survey-send'
+  | 'action-analytics-track'
+
+export interface FluxoNodeData {
+  id: string
+  type: NodeType
+  label: string
+  description?: string
+  config?: Record<string, any>
+  position: { x: number, y: number }
+}
+
+// Node configurations
+export const NODE_TYPES: Record<NodeType, {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  description: string
+  color: string
+  category: 'trigger' | 'condition' | 'action'
+}> = {
+  // ============= TRIGGERS =============
+  'trigger-whatsapp-message': {
+    icon: MessageCircle,
+    label: 'Nova Mensagem WhatsApp',
+    description: 'Quando receber mensagem no WhatsApp',
+    color: 'green',
+    category: 'trigger'
+  },
+  
+  'trigger-whatsapp-media': {
+    icon: Download,
+    label: 'Mídia WhatsApp',
+    description: 'Quando receber foto/vídeo/áudio',
+    color: 'green',
+    category: 'trigger'
+  },
+  
+  'trigger-new-contact': {
+    icon: Users,
+    label: 'Novo Contato',
+    description: 'Quando adicionar novo contato',
+    color: 'blue',
+    category: 'trigger'
+  },
+  
+  'trigger-kanban-move': {
+    icon: ArrowRight,
+    label: 'Card Movido',
+    description: 'Quando mover card no Kanban',
+    color: 'purple',
+    category: 'trigger'
+  },
+  
+  'trigger-schedule': {
+    icon: Clock,
+    label: 'Agendamento',
+    description: 'Em data/hora específica',
+    color: 'orange',
+    category: 'trigger'
+  },
+  
+  'trigger-keyword': {
+    icon: Target,
+    label: 'Palavra-chave',
+    description: 'Quando detectar palavra específica',
+    color: 'red',
+    category: 'trigger'
+  },
+  
+  'trigger-webhook': {
+    icon: Zap,
+    label: 'Webhook Recebido',
+    description: 'Quando receber chamada externa',
+    color: 'yellow',
+    category: 'trigger'
+  },
+
+  // ============= CONDITIONS =============
+  'condition-if': {
+    icon: GitBranch,
+    label: 'Se/Então',
+    description: 'Avalia condição verdadeiro/falso',
+    color: 'yellow',
+    category: 'condition'
+  },
+  
+  'condition-contains': {
+    icon: Filter,
+    label: 'Contém Texto',
+    description: 'Se mensagem contém texto específico',
+    color: 'yellow',
+    category: 'condition'
+  },
+  
+  'condition-time': {
+    icon: Clock,
+    label: 'Horário',
+    description: 'Baseado em hora/dia da semana',
+    color: 'yellow',
+    category: 'condition'
+  },
+  
+  'condition-contact-field': {
+    icon: Users,
+    label: 'Campo do Contato',
+    description: 'Baseado em dados do contato',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  // ============= ACTIONS - WhatsApp =============
+  'action-whatsapp-text': {
+    icon: MessageCircle,
+    label: 'Enviar Texto WhatsApp',
+    description: 'Envia mensagem de texto',
+    color: 'green',
+    category: 'action'
+  },
+  
+  'action-whatsapp-media': {
+    icon: Upload,
+    label: 'Enviar Mídia WhatsApp',
+    description: 'Envia foto, vídeo ou áudio',
+    color: 'green',
+    category: 'action'
+  },
+  
+  'action-whatsapp-template': {
+    icon: FileText,
+    label: 'Template WhatsApp',
+    description: 'Envia template pré-aprovado',
+    color: 'green',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - Kanban =============
+  'action-kanban-move': {
+    icon: ArrowRight,
+    label: 'Mover Card Kanban',
+    description: 'Move card para outra coluna',
+    color: 'blue',
+    category: 'action'
+  },
+  
+  'action-kanban-create': {
+    icon: Plus,
+    label: 'Criar Card Kanban',
+    description: 'Cria novo card no quadro',
+    color: 'blue',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - Contatos =============
+  'action-contact-update': {
+    icon: Users,
+    label: 'Atualizar Contato',
+    description: 'Modifica dados do contato',
+    color: 'indigo',
+    category: 'action'
+  },
+  
+  'action-contact-tag': {
+    icon: Target,
+    label: 'Adicionar Tag',
+    description: 'Adiciona etiqueta ao contato',
+    color: 'indigo',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - IA e Automação =============
+  'action-ia-process': {
+    icon: Bot,
+    label: 'Processar com IA',
+    description: 'Analisa com agente de IA',
+    color: 'purple',
+    category: 'action'
+  },
+  
+  'action-resposta-rapida': {
+    icon: Zap,
+    label: 'Resposta Rápida',
+    description: 'Executa resposta pré-definida',
+    color: 'orange',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - Agendamentos e Vendas =============
+  'action-agendamento-create': {
+    icon: Calendar,
+    label: 'Criar Agendamento',
+    description: 'Agenda compromisso automaticamente',
+    color: 'cyan',
+    category: 'action'
+  },
+  
+  'action-orcamento-create': {
+    icon: FileText,
+    label: 'Gerar Orçamento',
+    description: 'Cria proposta comercial',
+    color: 'teal',
+    category: 'action'
+  },
+  
+  'action-contract-generate': {
+    icon: FileText,
+    label: 'Gerar Contrato',
+    description: 'Cria contrato digital',
+    color: 'red',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - Sistema =============
+  'action-notification-send': {
+    icon: Bell,
+    label: 'Enviar Notificação',
+    description: 'Notifica usuários do sistema',
+    color: 'pink',
+    category: 'action'
+  },
+  
+  'action-delay-wait': {
+    icon: Clock,
+    label: 'Aguardar',
+    description: 'Pausa por tempo determinado',
+    color: 'gray',
+    category: 'action'
+  },
+  
+  'action-webhook-call': {
+    icon: Send,
+    label: 'Chamar Webhook',
+    description: 'Faz requisição para API externa',
+    color: 'yellow',
+    category: 'action'
+  },
+  
+  'action-database-update': {
+    icon: Database,
+    label: 'Atualizar Banco',
+    description: 'Modifica dados no banco',
+    color: 'slate',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - Vendas e E-commerce =============
+  'action-payment-pix': {
+    icon: DollarSign,
+    label: 'Gerar PIX',
+    description: 'Cria cobrança via PIX',
+    color: 'green',
+    category: 'action'
+  },
+
+  'action-email-send': {
+    icon: MessageSquare,
+    label: 'Enviar Email',
+    description: 'Envia email personalizado',
+    color: 'blue',
+    category: 'action'
+  },
+
+  'action-sms-send': {
+    icon: Phone,
+    label: 'Enviar SMS',
+    description: 'Envia SMS para contato',
+    color: 'cyan',
+    category: 'action'
+  },
+
+  'action-follow-up': {
+    icon: Timer,
+    label: 'Programar Follow-up',
+    description: 'Agenda próximo contato',
+    color: 'orange',
+    category: 'action'
+  },
+
+  'action-lead-qualify': {
+    icon: Target,
+    label: 'Qualificar Lead',
+    description: 'Classifica potencial do lead',
+    color: 'purple',
+    category: 'action'
+  },
+
+  'action-meeting-schedule': {
+    icon: Calendar,
+    label: 'Agendar Reunião',
+    description: 'Marca reunião automática',
+    color: 'indigo',
+    category: 'action'
+  },
+
+  'action-crm-log': {
+    icon: FileText,
+    label: 'Registrar no CRM',
+    description: 'Salva interação no histórico',
+    color: 'gray',
+    category: 'action'
+  },
+
+  'action-ticket-create': {
+    icon: AlertCircle,
+    label: 'Criar Ticket',
+    description: 'Abre chamado de suporte',
+    color: 'red',
+    category: 'action'
+  },
+
+  'action-survey-send': {
+    icon: BarChart3,
+    label: 'Enviar Pesquisa',
+    description: 'Envia formulário de satisfação',
+    color: 'teal',
+    category: 'action'
+  },
+
+  'action-analytics-track': {
+    icon: BarChart3,
+    label: 'Rastrear Evento',
+    description: 'Registra evento para analytics',
+    color: 'slate',
+    category: 'action'
+  }
+}
+
+// Node Palette Component
+export function NodePalette({ onNodeSelect }: { onNodeSelect: (nodeType: NodeType) => void }) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
+  
+  // Estado para controlar categorias expandidas
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    trigger: false,
+    condition: false, 
+    action: false
+  })
+  
+  const toggleCategory = (categoryKey: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey]
+    }))
+  }
+
+  const categories = {
+    trigger: { label: 'Gatilhos', icon: Play },
+    condition: { label: 'Condições', icon: GitBranch },
+    action: { label: 'Ações', icon: Zap }
+  }
+
+  return (
+    <div className={`w-80 flex flex-col ${isDark ? 'bg-gray-800' : 'bg-white'} border-r ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+      {/* Fixed Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Componentes
+        </h3>
+        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          Arraste para adicionar ao fluxo
+        </p>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+        {Object.entries(categories).map(([categoryKey, categoryInfo]) => {
+          const nodeTypes = Object.entries(NODE_TYPES).filter(([_, config]) => 
+            config.category === categoryKey
+          )
+
+          return (
+            <div key={categoryKey} className="border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <div 
+                className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
+                  isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'
+                }`}
+                onClick={() => toggleCategory(categoryKey)}
+              >
+                <div className="flex items-center space-x-2">
+                  <categoryInfo.icon className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                  <h4 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {categoryInfo.label} ({nodeTypes.length})
+                  </h4>
+                </div>
+                
+                <motion.div
+                  animate={{ rotate: expandedCategories[categoryKey] ? 90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronRight className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                </motion.div>
+              </div>
+
+              <AnimatePresence>
+                {expandedCategories[categoryKey] && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 space-y-3">
+                      {nodeTypes.map(([nodeType, config]) => (
+                        <NodePaletteItem
+                          key={nodeType}
+                          nodeType={nodeType as NodeType}
+                          config={config}
+                          onSelect={onNodeSelect}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// Node Palette Item
+function NodePaletteItem({ 
+  nodeType, 
+  config, 
+  onSelect 
+}: { 
+  nodeType: NodeType
+  config: typeof NODE_TYPES[NodeType]
+  onSelect: (nodeType: NodeType) => void
+}) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      onClick={() => onSelect(nodeType)}
+      className={`p-3 rounded-lg border transition-all group cursor-pointer min-h-[70px] ${
+        isDark 
+          ? 'border-gray-600 hover:border-blue-500 bg-gray-800/80 hover:bg-gray-700' 
+          : 'border-gray-200 hover:border-blue-400 bg-white hover:bg-blue-50'
+      } shadow-sm hover:shadow-md`}
+    >
+      <div className="flex items-center space-x-3 h-full">
+        <div className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+          config.color === 'green' ? 'bg-green-100 text-green-600' :
+          config.color === 'blue' ? 'bg-blue-100 text-blue-600' :
+          config.color === 'purple' ? 'bg-purple-100 text-purple-600' :
+          config.color === 'orange' ? 'bg-orange-100 text-orange-600' :
+          config.color === 'red' ? 'bg-red-100 text-red-600' :
+          config.color === 'yellow' ? 'bg-yellow-100 text-yellow-600' :
+          config.color === 'indigo' ? 'bg-indigo-100 text-indigo-600' :
+          config.color === 'pink' ? 'bg-pink-100 text-pink-600' :
+          config.color === 'gray' ? 'bg-gray-100 text-gray-600' :
+          config.color === 'teal' ? 'bg-teal-100 text-teal-600' :
+          config.color === 'cyan' ? 'bg-cyan-100 text-cyan-600' :
+          'bg-slate-100 text-slate-600'
+        }`}>
+          <config.icon className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0 py-1">
+          <h5 className={`text-sm font-medium mb-1 ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            {config.label}
+          </h5>
+          <p className={`text-xs leading-relaxed ${
+            isDark ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {config.description}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Flow Node Component
+export function FlowNode({ 
+  data, 
+  selected = false, 
+  onSelect, 
+  onEdit, 
+  onDelete,
+  onDragStart,
+  onConnectionStart,
+  onConnectionEnd,
+  isDragging = false
+}: {
+  data: FluxoNodeData
+  selected?: boolean
+  onSelect?: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
+  onDragStart?: (nodeId: string, e: React.MouseEvent) => void
+  onConnectionStart?: (nodeId: string, e: React.MouseEvent) => void
+  onConnectionEnd?: (targetNodeId: string) => void
+  isDragging?: boolean
+}) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
+  const config = NODE_TYPES[data.type]
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) { // Left mouse button
+      onDragStart?.(data.id, e)
+    }
+  }
+
+  const handleConnectionClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onConnectionStart?.(data.id, e)
+  }
+
+  const handleDropTarget = (e: React.MouseEvent) => {
+    e.preventDefault()
+    onConnectionEnd?.(data.id)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      whileHover={{ scale: isDragging ? 1 : 1.02 }}
+      className={`absolute select-none transition-all ${
+        selected ? 'ring-2 ring-blue-500 z-10' : 'z-0'
+      } ${
+        isDragging ? 'cursor-grabbing z-20' : 'cursor-grab'
+      }`}
+      style={{ 
+        left: data.position.x, 
+        top: data.position.y 
+      }}
+      onClick={() => onSelect?.(data.id)}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleDropTarget}
+    >
+      <div className={`p-4 rounded-xl shadow-lg min-w-[200px] ${
+        isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+      }`}>
+        {/* Node Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <div className={`p-2 rounded-lg bg-${config.color}-100 text-${config.color}-600`}>
+              <config.icon className="w-4 h-4" />
+            </div>
+            <h4 className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {data.label}
+            </h4>
+          </div>
+          
+          {selected && (
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit?.(data.id) }}
+                className={`p-1 rounded ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              >
+                <Settings className={`w-3 h-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete?.(data.id) }}
+                className={`p-1 rounded ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              >
+                <X className={`w-3 h-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Node Description */}
+        {data.description && (
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+            {data.description}
+          </p>
+        )}
+
+        {/* Node Status/Config Indicators */}
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2">
+            {data.config && Object.keys(data.config).length > 0 && (
+              <span className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <Settings className="w-3 h-3" />
+                <span>Configurado</span>
+              </span>
+            )}
+          </div>
+          
+          <div className={`px-2 py-1 rounded text-xs font-medium bg-${config.color}-100 text-${config.color}-700`}>
+            {config.category}
+          </div>
+        </div>
+
+        {/* Connection Points */}
+        {/* Input connection point (left) - Only show if node can receive connections */}
+        {config.category !== 'trigger' && (
+          <div 
+            className={`absolute -left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border-2 transition-all flex items-center justify-center group ${
+              isDark ? 'border-blue-400 bg-blue-900 hover:border-blue-300 hover:bg-blue-800' : 'border-blue-500 bg-blue-50 hover:border-blue-400 hover:bg-blue-100'
+            }`}
+            onMouseUp={handleDropTarget}
+            title="Ponto de entrada - Recebe conexões"
+          >
+            <div className={`w-2 h-2 rounded-full transition-all ${
+              isDark ? 'bg-blue-400 group-hover:bg-blue-300' : 'bg-blue-500 group-hover:bg-blue-600'
+            }`}></div>
+          </div>
+        )}
+        
+        {/* Output connection point (right) - Only show if node can send connections */}
+        {config.category !== 'action' || data.type.includes('action') ? (
+          <div 
+            className={`absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border-2 cursor-pointer transition-all flex items-center justify-center group ${
+              isDark ? 'border-green-400 bg-green-900 hover:border-green-300 hover:bg-green-800 hover:scale-110' : 'border-green-500 bg-green-50 hover:border-green-400 hover:bg-green-100 hover:scale-110'
+            }`}
+            onClick={handleConnectionClick}
+            title="Clique para conectar a outro nó"
+          >
+            <ArrowRight className={`w-3 h-3 transition-all ${
+              isDark ? 'text-green-400 group-hover:text-green-300' : 'text-green-500 group-hover:text-green-600'
+            }`} />
+          </div>
+        ) : null}
+      </div>
+    </motion.div>
+  )
+}
+
+// Node Configuration Modal
+export function NodeConfigModal({ 
+  nodeType, 
+  config, 
+  onSave, 
+  onClose 
+}: {
+  nodeType: NodeType
+  config?: Record<string, any>
+  onSave: (config: Record<string, any>) => void
+  onClose: () => void
+}) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
+  const nodeConfig = NODE_TYPES[nodeType]
+  const [formData, setFormData] = React.useState(config || {})
+
+  const handleSave = () => {
+    onSave(formData)
+    onClose()
+  }
+
+  const updateField = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const renderConfigForm = () => {
+    switch (nodeType) {
+      // ============= TRIGGERS =============
+      case 'trigger-whatsapp-message':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Filtrar por palavra-chave (opcional)
+              </label>
+              <input
+                type="text"
+                value={formData.keyword || ''}
+                onChange={(e) => updateField('keyword', e.target.value)}
+                placeholder="Ex: orçamento, contrato, dúvida"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.ignoreBots || false}
+                  onChange={(e) => updateField('ignoreBots', e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Ignorar mensagens de bots
+                </span>
+              </label>
+            </div>
+          </div>
+        )
+        
+      case 'trigger-keyword':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Palavras-chave *
+              </label>
+              <input
+                type="text"
+                value={formData.keywords || ''}
+                onChange={(e) => updateField('keywords', e.target.value)}
+                placeholder="orçamento, contrato, preço (separar por vírgula)"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              />
+            </div>
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.caseSensitive || false}
+                  onChange={(e) => updateField('caseSensitive', e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Diferenciar maiúsculas/minúsculas
+                </span>
+              </label>
+            </div>
+          </div>
+        )
+
+      case 'trigger-schedule':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Tipo de agendamento *
+              </label>
+              <select
+                value={formData.scheduleType || 'once'}
+                onChange={(e) => updateField('scheduleType', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              >
+                <option value="once">Uma vez</option>
+                <option value="daily">Diariamente</option>
+                <option value="weekly">Semanalmente</option>
+                <option value="monthly">Mensalmente</option>
+              </select>
+            </div>
+            {formData.scheduleType === 'once' && (
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                  Data e Hora *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.datetime || ''}
+                  onChange={(e) => updateField('datetime', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  required
+                />
+              </div>
+            )}
+          </div>
+        )
+
+      // ============= CONDITIONS =============
+      case 'condition-contains':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Texto a procurar *
+              </label>
+              <input
+                type="text"
+                value={formData.searchText || ''}
+                onChange={(e) => updateField('searchText', e.target.value)}
+                placeholder="Texto que deve estar presente na mensagem"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              />
+            </div>
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.exactMatch || false}
+                  onChange={(e) => updateField('exactMatch', e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Correspondência exata
+                </span>
+              </label>
+            </div>
+          </div>
+        )
+
+      case 'condition-time':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Horário de funcionamento
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="time"
+                  value={formData.startTime || '09:00'}
+                  onChange={(e) => updateField('startTime', e.target.value)}
+                  className={`px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                <input
+                  type="time"
+                  value={formData.endTime || '18:00'}
+                  onChange={(e) => updateField('endTime', e.target.value)}
+                  className={`px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Dias da semana
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, idx) => (
+                  <label key={day} className="flex items-center space-x-1">
+                    <input
+                      type="checkbox"
+                      checked={(formData.weekDays || []).includes(idx)}
+                      onChange={(e) => {
+                        const days = formData.weekDays || []
+                        if (e.target.checked) {
+                          updateField('weekDays', [...days, idx])
+                        } else {
+                          updateField('weekDays', days.filter((d: number) => d !== idx))
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {day}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+
+      // ============= ACTIONS =============
+      case 'action-whatsapp-text':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Mensagem *
+              </label>
+              <textarea
+                value={formData.message || ''}
+                onChange={(e) => updateField('message', e.target.value)}
+                placeholder="Digite a mensagem que será enviada..."
+                rows={4}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              />
+            </div>
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.useTemplate || false}
+                  onChange={(e) => updateField('useTemplate', e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Usar variáveis ({'{{nome}}, {{telefone}}'}, etc.)
+                </span>
+              </label>
+            </div>
+          </div>
+        )
+
+      case 'action-kanban-move':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Quadro de destino
+              </label>
+              <select
+                value={formData.boardId || ''}
+                onChange={(e) => updateField('boardId', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              >
+                <option value="">Selecionar quadro...</option>
+                <option value="vendas">Vendas</option>
+                <option value="suporte">Suporte</option>
+                <option value="projetos">Projetos</option>
+              </select>
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Coluna de destino
+              </label>
+              <select
+                value={formData.columnId || ''}
+                onChange={(e) => updateField('columnId', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              >
+                <option value="">Selecionar coluna...</option>
+                <option value="leads">Leads</option>
+                <option value="contato">Primeiro Contato</option>
+                <option value="proposta">Proposta</option>
+                <option value="negociacao">Negociação</option>
+                <option value="fechado">Fechado</option>
+              </select>
+            </div>
+          </div>
+        )
+
+      case 'action-delay-wait':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Tempo de espera
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  value={formData.delayValue || 1}
+                  onChange={(e) => updateField('delayValue', parseInt(e.target.value))}
+                  min="1"
+                  className={`px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                <select
+                  value={formData.delayUnit || 'minutes'}
+                  onChange={(e) => updateField('delayUnit', e.target.value)}
+                  className={`px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                >
+                  <option value="seconds">Segundos</option>
+                  <option value="minutes">Minutos</option>
+                  <option value="hours">Horas</option>
+                  <option value="days">Dias</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'trigger-whatsapp-media':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Tipos de mídia aceitos
+              </label>
+              <div className="space-y-2">
+                {['imagem', 'video', 'audio', 'documento'].map(tipo => (
+                  <label key={tipo} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={(formData.mediaTypes || []).includes(tipo)}
+                      onChange={(e) => {
+                        const types = formData.mediaTypes || []
+                        if (e.target.checked) {
+                          updateField('mediaTypes', [...types, tipo])
+                        } else {
+                          updateField('mediaTypes', types.filter((t: string) => t !== tipo))
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+        
+      case 'action-whatsapp-media':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Tipo de mídia *
+              </label>
+              <select
+                value={formData.mediaType || ''}
+                onChange={(e) => updateField('mediaType', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              >
+                <option value="">Selecionar tipo...</option>
+                <option value="image">Imagem</option>
+                <option value="video">Vídeo</option>
+                <option value="audio">Áudio</option>
+                <option value="document">Documento</option>
+              </select>
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                URL do arquivo ou nome do arquivo local
+              </label>
+              <input
+                type="text"
+                value={formData.mediaUrl || ''}
+                onChange={(e) => updateField('mediaUrl', e.target.value)}
+                placeholder="https://exemplo.com/imagem.jpg ou arquivo.jpg"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Legenda (opcional)
+              </label>
+              <textarea
+                value={formData.caption || ''}
+                onChange={(e) => updateField('caption', e.target.value)}
+                placeholder="Legenda para acompanhar a mídia..."
+                rows={2}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+          </div>
+        )
+        
+      case 'action-ia-process':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Agente de IA *
+              </label>
+              <select
+                value={formData.agentId || ''}
+                onChange={(e) => updateField('agentId', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              >
+                <option value="">Selecionar agente...</option>
+                <option value="atendimento">Agente de Atendimento</option>
+                <option value="vendas">Agente de Vendas</option>
+                <option value="suporte">Agente de Suporte</option>
+              </select>
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Prompt personalizado (opcional)
+              </label>
+              <textarea
+                value={formData.customPrompt || ''}
+                onChange={(e) => updateField('customPrompt', e.target.value)}
+                placeholder="Instrução específica para esta situação..."
+                rows={3}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+          </div>
+        )
+        
+      case 'action-resposta-rapida':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Resposta rápida *
+              </label>
+              <select
+                value={formData.quickReplyId || ''}
+                onChange={(e) => updateField('quickReplyId', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              >
+                <option value="">Selecionar resposta...</option>
+                <option value="boas-vindas">Boas-vindas</option>
+                <option value="horario-funcionamento">Horário de Funcionamento</option>
+                <option value="solicitar-orcamento">Solicitar Orçamento</option>
+                <option value="agendar-reuniao">Agendar Reunião</option>
+              </select>
+            </div>
+          </div>
+        )
+
+      // Default form para outros tipos
+      default:
+        return (
+          <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'} text-center`}>
+            <Info className={`w-12 h-12 mx-auto mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+              Configurações básicas para <strong>{nodeConfig.label}</strong>
+            </p>
+            <div className="text-left space-y-3">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                  Nome personalizado (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.customName || ''}
+                  onChange={(e) => updateField('customName', e.target.value)}
+                  placeholder={`Ex: ${nodeConfig.label} Principal`}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                  Observações
+                </label>
+                <textarea
+                  value={formData.notes || ''}
+                  onChange={(e) => updateField('notes', e.target.value)}
+                  placeholder="Notas sobre esta etapa do fluxo..."
+                  rows={2}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+              </div>
+            </div>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className={`p-6 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto ${
+          isDark ? 'bg-gray-800' : 'bg-white'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center space-x-3 mb-6">
+          <div className={`p-3 rounded-lg bg-${nodeConfig.color}-100 text-${nodeConfig.color}-600`}>
+            <nodeConfig.icon className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Configurar {nodeConfig.label}
+            </h3>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {nodeConfig.description}
+            </p>
+          </div>
+        </div>
+
+        {renderConfigForm()}
+
+        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 text-sm font-medium rounded-lg ${
+              isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            } transition-colors`}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Salvar Configurações
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
