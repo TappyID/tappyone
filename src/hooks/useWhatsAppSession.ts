@@ -16,7 +16,7 @@ export function useWhatsAppSession() {
   const { user } = useAuth()
   const [sessions, setSessions] = useState<Map<string, WhatsAppSession>>(new Map())
 
-  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001/api'
+  const API_BASE = '/api/whatsapp'
   const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
   const getSessionName = useCallback((userId?: string) => {

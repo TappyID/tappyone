@@ -80,9 +80,7 @@ export function useRespostasRapidas() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const baseURL = process.env.NODE_ENV === 'development' 
-    ? 'http://159.65.34.199:8081/api/respostas-rapidas'
-    : 'http://159.65.34.199:8081/api/respostas-rapidas'
+  const baseURL = '/api/respostas-rapidas'
 
   const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     console.log(`API Call: ${options.method || 'GET'} ${baseURL}${endpoint}`)
@@ -135,9 +133,7 @@ export function useRespostasRapidas() {
     setLoading(true)
     try {
       // Backend Go usa endpoint /respostas-rapidas/categorias
-      const categoriasURL = process.env.NODE_ENV === 'development' 
-        ? 'http://159.65.34.199:8081/api/respostas-rapidas/categorias'
-        : 'http://159.65.34.199:8081/api/respostas-rapidas/categorias'
+      const categoriasURL = '/api/respostas-rapidas/categorias'
       
       const response = await fetch(categoriasURL, {
         headers: {
@@ -288,9 +284,7 @@ export function useRespostasRapidas() {
       setLoading(true)
       setError(null)
       
-      const categoriasURL = process.env.NODE_ENV === 'development' 
-        ? 'http://159.65.34.199:8081/api/respostas-rapidas/categorias'
-        : 'http://159.65.34.199:8081/api/respostas-rapidas/categorias'
+      const categoriasURL = '/api/respostas-rapidas/categorias'
       
       const bodyData = JSON.stringify(data)
       console.log('[createCategoria] Body JSON enviado:', bodyData)
