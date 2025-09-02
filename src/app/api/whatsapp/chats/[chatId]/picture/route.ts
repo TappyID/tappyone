@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
 
 export async function GET(
   request: NextRequest,
@@ -17,10 +17,10 @@ export async function GET(
     }
 
     console.log('🔑 [PICTURE] Token encontrado:', authHeader.substring(0, 20) + '...')
-    console.log('📡 [PICTURE] Fazendo chamada para backend:', `${BACKEND_URL}/api/whatsapp/chats/${chatId}/picture`)
+    console.log('📡 [PICTURE] Fazendo chamada para WAHA:', `${WAHA_URL}/api/whatsapp/chats/${chatId}/picture`)
 
     // Proxy para o backend WAHA
-    const response = await fetch(`${BACKEND_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/picture`, {
+    const response = await fetch(`${WAHA_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/picture`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
