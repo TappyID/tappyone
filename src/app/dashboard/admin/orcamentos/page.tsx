@@ -93,7 +93,7 @@ export default function OrcamentosPage() {
       const token = localStorage.getItem('token')
       if (!token) throw new Error('Token não encontrado')
 
-      const response = await fetch('/api/orcamentos', {
+      const response = await fetch('http://159.65.34.199:8081/api/orcamentos', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

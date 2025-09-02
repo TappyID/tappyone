@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PUT(request: NextRequest) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {
