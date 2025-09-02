@@ -10,37 +10,34 @@ export async function GET(
     const { chatId } = params
     console.log('🖼️ [PICTURE] GET route chamado para chatId:', chatId)
     
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader) {
-      console.log('❌ [PICTURE] Token não fornecido')
-      return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
-    }
-
-    console.log('🔑 [PICTURE] Token encontrado:', authHeader.substring(0, 20) + '...')
-    console.log('📡 [PICTURE] Fazendo chamada para WAHA:', `${WAHA_URL}/api/whatsapp/chats/${chatId}/picture`)
+    // WAHA usa formato diferente: /api/user_{SESSION_ID}/chats/{CHAT_ID}/picture
+    const sessionId = 'user_ce065849-4fa7-4757-a2cb-5581cfec9225'
+    const wahaUrl = `${WAHA_URL}/api/${sessionId}/chats/${encodeURIComponent(chatId)}/picture?refresh=true`
+    
+    console.log('📡 [PICTURE] Fazendo chamada para WAHA:', wahaUrl)
 
     // Proxy para o backend WAHA
-    const response = await fetch(`${WAHA_URL}/api/whatsapp/chats/${encodeURIComponent(chatId)}/picture`, {
+    const response = await fetch(wahaUrl, {
       method: 'GET',
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
+        'X-API-Key': process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey',
+        'accept': 'application/json'
       }
     })
 
-    console.log('📡 [PICTURE] Status da resposta do backend:', response.status)
+    console.log('📡 [PICTURE] Status da resposta do WAHA:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [PICTURE] Erro do backend:', response.status, errorText)
+      console.error('❌ [PICTURE] Erro do WAHA:', response.status, errorText)
       return NextResponse.json(
-        { error: `Erro do backend: ${response.status}` },
+        { error: `Erro do WAHA: ${response.status}` },
         { status: response.status }
       )
     }
 
     const data = await response.json()
-    console.log('✅ [PICTURE] Foto obtida do backend para chatId:', chatId)
+    console.log('✅ [PICTURE] Foto obtida do WAHA para chatId:', chatId, data)
     
     return NextResponse.json(data)
   } catch (error) {
