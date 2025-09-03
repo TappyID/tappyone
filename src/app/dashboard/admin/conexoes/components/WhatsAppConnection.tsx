@@ -157,7 +157,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         return
       }
 
-      // Primeiro verificar se sessão já existe
+      // Primeiro verificar se já existe uma sessão
       let response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
         headers: { 'X-Api-Key': API_KEY }
       })
@@ -167,7 +167,10 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         console.log('📱 Sessão já existe, iniciando...')
         response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}/start`, {
           method: 'POST',
-          headers: { 'X-Api-Key': API_KEY }
+          headers: { 
+            'X-Api-Key': API_KEY,
+            'Content-Type': 'application/json'
+          }
         })
       } else {
         // Criar nova sessão
