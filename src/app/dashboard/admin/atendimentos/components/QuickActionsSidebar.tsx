@@ -141,8 +141,9 @@ export default function QuickActionsSidebar({
       fetchCategorias()
     }
   }, [isOpen, fetchRespostas, fetchCategorias])
+  
   // Converter respostas da API para formato QuickAction
-  const quickActions = respostas.map(resposta => {
+  const quickActions = (respostas || []).map(resposta => {
    
     // trigger_tipo !== 'manual' significa que é automático
     const isAutomatic = resposta.trigger_tipo !== 'manual' && resposta.ativo && !resposta.pausado
