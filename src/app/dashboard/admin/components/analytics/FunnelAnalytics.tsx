@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState } from 'react'
+import { ResponsiveFunnel } from '@nivo/funnel'
 import { 
   Users, 
   MessageCircle, 
@@ -14,13 +15,21 @@ import {
   LayoutGrid
 } from 'lucide-react'
 
-// Dados mock do funil
+// Dados do funil para Nivo
 const funnelData = [
+  { id: 'visitantes', value: 10000, label: 'Visitantes' },
+  { id: 'leads', value: 2500, label: 'Leads' },
+  { id: 'qualificados', value: 750, label: 'Qualificados' },
+  { id: 'convertidos', value: 150, label: 'Convertidos' }
+]
+
+// Dados detalhados para cards informativos
+const stageDetails = [
   {
     stage: 'Visitantes',
     value: 10000,
     percentage: 100,
-    color: '#8B5CF6',
+    color: '#305e73',
     icon: Users,
     description: 'Visitantes únicos no site'
   },
@@ -28,7 +37,7 @@ const funnelData = [
     stage: 'Leads',
     value: 2500,
     percentage: 25,
-    color: '#06B6D4',
+    color: '#4a7c95',
     icon: MessageCircle,
     description: 'Iniciaram conversa no WhatsApp'
   },
@@ -36,7 +45,7 @@ const funnelData = [
     stage: 'Qualificados',
     value: 750,
     percentage: 7.5,
-    color: '#10B981',
+    color: '#6b9ab8',
     icon: CheckCircle,
     description: 'Leads qualificados pelos atendentes'
   },
@@ -44,7 +53,7 @@ const funnelData = [
     stage: 'Convertidos',
     value: 150,
     percentage: 1.5,
-    color: '#F59E0B',
+    color: '#8db8da',
     icon: DollarSign,
     description: 'Fecharam negócio'
   }
@@ -125,7 +134,141 @@ export default function FunnelAnalytics() {
           ))}
         </motion.div>
 
-    
+        {/* Funil Interativo */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Gráfico do Funil */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-2"
+          >
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-gray-200/50 shadow-xl">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Visualização do Funil</h2>
+                <p className="text-gray-600">Conversão de visitantes até vendas</p>
+              </div>
+              
+              {/* Funil Horizontal Nivo */}
+              <div className="relative h-[500px] rounded-xl overflow-hidden">
+                {/* Background Pattern Suave */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80"></div>
+                <div 
+                  className="absolute inset-0 opacity-5"
+                  style={{
+                    backgroundImage: `
+                      repeating-linear-gradient(
+                        0deg,
+                        #305e73 0px,
+                        #305e73 0.5px,
+                        transparent 0.5px,
+                        transparent 30px
+                      )
+                    `
+                  }}
+                ></div>
+                
+                {/* ResponsiveFunnel */}
+                <div className="relative z-10 h-full">
+                  <ResponsiveFunnel
+                    data={funnelData}
+                    margin={{ top: 40, right: 40, bottom: 40, left: 40 }}
+                    direction="horizontal"
+                    shapeBlending={1}
+                    valueFormat=">-.4s"
+                    colors={['#305e73', '#4a7c95', '#6b9ab8', '#8db8da']}
+                    borderWidth={0}
+                    labelColor={{ from: 'color', modifiers: [['darker', 2]] }}
+                    beforeSeparatorLength={120}
+                    beforeSeparatorOffset={30}
+                    afterSeparatorLength={120}
+                    afterSeparatorOffset={30}
+                    currentPartSizeExtension={15}
+                    currentBorderWidth={0}
+                    fillOpacity={0.9}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Cards de Detalhes */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4"
+          >
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-[#305e73]" />
+                Detalhes do Funil
+              </h3>
+              
+              <div className="space-y-4">
+                {stageDetails.map((stage, index) => {
+                  const Icon = stage.icon
+                  const conversionRate = index > 0 
+                    ? ((stage.value / stageDetails[index - 1].value) * 100).toFixed(1)
+                    : '100.0'
+                  
+                  return (
+                    <motion.div
+                      key={stage.stage}
+                      whileHover={{ scale: 1.02 }}
+                      className="p-4 rounded-xl border-l-4 bg-gradient-to-r from-white to-gray-50/50"
+                      style={{ borderLeftColor: stage.color }}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div 
+                          className="p-2 rounded-lg"
+                          style={{ backgroundColor: stage.color + '20' }}
+                        >
+                          <Icon className="w-4 h-4" style={{ color: stage.color }} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-gray-900">{stage.stage}</span>
+                            <div className="text-right">
+                              <div className="font-bold text-gray-900">
+                                {stage.value.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {conversionRate}% conversão
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 ml-11">{stage.description}</p>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Taxa de Conversão por Etapa */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Taxas de Conversão</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                  <span className="text-sm font-medium">Visitante → Lead</span>
+                  <span className="font-bold text-green-700">25.0%</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                  <span className="text-sm font-medium">Lead → Qualificado</span>
+                  <span className="font-bold text-blue-700">30.0%</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg">
+                  <span className="text-sm font-medium">Qualificado → Venda</span>
+                  <span className="font-bold text-orange-700">20.0%</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
       </div>
     </div>
   )

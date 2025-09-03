@@ -93,9 +93,9 @@ export default function FilasList({ filas, onUpdateFila, onDeleteFila }: FilasLi
               <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                 {/* Informações principais */}
                 <div className="flex items-start gap-4 flex-1">
-                  {/* Cor da Fila */}
+                  {/* Cor da Fila - Estendida */}
                   <div 
-                    className="w-1 h-20 rounded-full shadow-sm flex-shrink-0 mt-1"
+                    className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl shadow-sm"
                     style={{ backgroundColor: fila.cor }}
                   />
                   
