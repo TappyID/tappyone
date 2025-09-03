@@ -59,7 +59,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
             whileHover={{ y: -1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
-            Visao Sim
+            TappyOne
           </motion.h1>
           <motion.p
             className="text-xs font-medium"

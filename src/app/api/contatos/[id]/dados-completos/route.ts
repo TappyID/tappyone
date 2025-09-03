@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.tappy.id
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { chatId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const cookieStore = cookies()
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     // Buscar dados completos do contato pelo chatId
-    const response = await fetch(`${BACKEND_URL}/api/contatos/chat/${params.chatId}/dados-completos`, {
+    const response = await fetch(`${BACKEND_URL}/api/contatos/chat/${params.id}/dados-completos`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -28,7 +28,7 @@ export async function GET(
       if (response.status === 404) {
         // Contato não encontrado, retornar dados vazios
         return NextResponse.json({
-          id: params.chatId,
+          id: params.id,
           fila: null,
           tags: [],
           atendente: null,

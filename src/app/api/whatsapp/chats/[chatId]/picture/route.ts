@@ -22,8 +22,6 @@
         }
       })
 
-      console.log('📡 [PICTURE] Status da resposta do WAHA:', response.status)
-
       if (!response.ok) {
         const errorText = await response.text()
         console.error('❌ [PICTURE] Erro do WAHA:', response.status, errorText)

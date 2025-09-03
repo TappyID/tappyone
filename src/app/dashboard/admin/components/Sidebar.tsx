@@ -75,8 +75,8 @@ const menuItems = [
   {
     title: 'Atendentes',
     icon: Users,
-    color: 'text-teal-600',
-    isSubmenu: true,
+    href: '/dashboard/admin/atendentes',
+    color: 'text-teal-600'
    
   },
   {

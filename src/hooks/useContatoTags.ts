@@ -42,7 +42,7 @@ export const useContatoTags = (chatId: string | null) => {
       setLoading(true)
       setError(null)
       console.log('🏷️ [HOOK] Buscando tags do contato:', chatId)
-      const data = await makeAuthenticatedRequest(`/contatos/${encodeURIComponent(chatId)}/tags`)
+      const data = await makeAuthenticatedRequest(`/contatos/${chatId}/tags`)
       console.log('🏷️ [HOOK] Tags do contato carregadas:', data?.length || 0)
       setTags(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -64,7 +64,7 @@ export const useContatoTags = (chatId: string | null) => {
       const tagIds = selectedTags.map(tag => tag.id)
       console.log('🏷️ [HOOK] Atualizando tags do contato:', { chatId, tagIds })
       
-      await makeAuthenticatedRequest(`/contatos/${encodeURIComponent(chatId)}/tags`, {
+      await makeAuthenticatedRequest(`/contatos/${chatId}/tags`, {
         method: 'POST',
         body: JSON.stringify({ tagIds }),
       })
