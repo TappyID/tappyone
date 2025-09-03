@@ -2,73 +2,69 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
-import { Languages, Check } from 'lucide-react'
+import { Languages, CheckCircle, Globe, X } from 'lucide-react'
 import ReactCountryFlag from 'react-country-flag'
-import { TopBarButton } from './TopBarButton'
-
-interface Language {
-  code: string
-  name: string
-  flag: string
-  nativeName: string
-}
-
-const languages: Language[] = [
-  { code: 'pt-BR', name: 'Português (Brasil)', flag: 'BR', nativeName: 'Português' },
-  { code: 'en-US', name: 'English (US)', flag: 'US', nativeName: 'English' },
-  { code: 'es-ES', name: 'Español', flag: 'ES', nativeName: 'Español' },
-  { code: 'hi-IN', name: 'Hindi (भारत)', flag: 'IN', nativeName: 'हिन्दी' },
-  { code: 'fr-FR', name: 'Français', flag: 'FR', nativeName: 'Français' }
-]
 
 interface LanguageSelectorProps {
   sidebarCollapsed?: boolean
 }
 
 export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState(languages[0])
+  const [showTranslation, setShowTranslation] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('pt-BR')
+  
+  // Mapeamento de idiomas para bandeiras
+  const getCountryCode = (langCode: string) => {
+    const mapping: { [key: string]: string } = {
+      'pt-BR': 'BR',
+      'en-US': 'US', 
+      'es-ES': 'ES',
+      'hi-IN': 'IN',
+      'fr-FR': 'FR'
+    }
+    return mapping[langCode] || 'BR'
+  }
 
-  const handleLanguageSelect = (language: Language) => {
-    console.log('🔥 CLIQUE NO IDIOMA:', language.code, language.name)
-    setSelectedLanguage(language)
-    setIsOpen(false)
+  // Função para alterar idioma
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode)
     
-    // Disparar evento global para tradução
-    const event = new CustomEvent('languageChanged', { 
-      detail: { languageCode: language.code } 
+    console.log('🌍 Alterando idioma para:', langCode)
+    
+    // Disparar evento global para o ChatArea
+    const event = new CustomEvent('languageChanged', {
+      detail: { languageCode: langCode }
     })
-    
-    console.log('📡 Disparando evento languageChanged:', event.detail)
     window.dispatchEvent(event)
     
-    console.log('🌍 Idioma selecionado para tradução:', language.code)
+    // Fechar dropdown após seleção
+    setShowTranslation(false)
   }
 
   return (
-    <div className="relative">
+    <motion.div className="relative">
       <motion.button
         whileHover={{ scale: 1.1, rotate: 10 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setShowTranslation(!showTranslation)}
         className={`w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 ${
-          sidebarCollapsed 
-            ? 'bg-gray-100/80 border-gray-200/60 hover:bg-gray-200/80 text-gray-700' 
+          sidebarCollapsed
+            ? 'bg-white/10 border-gray-200/20 hover:bg-gray-100 text-gray-600'
             : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
         }`}
-        title={`Idioma: ${selectedLanguage.nativeName}`}
+        title="Tradução"
       >
         <Languages className="w-4 h-4" />
       </motion.button>
       
       {/* Badge com bandeira do idioma ativo */}
       <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border ${
-        selectedLanguage.code !== 'pt-BR' 
+        selectedLanguage !== 'pt-BR' 
           ? 'bg-gradient-to-br from-green-400 to-green-600 border-green-300/30 animate-pulse' 
           : 'bg-gradient-to-br from-indigo-400 to-indigo-600 border-indigo-300/30'
       }`}>
         <ReactCountryFlag
-          countryCode={selectedLanguage.flag}
+          countryCode={getCountryCode(selectedLanguage)}
           svg
           style={{
             width: '12px',
@@ -77,94 +73,166 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
           }}
         />
       </div>
-      {/* Dropdown */}
+      {/* Translation Dropdown */}
       <AnimatePresence>
-        {isOpen && (
+        {showTranslation && (
           <motion.div
-            className="absolute top-full right-0 mt-3 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-white/20 overflow-hidden z-50"
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ duration: 0.2 }}
+            className={`absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] ${
+              sidebarCollapsed
+                ? 'bg-white border-gray-200'
+                : 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20'
+            }`}
           >
             {/* Header */}
-            <div className="p-4 border-b border-gray-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Languages size={16} className="text-[#273155]" />
-                Selecionar Idioma
-              </h3>
-              <p className="text-xs text-gray-600 mt-1">Escolha seu idioma preferido</p>
-            </div>
-
-            {/* Language List */}
-            <div className="max-h-80 overflow-y-auto">
-              {languages.map((language, index) => (
+            <div className={`p-4 border-b ${
+              sidebarCollapsed ? 'border-gray-100' : 'border-white/10'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    sidebarCollapsed
+                      ? 'bg-gray-100'
+                      : 'bg-gradient-to-br from-white/30 to-white/10'
+                  }`}>
+                    <Globe className={`w-4 h-4 ${
+                      sidebarCollapsed ? 'text-gray-600' : 'text-white'
+                    }`} />
+                  </div>
+                  <h3 className={`text-lg font-semibold ${
+                    sidebarCollapsed ? 'text-gray-900' : 'text-white'
+                  }`}>Tradução Automática</h3>
+                </div>
                 <motion.button
-                  key={language.code}
-                  onClick={() => handleLanguageSelect(language)}
-                  className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-200 text-left group ${
-                    selectedLanguage.code === language.code 
-                      ? 'bg-blue-50 border-l-4 border-[#273155]' 
-                      : 'hover:bg-gray-50/80'
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowTranslation(false)}
+                  className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${
+                    sidebarCollapsed
+                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                      : 'bg-white/10 hover:bg-white/20 text-white'
                   }`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className="relative">
-                    <ReactCountryFlag
-                      countryCode={language.flag}
-                      svg
-                      style={{
-                        width: '24px',
-                        height: '18px',
-                        borderRadius: '2px'
-                      }}
-                    />
-                    {selectedLanguage.code === language.code && (
-                      <motion.div
-                        className="absolute -top-1 -right-1 w-3 h-3 bg-[#273155] rounded-full flex items-center justify-center"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      >
-                        <Check size={8} className="text-white" />
-                      </motion.div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-gray-900 group-hover:text-[#273155] transition-colors">
-                      {language.nativeName}
-                    </div>
-                    <div className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors">
-                      {language.name}
-                    </div>
-                  </div>
-                  <motion.div
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <div className="w-2 h-2 bg-[#273155] rounded-full"></div>
-                  </motion.div>
+                  <X className="w-3 h-3" />
                 </motion.button>
-              ))}
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-100/50 bg-gradient-to-r from-gray-50 to-blue-50">
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Tradução automática ativa</span>
               </div>
-              <p className="text-xs text-gray-500 text-center mt-1">
-                Powered by IA • {languages.length} idiomas
-              </p>
+            </div>
+            
+            {/* Languages List */}
+            <div className="p-3">
+              <div className="space-y-2">
+                {[
+                  {
+                    code: 'pt-BR',
+                    name: 'Português',
+                    country: 'Brasil',
+                    countryCode: 'BR',
+                    active: true
+                  },
+                  {
+                    code: 'en-US',
+                    name: 'English',
+                    country: 'United States',
+                    countryCode: 'US',
+                    active: false
+                  },
+                  {
+                    code: 'es-ES',
+                    name: 'Español',
+                    country: 'España',
+                    countryCode: 'ES',
+                    active: false
+                  },
+                  {
+                    code: 'hi-IN',
+                    name: 'हिन्दी Hindi',
+                    country: 'भारत',
+                    countryCode: 'IN',
+                    active: false
+                  },
+                  {
+                    code: 'fr-FR',
+                    name: 'Français',
+                    country: 'France',
+                    countryCode: 'FR',
+                    active: false
+                  }
+                ].map((lang, index) => {
+                  const isActive = selectedLanguage === lang.code
+                  return (
+                  <motion.button
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code)}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full p-3 rounded-lg border transition-all flex items-center gap-3 ${
+                      isActive
+                        ? sidebarCollapsed
+                          ? 'bg-green-50 border-green-200 text-green-700 shadow-lg shadow-green-500/10'
+                          : 'bg-green-500/20 border-green-400/50 text-green-300 shadow-lg shadow-green-500/20'
+                        : sidebarCollapsed
+                          ? 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+                          : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      <ReactCountryFlag 
+                        countryCode={lang.countryCode}
+                        svg
+                        style={{
+                          width: '24px',
+                          height: '18px',
+                          borderRadius: '2px'
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-sm">{lang.name}</div>
+                      <div className="text-xs opacity-70">{lang.country}</div>
+                    </div>
+                    {isActive && (
+                      <CheckCircle className={`w-4 h-4 flex-shrink-0 ${
+                        sidebarCollapsed ? 'text-green-600' : 'text-green-400'
+                      }`} />
+                    )}
+                  </motion.button>
+                  )
+                })}
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className={`p-4 border-t ${
+              sidebarCollapsed
+                ? 'border-gray-100 bg-gray-50'
+                : 'border-white/10 bg-white/5'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className={`text-xs ${
+                    sidebarCollapsed ? 'text-gray-600' : 'text-white/80'
+                  }`}>Tradução ativa</span>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    sidebarCollapsed
+                      ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                      : 'bg-white/10 hover:bg-white/20 text-white'
+                  }`}
+                >
+                  Configurações
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }

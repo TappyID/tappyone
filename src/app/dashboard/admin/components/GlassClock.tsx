@@ -94,32 +94,18 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
           </motion.div>
           
           <div className="flex items-center gap-2">
-            <div className="text-center">
-              <motion.div 
-                className={`
-                  font-mono text-base font-bold tracking-wider leading-none
-                  ${sidebarCollapsed ? 'text-gray-800' : 'text-white'}
-                `}
-                key={formatTime(currentTime, selectedTimezone)}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                {formatTime(currentTime, selectedTimezone)}
-              </motion.div>
-              <motion.div 
-                className={`
-                  text-xs font-medium leading-none mt-1
-                  ${sidebarCollapsed ? 'text-gray-600' : 'text-white/70'}
-                `}
-                key={formatDate(currentTime, selectedTimezone)}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                {formatDate(currentTime, selectedTimezone)}
-              </motion.div>
-            </div>
+            <motion.div 
+              className={`
+                font-mono text-base font-bold tracking-wider leading-none
+                ${sidebarCollapsed ? 'text-gray-800' : 'text-white'}
+              `}
+              key={formatTime(currentTime, selectedTimezone)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {formatTime(currentTime, selectedTimezone)}
+            </motion.div>
 
             <div className="flex items-center gap-1 ml-1">
               <span className="text-sm">

@@ -2,206 +2,257 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Settings, LogOut, Shield, HelpCircle, ChevronDown } from 'lucide-react'
+import { 
+  User, 
+  Settings, 
+  Bell, 
+  Languages, 
+  Info, 
+  MoreHorizontal, 
+  X 
+} from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 
 interface ProfileDropdownProps {
   sidebarCollapsed?: boolean
 }
 
 export function ProfileDropdown({ sidebarCollapsed = true }: ProfileDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const { user, logout } = useAuth()
-
-  const menuItems = [
-    {
-      icon: User,
-      label: 'Meu Perfil',
-      description: 'Gerenciar informações pessoais',
-      action: () => console.log('Perfil')
-    },
-    {
-      icon: Settings,
-      label: 'Configurações',
-      description: 'Preferências do sistema',
-      action: () => console.log('Configurações')
-    },
-    {
-      icon: Shield,
-      label: 'Segurança',
-      description: 'Senha e autenticação',
-      action: () => console.log('Segurança')
-    },
-    {
-      icon: HelpCircle,
-      label: 'Ajuda & Suporte',
-      description: 'Central de ajuda',
-      action: () => console.log('Ajuda')
-    }
-  ]
+  const router = useRouter()
 
   const handleLogout = () => {
     logout()
-    setIsOpen(false)
+    setShowProfile(false)
+  }
+
+  const handleMenuClick = (action: string) => {
+    setShowProfile(false)
+    
+    switch(action) {
+      case 'profile':
+        router.push('/dashboard/admin/perfil')
+        break
+      case 'settings':
+        router.push('/dashboard/admin/configuracoes')
+        break
+      case 'notifications':
+        router.push('/dashboard/admin/notificacoes')
+        break
+      case 'language':
+        // Já implementado no LanguageSelector
+        break
+      case 'help':
+        router.push('/dashboard/admin/ajuda')
+        break
+      default:
+        console.log('Menu item:', action)
+    }
   }
 
   return (
-    <div className="relative">
-      {/* Profile Button */}
+    <motion.div className="relative">
       <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 p-3 rounded-xl backdrop-blur-sm border transition-all duration-200 group h-12 ${
-          sidebarCollapsed 
-            ? 'bg-white/70 border-white/20 hover:bg-white/90 hover:shadow-md'
-            : 'bg-white/10 border-white/20 hover:bg-white/20 hover:shadow-lg'
-        }`}
-        whileHover={{ scale: 1.05, y: -1 }}
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        onClick={() => setShowProfile(!showProfile)}
+        className={`flex items-center gap-2.5 h-10 px-2.5 rounded-lg backdrop-blur-sm border transition-all duration-300 ${
+          sidebarCollapsed
+            ? 'bg-white/10 border-gray-200/20 hover:bg-gray-100 text-gray-700'
+            : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+        }`}
       >
-        {/* Avatar */}
-        <div className="relative">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#273155] to-blue-600 flex items-center justify-center text-white font-semibold text-xs shadow-lg">
-            {user?.nome?.charAt(0) || 'A'}
-          </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white shadow-sm"></div>
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+          sidebarCollapsed
+            ? 'bg-gray-100'
+            : 'bg-gradient-to-br from-white/30 to-white/10'
+        }`}>
+          <User className={`w-3.5 h-3.5 ${
+            sidebarCollapsed ? 'text-gray-600' : 'text-white'
+          }`} />
         </div>
-
-        {/* User Info */}
-        <div className="flex-1 text-left">
-          <div className={`text-sm font-semibold transition-colors leading-none ${
-            sidebarCollapsed 
-              ? 'text-gray-800 group-hover:text-[#273155]'
-              : 'text-white group-hover:text-blue-200'
-          }`}>
-            {user?.nome || 'Admin'}
-          </div>
-          <div className={`text-xs transition-colors capitalize leading-none mt-1 ${
-            sidebarCollapsed 
-              ? 'text-gray-600 group-hover:text-gray-700'
-              : 'text-white/70 group-hover:text-white/90'
-          }`}>
-            {user?.tipo || 'administrador'} • online
-          </div>
+        <div className="hidden md:block text-left">
+          <p className={`text-sm font-medium ${
+            sidebarCollapsed ? 'text-gray-900' : 'text-white'
+          }`}>{user?.nome || 'Admin'}</p>
+          <p className={`text-xs ${
+            sidebarCollapsed ? 'text-gray-600' : 'text-white/70'
+          }`}>Online</p>
         </div>
-
-        {/* Chevron Icon */}
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className={`transition-colors ${
-            sidebarCollapsed 
-              ? 'text-gray-600 group-hover:text-[#273155]'
-              : 'text-white group-hover:text-blue-200'
-          }`}
-        >
-          <ChevronDown className="w-4 h-4" />
-        </motion.div>
+        <MoreHorizontal className={`w-3.5 h-3.5 ${
+          sidebarCollapsed ? 'text-gray-600' : 'text-white/60'
+        }`} />
       </motion.button>
+      
+      {/* Badge Online - Verde */}
+      <motion.div 
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30"
+      >
+        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+      </motion.div>
 
-      {/* Dropdown Menu */}
+      {/* Profile Dropdown */}
       <AnimatePresence>
-        {isOpen && (
+        {showProfile && (
           <motion.div
-            className="absolute top-full right-0 mt-3 w-80 bg-[#273155]/95 backdrop-blur-md rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50"
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ duration: 0.2 }}
+            className={`absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] ${
+              sidebarCollapsed
+                ? 'bg-white border-gray-200'
+                : 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20'
+            }`}
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/10">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                    {user?.nome?.charAt(0) || 'A'}
+            <div className={`p-6 border-b ${
+              sidebarCollapsed ? 'border-gray-100' : 'border-white/10'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    sidebarCollapsed
+                      ? 'bg-gray-100'
+                      : 'bg-gradient-to-br from-white/30 to-white/10'
+                  }`}>
+                    <User className={`w-6 h-6 ${
+                      sidebarCollapsed ? 'text-gray-600' : 'text-white'
+                    }`} />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-3 border-white shadow-md flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-white mb-1">
-                    {user?.nome || 'Admin'}
-                  </h3>
-                  <p className="text-sm text-white/70 mb-2">
-                    {user?.email || 'admin@tappyone.com'}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/20 text-white capitalize backdrop-blur-sm">
-                      {user?.tipo || 'administrador'}
-                    </span>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 backdrop-blur-sm">
-                      • online
-                    </span>
+                  <div>
+                    <h3 className={`text-lg font-semibold ${
+                      sidebarCollapsed ? 'text-gray-900' : 'text-white'
+                    }`}>{user?.nome || 'Admin'}</h3>
+                    <p className={`text-sm ${
+                      sidebarCollapsed ? 'text-gray-600' : 'text-white/70'
+                    }`}>{user?.email || 'admin@tappyone.com'}</p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Menu Items */}
-            <div className="p-3">
-              {menuItems.map((item, index) => (
                 <motion.button
-                  key={item.label}
-                  onClick={item.action}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-all duration-200 text-left group backdrop-blur-sm"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ x: 6, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowProfile(false)}
+                  className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${
+                    sidebarCollapsed
+                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                      : 'bg-white/10 hover:bg-white/20 text-white'
+                  }`}
                 >
-                  <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors backdrop-blur-sm">
-                    <item.icon className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-white group-hover:text-blue-200 transition-colors">
-                      {item.label}
-                    </span>
-                    <p className="text-xs text-white/50 group-hover:text-white/70 transition-colors">
-                      {item.description}
-                    </p>
-                  </div>
+                  <X className="w-3 h-3" />
                 </motion.button>
-              ))}
-              
-              {/* Logout Button */}
-              <motion.button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/20 transition-all duration-200 text-left group backdrop-blur-sm mt-2 border-t border-white/10 pt-4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: menuItems.length * 0.05 }}
-                whileHover={{ x: 6, scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="p-2 rounded-lg bg-red-500/20 group-hover:bg-red-500/30 transition-colors backdrop-blur-sm">
-                  <LogOut className="w-4 h-4 text-red-300 group-hover:text-red-200 transition-colors" />
-                </div>
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-red-300 group-hover:text-red-200 transition-colors">
-                    Sair
-                  </span>
-                  <p className="text-xs text-red-400/70 group-hover:text-red-300/70 transition-colors">
-                    Encerrar sessão
-                  </p>
-                </div>
-              </motion.button>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-white/10 bg-white/5 backdrop-blur-sm">
-              <div className="flex items-center justify-center gap-2 text-xs text-white/60">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                <span>TappyOne CRM v2.0</span>
               </div>
-              <p className="text-xs text-white/40 text-center mt-1">
-                Powered by IA • Sessão segura
-              </p>
+              
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className={`text-sm ${
+                  sidebarCollapsed ? 'text-gray-600' : 'text-white/80'
+                }`}>Online agora</span>
+              </div>
+            </div>
+            
+            {/* Menu Options */}
+            <div className="p-4 space-y-2">
+              {[
+                {
+                  icon: User,
+                  label: 'Meu Perfil',
+                  description: 'Gerenciar informações pessoais',
+                  color: 'from-blue-500 to-blue-600',
+                  action: 'profile'
+                },
+                {
+                  icon: Settings,
+                  label: 'Configurações',
+                  description: 'Preferências do sistema',
+                  color: 'from-gray-500 to-gray-600',
+                  action: 'settings'
+                },
+                {
+                  icon: Bell,
+                  label: 'Notificações',
+                  description: 'Gerenciar alertas',
+                  color: 'from-yellow-500 to-yellow-600',
+                  action: 'notifications'
+                },
+                {
+                  icon: Languages,
+                  label: 'Idioma',
+                  description: 'Português (Brasil)',
+                  color: 'from-green-500 to-green-600',
+                  action: 'language'
+                },
+                {
+                  icon: Info,
+                  label: 'Ajuda & Suporte',
+                  description: 'Central de ajuda',
+                  color: 'from-purple-500 to-purple-600',
+                  action: 'help'
+                }
+              ].map((item, index) => {
+                const IconComponent = item.icon
+                return (
+                  <motion.button
+                    key={index}
+                    whileHover={{ x: 4, backgroundColor: sidebarCollapsed ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.05)' }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleMenuClick(item.action)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left"
+                  >
+                    <div className={`w-10 h-10 bg-gradient-to-br ${item.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                      <IconComponent className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className={`font-medium text-sm ${
+                        sidebarCollapsed ? 'text-gray-900' : 'text-white'
+                      }`}>{item.label}</div>
+                      <div className={`text-xs ${
+                        sidebarCollapsed ? 'text-gray-600' : 'text-white/60'
+                      }`}>{item.description}</div>
+                    </div>
+                    <MoreHorizontal className={`w-4 h-4 ${
+                      sidebarCollapsed ? 'text-gray-400' : 'text-white/40'
+                    }`} />
+                  </motion.button>
+                )
+              })}
+            </div>
+            
+            {/* Footer */}
+            <div className={`p-4 border-t ${
+              sidebarCollapsed
+                ? 'border-gray-100 bg-gray-50'
+                : 'border-white/10 bg-white/5'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className={`text-xs ${
+                  sidebarCollapsed ? 'text-gray-500' : 'text-white/60'
+                }`}>
+                  Versão 2.1.0
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLogout}
+                  className={`px-4 py-2 border rounded-lg text-sm font-medium transition-all ${
+                    sidebarCollapsed
+                      ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                      : 'bg-gradient-to-r from-red-500/20 to-red-600/20 border-red-400/30 text-red-300 hover:from-red-500/30 hover:to-red-600/30'
+                  }`}
+                >
+                  Sair
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }
