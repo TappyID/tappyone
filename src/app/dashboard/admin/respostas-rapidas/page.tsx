@@ -51,7 +51,7 @@ export default function RespostasRapidasPage() {
     createCategoria,
   } = useRespostasRapidas()
 
-  const filteredRespostas = respostas.filter(resposta => {
+  const filteredRespostas = (respostas || []).filter(resposta => {
     const matchesSearch = resposta.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          resposta.descricao?.toLowerCase().includes(searchQuery.toLowerCase())
     
@@ -99,14 +99,14 @@ export default function RespostasRapidasPage() {
     }
   }
 
-  const filteredCategorias = categorias.filter(categoria => {
+  const filteredCategorias = (categorias || []).filter(categoria => {
     return categoria.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
            categoria.descricao?.toLowerCase().includes(searchQuery.toLowerCase())
   })
 
   const tabs = [
-    { id: 'respostas', label: 'Respostas Rápidas', icon: Zap, count: respostas.length },
-    { id: 'categorias', label: 'Categorias', icon: Tag, count: categorias.length },
+    { id: 'respostas', label: 'Respostas Rápidas', icon: Zap, count: respostas?.length || 0 },
+    { id: 'categorias', label: 'Categorias', icon: Tag, count: categorias?.length || 0 },
     { id: 'estatisticas', label: 'Estatísticas', icon: BarChart3, count: null }
   ]
 
@@ -239,7 +239,7 @@ export default function RespostasRapidasPage() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none bg-white"
                   >
                     <option value="">Todas as categorias</option>
-                    {categorias.map(categoria => (
+                    {(categorias || []).map(categoria => (
                       <option key={categoria.id} value={categoria.id}>
                         {categoria.nome}
                       </option>

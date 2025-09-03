@@ -50,34 +50,34 @@ export function ProfileDropdown({ sidebarCollapsed = true }: ProfileDropdownProp
       {/* Profile Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-3 p-2 rounded-xl backdrop-blur-sm border transition-all duration-200 group ${
+        className={`flex items-center gap-2 p-3 rounded-xl backdrop-blur-sm border transition-all duration-200 group h-12 ${
           sidebarCollapsed 
-            ? 'bg-white/70 border-white/20 hover:bg-white/80 hover:shadow-md'
+            ? 'bg-white/70 border-white/20 hover:bg-white/90 hover:shadow-md'
             : 'bg-white/10 border-white/20 hover:bg-white/20 hover:shadow-lg'
         }`}
-        whileHover={{ scale: 1.02, y: -1 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.05, y: -1 }}
+        whileTap={{ scale: 0.95 }}
       >
         {/* Avatar */}
         <div className="relative">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#273155] to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#273155] to-blue-600 flex items-center justify-center text-white font-semibold text-xs shadow-lg">
             {user?.nome?.charAt(0) || 'A'}
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white shadow-sm"></div>
         </div>
 
         {/* User Info */}
         <div className="flex-1 text-left">
-          <div className={`text-sm font-semibold transition-colors ${
+          <div className={`text-sm font-semibold transition-colors leading-none ${
             sidebarCollapsed 
-              ? 'text-gray-900 group-hover:text-[#273155]'
+              ? 'text-gray-800 group-hover:text-[#273155]'
               : 'text-white group-hover:text-blue-200'
           }`}>
             {user?.nome || 'Admin'}
           </div>
-          <div className={`text-xs transition-colors capitalize ${
+          <div className={`text-xs transition-colors capitalize leading-none mt-1 ${
             sidebarCollapsed 
-              ? 'text-gray-500 group-hover:text-gray-600'
+              ? 'text-gray-600 group-hover:text-gray-700'
               : 'text-white/70 group-hover:text-white/90'
           }`}>
             {user?.tipo || 'administrador'} • online

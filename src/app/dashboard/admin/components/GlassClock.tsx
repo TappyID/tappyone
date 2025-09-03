@@ -58,13 +58,13 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
     <div className="relative">
       <motion.div
         className={`
-          relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300
+          relative overflow-hidden rounded-xl cursor-pointer transition-all duration-200
           ${sidebarCollapsed 
-            ? 'bg-white/20 border border-gray-200/30 hover:bg-white/30' 
+            ? 'bg-white/70 border border-white/20 hover:bg-white/90 hover:shadow-md' 
             : 'bg-white/10 border border-white/20 hover:bg-white/20'
           }
-          backdrop-blur-md shadow-lg hover:shadow-xl
-          px-4 py-2.5 min-w-[140px]
+          backdrop-blur-sm shadow-sm hover:shadow-lg
+          p-3 min-w-[140px] h-12
         `}
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         whileHover={{ scale: 1.02 }}
@@ -83,13 +83,13 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
           <div className="absolute bottom-0 left-0 w-6 h-6 bg-blue-200/30 rounded-full blur-lg" />
         </div>
 
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-2 h-full">
           <motion.div
             animate={{ rotate: [0, 360] }}
             transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           >
-            <Clock size={16} className={`
-              ${sidebarCollapsed ? 'text-gray-700' : 'text-white/90'}
+            <Clock size={18} className={`
+              ${sidebarCollapsed ? 'text-gray-600 group-hover:text-[#273155]' : 'text-white/90'}
             `} />
           </motion.div>
           
@@ -97,7 +97,7 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
             <div className="text-center">
               <motion.div 
                 className={`
-                  font-mono text-lg font-bold tracking-wider leading-none
+                  font-mono text-base font-bold tracking-wider leading-none
                   ${sidebarCollapsed ? 'text-gray-800' : 'text-white'}
                 `}
                 key={formatTime(currentTime, selectedTimezone)}
@@ -109,7 +109,7 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
               </motion.div>
               <motion.div 
                 className={`
-                  text-xs font-medium leading-none mt-0.5
+                  text-xs font-medium leading-none mt-1
                   ${sidebarCollapsed ? 'text-gray-600' : 'text-white/70'}
                 `}
                 key={formatDate(currentTime, selectedTimezone)}
@@ -121,15 +121,15 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
               </motion.div>
             </div>
 
-            <div className="flex items-center gap-1 ml-2">
-              <span className="text-base">
+            <div className="flex items-center gap-1 ml-1">
+              <span className="text-sm">
                 {getCurrentTimezone().flag}
               </span>
               <motion.div
                 animate={{ rotate: isDropdownOpen ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChevronDown size={12} className={`
+                <ChevronDown size={14} className={`
                   ${sidebarCollapsed ? 'text-gray-600' : 'text-white/70'}
                 `} />
               </motion.div>

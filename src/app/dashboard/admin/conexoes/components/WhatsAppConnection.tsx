@@ -26,20 +26,37 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const [showQRModal, setShowQRModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const API_BASE = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001/api'
+  const API_BASE = (process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001') + '/api'
   const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
-  const SESSION_NAME = user?.id ? `user_${user.id}` : 'default'
+  
+  // Fallback para casos onde useAuth não retorna usuário
+  const getUserId = () => {
+    if (user?.id) return user.id
+    
+    // Tentar extrair do token JWT no localStorage
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return payload.user_id || payload.sub
+      } catch (e) {
+        console.warn('Não foi possível decodificar token:', e)
+      }
+    }
+    return 'default'
+  }
+  
+  const SESSION_NAME = `user_${getUserId()}`
 
   // Verificar status inicial quando componente carrega
   useEffect(() => {
-    if (!user?.id) return
-    
-    // Verificar conexão no backend primeiro, depois WAHA API
+    // Verificar conexão mesmo sem useAuth funcionando
     const initializeConnection = async () => {
-      console.log('🔄 Inicializando verificação de conexão para usuário:', user.id)
+      const userId = getUserId()
+      console.log('🔄 Inicializando verificação de conexão para usuário:', userId)
       
       // Primeiro verifica se há uma sessão salva no localStorage
-      const savedConnection = localStorage.getItem(`whatsapp_connection_${user.id}`)
+      const savedConnection = localStorage.getItem(`whatsapp_connection_${userId}`)
       if (savedConnection) {
         const connectionData = JSON.parse(savedConnection)
         console.log('💾 Conexão salva encontrada:', connectionData)
@@ -58,7 +75,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     }
     
     initializeConnection()
-  }, [user?.id]) // Depende apenas do user.id
+  }, []) // Executar apenas uma vez na montagem
 
   // Verificar status periodicamente com diferentes intervalos
   useEffect(() => {
@@ -84,15 +101,45 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   // Criar sessão WhatsApp
   const createSession = async () => {
     if (!user) {
-      setError('Usuário não encontrado')
-      return
+      console.warn('⚠️ Usuário não encontrado no useAuth, tentando fallback...')
+      // Fallback: tentar obter dados do localStorage
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Usuário não encontrado - faça login novamente')
+        return
+      }
+      
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          setError('Usuário não encontrado - faça login novamente')
+          return
+        }
+        
+        const userData = await response.json()
+        console.log('✅ Dados do usuário obtidos via fallback:', userData)
+        // Continuar com os dados obtidos
+      } catch (err) {
+        setError('Erro ao verificar autenticação')
+        return
+      }
     }
 
     setStatus('connecting')
     setError(null)
 
     try {
-      // Primeiro, verificar se já existe uma conexão no backend
+      // Primeiro verificar se há alguma sessão ativa no WAHA para qualquer usuário
+      const activeSessions = await checkActiveSessions()
+      if (activeSessions) return
+
+      // Verificar se já existe uma conexão no backend
       const existingConnection = await checkBackendConnection()
       if (existingConnection) return
 
@@ -371,6 +418,54 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     // Último recurso: instruções dos logs
     console.log('📋 QR Code disponível apenas nos logs')
     setError('QR Code não disponível via API. Verifique logs: docker logs backend-waha-1')
+  }
+
+  // Verificar se há sessões ativas no WAHA
+  const checkActiveSessions = async (): Promise<boolean> => {
+    try {
+      console.log('🔍 Verificando sessões ativas no WAHA...')
+      const response = await fetch(`${API_BASE}/sessions`, {
+        headers: {
+          'X-Api-Key': API_KEY
+        }
+      })
+
+      if (response.ok) {
+        const sessions = await response.json()
+        console.log('📡 Sessões encontradas no WAHA:', sessions)
+        
+        // Procurar por sessão WORKING específica do usuário atual
+        const currentUserId = getUserId()
+        const expectedSessionName = `user_${currentUserId}`
+        const userSession = sessions.find((s: any) => s.name === expectedSessionName)
+        
+        if (userSession && userSession.status === 'WORKING') {
+          console.log('✅ Sessão do usuário encontrada e ativa:', userSession.name)
+          setStatus('connected')
+          setError(null)
+          onUpdate({ isConnected: true, isActive: true })
+          
+          // Salvar no localStorage
+          localStorage.setItem(`whatsapp_connection_${currentUserId}`, JSON.stringify({
+            status: 'connected',
+            timestamp: Date.now(),
+            sessionName: userSession.name
+          }))
+          
+          return true
+        } else if (userSession) {
+          console.log('📱 Sessão do usuário encontrada mas não ativa:', userSession.status)
+          // Continuar com o processo normal para ativar a sessão
+        } else {
+          console.log('❌ Nenhuma sessão encontrada para o usuário atual:', expectedSessionName)
+          // Outras sessões existem mas não são do usuário atual
+        }
+      }
+      return false
+    } catch (err) {
+      console.error('❌ Erro ao verificar sessões ativas:', err)
+      return false
+    }
   }
 
   // Verificar conexão no backend primeiro
