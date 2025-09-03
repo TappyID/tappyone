@@ -26,7 +26,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const [showQRModal, setShowQRModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const API_BASE = (process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001') + '/api'
+  const API_BASE = '/api/whatsapp' // Usar API routes internas para evitar Mixed Content 
   const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
   
   // Fallback para casos onde useAuth não retorna usuário
@@ -58,15 +58,17 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       console.log('🔄 Inicializando verificação de conexão para usuário:', userId)
       
       // Primeiro verifica se há uma sessão salva no localStorage
-      const savedConnection = localStorage.getItem(`whatsapp_connection_${userId}`)
-      if (savedConnection) {
-        const connectionData = JSON.parse(savedConnection)
-        console.log('💾 Conexão salva encontrada:', connectionData)
-        
-        if (connectionData.status === 'connected' && connectionData.timestamp > Date.now() - 30000) { // 30 segundos de cache
-          setStatus('connected')
-          onUpdate({ isConnected: true, isActive: true })
-          // Ainda verifica o backend para confirmar
+      if (typeof window !== 'undefined') {
+        const savedConnection = localStorage.getItem(`whatsapp_connection_${userId}`)
+        if (savedConnection) {
+          const connectionData = JSON.parse(savedConnection)
+          console.log('💾 Conexão salva encontrada:', connectionData)
+          
+          if (connectionData.status === 'connected' && connectionData.timestamp > Date.now() - 30000) { // 30 segundos de cache
+            setStatus('connected')
+            onUpdate({ isConnected: true, isActive: true })
+            // Ainda verifica o backend para confirmar
+          }
         }
       }
       
@@ -137,7 +139,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     setError(null)
 
     try {
-      // Primeiro verificar se há alguma sessão ativa no WAHA para qualquer usuário
+      // Primeiro verificar se há alguma sessão ativa no WAHA para qualquer usuário  
       const activeSessions = await checkActiveSessions()
       if (activeSessions) return
 
@@ -168,76 +170,16 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           headers: { 'X-Api-Key': API_KEY }
         })
       } else {
-        // Sessão não existe, criar nova
-        console.log('📱 Criando nova sessão...')
+        // Criar nova sessão
+        console.log('🔄 Criando nova sessão:', SESSION_NAME)
         response = await fetch(`${API_BASE}/sessions`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Api-Key': API_KEY
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             name: SESSION_NAME,
-            start: true,
             config: {
-              metadata: {
-                'user.id': user.id,
-                'user.email': user.email,
-                'user.name': user.nome,
-                'company': 'TappyOne CRM'
-              },
-              debug: false,
-              noweb: {
-                store: {
-                  enabled: true,
-                  fullSync: false
-                }
-              },
-              webhooks: [{
-                url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/webhooks/whatsapp`,
-                events: ['message', 'session.status'],
-                hmac: null,
-                retries: {
-                  delaySeconds: 2,
-                  attempts: 15
-                },
-                customHeaders: [{
-                  name: 'Authorization',
-                  value: `Bearer ${token}`
-                }]
-              }]
-            }
-          })
-        })
-      }
-
-      // Se sessão já existe (422), usar PUT para atualizar
-      if (response.status === 422) {
-        console.log('🔄 Sessão já existe, usando PUT para atualizar...')
-        response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Api-Key': API_KEY
-          },
-          body: JSON.stringify({
-            start: true,
-            config: {
-              metadata: {
-                'user.id': user.id,
-                'user.email': user.email,
-                'user.name': user.nome,
-                'company': 'TappyOne CRM'
-              },
-              debug: false,
-              noweb: {
-                store: {
-                  enabled: true,
-                  fullSync: false
-                }
-              },
               webhooks: [{
                 url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/webhooks/whatsapp`,
                 events: ['message', 'session.status'],
@@ -351,11 +293,10 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   // Obter QR Code - tentar múltiplas abordagens
   const getQRCode = async () => {
     try {
-      console.log('📱 Tentando obter QR Code via /auth/qr...')
-      const response = await fetch(`${API_BASE}/${SESSION_NAME}/auth/qr?format=image`, {
+      console.log('📱 Tentando obter QR Code via /sessions/[sessionName]/qr...')
+      const response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}/qr`, {
         headers: {
-          'Accept': 'image/png',
-          'X-Api-Key': API_KEY
+          'Accept': 'image/png'
         }
       })
 
@@ -364,57 +305,13 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         const qrUrl = URL.createObjectURL(blob)
         setQrCode(qrUrl)
         setShowQRModal(true)
-        console.log('✅ QR Code obtido via /auth/qr!')
+        console.log('✅ QR Code obtido com sucesso!')
         return
       } else {
-        console.log('❌ /auth/qr retornou:', response.status)
+        console.log('❌ QR Code retornou:', response.status)
       }
     } catch (err) {
-      console.log('❌ Erro /auth/qr:', err)
-    }
-
-    // Fallback 1: Tentar screenshot
-    try {
-      console.log('🔄 Tentando /screenshot...')
-      const response = await fetch(`${API_BASE}/${SESSION_NAME}/screenshot`, {
-        headers: {
-          'Accept': 'image/png',
-          'X-Api-Key': API_KEY
-        }
-      })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        const qrUrl = URL.createObjectURL(blob)
-        setQrCode(qrUrl)
-        setShowQRModal(true)
-        console.log('✅ QR Code obtido via screenshot!')
-        return
-      }
-    } catch (err) {
-      console.log('❌ Screenshot falhou:', err)
-    }
-
-    // Fallback 2: Tentar endpoint direto do GOWS
-    try {
-      console.log('🔄 Tentando /qr direto...')
-      const response = await fetch(`${API_BASE}/${SESSION_NAME}/qr`, {
-        headers: {
-          'Accept': 'image/png',
-          'X-Api-Key': API_KEY
-        }
-      })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        const qrUrl = URL.createObjectURL(blob)
-        setQrCode(qrUrl)
-        setShowQRModal(true)
-        console.log('✅ QR Code obtido via /qr!')
-        return
-      }
-    } catch (err) {
-      console.log('❌ /qr direto falhou:', err)
+      console.log('❌ Erro ao obter QR Code:', err)
     }
 
     // Último recurso: instruções dos logs
@@ -426,11 +323,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const checkActiveSessions = async (): Promise<boolean> => {
     try {
       console.log('🔍 Verificando sessões ativas no WAHA...')
-      const response = await fetch(`${API_BASE}/sessions`, {
-        headers: {
-          'X-Api-Key': API_KEY
-        }
-      })
+      const response = await fetch(`${API_BASE}/sessions`)
 
       if (response.ok) {
         const sessions = await response.json()
@@ -496,11 +389,13 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           onUpdate({ isConnected: true, isActive: true })
           
           // Salvar no localStorage
-          localStorage.setItem(`whatsapp_connection_${user?.id}`, JSON.stringify({
-            status: 'connected',
-            timestamp: Date.now(),
-            sessionName: SESSION_NAME
-          }))
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`whatsapp_connection_${user?.id}`, JSON.stringify({
+              status: 'connected',
+              timestamp: Date.now(),
+              sessionName: SESSION_NAME
+            }))
+          }
           
           return true
         } else if (connection.status === 'connecting') {
@@ -512,7 +407,9 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       } else if (response.status === 404) {
         console.log('❌ Nenhuma conexão encontrada no backend')
         // Limpar localStorage se não há conexão
-        localStorage.removeItem(`whatsapp_connection_${user?.id}`)
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(`whatsapp_connection_${user?.id}`)
+        }
       }
       return false
     } catch (err) {
@@ -524,11 +421,8 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   // Verificar status da sessão na WAHA API
   const checkSessionStatus = async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
-        headers: {
-          'X-Api-Key': API_KEY
-        }
-      })
+      console.log('📡 Verificando status da sessão:', SESSION_NAME)
+      const response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`)
       
       if (response.ok) {
         const data = await response.json()
@@ -544,12 +438,14 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           onUpdate({ isConnected: true, isActive: true })
           
           // Salvar no localStorage
-          localStorage.setItem(`whatsapp_connection_${user?.id}`, JSON.stringify({
-            status: 'connected',
-            timestamp: Date.now(),
-            sessionName: SESSION_NAME,
-            wahaStatus: data.status
-          }))
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`whatsapp_connection_${user?.id}`, JSON.stringify({
+              status: 'connected',
+              timestamp: Date.now(),
+              sessionName: SESSION_NAME,
+              wahaStatus: data.status
+            }))
+          }
           
           console.log('✅ WhatsApp conectado com sucesso!', data.me)
           
@@ -732,7 +628,9 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       onUpdate({ isConnected: false, isActive: false })
       
       // Limpar localStorage
-      localStorage.removeItem(`whatsapp_connection_${user?.id}`)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`whatsapp_connection_${user?.id}`)
+      }
       
       console.log('✅ Desconexão concluída com sucesso!')
       

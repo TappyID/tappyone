@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from 'next/server'
+
+// Forçar rota dinâmica
+export const dynamic = 'force-dynamic'
+
+const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
+
+export async function GET(request: NextRequest) {
+  try {
+    const wahaUrl = `${WAHA_URL}/api/sessions`
+    
+    const response = await fetch(wahaUrl, {
+      method: 'GET',
+      headers: {
+        'X-Api-Key': WAHA_API_KEY,
+        'accept': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      console.error('❌ [SESSIONS] Erro do WAHA:', response.status)
+      return NextResponse.json(
+        { error: `Erro do WAHA: ${response.status}` },
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('❌ [SESSIONS] Erro interno:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const wahaUrl = `${WAHA_URL}/api/sessions`
+    
+    const response = await fetch(wahaUrl, {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': WAHA_API_KEY,
+        'Content-Type': 'application/json',
+        'accept': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+
+    if (!response.ok) {
+      console.error('❌ [SESSIONS POST] Erro do WAHA:', response.status)
+      const errorText = await response.text()
+      return NextResponse.json(
+        { error: `Erro do WAHA: ${response.status}`, details: errorText },
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('❌ [SESSIONS POST] Erro interno:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
