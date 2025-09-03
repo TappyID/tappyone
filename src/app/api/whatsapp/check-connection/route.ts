@@ -12,14 +12,14 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionName = `user_${user_id}`
-    const wahaUrl = process.env.WAHA_URL || 'http://localhost:3000'
-    const wahaApiKey = process.env.WAHA_API_KEY || 'your-secret-api-key-here'
+    const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+    const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
     // Verificar se a sessão existe no WAHA
-    const wahaResponse = await fetch(`${wahaUrl}/api/sessions/${sessionName}`, {
+    const wahaResponse = await fetch(`${WAHA_URL}/api/sessions/${sessionName}`, {
       headers: {
         'Accept': 'application/json',
-        'X-API-Key': wahaApiKey
+        'X-Api-Key': WAHA_API_KEY
       }
     })
 

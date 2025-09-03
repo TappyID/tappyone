@@ -12,7 +12,7 @@ export async function GET(
 ) {
   try {
     const { sessionName } = params
-    const wahaUrl = `${WAHA_URL}/api/${sessionName}`
+    const wahaUrl = `${WAHA_URL}/api/sessions/${sessionName}`
     
     const response = await fetch(wahaUrl, {
       method: 'GET',
@@ -48,7 +48,7 @@ export async function POST(
   try {
     const { sessionName } = params
     const body = await request.json()
-    const wahaUrl = `${WAHA_URL}/api/${sessionName}`
+    const wahaUrl = `${WAHA_URL}/api/sessions/${sessionName}`
     
     const response = await fetch(wahaUrl, {
       method: 'POST',
@@ -86,7 +86,7 @@ export async function DELETE(
 ) {
   try {
     const { sessionName } = params
-    const wahaUrl = `${WAHA_URL}/api/${sessionName}`
+    const wahaUrl = `${WAHA_URL}/api/sessions/${sessionName}`
     
     const response = await fetch(wahaUrl, {
       method: 'DELETE',
