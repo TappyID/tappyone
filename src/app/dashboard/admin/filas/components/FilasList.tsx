@@ -75,7 +75,7 @@ export default function FilasList({ filas, onUpdateFila, onDeleteFila }: FilasLi
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {filas.map((fila, index) => {
         const PrioridadeIcon = prioridadeIcons[fila.prioridade || 'MEDIA'] || Clock
         
@@ -84,69 +84,75 @@ export default function FilasList({ filas, onUpdateFila, onDeleteFila }: FilasLi
             key={fila.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
+            transition={{ delay: index * 0.05, duration: 0.3 }}
+            className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all duration-300 relative"
+            style={{ zIndex: showActions === fila.id ? 50 : 1 }}
           >
-            {/* Header da Fila */}
+            {/* Header da Fila - Layout Melhorado */}
             <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                {/* Informações principais */}
+                <div className="flex items-start gap-4 flex-1">
                   {/* Cor da Fila */}
                   <div 
-                    className="w-4 h-16 rounded-full shadow-sm"
+                    className="w-1 h-20 rounded-full shadow-sm flex-shrink-0 mt-1"
                     style={{ backgroundColor: fila.cor }}
                   />
                   
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{fila.nome}</h3>
-                      
-                      {/* Status Badge */}
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          fila.ativa 
-                            ? 'bg-green-100 text-green-700 border border-green-200' 
-                            : 'bg-gray-100 text-gray-700 border border-gray-200'
-                        }`}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${fila.ativa ? 'bg-green-500' : 'bg-gray-400'}`} />
-                        {fila.ativa ? 'Ativa' : 'Inativa'}
-                      </motion.div>
+                  <div className="flex-1 min-w-0">
+                    {/* Título e badges */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{fila.nome}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Status Badge */}
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                              fila.ativa 
+                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                : 'bg-gray-100 text-gray-700 border border-gray-200'
+                            }`}
+                          >
+                            <div className={`w-2 h-2 rounded-full ${fila.ativa ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            {fila.ativa ? 'Ativa' : 'Inativa'}
+                          </motion.div>
 
-                      {/* Prioridade Badge */}
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${prioridadeCores[fila.prioridade || 'MEDIA']}`}
-                      >
-                        <PrioridadeIcon className="w-3 h-3" />
-                        {(fila.prioridade || 'MEDIA').charAt(0).toUpperCase() + (fila.prioridade || 'MEDIA').slice(1).toLowerCase()}
-                      </motion.div>
+                          {/* Prioridade Badge */}
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${prioridadeCores[fila.prioridade || 'MEDIA']}`}
+                          >
+                            <PrioridadeIcon className="w-3 h-3" />
+                            {(fila.prioridade || 'MEDIA').charAt(0).toUpperCase() + (fila.prioridade || 'MEDIA').slice(1).toLowerCase()}
+                          </motion.div>
+                        </div>
+                      </div>
                     </div>
                     
-                    <p className="text-gray-600 mb-3">{fila.descricao}</p>
+                    <p className="text-gray-600 mb-3 line-clamp-2">{fila.descricao}</p>
                     
-                    {/* Integrações */}
-                    <div className="flex items-center gap-2">
+                    {/* Integrações e Estatísticas */}
+                    <div className="flex flex-wrap items-center gap-2">
                       {fila.chatBot && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium">
                           <Bot className="w-3 h-3" />
                           ChatBot
                         </div>
                       )}
                       {fila.kanban && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
                           <Kanban className="w-3 h-3" />
                           Kanban
                         </div>
                       )}
                       {fila.whatsappChats && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
                           <MessageSquare className="w-3 h-3" />
                           WhatsApp
                         </div>
                       )}
-                      <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
                         <Users className="w-3 h-3" />
                         {fila.atendentes?.length || 0} atendentes
                       </div>
@@ -154,113 +160,88 @@ export default function FilasList({ filas, onUpdateFila, onDeleteFila }: FilasLi
                   </div>
                 </div>
 
-                {/* Stats e Actions */}
-                <div className="flex items-center gap-6">
+                {/* Stats e Actions - Layout Reorganizado */}
+                <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
                   {/* Quick Stats */}
-                  <div className="hidden lg:flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                      <p className="font-bold text-gray-900">{fila.estatisticas?.conversasAtivas || 0}</p>
-                      <p className="text-gray-600">Ativas</p>
+                  <div className="hidden lg:flex items-center gap-4 text-sm bg-gray-50 rounded-xl p-4">
+                    <div className="text-center px-3">
+                      <p className="font-bold text-gray-900 text-lg">{fila.estatisticas?.conversasAtivas || 0}</p>
+                      <p className="text-gray-600 text-xs">Ativas</p>
                     </div>
-                    <div className="text-center">
-                      <p className="font-bold text-gray-900">{fila.estatisticas?.tempoMedioResposta || 0}min</p>
-                      <p className="text-gray-600">Tempo médio</p>
+                    <div className="w-px h-8 bg-gray-300"></div>
+                    <div className="text-center px-3">
+                      <p className="font-bold text-gray-900 text-lg">{fila.estatisticas?.tempoMedioResposta || 0}<span className="text-sm">min</span></p>
+                      <p className="text-gray-600 text-xs">Tempo médio</p>
                     </div>
-                    <div className="text-center">
-                      <p className="font-bold text-gray-900">{fila.estatisticas?.satisfacao?.toFixed(1) || '0.0'}</p>
-                      <p className="text-gray-600">Satisfação</p>
+                    <div className="w-px h-8 bg-gray-300"></div>
+                    <div className="text-center px-3">
+                      <p className="font-bold text-gray-900 text-lg">{fila.estatisticas?.satisfacao?.toFixed(1) || '0.0'}</p>
+                      <p className="text-gray-600 text-xs">Satisfação</p>
                     </div>
                   </div>
 
-                  {/* Action Buttons - More Prominent */}
-                  <div className="flex items-center gap-3">
+                  {/* Action Buttons - Melhorados */}
+                  <div className="flex flex-wrap items-center gap-2">
                     {/* Toggle Status Button */}
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => onUpdateFila(fila.id, { ativa: !fila.ativa })}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm ${
                         fila.ativa 
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          ? 'bg-red-500 text-white hover:bg-red-600 hover:shadow-md' 
+                          : 'bg-green-500 text-white hover:bg-green-600 hover:shadow-md'
                       }`}
                       title={fila.ativa ? 'Desativar fila' : 'Ativar fila'}
                     >
+                      <CheckCircle className="w-4 h-4" />
                       {fila.ativa ? 'Desativar' : 'Ativar'}
                     </motion.button>
 
                     {/* Edit Button */}
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white hover:bg-blue-600 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                       title="Editar fila"
                     >
                       <Edit3 className="w-4 h-4" />
-                      <span className="ml-1 hidden sm:inline">Editar</span>
+                      <span>Editar</span>
                     </motion.button>
 
                     {/* View Details Button */}
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => toggleExpanded(fila.id)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm ${
                         expandedFila === fila.id 
-                          ? 'bg-[#305e73] text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-[#305e73] text-white shadow-md' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:shadow-md'
                       }`}
                       title="Ver detalhes"
                     >
                       <Eye className="w-4 h-4" />
-                      <span className="ml-1 hidden sm:inline">
+                      <span>
                         {expandedFila === fila.id ? 'Ocultar' : 'Detalhes'}
                       </span>
                     </motion.button>
 
-                    {/* More Actions Dropdown */}
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => toggleActions(fila.id)}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Mais ações"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </motion.button>
-
-                      <AnimatePresence>
-                        {showActions === fila.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20"
-                          >
-                            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
-                              <Copy className="w-4 h-4" />
-                              Duplicar fila
-                            </button>
-                            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
-                              <ArrowUpDown className="w-4 h-4" />
-                              Reordenar
-                            </button>
-                            <hr className="my-2" />
-                            <button 
-                              onClick={() => {
-                                onDeleteFila(fila.id)
-                                setShowActions(null)
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Excluir fila
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    {/* Delete Button - Mais Visível */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        if (confirm('Tem certeza que deseja excluir esta fila? Esta ação não pode ser desfeita.')) {
+                          onDeleteFila(fila.id)
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Excluir fila"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Excluir</span>
+                    </motion.button>
                   </div>
                 </div>
               </div>
