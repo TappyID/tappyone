@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+
+// Forçar rota dinâmica para permitir uso de headers
+export const dynamic = 'force-dynamic'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
 

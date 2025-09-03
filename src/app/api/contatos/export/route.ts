@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+
+// Forçar rota dinâmica para permitir uso de headers
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {

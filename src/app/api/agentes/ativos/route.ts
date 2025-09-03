@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+
+// Forçar rota dinâmica para permitir uso de cookies
+export const dynamic = 'force-dynamic';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://server.tappy.id';
 

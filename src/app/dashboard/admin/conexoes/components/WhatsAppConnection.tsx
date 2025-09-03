@@ -33,14 +33,16 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const getUserId = () => {
     if (user?.id) return user.id
     
-    // Tentar extrair do token JWT no localStorage
-    const token = localStorage.getItem('token')
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        return payload.user_id || payload.sub
-      } catch (e) {
-        console.warn('Não foi possível decodificar token:', e)
+    // Verificar se estamos no browser antes de acessar localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token')
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          return payload.user_id || payload.sub
+        } catch (e) {
+          console.warn('Não foi possível decodificar token:', e)
+        }
       }
     }
     return 'default'
