@@ -1,50 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server'
+  import { NextRequest, NextResponse } from 'next/server'
 
-const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+  const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { chatId: string } }
-) {
-  try {
-    const { chatId } = params
-    console.log('🖼️ [PICTURE] GET route chamado para chatId:', chatId)
-    
-    // WAHA usa formato diferente: /api/user_{SESSION_ID}/chats/{CHAT_ID}/picture
-    const sessionId = 'user_ce065849-4fa7-4757-a2cb-5581cfec9225'
-    const wahaUrl = `${WAHA_URL}/api/${sessionId}/chats/${encodeURIComponent(chatId)}/picture?refresh=true`
-    
-    console.log('📡 [PICTURE] Fazendo chamada para WAHA:', wahaUrl)
+  export async function GET(
+    request: NextRequest,
+    { params }: { params: { chatId: string } }
+  ) {
+    try {
+      const { chatId } = params
+      
+      // WAHA usa formato diferente: /api/user_{SESSION_ID}/chats/{CHAT_ID}/picture
+      const sessionId = 'user_ce065849-4fa7-4757-a2cb-5581cfec9225'
+      const wahaUrl = `${WAHA_URL}/api/${sessionId}/chats/${encodeURIComponent(chatId)}/picture?refresh=true`
 
-    // Proxy para o backend WAHA
-    const response = await fetch(wahaUrl, {
-      method: 'GET',
-      headers: {
-        'X-API-Key': process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey',
-        'accept': 'application/json'
+      // Proxy para o backend WAHA
+      const response = await fetch(wahaUrl, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey',
+          'accept': 'application/json'
+        }
+      })
+
+      console.log('📡 [PICTURE] Status da resposta do WAHA:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ [PICTURE] Erro do WAHA:', response.status, errorText)
+        return NextResponse.json(
+          { error: `Erro do WAHA: ${response.status}` },
+          { status: response.status }
+        )
       }
-    })
 
-    console.log('📡 [PICTURE] Status da resposta do WAHA:', response.status)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ [PICTURE] Erro do WAHA:', response.status, errorText)
+      const data = await response.json()
+      
+      return NextResponse.json(data)
+    } catch (error) {
+      console.error('❌ [PICTURE] Erro interno:', error)
       return NextResponse.json(
-        { error: `Erro do WAHA: ${response.status}` },
-        { status: response.status }
+        { error: 'Erro interno do servidor' },
+        { status: 500 }
       )
     }
-
-    const data = await response.json()
-    console.log('✅ [PICTURE] Foto obtida do WAHA para chatId:', chatId, data)
-    
-    return NextResponse.json(data)
-  } catch (error) {
-    console.error('❌ [PICTURE] Erro interno:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
   }
-}

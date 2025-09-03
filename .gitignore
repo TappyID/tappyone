@@ -1,10 +1,8 @@
 # Dependencies
 node_modules/
-backend/vendor/
 
 # Production builds
 .next/
-backend/bin/
 dist/
 build/
 
@@ -131,8 +129,6 @@ dump.rdb
 # Local development
 .local/
 
-# Backend (repositório isolado)
-backend/
 
 .vercel
 .env*.local

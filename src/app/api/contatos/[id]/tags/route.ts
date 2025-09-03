@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { contatoId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { contatoId } = params
+    const { id: contatoId } = params
     const { tagIds } = await request.json()
     
     const token = request.headers.get('Authorization')?.replace('Bearer ', '')
@@ -39,10 +39,10 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { contatoId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { contatoId } = params
+    const { id: contatoId } = params
     const { tagIds } = await request.json()
     
     const token = request.headers.get('Authorization')?.replace('Bearer ', '')
@@ -76,10 +76,10 @@ export async function PUT(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { contatoId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { contatoId } = params
+    const { id: contatoId } = params
     
     const token = request.headers.get('Authorization')?.replace('Bearer ', '')
     if (!token) {
