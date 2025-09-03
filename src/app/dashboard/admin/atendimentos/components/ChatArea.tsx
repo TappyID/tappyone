@@ -87,6 +87,7 @@ import QuickActionsSidebar from './QuickActionsSidebar'
 import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
 import { useChatAgente } from '@/hooks/useChatAgente'
+import { useContatoTags } from '@/hooks/useContatoTags'
 
 interface ChatAreaProps {
   conversation: any
@@ -150,8 +151,23 @@ export default function ChatArea({
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const [kanbanInfo, setKanbanInfo] = useState<{quadro: string, coluna: string, color: string} | null>(null)
   const [showAgenteModal, setShowAgenteModal] = useState(false)
+  
+  // Função para extrair chatId
+  const extractChatId = (conversation: any): string | null => {
+    if (typeof conversation?.id === 'string') {
+      return conversation.id
+    } else if (conversation?.id && (conversation.id as any)._serialized) {
+      return (conversation.id as any)._serialized
+    }
+    return null
+  }
+  
+  // Extrair chatId primeiro
+  const chatId = useMemo(() => extractChatId(conversation), [conversation])
+  
   const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
+  const { tags: contatoTags, updateContatoTags, fetchContatoTags } = useContatoTags(chatId)
   
   // Função para buscar informações do quadro e coluna
   const getKanbanInfo = async (chatId: string) => {
@@ -219,17 +235,6 @@ export default function ChatArea({
       return { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
     }
   }
-
-  
-  // Função para extrair chatId
-  const extractChatId = (conversation: any): string | null => {
-    if (typeof conversation?.id === 'string') {
-      return conversation.id
-    } else if (conversation?.id && (conversation.id as any)._serialized) {
-      return (conversation.id as any)._serialized
-    }
-    return null
-  }
   
   
   // Carregar informações do Kanban quando a conversa mudar
@@ -246,9 +251,6 @@ export default function ChatArea({
     
     loadKanbanInfo()
   }, [conversation])
-  
-  // Extrair chatId
-  const chatId = extractChatId(conversation)
   
   // Hook de tradução
   const { translateMessage, translateMessages, selectedLanguage, setSelectedLanguage, isTranslating } = useTranslation()
@@ -770,9 +772,26 @@ export default function ChatArea({
     }
   }
 
-  const handleTagsSave = (tags: string[]) => {
-    console.log('Tags aplicadas:', tags)
-    // TODO: Implementar salvamento no backend
+  const handleTagsSave = async (tags: any[]) => {
+    try {
+      console.log('🏷️ Salvando tags:', tags)
+      console.log('🔍 Debug conversation:', conversation)
+      console.log('🔍 Debug chatId extraído:', chatId)
+      console.log('🔍 Debug conversation.id:', conversation?.id)
+      console.log('🔍 Debug conversation.id type:', typeof conversation?.id)
+      
+      await updateContatoTags(tags)
+      console.log('✅ Tags salvas com sucesso!')
+      setShowTagsModal(false)
+      
+      // Recarregar dados do contato se necessário
+      if (onMarkAsRead && chatId) {
+        onMarkAsRead(chatId)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar tags:', error)
+      alert('Erro ao salvar tags. Tente novamente.')
+    }
   }
 
   const handleVideoChamadaStart = (callData: any) => {
@@ -1185,7 +1204,31 @@ export default function ChatArea({
 
           {/* User Info */}
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-slate-100">{conversation.name}</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-gray-900 dark:text-slate-100">{conversation.name}</h3>
+              
+              {/* Tags do contato */}
+              {conversation?.tags && conversation.tags.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {conversation.tags.slice(0, 2).map((tag: any) => (
+                    <div
+                      key={tag.id}
+                      className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
+                      style={{ backgroundColor: tag.cor }}
+                      title={tag.nome}
+                    >
+                      #{tag.nome}
+                    </div>
+                  ))}
+                  {conversation.tags.length > 2 && (
+                    <div className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
+                      +{conversation.tags.length - 2}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
                 isOnline(extractChatId(conversation) || '') ? 'bg-green-500' : 'bg-slate-400'
