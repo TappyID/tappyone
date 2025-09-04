@@ -187,6 +187,7 @@ export default function ConversationSidebar({
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [hiddenChats, setHiddenChats] = useState<Set<string>>(new Set())
   const [showFilterModal, setShowFilterModal] = useState(false)
+  const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set())
   const [advancedFilters, setAdvancedFilters] = useState({
     showHidden: false,
     selectedQueues: [] as string[],
@@ -365,51 +366,53 @@ export default function ConversationSidebar({
   
 
   // Funções para ações de chat
-  const handleArchiveChat = async (chatId: string, isArchived: boolean) => {
-    try {
-      const endpoint = isArchived ? 'unarchive' : 'archive'
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
 
-      if (!response.ok) {
-        throw new Error(`Erro ao ${isArchived ? 'desarquivar' : 'arquivar'} chat`)
+  // Função para arquivar chat
+  const handleArchiveChat = (chatId: string) => {
+    setArchivedChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId) // Desarquivar se já estava arquivado
+      } else {
+        newSet.add(chatId) // Arquivar
       }
-
-      // Atualizar a lista de conversas localmente
-      window.location.reload()
-      
-    } catch (error) {
-      console.error('Erro na operação de arquivo:', error)
-      alert(`Erro ao ${isArchived ? 'desarquivar' : 'arquivar'} chat. Tente novamente.`)
-    }
+      return newSet
+    })
   }
 
+  // Função para deletar/ocultar chat específico
   const handleDeleteChat = async (chatId: string) => {
-    const confirmDelete = confirm(
-      'Tem certeza que deseja deletar este chat? Esta ação não pode ser desfeita.'
-    )
+    if (!confirm('Deseja realmente excluir esta conversa?')) return
     
-    if (!confirmDelete) return
-
     try {
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/delete`, {
+      const token = localStorage.getItem('token')
+      
+      // Primeiro tentar via API Next.js (se existir)
+      let response = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
-
-      if (!response.ok) {
-        throw new Error('Erro ao deletar chat')
-      }
-
-      // Atualizar a lista de conversas localmente
-      window.location.reload()
       
+      // Se 404, o endpoint não existe - apenas ocultar localmente
+      if (response.status === 404) {
+        console.warn('⚠️ Endpoint DELETE não implementado - ocultando localmente')
+        setHiddenChats(prev => new Set(Array.from(prev).concat([chatId])))
+        return
+      }
+      
+      if (response.ok) {
+        // Se deletou com sucesso, adicionar à lista de chats ocultos
+        setHiddenChats(prev => new Set(Array.from(prev).concat([chatId])))
+        
+        // Opcional: mostrar notificação de sucesso
+        console.log('Chat deletado com sucesso')
+      } else {
+        console.error('Erro ao deletar chat:', response.statusText)
+        alert('Erro ao deletar chat. Tente novamente.')
+      }
     } catch (error) {
       console.error('Erro ao deletar chat:', error)
       alert('Erro ao deletar chat. Tente novamente.')
@@ -421,11 +424,9 @@ export default function ConversationSidebar({
   const activeContacts = useInfiniteScroll ? [] : contacts
   const activeLoading = useInfiniteScroll ? infiniteChatsHook.loading : isLoading
   
-  // Buscar dados reais dos contatos apenas se não estiver usando infinite scroll
-  const shouldFetchContactData = !useInfiniteScroll && chatIds.length > 0
-  const { contatos: contatosData, loading: loadingContatos } = useContatoData(
-    shouldFetchContactData ? chatIds : []
-  )
+  // Buscar dados reais dos contatos para fotos de perfil (sempre necessário)
+  const activeChatIds = activeChats.map(chat => chat.id?._serialized || chat.id || '')
+  const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
   
   // Handler do scroll infinito
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -436,21 +437,41 @@ export default function ConversationSidebar({
 
   // Criar conversas baseadas nos chats reais com dados dos contatos
   const conversations = activeChats.map((chat, index) => {
-    const name = useInfiniteScroll ? (chat.name || chat.id?.split('@')[0] || 'Contato') : getContactName(chat, contacts)
+    const name = getContactName(chat, useInfiniteScroll ? [] : contacts)
     const lastMessage = useInfiniteScroll ? (chat.lastMessage || 'Nova conversa') : getLastMessage(chat)
-    const chatId = useInfiniteScroll ? chat.id : (chat.id?._serialized || chat.id || `chat-${index}`)
+    // Extrair chatId corretamente para ambos os modos
+    let chatId
+    if (useInfiniteScroll) {
+      // No infinite scroll, o chat pode ter estruturas diferentes
+      if (typeof chat.id === 'string') {
+        chatId = chat.id
+      } else if (chat.id && typeof chat.id === 'object') {
+        chatId = chat.id._serialized || chat.id.id || chat.id.user || JSON.stringify(chat.id)
+      } else {
+        chatId = `chat-${index}`
+      }
+    } else {
+      // Modo normal
+      chatId = chat.id?._serialized || chat.id || `chat-${index}`
+    }
     
-    // Buscar dados reais do contato (só para chats normais)
-    const contatoData = useInfiniteScroll ? null : contatosData[chatId]
+    // Validar que chatId não seja undefined/null
+    if (!chatId || chatId === 'undefined') {
+      chatId = `chat-${index}`
+      console.warn('ChatId inválido detectado:', chat.id, 'usando fallback:', chatId)
+    }
+    
+    // Buscar dados reais do contato (agora funciona para ambos os modos)
+    const contatoData = contatosData[chatId]
     
     return {
       id: chatId,
       name,
       lastMessage: lastMessage === 'Sem mensagens' ? 'Nova conversa' : lastMessage,
-      timestamp: useInfiniteScroll ? formatTimestamp(chat.timestamp) : formatTimestamp(chat.timestamp),
-      unread: useInfiniteScroll ? (chat.unreadCount || 0) : (chat.unreadCount || 0),
+      timestamp: formatTimestamp(chat.timestamp),
+      unread: chat.unreadCount || 0,
       status: 'offline', // Will be updated by presence hook
-      avatar: useInfiniteScroll ? chat.profilePicUrl : chat.profilePictureUrl,
+      avatar: chat.profilePicUrl || chat.profilePictureUrl,
       type: useInfiniteScroll ? (chat.isGroup ? 'group' : 'individual') : (chat.isGroup ? 'group' : 'individual'),
       
       // Dados reais do contato (só para chats normais)
@@ -469,7 +490,8 @@ export default function ConversationSidebar({
       } : null,
       
       isPinned: false, // TODO: Implementar campo no backend
-      isArchived: false, // TODO: Implementar campo no backend
+      isArchived: archivedChats.has(chatId), // Estado local de arquivados
+      hasReply: chat.lastMessage !== 'Nova conversa' && chat.lastMessage !== 'Sem mensagens',
       originalChat: chat
     }
   })
@@ -499,10 +521,12 @@ export default function ConversationSidebar({
   }, [chats, useInfiniteScroll])
 
   const filters = [
-    { id: 'all', label: 'Todas', icon: MessageCircle, count: conversations.length },
-    { id: 'unread', label: 'Não', icon: Circle, count: conversations.filter(c => c.unread > 0).length },
-    { id: 'read', label: 'Lidas', icon: CheckCircle2, count: conversations.filter(c => c.unread === 0).length },
-    { id: 'groups', label: 'Grupos', icon: Users, count: conversations.filter(c => c.type === 'group').length },
+    { id: 'all', label: 'Todas', icon: MessageCircle, count: conversations.filter(c => c.type !== 'group' && !c.isArchived).length },
+    { id: 'unread', label: 'Não', icon: Circle, count: conversations.filter(c => c.unread > 0 && c.type !== 'group' && !c.isArchived).length },
+    { id: 'read', label: 'Lidas', icon: CheckCircle2, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived).length },
+    { id: 'read-no-reply', label: 'Lidos não respondidos', icon: Clock, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived && !c.hasReply).length },
+    { id: 'archived', label: 'Arquivados', icon: Archive, count: conversations.filter(c => c.isArchived).length },
+    { id: 'groups', label: 'Grupos', icon: Users, count: conversations.filter(c => c.type === 'group' && !c.isArchived).length },
   ]
 
   const filteredConversations = conversations.filter(conv => {
@@ -510,11 +534,13 @@ export default function ConversationSidebar({
     const matchesSearch = conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
     
-    // Filtros básicos (Todas, Não lidas, Lidas, Grupos)
-    const matchesFilter = activeFilter === 'all' ||
-                         (activeFilter === 'unread' && conv.unread > 0) ||
-                         (activeFilter === 'read' && conv.unread === 0) ||
-                         (activeFilter === 'groups' && conv.type === 'group')
+    // Filtros básicos com suporte a arquivados e lidos não respondidos
+    const matchesFilter = (activeFilter === 'all' && conv.type !== 'group' && !conv.isArchived) ||
+                         (activeFilter === 'unread' && conv.unread > 0 && conv.type !== 'group' && !conv.isArchived) ||
+                         (activeFilter === 'read' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived) ||
+                         (activeFilter === 'read-no-reply' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived && !conv.hasReply) ||
+                         (activeFilter === 'archived' && conv.isArchived) ||
+                         (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
     
     // Filtro por fila real
     const matchesQueue = selectedQueue === 'todas' || 
@@ -882,8 +908,7 @@ export default function ConversationSidebar({
                         whileTap={{ scale: 0.9 }}
                         onClick={(e) => {
                           e.stopPropagation()
-                          // TODO: Implementar lógica de arquivar
-                          console.log('Arquivar conversa:', conversation.id)
+                          handleArchiveChat(conversation.id)
                         }}
                         className="p-1 hover:bg-accent rounded transition-colors"
                         title="Arquivar conversa"
@@ -897,10 +922,7 @@ export default function ConversationSidebar({
                         whileTap={{ scale: 0.9 }}
                         onClick={(e) => {
                           e.stopPropagation()
-                          // TODO: Implementar lógica de excluir
-                          if (confirm('Deseja realmente excluir esta conversa?')) {
-                            console.log('Excluir conversa:', conversation.id)
-                          }
+                          handleDeleteChat(conversation.id)
                         }}
                         className="p-1 hover:bg-red-100 hover:text-red-600 rounded transition-colors"
                         title="Excluir conversa"
@@ -1100,7 +1122,7 @@ export default function ConversationSidebar({
       {/* Badge de Scroll Infinito (desenvolvimento) */}
       {useInfiniteScroll && process.env.NODE_ENV === 'development' && (
         <div className="absolute top-2 left-2 bg-green-500/90 text-white text-xs px-2 py-1 rounded font-bold z-50">
-          📜 SCROLL ∞
+        
         </div>
       )}
 

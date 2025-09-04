@@ -57,6 +57,13 @@ export function useInfiniteChats() {
       // Combinar chats individuais e grupos
       const allChats = [...(Array.isArray(chatsData) ? chatsData : []), ...(Array.isArray(groupsData) ? groupsData : [])]
       
+      console.log(`📊 useInfiniteChats Debug:`, {
+        chatsCount: Array.isArray(chatsData) ? chatsData.length : 0,
+        groupsCount: Array.isArray(groupsData) ? groupsData.length : 0,
+        totalChats: allChats.length,
+        hasGroups: allChats.some(chat => chat.isGroup || chat.id?.includes('@g.us'))
+      })
+      
       // Ordenar por timestamp (mais recente primeiro)
       const sortedChats = allChats.sort((a, b) => {
         const timestampA = a.conversationTimestamp || a.timestamp || 0
@@ -69,16 +76,58 @@ export function useInfiniteChats() {
       const endIndex = startIndex + ITEMS_PER_PAGE
       const pageChats = sortedChats.slice(startIndex, endIndex)
 
-      // Mapear para formato padrão
-      const mappedChats: ChatItem[] = pageChats.map(chat => ({
-        id: chat.id,
-        name: chat.name || chat.pushName || chat.id.split('@')[0],
-        lastMessage: chat.lastMessage?.body || 'Sem mensagens',
-        timestamp: chat.conversationTimestamp || chat.timestamp || Date.now(),
-        unreadCount: chat.unreadCount || 0,
-        isGroup: chat.isGroup || chat.id.includes('@g.us'),
-        profilePicUrl: chat.profilePictureUrl
-      }))
+      // Mapear para formato padrão e buscar fotos de perfil
+      const mappedChats: ChatItem[] = await Promise.all(
+        pageChats.map(async chat => {
+          let profilePictureUrl = null
+          
+          // Extrair o ID correto do chat
+          let chatId = chat.id
+          if (typeof chat.id === 'object') {
+            chatId = chat.id.id || chat.id._serialized || chat.id.user || JSON.stringify(chat.id)
+          }
+          
+          // Buscar foto de perfil
+          try {
+            const pictureResponse = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}/picture`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (pictureResponse.ok) {
+              const pictureData = await pictureResponse.json()
+              profilePictureUrl = pictureData.url
+              console.log(`✅ Foto encontrada para ${chat.name || chatId}:`, profilePictureUrl)
+            } else {
+              console.warn(`❌ Foto não encontrada para ${chat.name || chatId} (${pictureResponse.status}):`, chatId)
+            }
+          } catch (error) {
+            console.error(`🚨 Erro ao buscar foto de ${chat.name || chatId}:`, error)
+          }
+          
+          // Debug: Verificar dados de unread
+          const unreadCount = chat.unreadCount || chat.unread || 0
+          console.log(`💬 Debug ${chat.name || chat.id}:`, {
+            unreadCount: chat.unreadCount,
+            unread: chat.unread,
+            finalUnreadCount: unreadCount,
+            rawChat: { id: chat.id, unreadCount: chat.unreadCount, unread: chat.unread }
+          })
+          
+          return {
+            id: chat.id,
+            name: chat.name || chat.pushName || chat.id.split('@')[0],
+            lastMessage: chat.lastMessage?.body || 'Sem mensagens',
+            timestamp: chat.conversationTimestamp || chat.timestamp || Date.now(),
+            unreadCount: unreadCount,
+            isGroup: chat.isGroup || chat.id.includes('@g.us'),
+            profilePicUrl: profilePictureUrl,
+            profilePictureUrl: profilePictureUrl
+          }
+        })
+      )
 
       if (reset || pageNum === 0) {
         setChats(mappedChats)

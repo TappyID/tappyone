@@ -10,61 +10,74 @@ import SpecialMediaModal from '@/components/ui/SpecialMediaModal'
 import AudioMessageComponent from '@/components/AudioMessageComponent'
 import EditTextModal from './EditTextModal'
 import {
-  Send,
-  Paperclip,
+  MessageCircle, 
+  Phone, 
+  Video, 
+  MoreVertical, 
+  Send, 
+  Paperclip, 
+  Smile, 
+  Image, 
+  FileText, 
   Mic,
-  MicOff,
-  Smile,
-  Phone,
-  Video,
-  MoreHorizontal,
-  Search,
-  Star,
-  Archive,
-  Trash2,
-  UserPlus,
-  Settings,
   X,
-  Play,
-  Pause,
-  Download,
-  Eye,
-  EyeOff,
   Calendar,
   DollarSign,
-  FileText,
-  StickyNote,
   Tag,
-  Users,
-  MapPin,
-  Contact,
-  BarChart3,
-  Check,
-  CheckCheck,
-  Languages,
-  Volume2,
-  VolumeX,
-  AudioLines,
-  Image as ImageIcon,
-  FileVideo,
-  FileAudio,
-  File,
-  Reply,
-  Forward,
-  Edit,
-  Copy,
-  ExternalLink,
   User,
+  FileVideo,
+  Volume2,
+  Download,
+  Copy,
+  Forward,
+  Reply,
+  Trash2,
+  Edit,
+  Star,
+  Maximize2,
+  Minimize2,
+  MapPin,
+  PhoneCall,
+  Users,
+  Share,
+  Languages,
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  ChevronUp,
+  ChevronDown,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Maximize,
+  ExternalLink,
+  Info,
+  Shield,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Zap,
+  Bot,
+  UserCheck,
+  Eye,
+  EyeOff,
+  MessageSquare,
+  Archive,
   Wifi,
   WifiOff,
-  MessageSquare,
   FileSignature,
-  UserCheck,
+  StickyNote,
   Hash,
   Monitor,
+  AudioLines,
+  Check,
+  CheckCheck,
   Upload,
-  Square,
-  Bot
+  ImageIcon,
+  Contact,
+  Square
 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useAudioRecorder, formatDuration, blobToFile } from '@/hooks/useAudioRecorder'
@@ -361,7 +374,61 @@ export default function ChatArea({
   // Estados para novas funcionalidades
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+  
+  // Filtrar mensagens baseado na busca
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    
+    return messages.filter(message => 
+      message.body?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.content?.toLowerCase().includes(searchQuery.toLowerCase())
+    ).map(message => ({
+      ...message,
+      matchText: message.body || message.text || message.content || ''
+    }))
+  }, [messages, searchQuery])
+  
+  // Navegar entre resultados
+  const navigateToMatch = (direction: 'next' | 'prev') => {
+    if (searchResults.length === 0) return
+    
+    let newIndex
+    if (direction === 'next') {
+      newIndex = (currentMatchIndex + 1) % searchResults.length
+    } else {
+      newIndex = currentMatchIndex === 0 ? searchResults.length - 1 : currentMatchIndex - 1
+    }
+    
+    setCurrentMatchIndex(newIndex)
+    
+    // Scroll para a mensagem
+    const targetMessage = searchResults[newIndex]
+    if (targetMessage?.id) {
+      const element = document.getElementById(`message-${targetMessage.id}`)
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        })
+        
+        // Highlight temporário
+        element.style.backgroundColor = '#fef3c7'
+        setTimeout(() => {
+          element.style.backgroundColor = ''
+        }, 2000)
+      }
+    }
+  }
+  
+  // Reset busca
+  const resetSearch = () => {
+    setShowSearch(false)
+    setSearchQuery('')
+    setCurrentMatchIndex(0)
+  }
   const [isSearching, setIsSearching] = useState(false)
   const [showMediaModal, setShowMediaModal] = useState<'contact' | 'location' | 'poll' | null>(null)
   const [showSendMediaModal, setShowSendMediaModal] = useState(false)
@@ -2461,26 +2528,74 @@ export default function ChatArea({
         }}
       />
 
-      {/* Modal de Busca */}
+      {/* Input de Busca Compacto no Topo */}
       {showSearch && chatId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">Buscar Mensagens</h3>
-            <input 
-              type="text" 
-              placeholder="Digite para buscar..."
-              className="w-full p-2 border rounded mb-4"
-            />
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={() => setShowSearch(false)}
-                className="px-4 py-2 bg-gray-200 rounded"
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="absolute top-[72px] left-0 right-0 bg-white/98 dark:bg-gray-900/98 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 z-40 shadow-sm"
+        >
+          <div className="px-4 py-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar mensagens..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentMatchIndex(0)
+                  }}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+                  autoFocus
+                />
+              </div>
+              
+              {/* Contador e navegação */}
+              {searchQuery && searchResults.length > 0 && (
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span>{currentMatchIndex + 1} de {searchResults.length}</span>
+                  <div className="flex gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => navigateToMatch('prev')}
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      disabled={searchResults.length === 0}
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => navigateToMatch('next')}
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      disabled={searchResults.length === 0}
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </motion.button>
+                  </div>
+                </div>
+              )}
+              
+              {searchQuery && searchResults.length === 0 && (
+                <span className="text-xs text-gray-400">Nenhuma mensagem</span>
+              )}
+              
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={resetSearch}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
               >
-                Fechar
-              </button>
+                <X className="w-4 h-4 text-gray-400" />
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Modal de Encaminhamento */}
