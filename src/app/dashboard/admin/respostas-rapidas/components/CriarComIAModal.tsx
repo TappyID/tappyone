@@ -97,7 +97,7 @@ export default function CriarComIAModal({
     onCreateResposta({
       titulo: resultado.titulo,
       descricao: resultado.descricao,
-      categoria_id: null, // Permitir null para categoria
+      // REMOVIDO categoria_id - deixar backend usar "Geral"
       triggers: resultado.triggers,
       acoes: resultado.acoes,
       automatico: true,

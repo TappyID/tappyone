@@ -1,0 +1,80 @@
+[
+  {
+    "timestamp": "2025-09-04T02:12:29.122Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {
+      "status": 500,
+      "ok": false,
+      "statusText": "Internal Server Error",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Thu, 04 Sep 2025 02:12:29 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
+      }
+    },
+    "userId": "d505e5c3-b965-4ec4-a21c-a024ae603f60"
+  },
+  {
+    "timestamp": "2025-09-04T02:12:29.242Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_api_error",
+    "data": {
+      "status": 500,
+      "statusText": "Internal Server Error",
+      "error": "{\"error\":\"Erro do backend: 500\"}",
+      "url": "/api/whatsapp/chats"
+    },
+    "userId": "d505e5c3-b965-4ec4-a21c-a024ae603f60"
+  },
+  {
+    "timestamp": "2025-09-04T02:12:29.291Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "d505e5c3-b965-4ec4-a21c-a024ae603f60"
+  },
+  {
+    "timestamp": "2025-09-04T02:12:29.321Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "d505e5c3-b965-4ec4-a21c-a024ae603f60"
+  },
+  {
+    "timestamp": "2025-09-04T02:12:29.362Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "d505e5c3-b965-4ec4-a21c-a024ae603f60"
+  }
+]

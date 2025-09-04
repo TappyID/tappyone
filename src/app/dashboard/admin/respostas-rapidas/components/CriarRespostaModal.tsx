@@ -346,6 +346,7 @@ export default function CriarRespostaModal({
 
       const data: CreateRespostaRequest = {
         ...formData,
+        categoria_id: formData.categoria_id || undefined, // Converter string vazia para undefined
         triggers: validTriggers,
         acoes: processedAcoes
       }

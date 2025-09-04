@@ -80,9 +80,7 @@ export function useRespostasRapidas() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const baseURL = process.env.NODE_ENV === 'development' 
-    ? 'http://159.65.34.199:8081/api/respostas-rapidas'
-    : 'http://159.65.34.199:8081/api/respostas-rapidas'
+  const baseURL = '/api/respostas-rapidas' // Usar endpoint Next.js local
 
   const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     console.log(`API Call: ${options.method || 'GET'} ${baseURL}${endpoint}`)
@@ -186,9 +184,41 @@ export function useRespostasRapidas() {
       setLoading(true)
       setError(null)
       console.log('Hook createResposta - dados recebidos:', data)
+      console.log('Hook createResposta - categoria_id original:', data.categoria_id)
+      
+      // Transformar dados para formato esperado pelo backend Go
+      const backendData = {
+        titulo: data.titulo,
+        descricao: data.descricao || null,
+        // REMOVER categoria_id - backend vai criar/usar categoria "Geral"
+        agendamento_ativo: data.agendamento_ativo || false,
+        trigger_tipo: data.automatico ? 'palavra_chave' : 'manual',
+        trigger_condicao: {
+          palavras_chave: data.triggers.filter(t => t.trim())
+        },
+        delay_segundos: 0,
+        repetir: false,
+        max_repeticoes: 1,
+        aplicar_novos_contatos: true,
+        aplicar_contatos_existentes: false,
+        acoes: data.acoes.map((acao, index) => ({
+          tipo: acao.tipo,
+          conteudo: typeof acao.conteudo === 'string' 
+            ? { texto: acao.conteudo } 
+            : acao.conteudo,
+          ordem: acao.ordem || index,
+          ativo: acao.ativo !== false,
+          delay_segundos: 0,
+          obrigatorio: true,
+          condicional: false
+        }))
+      }
+      
+      console.log('Hook createResposta - dados transformados para backend:', backendData)
+      
       const response = await apiCall('/', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify(backendData),
       })
       console.log('Hook createResposta - resposta da API:', response)
       // Recarregar lista após criar
@@ -288,11 +318,19 @@ export function useRespostasRapidas() {
       setLoading(true)
       setError(null)
       
+      // Garantir que icone esteja presente (obrigatório no backend Go)
+      const categoriaData = {
+        nome: data.nome,
+        descricao: data.descricao || `Categoria ${data.nome}`,
+        cor: data.cor,
+        icone: data.icone || 'MessageCircle'
+      }
+      
       const categoriasURL = process.env.NODE_ENV === 'development' 
         ? 'http://159.65.34.199:8081/api/respostas-rapidas/categorias'
         : 'http://159.65.34.199:8081/api/respostas-rapidas/categorias'
       
-      const bodyData = JSON.stringify(data)
+      const bodyData = JSON.stringify(categoriaData)
       console.log('[createCategoria] Body JSON enviado:', bodyData)
       console.log('[createCategoria] URL de destino:', categoriasURL)
       console.log('[createCategoria] Token presente:', !!token)
@@ -331,6 +369,72 @@ export function useRespostasRapidas() {
     }
   }, [token, fetchCategorias])
 
+  const deleteCategoria = useCallback(async (id: string) => {
+    console.log('[deleteCategoria] Iniciando exclusão da categoria:', id)
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch(`http://159.65.34.199:8081/api/respostas-rapidas/categorias/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log(' Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(' Erro na resposta:', errorText)
+        throw new Error(`Erro ao excluir categoria: ${response.status} - ${errorText}`)
+      }
+
+      console.log(' Categoria excluída com sucesso')
+      
+      // Atualizar lista de categorias
+      await fetchCategorias()
+      
+    } catch (error) {
+      console.error(' Erro ao excluir categoria:', error)
+      throw error
+    }
+  }, [token, fetchCategorias])
+
+  const updateCategoria = useCallback(async (id: string, data: CreateCategoriaRequest) => {
+    try {
+      console.log(' Iniciando atualização da categoria:', id, data)
+      
+      const response = await fetch(`http://159.65.34.199:8081/api/respostas-rapidas/categorias/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      console.log(' Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(' Erro na resposta:', errorText)
+        throw new Error(`Erro ao atualizar categoria: ${response.status} - ${errorText}`)
+      }
+
+      console.log(' Categoria atualizada com sucesso')
+      
+      // Atualizar lista de categorias
+      await fetchCategorias()
+      
+    } catch (error) {
+      console.error(' Erro ao atualizar categoria:', error)
+      throw error
+    }
+  }, [token, fetchCategorias])
+
   // Carregar dados automaticamente quando o hook for montado
   useEffect(() => {
     if (token) {
@@ -355,5 +459,7 @@ export function useRespostasRapidas() {
     togglePauseResposta,
     executeResposta,
     createCategoria,
+    deleteCategoria,
+    updateCategoria,
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -44,6 +44,7 @@ import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
 import { usePresence } from '@/hooks/usePresence'
 import { useContatoData } from '@/hooks/useContatoData'
+import { useInfiniteChats } from '@/hooks/useInfiniteChats'
 
 interface ConversationSidebarProps {
   chats: any[]
@@ -56,6 +57,7 @@ interface ConversationSidebarProps {
   isCollapsed?: boolean
   onToggleCollapse?: () => void
   isQuickActionsSidebarOpen?: boolean
+  useInfiniteScroll?: boolean // Nova prop para ativar scroll infinito
 }
 
 // Função para formatar timestamp
@@ -162,7 +164,8 @@ export default function ConversationSidebar({
   isLoading = false,
   isCollapsed = false,
   onToggleCollapse,
-  isQuickActionsSidebarOpen = false
+  isQuickActionsSidebarOpen = false,
+  useInfiniteScroll = true // Ativado por padrão
 }: ConversationSidebarProps) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -170,9 +173,12 @@ export default function ConversationSidebar({
   const { filas } = useFilas()
   const { isOnline, isTyping } = usePresence()
   
+  // Hook de scroll infinito (opcional)
+  const infiniteChatsHook = useInfiniteChats()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  
   // Buscar dados reais dos contatos
   const chatIds = chats.map(chat => chat.id?._serialized || chat.id || '')
-  const { contatos: contatosData, loading: loadingContatos } = useContatoData(chatIds)
   const [selectedQueue, setSelectedQueue] = useState('todas')
   const [showQueueDropdown, setShowQueueDropdown] = useState(false)
   const [selectedTag, setSelectedTag] = useState('todas')
@@ -410,26 +416,44 @@ export default function ConversationSidebar({
     }
   }
 
+  // Usar chats do infinite scroll ou chats normais
+  const activeChats = useInfiniteScroll ? infiniteChatsHook.chats : chats
+  const activeContacts = useInfiniteScroll ? [] : contacts
+  const activeLoading = useInfiniteScroll ? infiniteChatsHook.loading : isLoading
+  
+  // Buscar dados reais dos contatos apenas se não estiver usando infinite scroll
+  const shouldFetchContactData = !useInfiniteScroll && chatIds.length > 0
+  const { contatos: contatosData, loading: loadingContatos } = useContatoData(
+    shouldFetchContactData ? chatIds : []
+  )
+  
+  // Handler do scroll infinito
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (useInfiniteScroll) {
+      infiniteChatsHook.handleScroll(e.currentTarget)
+    }
+  }, [useInfiniteScroll, infiniteChatsHook])
+
   // Criar conversas baseadas nos chats reais com dados dos contatos
-  const conversations = chats.map((chat, index) => {
-    const name = getContactName(chat, contacts)
-    const lastMessage = getLastMessage(chat)
-    const chatId = chat.id?._serialized || chat.id || `chat-${index}`
+  const conversations = activeChats.map((chat, index) => {
+    const name = useInfiniteScroll ? (chat.name || chat.id?.split('@')[0] || 'Contato') : getContactName(chat, contacts)
+    const lastMessage = useInfiniteScroll ? (chat.lastMessage || 'Nova conversa') : getLastMessage(chat)
+    const chatId = useInfiniteScroll ? chat.id : (chat.id?._serialized || chat.id || `chat-${index}`)
     
-    // Buscar dados reais do contato
-    const contatoData = contatosData[chatId]
+    // Buscar dados reais do contato (só para chats normais)
+    const contatoData = useInfiniteScroll ? null : contatosData[chatId]
     
     return {
       id: chatId,
       name,
       lastMessage: lastMessage === 'Sem mensagens' ? 'Nova conversa' : lastMessage,
-      timestamp: formatTimestamp(chat.timestamp),
-      unread: chat.unreadCount || 0,
+      timestamp: useInfiniteScroll ? formatTimestamp(chat.timestamp) : formatTimestamp(chat.timestamp),
+      unread: useInfiniteScroll ? (chat.unreadCount || 0) : (chat.unreadCount || 0),
       status: 'offline', // Will be updated by presence hook
-      avatar: chat.profilePictureUrl,
-      type: chat.isGroup ? 'group' : 'individual',
+      avatar: useInfiniteScroll ? chat.profilePicUrl : chat.profilePictureUrl,
+      type: useInfiniteScroll ? (chat.isGroup ? 'group' : 'individual') : (chat.isGroup ? 'group' : 'individual'),
       
-      // Dados reais do contato
+      // Dados reais do contato (só para chats normais)
       tags: contatoData?.tags || [],
       queue: contatoData?.fila || null,
       atendente: contatoData?.atendente || null,
@@ -450,8 +474,10 @@ export default function ConversationSidebar({
     }
   })
 
-  // Carregar informações do Kanban apenas para chats visíveis (otimização)
+  // Carregar informações do Kanban apenas para chats visíveis (otimização) - só para chats normais
   useEffect(() => {
+    if (useInfiniteScroll) return // Pular para scroll infinito
+    
     const loadKanbanInfo = async () => {
       const newKanbanInfo: {[key: string]: any} = {}
       
@@ -470,7 +496,7 @@ export default function ConversationSidebar({
     if (chats.length > 0) {
       loadKanbanInfo()
     }
-  }, [chats])
+  }, [chats, useInfiniteScroll])
 
   const filters = [
     { id: 'all', label: 'Todas', icon: MessageCircle, count: conversations.length },
@@ -744,7 +770,11 @@ export default function ConversationSidebar({
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto scrollbar-custom">
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto scrollbar-custom"
+          onScroll={handleScroll}
+        >
         <AnimatePresence mode="popLayout">
           {filteredConversations.map((conversation, index) => (
             <motion.div
@@ -974,6 +1004,58 @@ export default function ConversationSidebar({
             </motion.div>
           ))}
         </AnimatePresence>
+        
+        {/* Loading e Load More para Scroll Infinito */}
+        {useInfiniteScroll && (
+          <>
+            {/* Loading Indicator */}
+            {infiniteChatsHook.loading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 flex items-center justify-center gap-2 text-muted-foreground"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+                />
+                {!isCollapsed && <span className="text-sm">Carregando mais conversas...</span>}
+              </motion.div>
+            )}
+            
+            {/* Load More Button */}
+            {!infiniteChatsHook.loading && infiniteChatsHook.hasMore && filteredConversations.length > 0 && (
+              <div className="p-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={infiniteChatsHook.loadMore}
+                  className="w-full py-2 px-4 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {isCollapsed ? '+' : 'Carregar mais conversas'}
+                </motion.button>
+              </div>
+            )}
+            
+            {/* Status Footer para Infinite Scroll */}
+            {!isCollapsed && (
+              <div className="p-3 border-t border-border bg-card/30 backdrop-blur-sm">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span>Scroll infinito ativo</span>
+                  </div>
+                  <span>{infiniteChatsHook.chats.length} conversas carregadas</span>
+                  {infiniteChatsHook.hasMore && (
+                    <span className="text-blue-500">+{infiniteChatsHook.hasMore ? 'mais disponíveis' : ''}</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
           {/* Empty State */}
           {filteredConversations.length === 0 && (
@@ -1014,8 +1096,15 @@ export default function ConversationSidebar({
           </div>
         </div>
       </motion.div>
+      
+      {/* Badge de Scroll Infinito (desenvolvimento) */}
+      {useInfiniteScroll && process.env.NODE_ENV === 'development' && (
+        <div className="absolute top-2 left-2 bg-green-500/90 text-white text-xs px-2 py-1 rounded font-bold z-50">
+          📜 SCROLL ∞
+        </div>
+      )}
 
-      {/* PORTALS para dropdowns - renderiza no body */}
+      {/* Dropdowns usando Portal */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {showQueueDropdown && (

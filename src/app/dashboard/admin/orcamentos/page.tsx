@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { useOrcamentos, type Orcamento } from '@/hooks/useOrcamentos'
 import { AdminLayout } from '../components/AdminLayout'
 import { 
   DollarSign, 
@@ -31,23 +32,21 @@ import {
   Zap,
   Grid,
   List,
-  User
+  User,
+  Trash2,
+  Copy,
+  ExternalLink,
+  Package
 } from 'lucide-react'
 import CriarOrcamentoModal from './components/CriarOrcamentoModal'
 
-interface Orcamento {
-  id: string
-  numero: string
-  titulo: string
-  cliente_id: string
-  cliente_nome: string
-  cliente_telefone?: string
-  cliente_email?: string
-  data_criacao: string
-  data_validade: string
-  tipo: 'venda' | 'assinatura' | 'orcamento' | 'cobranca'
-  status: 'rascunho' | 'enviado' | 'aprovado' | 'rejeitado' | 'expirado'
-  valor_total: number
+// Interface removida - usando a do hook useOrcamentos
+
+interface OrcamentoStats {
+  total: number
+  aprovados: number
+  pendentes: number
+  rejeitados: number
   itens: {
     id: string
     nome: string
@@ -64,15 +63,25 @@ interface Orcamento {
 }
 
 export default function OrcamentosPage() {
-  const { user, loading } = useAuth()
-  const [searchQuery, setSearchQuery] = useState('')
+  const { user, loading: authLoading } = useAuth()
+  const { 
+    orcamentos, 
+    loading: loadingOrcamentos, 
+    error,
+    fetchOrcamentos,
+    createOrcamento,
+    updateOrcamento,
+    deleteOrcamento,
+    updateOrcamentoStatus
+  } = useOrcamentos()
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<'all' | 'rascunho' | 'enviado' | 'aprovado' | 'rejeitado' | 'expirado'>('all')
-  const [sortBy, setSortBy] = useState<'data' | 'valor' | 'status' | 'cliente'>('data')
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([])
-  const [loadingOrcamentos, setLoadingOrcamentos] = useState(true)
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null)
+  const [editingOrcamento, setEditingOrcamento] = useState<Orcamento | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'data' | 'valor' | 'cliente' | 'status'>('data')
 
   // Estados para dados reais
   const [stats, setStats] = useState({
@@ -86,145 +95,64 @@ export default function OrcamentosPage() {
     expired: 0
   })
 
-  // API para buscar orçamentos
-  const fetchOrcamentos = async () => {
-    try {
-      setLoadingOrcamentos(true)
-      const token = localStorage.getItem('token')
-      if (!token) throw new Error('Token não encontrado')
-
-      const response = await fetch('http://159.65.34.199:8081/api/orcamentos', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) throw new Error('Erro ao buscar orçamentos')
-      
-      const data = await response.json()
-      console.log('📊 Orçamentos recebidos:', data)
-      
-      // Transformar dados da API para o formato esperado
-      const orcamentosFormatados = data.map((orc: any) => ({
-        id: orc.id,
-        numero: `ORC-${new Date(orc.criadoEm).getFullYear()}-${String(orc.id).slice(-3).padStart(3, '0')}`,
-        titulo: orc.titulo,
-        cliente_id: orc.contatoId,
-        cliente_nome: orc.contato?.nome || 'Cliente não informado',
-        cliente_telefone: orc.contato?.numeroTelefone || '',
-        data_criacao: orc.criadoEm.split('T')[0],
-        data_validade: orc.dataValidade?.split('T')[0] || '',
-        tipo: orc.tipo.toLowerCase(),
-        status: orc.status.toLowerCase().replace('_', ''),
-        valor_total: orc.valorTotal || 0,
-        itens: orc.itens?.map((item: any) => ({
-          id: item.id,
-          nome: item.nome,
-          quantidade: item.quantidade,
-          valor_unitario: item.valor,
-          valor_total: item.subtotal
-        })) || [],
-        observacoes: orc.observacao
-      }))
-      
-      setOrcamentos(orcamentosFormatados)
-      
-      // Calcular estatísticas baseadas nos dados reais
-      const totalValue = orcamentosFormatados.reduce((sum: number, orc: any) => sum + orc.valor_total, 0)
-      const totalQuotes = orcamentosFormatados.length
-      const approved = orcamentosFormatados.filter((orc: any) => orc.status === 'aprovado').length
-      const pending = orcamentosFormatados.filter((orc: any) => orc.status === 'pendente').length
-      const rejected = orcamentosFormatados.filter((orc: any) => orc.status === 'rejeitado').length
-      const expired = orcamentosFormatados.filter((orc: any) => orc.status === 'expirado').length
-      const conversionRate = totalQuotes > 0 ? Math.round((approved / totalQuotes) * 100) : 0
-      
-      setStats({
-        totalValue,
-        totalQuotes,
-        conversionRate,
-        avgTime: '2.1 dias', // TODO: calcular tempo médio real
-        approved,
-        pending,
-        rejected,
-        expired
-      })
-      
-    } catch (error) {
-      console.error('❌ Erro ao buscar orçamentos:', error)
-    } finally {
-      setLoadingOrcamentos(false)
-    }
+  // Função para lidar com erro
+  const handleError = (message: string) => {
+    console.error(message)
+    // Aqui você pode adicionar um sistema de notificação
   }
 
+  // Filtrar e ordenar orçamentos
+  const filteredOrcamentos = useMemo(() => {
+    return orcamentos
+      .filter(orcamento => {
+        const matchesSearch = searchQuery === '' || 
+          orcamento.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (orcamento.contato?.nome || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          orcamento.id.toLowerCase().includes(searchQuery.toLowerCase())
+        
+        const matchesStatus = filterStatus === 'all' || orcamento.status === filterStatus
+        
+        return matchesSearch && matchesStatus
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'data':
+            return new Date(b.data).getTime() - new Date(a.data).getTime()
+          case 'valor':
+            return b.valorTotal - a.valorTotal
+          case 'cliente':
+            return (a.contato?.nome || '').localeCompare(b.contato?.nome || '')
+          case 'status':
+            return a.status.localeCompare(b.status)
+          default:
+            return 0
+        }
+      })
+  }, [orcamentos, searchQuery, filterStatus, sortBy])
+
   useEffect(() => {
-    if (user && !loading) {
+    if (user) {
+      console.log('🚀 INICIANDO busca de orçamentos...')
       fetchOrcamentos()
     }
-  }, [user, loading])
+  }, [user])
 
-  const mockOrcamentos: Orcamento[] = [
-    {
-      id: '1',
-      numero: 'ORC-2025-001',
-      titulo: 'Website Institucional',
-      cliente_id: '1',
-      cliente_nome: 'João Silva',
-      cliente_telefone: '(11) 99999-9999',
-      cliente_email: 'joao@empresa.com',
-      data_criacao: '2025-01-15',
-      data_validade: '2025-02-15',
-      tipo: 'orcamento',
-      status: 'enviado',
-      valor_total: 15000,
-      itens: [],
-      observacoes: 'Website responsivo com CMS'
-    },
-    {
-      id: '2',
-      numero: 'ORC-2025-002',
-      titulo: 'Sistema de Vendas',
-      cliente_id: '2',
-      cliente_nome: 'Maria Santos',
-      cliente_telefone: '(11) 88888-8888',
-      cliente_email: 'maria@loja.com',
-      data_criacao: '2025-01-14',
-      data_validade: '2025-02-14',
-      tipo: 'venda',
-      status: 'aprovado',
-      valor_total: 35000,
-      itens: [],
-      observacoes: 'Sistema completo de gestão'
-    },
-    {
-      id: '3',
-      numero: 'ORC-2025-003',
-      titulo: 'App Mobile E-commerce',
-      cliente_id: '3',
-      cliente_nome: 'Pedro Costa',
-      cliente_telefone: '(11) 77777-7777',
-      cliente_email: 'pedro@tech.com',
-      data_criacao: '2025-01-13',
-      data_validade: '2025-02-13',
-      tipo: 'orcamento',
-      status: 'rascunho',
-      valor_total: 58000,
-      itens: [],
-      observacoes: 'App para iOS e Android'
-    }
-  ]
-
-  // Carregar dados quando o usuário estiver autenticado
-
-  // Redirect to login if not authenticated  
+  // Debug dos orçamentos carregados
   useEffect(() => {
-    if (!loading && !user) {
+    console.log('📊 ESTADO ORCAMENTOS:', { 
+      quantidade: orcamentos.length, 
+      loading: loadingOrcamentos, 
+      dados: orcamentos 
+    })
+  }, [orcamentos, loadingOrcamentos])
+
+  // Redirect to login if not authenticated (only after auth loading is complete)
+  useEffect(() => {
+    if (!authLoading && !user) {
       window.location.href = '/login'
     }
-  }, [user, loading])
-
-
-  if (loading) {
+  }, [user, authLoading])
+  if (loadingOrcamentos) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="relative">
@@ -239,30 +167,84 @@ export default function OrcamentosPage() {
     return null
   }
 
-  // Atualizar lista após criar novo orçamento
   const handleOrcamentoSave = async (novoOrcamento: any) => {
-    console.log('💾 Novo orçamento salvo, atualizando lista...')
-    await fetchOrcamentos() // Recarregar lista
+    try {
+      if (editingOrcamento) {
+        // Editando orçamento existente
+        await updateOrcamento({
+          id: editingOrcamento.id,
+          titulo: novoOrcamento.titulo,
+          contato_nome: novoOrcamento.contato_nome,
+          contato_telefone: novoOrcamento.contato_telefone,
+          valor_total: novoOrcamento.valor_total,
+          observacao: novoOrcamento.observacao,
+          itens: novoOrcamento.itens
+        })
+        setEditingOrcamento(null)
+      } else {
+        // Criando novo orçamento
+        await createOrcamento({
+          titulo: novoOrcamento.titulo,
+          contato_nome: novoOrcamento.contato_nome,
+          contato_telefone: novoOrcamento.contato_telefone,
+          valor_total: novoOrcamento.valor_total,
+          observacao: novoOrcamento.observacao,
+          status: 'rascunho',
+          itens: novoOrcamento.itens
+        })
+      }
+      setShowCreateModal(false)
+    } catch (error) {
+      handleError('Erro ao salvar orçamento')
+    }
   }
 
-  // Filtros e ordenação
-  const filteredOrcamentos = orcamentos
-    .filter(orc => {
-      const matchesStatus = filterStatus === 'all' || orc.status === filterStatus
-      const matchesSearch = searchQuery === '' || 
-        orc.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        orc.cliente_nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        orc.numero.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesStatus && matchesSearch
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'data': return new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime()
-        case 'valor': return b.valor_total - a.valor_total
-        case 'cliente': return a.cliente_nome.localeCompare(b.cliente_nome)
-        default: return 0
-      }
-    })
+  // Função para editar orçamento
+  const handleEditOrcamento = (orcamento: Orcamento) => {
+    setEditingOrcamento(orcamento)
+    setShowCreateModal(true)
+  }
+
+  // Função para deletar orçamento
+  const handleDeleteOrcamento = async (id: string) => {
+    try {
+      await deleteOrcamento(id)
+      setShowDeleteConfirm(null)
+    } catch (error) {
+      handleError('Erro ao deletar orçamento')
+    }
+  }
+
+  // Função para alterar status
+  const handleStatusChange = async (id: string, status: Orcamento['status']) => {
+    try {
+      await updateOrcamentoStatus(id, status)
+    } catch (error) {
+      handleError('Erro ao alterar status do orçamento')
+    }
+  }
+
+  // Função para visualizar orçamento
+  const handleViewOrcamento = (orcamento: Orcamento) => {
+    setSelectedOrcamento(orcamento)
+  }
+
+  // Função para duplicar orçamento
+  const handleDuplicateOrcamento = async (orcamento: Orcamento) => {
+    try {
+      await createOrcamento({
+        titulo: `${orcamento.titulo} (Cópia)`,
+        contato_id: orcamento.contatoId,
+        tipo: 'orcamento' as const,
+        valorTotal: orcamento.valorTotal,
+        observacao: orcamento.observacao,
+        status: 'rascunho',
+        itens: orcamento.itens
+      })
+    } catch (error) {
+      handleError('Erro ao duplicar orçamento')
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -470,6 +452,9 @@ export default function OrcamentosPage() {
             >
               <AnimatePresence>
                 {filteredOrcamentos.map((orcamento, index) => {
+                  // Debug - vamos ver o que tem nos dados
+                  console.log('🔍 CARD DEBUG - Orçamento:', orcamento)
+                  
                   const statusColor = getStatusColor(orcamento.status)
                   const StatusIcon = getStatusIcon(orcamento.status)
                   
@@ -507,13 +492,20 @@ export default function OrcamentosPage() {
                           </div>
                         </div>
                         
-                        <motion.button
-                          className="p-2 rounded-xl bg-white/60 hover:bg-white/90 transition-all opacity-0 group-hover:opacity-100"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <MoreVertical className="w-4 h-4 text-gray-600" />
-                        </motion.button>
+                        <div className="relative">
+                          <motion.button
+                            className="p-2 rounded-xl bg-white/60 hover:bg-white/90 transition-all opacity-0 group-hover:opacity-100"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // Toggle dropdown menu here if needed
+                              console.log('More options for:', orcamento.id)
+                            }}
+                          >
+                            <MoreVertical className="w-4 h-4 text-gray-600" />
+                          </motion.button>
+                        </div>
                       </div>
 
                       {/* Título e Descrição */}
@@ -522,47 +514,101 @@ export default function OrcamentosPage() {
                           {orcamento.titulo}
                         </h3>
                         <p className="text-gray-600 text-sm line-clamp-2">
-                          {orcamento.observacoes}
+                          {orcamento.observacao}
                         </p>
                       </div>
 
                       {/* Cliente Info */}
                       <div className="flex items-center gap-3 mb-6 relative z-10">
-                        <div className="w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-gray-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#305e73] to-[#4a7c95] rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-900">{orcamento.cliente_nome}</div>
-                          <div className="text-xs text-gray-500">{orcamento.cliente_telefone}</div>
+                          <div className="font-semibold text-gray-900">{orcamento.contato?.nome || 'Sem cliente'}</div>
+                          <div className="text-xs text-gray-500">{orcamento.contato?.telefone || 'Sem telefone'}</div>
                         </div>
                       </div>
 
+                      {/* Detalhes adicionais */}
+                      <div className="space-y-3 mb-4 relative z-10">
+                        {/* Data de vencimento se existir */}
+                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">
+                          <Calendar className="w-3 h-3" />
+                          {orcamento.tipo.charAt(0).toUpperCase() + orcamento.tipo.slice(1)}
+                        </div>
+                        
+                        {/* Número de itens */}
+                        {orcamento.itens && orcamento.itens.length > 0 && (
+                          <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                            <Package className="w-3 h-3" />
+                            <span>{orcamento.itens.length} {orcamento.itens.length === 1 ? 'item' : 'itens'}</span>
+                          </div>
+                        )}
+                      </div>
+                      
                       {/* Valor e Data */}
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200/50 relative z-10">
                         <div>
                           <div className="text-2xl font-black text-[#305e73] group-hover:scale-105 transition-transform duration-300">
-                            R$ {orcamento.valor_total.toLocaleString()}
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(orcamento.valorTotal || 0)}
                           </div>
                           <div className="text-xs text-gray-500 flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {new Date(orcamento.data_criacao).toLocaleDateString()}
+                            Criado em: {new Date(orcamento.data).toLocaleDateString('pt-BR')}
                           </div>
                         </div>
                         
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleViewOrcamento(orcamento)
+                            }}
                             className="p-2 rounded-xl bg-[#305e73]/10 hover:bg-[#305e73]/20 text-[#305e73] transition-all"
+                            title="Visualizar"
                           >
                             <Eye className="w-4 h-4" />
                           </motion.button>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditOrcamento(orcamento)
+                            }}
+                            className="p-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 transition-all"
+                            title="Editar"
                           >
-                            <Download className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDuplicateOrcamento(orcamento)
+                            }}
+                            className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-all"
+                            title="Duplicar"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowDeleteConfirm(orcamento.id)
+                            }}
+                            className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all"
+                            title="Deletar"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </motion.button>
                         </div>
                       </div>
@@ -574,14 +620,188 @@ export default function OrcamentosPage() {
           )}
         </div>
 
-        {/* Modal */}
+        {/* Modals */}
         <AnimatePresence>
           {showCreateModal && (
             <CriarOrcamentoModal
               isOpen={showCreateModal}
-              onClose={() => setShowCreateModal(false)}
+              onClose={() => {
+                setShowCreateModal(false)
+                setEditingOrcamento(null)
+              }}
               onSave={handleOrcamentoSave}
+              editingOrcamento={editingOrcamento}
             />
+          )}
+          
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowDeleteConfirm(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
+                    <p className="text-gray-600 text-sm">Esta ação não pode ser desfeita.</p>
+                  </div>
+                </div>
+                
+                <p className="text-gray-700 mb-6">
+                  Tem certeza que deseja excluir este orçamento?
+                </p>
+                
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteConfirm(null)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteOrcamento(showDeleteConfirm)}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+          
+          {/* View Modal */}
+          {selectedOrcamento && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedOrcamento(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#305e73]/10 rounded-full flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-[#305e73]" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-800">Orçamento #{selectedOrcamento.id.slice(-8)}</h2>
+                      <p className="text-gray-600 mt-1">{selectedOrcamento.observacao || 'Sem observações'}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedOrcamento(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <XCircle className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Cliente</label>
+                      <p className="text-gray-900 font-medium">{selectedOrcamento.cliente_nome}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Telefone</label>
+                      <p className="text-gray-900">{selectedOrcamento.cliente_telefone || 'Não informado'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Status</label>
+                      <div className={`inline-flex px-3 py-1 rounded-full text-xs font-bold mt-1 ${getStatusColor(selectedOrcamento.status).bg} ${getStatusColor(selectedOrcamento.status).text}`}>
+                        {selectedOrcamento.status.toUpperCase()}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Valor Total</label>
+                      <p className="text-2xl font-black text-[#305e73]">R$ {(selectedOrcamento.valor_total || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Data de Criação</label>
+                    <p className="text-gray-900">{new Date(selectedOrcamento.data_criacao).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  
+                  {selectedOrcamento.observacoes && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Observações</label>
+                      <p className="text-gray-900 whitespace-pre-wrap">{selectedOrcamento.observacoes}</p>
+                    </div>
+                  )}
+                  
+                  {selectedOrcamento.itens && selectedOrcamento.itens.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 mb-2 block">Itens</label>
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Item</th>
+                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Qtd</th>
+                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Valor</th>
+                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedOrcamento.itens.map((item, index) => (
+                              <tr key={index} className="border-t">
+                                <td className="px-4 py-2 text-sm text-gray-900">{item.nome}</td>
+                                <td className="px-4 py-2 text-sm text-gray-600">{item.quantidade}</td>
+                                <td className="px-4 py-2 text-sm text-gray-600">R$ {item.valor.toLocaleString()}</td>
+                                <td className="px-4 py-2 text-sm font-medium text-gray-900">R$ {(item.valor * item.quantidade).toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      setSelectedOrcamento(null)
+                      handleEditOrcamento(selectedOrcamento)
+                    }}
+                    className="px-4 py-2 bg-[#305e73] hover:bg-[#305e73]/90 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => setSelectedOrcamento(null)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

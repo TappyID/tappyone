@@ -31,8 +31,9 @@ export default function RespostasRapidasPage() {
   const [activeTab, setActiveTab] = useState<'respostas' | 'categorias' | 'estatisticas'>('respostas')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
+  const [showCategoriaModal, setShowCategoriaModal] = useState(false)
+  const [editingCategoria, setEditingCategoria] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedResposta, setSelectedResposta] = useState<RespostaRapida | null>(null)
   const [editingResposta, setEditingResposta] = useState<RespostaRapida | null>(null)
@@ -43,12 +44,17 @@ export default function RespostasRapidasPage() {
     categorias,
     estatisticas,
     loading,
+    error,
+    fetchRespostas,
+    fetchCategorias,
     createResposta,
     updateResposta,
     deleteResposta,
     togglePauseResposta,
     executeResposta,
     createCategoria,
+    deleteCategoria,
+    updateCategoria
   } = useRespostasRapidas()
 
   const filteredRespostas = (respostas || []).filter(resposta => {
@@ -111,13 +117,19 @@ export default function RespostasRapidasPage() {
   ]
 
   const handleEditCategoria = (categoria: any) => {
-    // TODO: Implement edit categoria modal
-    console.log('Edit categoria:', categoria)
+    setEditingCategoria(categoria)
+    setShowCategoriaModal(true)
   }
 
   const handleDeleteCategoria = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-      console.log('Delete categoria não implementado:', id)
+      try {
+        await deleteCategoria(id)
+        console.log('Categoria excluída com sucesso:', id)
+      } catch (error) {
+        console.error('Erro ao excluir categoria:', error)
+        alert('Erro ao excluir categoria: ' + (error instanceof Error ? error.message : 'Erro desconhecido'))
+      }
     }
   }
 
@@ -167,7 +179,7 @@ export default function RespostasRapidasPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCreateCategoryModal(true)}
+                  onClick={() => setShowCategoriaModal(true)}
                   className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Plus className="w-5 h-5" />
@@ -345,9 +357,14 @@ export default function RespostasRapidasPage() {
         />
 
         <CriarCategoriaModal
-          isOpen={showCreateCategoryModal}
-          onClose={() => setShowCreateCategoryModal(false)}
+          isOpen={showCategoriaModal}
+          onClose={() => {
+            setShowCategoriaModal(false)
+            setEditingCategoria(null)
+          }}
           onSave={createCategoria}
+          onUpdate={updateCategoria}
+          editingCategoria={editingCategoria}
         />
 
         <VisualizarRespostaModal

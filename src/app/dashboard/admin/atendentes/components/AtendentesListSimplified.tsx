@@ -279,9 +279,9 @@ export default function AtendentesList({
                 </div>
               </div>
 
-              {/* Statistics - Visual Melhorado */}
+              {/* Statistics - Visual Melhorado - Oculto por padrão */}
               {atendente.estatisticas && (
-                <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-4 border border-gray-100">
+                <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-4 border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-blue-600" />
                     Estatísticas de Performance

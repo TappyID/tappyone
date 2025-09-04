@@ -19,6 +19,7 @@ import {
   Send
 } from 'lucide-react'
 import { cleanPhoneNumber } from '@/lib/utils'
+import { type Orcamento, type OrcamentoItem } from '@/hooks/useOrcamentos'
 
 interface CriarOrcamentoModalProps {
   isOpen: boolean
@@ -29,15 +30,11 @@ interface CriarOrcamentoModalProps {
     telefone?: string
   }
   disableContactFields?: boolean // Para desabilitar campos quando vem de contexto específico
+  editingOrcamento?: Orcamento | null
 }
 
-interface ItemOrcamento {
-  id: string
-  nome: string
-  descricao?: string
-  valor: number
-  quantidade: number
-}
+// Usando as interfaces do hook useOrcamentos
+type ItemOrcamento = OrcamentoItem
 
 interface OrcamentoData {
   titulo: string
@@ -59,7 +56,8 @@ export default function CriarOrcamentoModal({
   onClose, 
   onSave, 
   contactData,
-  disableContactFields = false
+  disableContactFields = false,
+  editingOrcamento
 }: CriarOrcamentoModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<OrcamentoData>({
@@ -77,15 +75,33 @@ export default function CriarOrcamentoModal({
     taxa_adicional: 0
   })
 
+  // Efeito para preencher dados quando editando
   useEffect(() => {
-    if (contactData) {
+    if (editingOrcamento) {
+      setFormData(prev => ({
+        ...prev,
+        titulo: editingOrcamento.titulo,
+        cliente: editingOrcamento.cliente_nome,
+        telefone: editingOrcamento.cliente_telefone || '',
+        observacao: editingOrcamento.observacoes || '',
+        itens: editingOrcamento.itens && editingOrcamento.itens.length > 0 
+          ? editingOrcamento.itens.map((item, index) => ({
+              id: item.id || index.toString(),
+              nome: item.nome,
+              descricao: item.descricao || '',
+              valor: item.valor,
+              quantidade: item.quantidade
+            }))
+          : [{ id: '1', nome: '', descricao: '', valor: 0, quantidade: 1 }]
+      }))
+    } else if (contactData) {
       setFormData(prev => ({
         ...prev,
         cliente: contactData.nome || '',
         telefone: cleanPhoneNumber(contactData.telefone || '')
       }))
     }
-  }, [contactData])
+  }, [contactData, editingOrcamento])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -201,9 +217,14 @@ export default function CriarOrcamentoModal({
                       <DollarSign className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white">Criar Novo Orçamento</h2>
+                      <h2 className="text-2xl font-bold text-white">
+                        {editingOrcamento ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
+                      </h2>
                       <p className="text-white/80">
-                        {contactData?.nome ? `Para ${contactData.nome}` : 'Preencha os dados'}
+                        {editingOrcamento 
+                          ? `Editando: ${editingOrcamento.titulo}` 
+                          : contactData?.nome ? `Para ${contactData.nome}` : 'Preencha os dados'
+                        }
                       </p>
                     </div>
                   </div>
