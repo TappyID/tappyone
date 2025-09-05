@@ -26,7 +26,8 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const [showQRModal, setShowQRModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const API_BASE = `${process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'}/api`
+  // Usar proxy local para contornar mixed content blocking em produção
+  const API_BASE = `/api/waha`
   const API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
   
   // Fallback para casos onde useAuth não retorna usuário
@@ -173,9 +174,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       }
 
       // 2. Verificar se já existe uma sessão na WAHA
-      let response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
-        headers: { 'X-Api-Key': API_KEY }
-      })
+      let response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`)
 
       if (response.ok) {
         // Sessão existe, usar PUT para atualizar/iniciar
@@ -183,7 +182,6 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
           method: 'PUT',
           headers: { 
-            'X-Api-Key': API_KEY,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -210,11 +208,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         if (response.ok) {
           console.log('✅ Sessão atualizada com PUT, tentando iniciar...')
           const startResponse = await fetch(`${API_BASE}/sessions/${SESSION_NAME}/start`, {
-            method: 'POST',
-            headers: { 
-              'X-Api-Key': API_KEY,
-              'Content-Type': 'application/json'
-            }
+            method: 'POST'
           })
           
           // Se iniciar falhou com 422, usar PUT novamente
@@ -231,8 +225,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         response = await fetch(`${API_BASE}/sessions`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'X-Api-Key': API_KEY
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             name: SESSION_NAME,
@@ -291,8 +284,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
             const putResponse = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
               method: 'PUT',
               headers: {
-                'Content-Type': 'application/json',
-                'X-Api-Key': API_KEY
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify({
                 name: SESSION_NAME,
@@ -319,11 +311,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
               
               // Tentar iniciar a sessão atualizada
               const startResponse = await fetch(`${API_BASE}/sessions/${SESSION_NAME}/start`, {
-                method: 'POST',
-                headers: { 
-                  'X-Api-Key': API_KEY,
-                  'Content-Type': 'application/json'
-                }
+                method: 'POST'
               })
               
               if (startResponse.ok) {
@@ -370,8 +358,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           console.log(' Tentando obter QR Code via API...')
           const response = await fetch(`${API_BASE}/${SESSION_NAME}/auth/qr?format=image`, {
             headers: {
-              'Accept': 'image/png',
-              'X-Api-Key': API_KEY
+              'Accept': 'image/png'
             }
           })
 
@@ -395,8 +382,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
           console.log(' Tentando endpoint alternativo /screenshot...')
           const response = await fetch(`${API_BASE}/${SESSION_NAME}/screenshot`, {
             headers: {
-              'Accept': 'image/png',
-              'X-Api-Key': API_KEY
+              'Accept': 'image/png'
             }
           })
 
@@ -436,8 +422,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
         console.log(`📱 Tentando endpoint: ${endpoint}`)
         const response = await fetch(endpoint, {
           headers: {
-            'Accept': 'image/png',
-            'X-Api-Key': API_KEY
+            'Accept': 'image/png'
           }
         })
 
@@ -497,9 +482,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       console.log('🔍 Verificando sessão específica do usuário:', expectedSessionName)
       
       // Verificar diretamente a sessão específica do usuário
-      const response = await fetch(`${API_BASE}/sessions/${expectedSessionName}`, {
-        headers: { 'X-Api-Key': API_KEY }
-      })
+      const response = await fetch(`${API_BASE}/sessions/${expectedSessionName}`)
 
       if (response.ok) {
         const session = await response.json()
@@ -627,9 +610,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
   const checkSessionStatus = async (): Promise<boolean> => {
     try {
       console.log('📡 Verificando status da sessão:', SESSION_NAME)
-      const response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
-        headers: { 'X-Api-Key': API_KEY }
-      })
+      const response = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`)
       
       if (response.ok) {
         const data = await response.json()
@@ -780,10 +761,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       // 1. Parar a sessão primeiro
       console.log('🛑 Parando sessão no WAHA...')
       await fetch(`${API_BASE}/sessions/${SESSION_NAME}/stop`, {
-        method: 'POST',
-        headers: {
-          'X-Api-Key': API_KEY
-        }
+        method: 'POST'
       })
       
       // 2. Aguardar um momento
@@ -792,10 +770,7 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
       // 3. Deletar a sessão
       console.log('🗑️ Deletando sessão no WAHA...')
       const wahaResponse = await fetch(`${API_BASE}/sessions/${SESSION_NAME}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Api-Key': API_KEY
-        }
+        method: 'DELETE'
       })
       
       console.log(`📡 Resposta WAHA DELETE: ${wahaResponse.status}`)
