@@ -37,7 +37,8 @@ import {
   Kanban,
   Layers,
   Archive,
-  Trash2
+  Trash2,
+  ArrowRightLeft
 } from 'lucide-react'
 import { usePresencePolling } from '@/hooks/usePresencePolling'
 import { useTags } from '@/hooks/useTags'
@@ -522,9 +523,9 @@ export default function ConversationSidebar({
 
   const filters = [
     { id: 'all', label: 'Todas', icon: MessageCircle, count: conversations.filter(c => c.type !== 'group' && !c.isArchived).length },
-    { id: 'unread', label: 'Não', icon: Circle, count: conversations.filter(c => c.unread > 0 && c.type !== 'group' && !c.isArchived).length },
+    { id: 'unread', label: 'Não lidas', icon: Circle, count: conversations.filter(c => c.unread > 0 && c.type !== 'group' && !c.isArchived).length },
     { id: 'read', label: 'Lidas', icon: CheckCircle2, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived).length },
-    { id: 'read-no-reply', label: 'Lidos não respondidos', icon: Clock, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived && !c.hasReply).length },
+    { id: 'read-no-reply', label: 'Lidas não respondidas', icon: Clock, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived && !c.hasReply).length },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: conversations.filter(c => c.isArchived).length },
     { id: 'groups', label: 'Grupos', icon: Users, count: conversations.filter(c => c.type === 'group' && !c.isArchived).length },
   ]
@@ -766,32 +767,63 @@ export default function ConversationSidebar({
         
         {/* Filter Tabs */}
         <div className="p-4 pt-2 relative z-[10]">
-          <div className="flex gap-1 bg-card/50 p-1 rounded-xl backdrop-blur-sm border border-border/30 relative z-[10]">
-          {filters.map((filter) => (
-            <motion.button
-              key={filter.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveFilter(filter.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                activeFilter === filter.id
-                  ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-              }`}
+          <div className="bg-card/50 p-1 rounded-xl backdrop-blur-sm border border-border/30 relative z-[10]">
+            <div 
+              className="flex gap-1 overflow-x-scroll pb-1 cursor-grab active:cursor-grabbing"
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch'
+              }}
+              onMouseDown={(e) => {
+                const container = e.currentTarget as HTMLDivElement;
+                const startX = e.pageX - container.offsetLeft;
+                const scrollLeft = container.scrollLeft;
+                const handleMouseMove = (e: MouseEvent) => {
+                  const x = e.pageX - container.offsetLeft;
+                  const walk = (x - startX) * 2;
+                  container.scrollLeft = scrollLeft - walk;
+                };
+                const handleMouseUp = () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+                e.preventDefault();
+              }}
             >
-              <filter.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{filter.label}</span>
-              {filter.count > 0 && (
-                <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                  activeFilter === filter.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}>
-                  {filter.count}
-                </span>
-              )}
-            </motion.button>
-          ))}
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              {filters.map((filter) => (
+                <motion.button
+                  key={filter.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 whitespace-nowrap min-w-fit ${
+                    activeFilter === filter.id
+                      ? 'bg-accent text-accent-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  }`}
+                >
+                  <filter.icon className="w-4 h-4" />
+                  <span>{filter.label}</span>
+                  {filter.count > 0 && (
+                    <span className={`px-1.5 py-0.5 text-xs rounded-full ${
+                      activeFilter === filter.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {filter.count}
+                    </span>
+                  )}
+                </motion.button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -916,6 +948,21 @@ export default function ConversationSidebar({
                         <Archive className="w-3 h-3 text-muted-foreground hover:text-foreground" />
                       </motion.button>
                       
+                      {/* Botão de Transferir */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          console.log('🔄 Transferir conversa:', conversation.id)
+                          // TODO: Abrir modal de transferência
+                        }}
+                        className="p-1 hover:bg-blue-100 hover:text-blue-600 rounded transition-colors"
+                        title="Transferir atendimento"
+                      >
+                        <ArrowRightLeft className="w-3 h-3 text-muted-foreground hover:text-blue-600" />
+                      </motion.button>
+                      
                       {/* Botão de Excluir */}
                       <motion.button
                         whileHover={{ scale: 1.1 }}
@@ -956,13 +1003,22 @@ export default function ConversationSidebar({
                     </div>
                     
                     {/* Tag Principal */}
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-                      <Tag className="w-3 h-3 text-emerald-400" />
-                      <span className="text-xs text-emerald-300 font-medium">
-                        {/* Mock da tag - você pode substituir pela lógica real */}
-                        {'VIP'}
-                      </span>
-                    </div>
+                    {conversation.tags && conversation.tags.length > 0 && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
+                        backgroundColor: `${conversation.tags[0].cor}20`,
+                        borderColor: `${conversation.tags[0].cor}40`
+                      }}>
+                        <Tag className="w-3 h-3" style={{ color: conversation.tags[0].cor }} />
+                        <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor }}>
+                          {conversation.tags[0].nome}
+                        </span>
+                        {conversation.tags.length > 1 && (
+                          <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor }}>
+                            +{conversation.tags.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
@@ -1119,12 +1175,6 @@ export default function ConversationSidebar({
         </div>
       </motion.div>
       
-      {/* Badge de Scroll Infinito (desenvolvimento) */}
-      {useInfiniteScroll && process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-2 left-2 bg-green-500/90 text-white text-xs px-2 py-1 rounded font-bold z-50">
-        
-        </div>
-      )}
 
       {/* Dropdowns usando Portal */}
       {typeof document !== 'undefined' && createPortal(

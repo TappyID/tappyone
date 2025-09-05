@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   X, 
@@ -12,7 +12,10 @@ import {
   EyeOff,
   Star,
   Save,
-  Plus
+  Plus,
+  Users,
+  Search,
+  Check
 } from 'lucide-react'
 
 interface CriarTagModalProps {
@@ -29,6 +32,14 @@ interface TagData {
   categoria: string
   ativo: boolean
   favorito: boolean
+  contatos?: string[] // IDs dos contatos selecionados
+}
+
+interface Contato {
+  id: string
+  nome: string
+  telefone: string
+  avatar?: string
 }
 
 export default function CriarTagModal({ 
@@ -43,11 +54,15 @@ export default function CriarTagModal({
     cor: '#3b82f6',
     categoria: categorias[0] || '',
     ativo: true,
-    favorito: false
+    favorito: false,
+    contatos: []
   })
 
   const [novaCategoria, setNovaCategoria] = useState('')
   const [showNovaCategoria, setShowNovaCategoria] = useState(false)
+  const [contatos, setContatos] = useState<Contato[]>([])
+  const [searchContatos, setSearchContatos] = useState('')
+  const [loadingContatos, setLoadingContatos] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,9 +71,13 @@ export default function CriarTagModal({
       ? novaCategoria 
       : formData.categoria
 
+    // Remover o campo contatos antes de enviar - as associações são feitas separadamente
+    const { contatos, ...tagData } = formData
+
     onSave({
-      ...formData,
-      categoria
+      ...tagData,
+      categoria,
+      contatos: formData.contatos // Enviar contatos separadamente para processamento
     })
     
     onClose()
@@ -72,11 +91,59 @@ export default function CriarTagModal({
       cor: '#3b82f6',
       categoria: categorias[0] || '',
       ativo: true,
-      favorito: false
+      favorito: false,
+      contatos: []
     })
     setNovaCategoria('')
     setShowNovaCategoria(false)
+    setContatos([])
+    setSearchContatos('')
   }
+
+  // Carregar contatos
+  const fetchContatos = async () => {
+    try {
+      setLoadingContatos(true)
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/contatos', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🔍 Dados completos da API contatos:', data)
+        // Tentar diferentes estruturas de resposta
+        const contatosData = data.data || data.contatos || data || []
+        console.log('📋 Contatos extraídos:', contatosData)
+        setContatos(contatosData)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar contatos:', error)
+    } finally {
+      setLoadingContatos(false)
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchContatos()
+    }
+  }, [isOpen])
+
+  const toggleContato = (contatoId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      contatos: prev.contatos?.includes(contatoId) 
+        ? prev.contatos.filter(id => id !== contatoId)
+        : [...(prev.contatos || []), contatoId]
+    }))
+  }
+
+  const filteredContatos = contatos.filter(contato => 
+    contato.nome.toLowerCase().includes(searchContatos.toLowerCase()) ||
+    contato.telefone.includes(searchContatos)
+  )
 
   const handleChange = (field: keyof TagData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -271,6 +338,97 @@ export default function CriarTagModal({
                         onChange={(e) => handleChange('cor', e.target.value)}
                         className="w-full h-12 rounded-xl border border-gray-300 cursor-pointer"
                       />
+                    </div>
+                  </div>
+
+                  {/* Seleção de Contatos */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <Users className="w-4 h-4 inline mr-2" />
+                      Aplicar em Contatos (Opcional)
+                    </label>
+                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                      {/* Search */}
+                      <div className="p-3 bg-gray-50 border-b border-gray-300">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={searchContatos}
+                            onChange={(e) => setSearchContatos(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent text-sm"
+                            placeholder="Buscar contatos..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Lista de Contatos */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {loadingContatos ? (
+                          <div className="p-4 text-center text-gray-500">
+                            Carregando contatos...
+                          </div>
+                        ) : filteredContatos.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            {searchContatos ? 'Nenhum contato encontrado' : 'Nenhum contato disponível'}
+                          </div>
+                        ) : (
+                          filteredContatos.map((contato) => (
+                            <motion.div
+                              key={contato.id}
+                              whileHover={{ backgroundColor: '#f9fafb' }}
+                              className="p-3 border-b border-gray-100 last:border-b-0 cursor-pointer"
+                              onClick={() => toggleContato(contato.id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                  formData.contatos?.includes(contato.id)
+                                    ? 'border-[#305e73] bg-[#305e73]'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}>
+                                  {formData.contatos?.includes(contato.id) && (
+                                    <Check className="w-3 h-3 text-white" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900 text-sm">{contato.nome}</p>
+                                  <p className="text-xs text-gray-500">{contato.telefone}</p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Contatos Selecionados */}
+                      {formData.contatos && formData.contatos.length > 0 && (
+                        <div className="p-3 bg-blue-50 border-t border-gray-300">
+                          <p className="text-sm text-blue-700 font-medium mb-2">
+                            {formData.contatos.length} contato(s) selecionado(s)
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {formData.contatos.map((contatoId) => {
+                              const contato = contatos.find(c => c.id === contatoId)
+                              if (!contato) return null
+                              return (
+                                <span
+                                  key={contatoId}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
+                                >
+                                  {contato.nome}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleContato(contatoId)}
+                                    className="hover:bg-blue-200 rounded-full p-0.5"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

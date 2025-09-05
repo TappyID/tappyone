@@ -127,8 +127,13 @@ export default function TagsModal({
                     <div>
                       <h2 className="text-xl font-bold text-white">Gerenciar Tags</h2>
                       <p className="text-blue-100 text-sm">
-                        {contactData?.nome ? `Organizando: ${contactData.nome}` : 'Organize e categorize o contato'}
+                        {contactData?.nome ? `Contato: ${contactData.nome}` : 'Organize e categorize o contato'}
                       </p>
+                      {contactData?.telefone && (
+                        <p className="text-blue-200 text-xs">
+                          📞 {contactData.telefone}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <motion.button

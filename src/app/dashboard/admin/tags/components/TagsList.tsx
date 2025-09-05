@@ -15,7 +15,8 @@ import {
   Calendar,
   User,
   Copy,
-  Share2
+  Share2,
+  Users
 } from 'lucide-react'
 
 interface TagData {
@@ -31,10 +32,22 @@ interface TagData {
   favorito: boolean
 }
 
+interface Contato {
+  id: string
+  nome: string
+  numeroTelefone: string
+  tags?: Array<{
+    id: string
+    contatoId: string
+    tagId: string
+  }>
+}
+
 interface TagsListProps {
   tags: TagData[]
   viewMode: 'grid' | 'list'
   selectedTags: string[]
+  contatos?: Contato[]
   onSelectedTagsChange: (tags: string[]) => void
   onEditTag: (tag: TagData) => void
   onDeleteTag: (id: string) => void
@@ -46,6 +59,7 @@ export default function TagsList({
   tags,
   viewMode,
   selectedTags,
+  contatos = [],
   onSelectedTagsChange,
   onEditTag,
   onDeleteTag,
@@ -53,6 +67,13 @@ export default function TagsList({
   onToggleStatus
 }: TagsListProps) {
   const [hoveredTag, setHoveredTag] = useState<string | null>(null)
+  
+  // Função para contar contatos associados a uma tag
+  const getContatosCount = (tagId: string) => {
+    return contatos.filter(contato => 
+      contato.tags && contato.tags.some(tag => tag.tagId === tagId)
+    ).length
+  }
 
   const handleSelectTag = (tagId: string) => {
     if (selectedTags.includes(tagId)) {
@@ -63,7 +84,31 @@ export default function TagsList({
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
+    if (!dateString) return 'Data não informada'
+    
+    try {
+      // Tentar diferentes formatos de data
+      let date = new Date(dateString)
+      
+      // Se a data é inválida, tentar parseamento manual
+      if (isNaN(date.getTime())) {
+        // Tentar formato ISO sem timezone
+        date = new Date(dateString.replace('Z', ''))
+      }
+      
+      if (isNaN(date.getTime())) {
+        return 'Data inválida'
+      }
+      
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    } catch (error) {
+      console.error('Erro ao formatar data:', error)
+      return 'Data inválida'
+    }
   }
 
   const copyTagName = (nome: string) => {
@@ -180,11 +225,19 @@ export default function TagsList({
 
             {/* Stats */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">
-                  {tag.uso_count} usos
-                </span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {tag.uso_count} usos
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {getContatosCount(tag.id)} contatos
+                  </span>
+                </div>
               </div>
               <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                 tag.ativo 

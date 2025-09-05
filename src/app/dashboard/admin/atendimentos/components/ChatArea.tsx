@@ -65,6 +65,7 @@ import {
   EyeOff,
   MessageSquare,
   Archive,
+  ArrowRightLeft,
   Wifi,
   WifiOff,
   FileSignature,
@@ -380,14 +381,29 @@ export default function ChatArea({
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
     
-    return messages.filter(message => 
-      message.body?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      message.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      message.content?.toLowerCase().includes(searchQuery.toLowerCase())
-    ).map(message => ({
+    console.log('🔍 Buscando por:', searchQuery)
+    console.log('📝 Total de mensagens:', messages.length)
+    
+    const filtered = messages.filter(message => {
+      const body = message.body?.toLowerCase() || ''
+      const text = message.text?.toLowerCase() || ''
+      const content = message.content?.toLowerCase() || ''
+      const searchTerm = searchQuery.toLowerCase()
+      
+      const matches = body.includes(searchTerm) || text.includes(searchTerm) || content.includes(searchTerm)
+      
+      if (matches) {
+        console.log('✅ Mensagem encontrada:', { body, text, content })
+      }
+      
+      return matches
+    }).map(message => ({
       ...message,
       matchText: message.body || message.text || message.content || ''
     }))
+    
+    console.log('🎯 Resultados da busca:', filtered.length)
+    return filtered
   }, [messages, searchQuery])
   
   // Navegar entre resultados
@@ -1226,13 +1242,14 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Chat Header */}
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative">
+
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="h-16 bg-white dark:bg-slate-800/50 backdrop-blur-sm border-b border-gray-200 dark:border-slate-700/50 px-6 flex items-center justify-between shadow-lg"
       >
+        {/* Contact Info */}
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <motion.div 
@@ -1316,7 +1333,10 @@ export default function ChatArea({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowSearch(true)}
+            onClick={() => {
+              console.log('🔍 Botão busca clicado! showSearch:', showSearch, 'chatId:', chatId)
+              setShowSearch(true)
+            }}
             className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Buscar Mensagens"
           >
@@ -1325,7 +1345,19 @@ export default function ChatArea({
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
           </motion.button>
           
-         
+          {/* Transferir Atendimento */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              console.log('🔄 Transferir atendimento clicado:', chatId)
+              // TODO: Abrir modal de transferência
+            }}
+            className="p-2 bg-gray-100 hover:bg-blue-200 dark:bg-gray-800 dark:hover:bg-blue-700 rounded-full transition-all duration-300"
+            title="Transferir Atendimento"
+          >
+            <ArrowRightLeft className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-600" />
+          </motion.button>
           
           {/* Agenda */}
           <motion.button
@@ -1423,11 +1455,15 @@ export default function ChatArea({
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowTagsModal(true)}
             className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
-            title="Tags"
+            title={contatoTags.length > 0 ? `Tags: ${contatoTags.map(t => t.nome).join(', ')}` : "Tags"}
           >
             <Hash className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-pink-500 rounded-full border border-background"></div>
+            {/* Badge dinâmico com contagem de tags */}
+            {contatoTags.length > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {contatoTags.length > 99 ? '99+' : contatoTags.length}
+              </span>
+            )}
           </motion.button>
           
           <motion.button
@@ -2081,6 +2117,82 @@ export default function ChatArea({
 
 
 
+      {/* Input de Busca Compacto na parte inferior */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white/98 dark:bg-gray-900/98 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 z-50 shadow-sm"
+          >
+            <div className="px-4 py-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar mensagens..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setCurrentMatchIndex(0)
+                    }}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+                    autoFocus
+                  />
+                </div>
+                
+                {/* Contador e navegação */}
+                {searchQuery && searchResults.length > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <span>{currentMatchIndex + 1} de {searchResults.length}</span>
+                    <div className="flex gap-1">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => navigateToMatch('prev')}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        disabled={searchResults.length === 0}
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => navigateToMatch('next')}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        disabled={searchResults.length === 0}
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+                
+                {searchQuery && searchResults.length === 0 && (
+                  <span className="text-xs text-gray-400">Nenhuma mensagem</span>
+                )}
+                
+                {/* Botão Fechar */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    setShowSearch(false)
+                    setSearchQuery('')
+                  }}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Message Input */}
       <div 
         className={`p-6 bg-background border-t border-border relative ${
@@ -2528,75 +2640,6 @@ export default function ChatArea({
         }}
       />
 
-      {/* Input de Busca Compacto no Topo */}
-      {showSearch && chatId && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="absolute top-[72px] left-0 right-0 bg-white/98 dark:bg-gray-900/98 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 z-40 shadow-sm"
-        >
-          <div className="px-4 py-2">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar mensagens..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setCurrentMatchIndex(0)
-                  }}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 text-sm"
-                  autoFocus
-                />
-              </div>
-              
-              {/* Contador e navegação */}
-              {searchQuery && searchResults.length > 0 && (
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <span>{currentMatchIndex + 1} de {searchResults.length}</span>
-                  <div className="flex gap-1">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => navigateToMatch('prev')}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                      disabled={searchResults.length === 0}
-                    >
-                      <ChevronUp className="w-3 h-3" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => navigateToMatch('next')}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                      disabled={searchResults.length === 0}
-                    >
-                      <ChevronDown className="w-3 h-3" />
-                    </motion.button>
-                  </div>
-                </div>
-              )}
-              
-              {searchQuery && searchResults.length === 0 && (
-                <span className="text-xs text-gray-400">Nenhuma mensagem</span>
-              )}
-              
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={resetSearch}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-400" />
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
-      )}
 
       {/* Modal de Encaminhamento */}
       {showForwardModal && messageToForward && (

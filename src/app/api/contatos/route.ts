@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
     console.log('✅ Contatos encontrados:', data?.length || 0)
+    console.log('🔍 Estrutura completa da resposta do backend:', JSON.stringify(data, null, 2))
     
     return NextResponse.json(data)
   } catch (error) {

@@ -216,17 +216,15 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
       const userData = await userResponse.json()
       console.log('✅ Dados do usuário obtidos:', userData)
 
-      console.log('📱 Buscando sessões WhatsApp...')
-      const sessionsResponse = await fetch('/api/connections/whatsapp', {
+      console.log('📱 Buscando sessões WhatsApp da tabela sessoes_whatsapp...')
+      const sessionsResponse = await fetch('/api/sessoes-whatsapp', {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
       })
-      if (!sessionsResponse.ok) throw new Error('Erro ao obter sessões')
+      if (!sessionsResponse.ok) throw new Error('Erro ao obter sessões WhatsApp')
       const sessionsData = await sessionsResponse.json()
-      console.log('✅ Sessões obtidas:', sessionsData)
+      console.log('✅ Sessões WhatsApp obtidas:', sessionsData)
 
-      console.log('📱 Dados das sessões:', sessionsData)
-      
-      // Se sessionsData é array, pegar primeira sessão ativa
+      // Buscar sessão ativa na tabela sessoes_whatsapp
       let sessaoWhatsappId = ''
       if (Array.isArray(sessionsData) && sessionsData.length > 0) {
         const activeSession = sessionsData.find(s => s.ativo) || sessionsData[0]
@@ -236,7 +234,7 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
         sessaoWhatsappId = sessionsData.id
         console.log('✅ Sessão única encontrada:', sessionsData)
       } else {
-        throw new Error('Nenhuma sessão WhatsApp encontrada')
+        throw new Error('Nenhuma sessão WhatsApp ativa encontrada na tabela sessoes_whatsapp')
       }
 
       console.log('🔗 Using sessaoWhatsappId:', sessaoWhatsappId)
@@ -254,9 +252,17 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
         bairro: formData.bairro || null,
         cidade: formData.cidade || null,
         estado: formData.estado || null,
-        pais: formData.pais || null,
-        ...(editContact ? {} : { sessaoWhatsappId: sessaoWhatsappId })
+        pais: formData.pais || null
       }
+
+      // Para criação, sempre incluir sessaoWhatsappId
+      if (!editContact) {
+        (contactData as any).sessaoWhatsappId = sessaoWhatsappId
+      }
+
+      console.log('📦 contactData sendo enviado:', contactData)
+      console.log('🔍 editContact?', !!editContact)
+      console.log('🆔 sessaoWhatsappId:', sessaoWhatsappId)
 
       let response
       if (editContact) {

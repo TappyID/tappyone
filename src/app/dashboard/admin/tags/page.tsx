@@ -47,6 +47,17 @@ interface TagData {
   favorito: boolean
 }
 
+interface Contato {
+  id: string
+  nome: string
+  numeroTelefone: string
+  tags?: Array<{
+    id: string
+    contatoId: string
+    tagId: string
+  }>
+}
+
 export default function TagsPage() {
   const { user, loading: authLoading } = useAuth()
   const { tags, loading: tagsLoading, error, fetchTags, createTag, updateTag, deleteTag } = useTags()
@@ -59,8 +70,44 @@ export default function TagsPage() {
   const [showImportarModal, setShowImportarModal] = useState(false)
   const [selectedTag, setSelectedTag] = useState<TagData | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [contatos, setContatos] = useState<Contato[]>([])
+  const [contatosLoading, setContatosLoading] = useState(true)
 
   const loading = authLoading || tagsLoading
+
+  // Função para buscar contatos
+  const fetchContatos = async () => {
+    try {
+      setContatosLoading(true)
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/contatos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        const contatosData = Array.isArray(data) ? data : (data.contatos || [])
+        setContatos(contatosData)
+      } else {
+        console.error('Erro ao buscar contatos:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contatos:', error)
+    } finally {
+      setContatosLoading(false)
+    }
+  }
+
+  // Buscar contatos quando o usuário estiver logado
+  useEffect(() => {
+    if (user) {
+      fetchContatos()
+    }
+  }, [user])
 
   // Handlers para ações das tags
   const handleCreateTag = async (tagData: {
@@ -68,9 +115,47 @@ export default function TagsPage() {
     descricao?: string
     cor: string
     categoria: string
+    contatos?: string[]
   }) => {
     try {
-      await createTag(tagData)
+      // Remover contatos do objeto antes de criar a tag
+      const { contatos, ...tagDataSemContatos } = tagData
+      
+      // Criar a tag primeiro (sem contatos)
+      const novaTag = await createTag(tagDataSemContatos)
+      
+      // Se há contatos selecionados, aplicar a tag neles
+      if (tagData.contatos && tagData.contatos.length > 0 && novaTag) {
+        console.log('🏷️ Aplicando tag nos contatos selecionados:', {
+          tagId: novaTag.id,
+          contatos: tagData.contatos
+        })
+        
+        // Aplicar tag em cada contato
+        const token = localStorage.getItem('token')
+        for (const contatoId of tagData.contatos) {
+          try {
+            await fetch(`/api/contatos/${contatoId}/tags`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ tagIds: [novaTag.id] })
+            })
+            console.log(`✅ Tag aplicada ao contato ${contatoId}`)
+          } catch (error) {
+            console.error(`❌ Erro ao aplicar tag ao contato ${contatoId}:`, error)
+          }
+        }
+      }
+      
+      // Recarregar dados para sincronizar
+      await Promise.all([
+        fetchContatos(),
+        fetchTags()
+      ])
+      
       setShowCriarModal(false)
     } catch (error) {
       console.error('Erro ao criar tag:', error)
@@ -81,6 +166,13 @@ export default function TagsPage() {
     if (!selectedTag) return
     try {
       await updateTag(selectedTag.id, tagData)
+      
+      // Recarregar dados para sincronizar
+      await Promise.all([
+        fetchContatos(),
+        fetchTags()
+      ])
+      
       setShowEditarModal(false)
       setSelectedTag(null)
     } catch (error) {
@@ -91,6 +183,13 @@ export default function TagsPage() {
   const handleDeleteTag = async (tagId: string) => {
     try {
       await deleteTag(tagId)
+      
+      // Recarregar dados para sincronizar
+      await Promise.all([
+        fetchContatos(),
+        fetchTags()
+      ])
+      
       console.log('✅ Tag deletada com sucesso')
     } catch (error) {
       console.error('❌ Erro ao deletar tag:', error)
@@ -106,6 +205,8 @@ export default function TagsPage() {
     const tag = tags.find(t => t.id === tagId)
     if (tag) {
       await updateTag(tagId, { favorito: !tag.favorito })
+      // Sincronizar dados
+      await fetchTags()
     }
   }
 
@@ -247,16 +348,11 @@ export default function TagsPage() {
         tags={filteredTags}
         viewMode={viewMode}
         selectedTags={selectedTags}
-        onSelectTag={(id, selected) => {
-          if (selected) {
-            setSelectedTags(prev => [...prev, id])
-          } else {
-            setSelectedTags(prev => prev.filter(tagId => tagId !== id))
-          }
-        }}
+        contatos={contatos}
+        onSelectedTagsChange={setSelectedTags}
         onEditTag={handleEditTag}
         onDeleteTag={handleDeleteTag}
-        onToggleFavorite={handleToggleFavorite}
+        onToggleFavorito={handleToggleFavorite}
         onToggleStatus={async (tagId: string) => {
           const tag = tags.find(t => t.id === tagId)
           if (tag) {

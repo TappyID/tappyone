@@ -16,7 +16,9 @@ import {
   Calendar,
   User,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  Search
 } from 'lucide-react'
 
 interface TagData {
@@ -30,6 +32,19 @@ interface TagData {
   criado_por: string
   ativo: boolean
   favorito: boolean
+  contatos?: string[]
+}
+
+interface Contato {
+  id: string
+  nome: string
+  numeroTelefone: string
+  fotoPerfil?: string
+  tags?: Array<{
+    id: string
+    contatoId: string
+    tagId: string
+  }>
 }
 
 interface EditarTagModalProps {
@@ -53,17 +68,97 @@ export default function EditarTagModal({
   const [novaCategoria, setNovaCategoria] = useState('')
   const [showNovaCategoria, setShowNovaCategoria] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [contatos, setContatos] = useState<Contato[]>([])
+  const [searchContatos, setSearchContatos] = useState('')
+  const [loadingContatos, setLoadingContatos] = useState(false)
+
+  // Carregar contatos
+  const fetchContatos = async () => {
+    try {
+      setLoadingContatos(true)
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/contatos', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🔍 Dados completos da API contatos (EditarTagModal):', data)
+        const contatosData = data.data || data.contatos || data || []
+        console.log('📋 Contatos extraídos (EditarTagModal):', contatosData)
+        setContatos(contatosData)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar contatos:', error)
+    } finally {
+      setLoadingContatos(false)
+    }
+  }
+
+  // Carregar contatos associados à tag
+  const fetchContatosAssociados = async (tagId: string) => {
+    try {
+      console.log(`🏷️ Buscando contatos associados à tag ${tagId}`)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/tags/${tagId}/contatos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      console.log(`📡 Status da resposta: ${response.status}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🔍 Dados dos contatos associados:', data)
+        
+        // Tentar diferentes estruturas de resposta
+        const contatosData = data.data || data || []
+        const contatosIds = contatosData.map((contato: any) => {
+          return contato.contato_id || contato.id || contato.contatoId
+        }).filter(Boolean)
+        
+        console.log('📋 IDs dos contatos extraídos:', contatosIds)
+        return contatosIds
+      } else {
+        console.log('❌ Erro na resposta:', await response.text())
+      }
+    } catch (error) {
+      console.error('Erro ao carregar contatos da tag:', error)
+    }
+    return []
+  }
 
   useEffect(() => {
-    if (tag) {
-      setFormData(tag)
+    if (isOpen) {
+      fetchContatos()
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (tag && contatos.length > 0) {
+      // Encontrar contatos que têm esta tag associada usando os dados já carregados
+      const contatosComEstaTag = contatos.filter(contato => 
+        contato.tags && contato.tags.some((contatoTag) => 
+          contatoTag.tagId === tag.id
+        )
+      ).map(contato => contato.id)
+      
+      console.log(`🏷️ Contatos associados à tag ${tag.id}:`, contatosComEstaTag)
+      console.log(`📋 Total de contatos carregados:`, contatos.length)
+      
+      setFormData({
+        ...tag,
+        contatos: contatosComEstaTag
+      })
       setShowNovaCategoria(false)
       setNovaCategoria('')
       setShowDeleteConfirm(false)
     }
-  }, [tag])
+  }, [tag, contatos])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!tag || !formData.nome) return
@@ -72,13 +167,44 @@ export default function EditarTagModal({
       ? novaCategoria 
       : formData.categoria
 
+    // Remover o campo contatos antes de enviar para a API de tags
+    const { contatos, ...tagDataSemContatos } = formData
+
     onSave({
       ...tag,
-      ...formData,
+      ...tagDataSemContatos,
       categoria
     } as TagData)
+
+    // Gerenciar associações de contatos separadamente se houve mudanças
+    if (contatos && tag) {
+      await handleContatosAssociation(tag.id, contatos)
+    }
     
     onClose()
+  }
+
+  // Função para gerenciar associações de contatos
+  const handleContatosAssociation = async (tagId: string, contatosIds: string[]) => {
+    try {
+      const token = localStorage.getItem('token')
+      
+      // Para cada contato, aplicar a tag
+      for (const contatoId of contatosIds) {
+        await fetch(`/api/contatos/${contatoId}/tags`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ tagIds: [tagId] })
+        })
+      }
+      
+      console.log(`✅ Associações atualizadas para tag ${tagId}`)
+    } catch (error) {
+      console.error('❌ Erro ao atualizar associações de contatos:', error)
+    }
   }
 
   const handleDelete = () => {
@@ -92,21 +218,52 @@ export default function EditarTagModal({
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const toggleContato = (contatoId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      contatos: prev.contatos?.includes(contatoId) 
+        ? prev.contatos.filter(id => id !== contatoId)
+        : [...(prev.contatos || []), contatoId]
+    }))
+  }
+
+  const filteredContatos = contatos.filter(contato => 
+    contato.nome.toLowerCase().includes(searchContatos.toLowerCase()) ||
+    contato.numeroTelefone.includes(searchContatos)
+  )
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    if (!dateString) return 'Data não informada'
+    
+    try {
+      // Tentar diferentes formatos de data
+      let date = new Date(dateString)
+      
+      // Se a data é inválida, tentar parseamento manual
+      if (isNaN(date.getTime())) {
+        // Tentar formato ISO sem timezone
+        date = new Date(dateString.replace('Z', ''))
+      }
+      
+      if (isNaN(date.getTime())) {
+        return 'Data inválida'
+      }
+      
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    } catch (error) {
+      console.error('Erro ao formatar data:', error)
+      return 'Data inválida'
+    }
   }
 
   const coresDisponiveis = [
     '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
     '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
-    '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4',
-    '#84cc16', '#f97316', '#ec4899', '#6366f1', '#14b8a6'
+    '#14b8a6', '#f87171', '#34d399', '#fbbf24', '#a78bfa'
   ]
 
   const categoriasComuns = [
@@ -409,6 +566,102 @@ export default function EditarTagModal({
                           Marcar como favorita
                         </span>
                       </motion.label>
+                    </div>
+                  </div>
+
+                  {/* Seleção de Contatos */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <Users className="w-4 h-4 inline mr-2" />
+                      Contatos Associados à Tag
+                    </label>
+                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                      {/* Search */}
+                      <div className="p-3 border-b border-gray-200 bg-gray-50">
+                        <div className="relative">
+                          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Buscar contatos..."
+                            value={searchContatos}
+                            onChange={(e) => setSearchContatos(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Lista de Contatos */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {loadingContatos ? (
+                          <div className="p-4 text-center text-gray-500">
+                            Carregando contatos...
+                          </div>
+                        ) : filteredContatos.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            {searchContatos ? 'Nenhum contato encontrado' : 'Nenhum contato disponível'}
+                          </div>
+                        ) : (
+                          filteredContatos.map((contato) => (
+                            <motion.div
+                              key={contato.id}
+                              whileHover={{ backgroundColor: '#f9fafb' }}
+                              className={`flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 cursor-pointer ${
+                                formData.contatos?.includes(contato.id) ? 'bg-blue-50' : ''
+                              }`}
+                              onClick={() => toggleContato(contato.id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <User className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">{contato.nome}</p>
+                                  <p className="text-sm text-gray-500">{contato.numeroTelefone}</p>
+                                </div>
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={formData.contatos?.includes(contato.id) || false}
+                                onChange={() => toggleContato(contato.id)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Resumo de selecionados */}
+                      {formData.contatos && formData.contatos.length > 0 && (
+                        <div className="p-3 bg-blue-50 border-t border-blue-200">
+                          <p className="text-sm text-blue-700 font-medium mb-2">
+                            {formData.contatos.length} contato(s) associado(s)
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {formData.contatos.map((contatoId) => {
+                              const contato = contatos.find(c => c.id === contatoId)
+                              if (!contato) return null
+                              return (
+                                <span 
+                                  key={contatoId}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs"
+                                >
+                                  {contato.nome}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleContato(contatoId)
+                                    }}
+                                    className="hover:bg-blue-200 rounded-full p-0.5"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
