@@ -93,54 +93,56 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     }
   }, [status])
 
-  // Criar sessão WhatsApp
+  // Criar sessão WhatsApp - com verificação otimizada
   const createSession = async () => {
-    if (!user) {
-      console.warn('⚠️ Usuário não encontrado no useAuth, tentando fallback...')
-      // Fallback: tentar obter dados do localStorage
-      const token = localStorage.getItem('token')
-      if (!token) {
-        setError('Usuário não encontrado - faça login novamente')
-        return
-      }
-      
-      try {
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        if (!response.ok) {
-          setError('Usuário não encontrado - faça login novamente')
-          return
-        }
-        
-        const userData = await response.json()
-        console.log('✅ Dados do usuário obtidos via fallback:', userData)
-        // Continuar com os dados obtidos
-      } catch (err) {
-        setError('Erro ao verificar autenticação')
-        return
-      }
-    }
-
     setStatus('connecting')
     setError(null)
 
     try {
-      // Primeiro verificar se há alguma sessão ativa no WAHA para qualquer usuário  
-      const activeSessions = await checkActiveSessions()
-      if (activeSessions) return
+      console.log('🔍 Verificando sessões existentes antes de criar nova...')
+      
+      // 1. PRIMEIRO: Verificar se já existe uma sessão ativa para ESTE usuário específico
+      const userSessionActive = await checkUserActiveSession()
+      if (userSessionActive) {
+        console.log('✅ Sessão do usuário já está ativa - não criando nova')
+        return
+      }
 
-      // Verificar se já existe uma conexão no backend
-      const existingConnection = await checkBackendConnection()
-      if (existingConnection) return
+      // 2. Verificar conexão no backend 
+      const backendConnected = await checkBackendConnection()
+      if (backendConnected) {
+        console.log('✅ Conexão já existe no backend - não criando nova')
+        return
+      }
 
-      // Verificar se já existe uma sessão na WAHA API
-      const existingSession = await checkSessionStatus()
-      if (existingSession) return
+      // 3. Verificar se usuário está logado
+      if (!user) {
+        console.warn('⚠️ Usuário não encontrado no useAuth, tentando fallback...')
+        const token = localStorage.getItem('token')
+        if (!token) {
+          setError('Usuário não encontrado - faça login novamente')
+          return
+        }
+        
+        try {
+          const response = await fetch('/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (!response.ok) {
+            setError('Usuário não encontrado - faça login novamente')
+            return
+          }
+        } catch (err) {
+          setError('Erro ao verificar autenticação')
+          return
+        }
+      }
+
+      console.log('🚀 Criando nova sessão para usuário:', getUserId())
 
       const token = localStorage.getItem('token')
       if (!token) {
@@ -486,42 +488,78 @@ export function WhatsAppConnection({ onUpdate }: WhatsAppConnectionProps) {
     setError('QR Code visível nos logs do container WAHA. Use: docker logs backend-waha-1')
   }
 
-  // Verificar se há sessões ativas no WAHA
-  const checkActiveSessions = async (): Promise<boolean> => {
+  // Verificar se há sessão ativa específica do usuário
+  const checkUserActiveSession = async (): Promise<boolean> => {
     try {
-      console.log('🔍 Verificando sessões ativas no WAHA...')
-      const response = await fetch(`${API_BASE}/sessions`)
+      const currentUserId = getUserId()
+      const expectedSessionName = `user_${currentUserId}`
+      
+      console.log('🔍 Verificando sessão específica do usuário:', expectedSessionName)
+      
+      // Verificar diretamente a sessão específica do usuário
+      const response = await fetch(`${API_BASE}/sessions/${expectedSessionName}`, {
+        headers: { 'X-Api-Key': API_KEY }
+      })
 
       if (response.ok) {
-        const sessions = await response.json()
-        console.log('📡 Sessões encontradas no WAHA:', sessions)
+        const session = await response.json()
+        console.log('📡 Status da sessão do usuário:', session)
         
-        // Procurar por sessão WORKING específica do usuário atual
-        const currentUserId = getUserId()
-        const expectedSessionName = `user_${currentUserId}`
-        const userSession = sessions.find((s: any) => s.name === expectedSessionName)
-        
-        if (userSession && userSession.status === 'WORKING') {
-          console.log('✅ Sessão do usuário encontrada e ativa:', userSession.name)
+        if (session.status === 'WORKING') {
+          console.log('✅ Sessão do usuário já está WORKING - conectado!')
           setStatus('connected')
           setError(null)
           onUpdate({ isConnected: true, isActive: true })
           
           // Salvar no localStorage
-          localStorage.setItem(`whatsapp_connection_${currentUserId}`, JSON.stringify({
-            status: 'connected',
-            timestamp: Date.now(),
-            sessionName: userSession.name
-          }))
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`whatsapp_connection_${currentUserId}`, JSON.stringify({
+              status: 'connected',
+              timestamp: Date.now(),
+              sessionName: expectedSessionName
+            }))
+          }
           
           return true
-        } else if (userSession) {
-          console.log('📱 Sessão do usuário encontrada mas não ativa:', userSession.status)
-          // Continuar com o processo normal para ativar a sessão
+        } else if (session.status === 'SCAN_QR_CODE') {
+          console.log('📱 Sessão existe mas precisa de QR Code')
+          setStatus('qr_ready')
+          await getQRCode()
+          return true
+        } else if (session.status === 'STARTING') {
+          console.log('🔄 Sessão existe mas ainda está inicializando')
+          setStatus('connecting')
+          return true
         } else {
-          console.log('❌ Nenhuma sessão encontrada para o usuário atual:', expectedSessionName)
-          // Outras sessões existem mas não são do usuário atual
+          console.log('⚠️ Sessão existe mas status é:', session.status)
         }
+      } else if (response.status === 404) {
+        console.log('❌ Sessão do usuário não existe - pode criar nova')
+        return false
+      }
+      
+      return false
+    } catch (err) {
+      console.error('❌ Erro ao verificar sessão do usuário:', err)
+      return false
+    }
+  }
+
+  // Verificar se há sessões ativas no WAHA (geral)
+  const checkActiveSessions = async (): Promise<boolean> => {
+    try {
+      console.log('🔍 Verificando todas as sessões ativas no WAHA...')
+      const response = await fetch(`${API_BASE}/sessions`)
+
+      if (response.ok) {
+        const sessions = await response.json()
+        console.log('📡 Total de sessões encontradas:', sessions.length)
+        
+        // Filtrar apenas sessões WORKING
+        const workingSessions = sessions.filter((s: any) => s.status === 'WORKING')
+        console.log('💼 Sessões ativas (WORKING):', workingSessions.map((s: any) => s.name))
+        
+        return workingSessions.length > 0
       }
       return false
     } catch (err) {
