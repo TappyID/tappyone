@@ -37,7 +37,17 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
     console.log('✅ Contatos encontrados:', data?.length || 0)
-    console.log('🔍 Estrutura completa da resposta do backend:', JSON.stringify(data, null, 2))
+    
+    // Log detalhado das tags nos contatos
+    if (Array.isArray(data)) {
+      data.forEach((contato, index) => {
+        if (contato.tags && contato.tags.length > 0) {
+          console.log(`🏷️ Contato ${index + 1} (${contato.nome}) tem ${contato.tags.length} tags:`, 
+            contato.tags.map(tag => ({ tagId: tag.tagId || tag.tag_id || tag.id, name: tag.nome || tag.tag?.nome }))
+          )
+        }
+      })
+    }
     
     return NextResponse.json(data)
   } catch (error) {

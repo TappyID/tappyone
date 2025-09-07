@@ -301,11 +301,9 @@ export default function ChatArea({
       }
     }
 
-    console.log('👂 ChatArea registrando listener para languageChanged')
     window.addEventListener('languageChanged', handleLanguageChange as EventListener)
     
     return () => {
-      console.log('🗑️ ChatArea removendo listener languageChanged')
       window.removeEventListener('languageChanged', handleLanguageChange as EventListener)
     }
   }, [transformedMessages, translateMessages, setSelectedLanguage])
@@ -1291,26 +1289,33 @@ export default function ChatArea({
             <div className="flex items-center gap-3">
               <h3 className="font-semibold text-gray-900 dark:text-slate-100">{conversation.name}</h3>
               
-              {/* Tags do contato */}
-              {conversation?.tags && conversation.tags.length > 0 && (
-                <div className="flex items-center gap-1">
-                  {conversation.tags.slice(0, 2).map((tag: any) => (
-                    <div
-                      key={tag.id}
-                      className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
-                      style={{ backgroundColor: tag.cor }}
-                      title={tag.nome}
-                    >
-                      #{tag.nome}
+              {/* Tags do contato - Debug */}
+              {(() => {
+                console.log(`🏷️ [CHATAREA] Conversa selecionada:`, conversation?.name, 'Tags:', conversation?.tags)
+                if (conversation?.tags && conversation.tags.length > 0) {
+                  console.log(`🏷️ [CHATAREA] Exibindo ${conversation.tags.length} tags para ${conversation.name}`)
+                  return (
+                    <div className="flex items-center gap-1">
+                      {conversation.tags.slice(0, 2).map((tag: any) => (
+                        <div
+                          key={tag.id}
+                          className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
+                          style={{ backgroundColor: tag.cor || '#6b7280' }}
+                          title={tag.nome}
+                        >
+                          #{tag.nome}
+                        </div>
+                      ))}
+                      {conversation.tags.length > 2 && (
+                        <div className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
+                          +{conversation.tags.length - 2}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                  {conversation.tags.length > 2 && (
-                    <div className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
-                      +{conversation.tags.length - 2}
-                    </div>
-                  )}
-                </div>
-              )}
+                  )
+                }
+                return null
+              })()}
             </div>
             
             <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/contexts/ThemeContext'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import UsuariosStats from './components/UsuariosStats'
 import UsuariosList from './components/UsuariosList'
@@ -147,6 +148,8 @@ const initialMockUsuarios: Usuario[] = [
 
 export default function UsuariosPage() {
   const { user, loading } = useAuth()
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   
   const [usuarios, setUsuarios] = useState<Usuario[]>(initialMockUsuarios)
   const [searchQuery, setSearchQuery] = useState('')
@@ -297,7 +300,11 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className={`min-h-screen ${
+      isDark 
+        ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
+        : 'bg-gradient-to-br from-gray-50 to-gray-100'
+    }`}>
       <AtendimentosTopBar 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -308,8 +315,12 @@ export default function UsuariosPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gerenciar Usuários</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className={`text-3xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>Gerenciar Usuários</h1>
+              <p className={`mt-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-600'
+              }`}>
                 Administre usuários, permissões e acessos do sistema
               </p>
             </div>
@@ -318,7 +329,11 @@ export default function UsuariosPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 onClick={() => setShowImportarModal(true)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium flex items-center gap-2"
+                className={`px-4 py-2 border rounded-xl font-medium flex items-center gap-2 ${
+                  isDark 
+                    ? 'border-slate-600 text-slate-300 hover:bg-slate-700/50' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 <Upload className="w-4 h-4" />
                 Importar
@@ -327,7 +342,11 @@ export default function UsuariosPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 onClick={exportarUsuarios}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium flex items-center gap-2"
+                className={`px-4 py-2 border rounded-xl font-medium flex items-center gap-2 ${
+                  isDark 
+                    ? 'border-slate-600 text-slate-300 hover:bg-slate-700/50' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 <Download className="w-4 h-4" />
                 Exportar
@@ -335,8 +354,13 @@ export default function UsuariosPage() {
               
               <motion.button
                 whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setShowCriarModal(true)}
-                className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl hover:shadow-lg font-semibold flex items-center gap-2"
+                className={`text-white px-6 py-3 rounded-xl hover:shadow-lg font-semibold flex items-center gap-2 ${
+                  isDark 
+                    ? 'bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500' 
+                    : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+                }`}
               >
                 <Plus className="w-5 h-5" />
                 Novo Usuário
@@ -345,17 +369,27 @@ export default function UsuariosPage() {
           </div>
 
           {/* Filtros e Controles */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+          <div className={`rounded-2xl p-6 shadow-sm border ${
+            isDark 
+              ? 'bg-slate-800/50 backdrop-blur-xl border-slate-700/50' 
+              : 'bg-white border-gray-200'
+          }`}>
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               {/* Filtros */}
               <div className="flex flex-wrap items-center gap-4">
                 {/* Tipo */}
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-400" />
+                  <Filter className={`w-4 h-4 ${
+                    isDark ? 'text-slate-400' : 'text-gray-400'
+                  }`} />
                   <select
                     value={filtroTipo}
                     onChange={(e) => setFiltroTipo(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                    className={`border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDark 
+                        ? 'border-slate-600 bg-slate-700/50 text-white'
+                        : 'border-gray-300 bg-white text-gray-900'
+                    }`}
                   >
                     <option value="todos">Todos os tipos</option>
                     <option value="admin">Administradores</option>
@@ -368,7 +402,11 @@ export default function UsuariosPage() {
                 <select
                   value={filtroStatus}
                   onChange={(e) => setFiltroStatus(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                  className={`border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    isDark 
+                      ? 'border-slate-600 bg-slate-700/50 text-white'
+                      : 'border-gray-300 bg-white text-gray-900'
+                  }`}
                 >
                   <option value="todos">Todos os status</option>
                   <option value="ativo">Ativos</option>
@@ -380,7 +418,11 @@ export default function UsuariosPage() {
                 <select
                   value={filtroDepartamento}
                   onChange={(e) => setFiltroDepartamento(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                  className={`border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    isDark 
+                      ? 'border-slate-600 bg-slate-700/50 text-white'
+                      : 'border-gray-300 bg-white text-gray-900'
+                  }`}
                 >
                   <option value="todos">Todos os departamentos</option>
                   {departamentos.map(departamento => (
@@ -396,7 +438,11 @@ export default function UsuariosPage() {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      className="bg-[#305e73] text-white px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                      className={`text-white px-3 py-1 rounded-full text-sm flex items-center gap-2 ${
+                        isDark 
+                          ? 'bg-slate-600'
+                          : 'bg-[#305e73]'
+                      }`}
                     >
                       <span>{filtro.valor}</span>
                       <button
@@ -414,7 +460,11 @@ export default function UsuariosPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     onClick={limparFiltros}
-                    className="text-sm text-gray-500 hover:text-gray-700 underline"
+                    className={`text-sm underline ${
+                      isDark 
+                        ? 'text-slate-400 hover:text-slate-300'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   >
                     Limpar filtros
                   </motion.button>
@@ -428,15 +478,25 @@ export default function UsuariosPage() {
                   <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 border ${
+                      isDark 
+                        ? 'bg-red-500/10 border-red-500/30'
+                        : 'bg-red-50 border-red-200'
+                    }`}
                   >
-                    <span className="text-sm text-red-700">
+                    <span className={`text-sm ${
+                      isDark ? 'text-red-400' : 'text-red-700'
+                    }`}>
                       {selectedUsuarios.length} selecionado{selectedUsuarios.length > 1 ? 's' : ''}
                     </span>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       onClick={deletarSelecionados}
-                      className="text-red-600 hover:text-red-700"
+                      className={`${
+                        isDark 
+                          ? 'text-red-400 hover:text-red-300'
+                          : 'text-red-600 hover:text-red-700'
+                      }`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </motion.button>
@@ -444,14 +504,20 @@ export default function UsuariosPage() {
                 )}
 
                 {/* View Mode */}
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <div className={`flex items-center rounded-lg p-1 ${
+                  isDark ? 'bg-slate-700/50' : 'bg-gray-100'
+                }`}>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-md transition-colors ${
                       viewMode === 'grid'
-                        ? 'bg-white text-[#305e73] shadow-sm'
-                        : 'text-gray-600 hover:text-gray-800'
+                        ? isDark
+                          ? 'bg-slate-600 text-blue-400 shadow-sm'
+                          : 'bg-white text-[#305e73] shadow-sm'
+                        : isDark
+                          ? 'text-slate-400 hover:text-slate-300'
+                          : 'text-gray-600 hover:text-gray-800'
                     }`}
                   >
                     <Grid3X3 className="w-4 h-4" />
@@ -461,8 +527,12 @@ export default function UsuariosPage() {
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-md transition-colors ${
                       viewMode === 'list'
-                        ? 'bg-white text-[#305e73] shadow-sm'
-                        : 'text-gray-600 hover:text-gray-800'
+                        ? isDark
+                          ? 'bg-slate-600 text-blue-400 shadow-sm'
+                          : 'bg-white text-[#305e73] shadow-sm'
+                        : isDark
+                          ? 'text-slate-400 hover:text-slate-300'
+                          : 'text-gray-600 hover:text-gray-800'
                     }`}
                   >
                     <List className="w-4 h-4" />

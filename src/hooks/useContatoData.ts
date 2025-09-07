@@ -41,15 +41,45 @@ export function useContatoData(chatIds: string[]): UseContatoDataReturn {
   const [error, setError] = useState<string | null>(null)
 
   const fetchContatoData = async (chatId: string) => {
+    if (!chatId || chatId.trim() === '') {
+      console.log(`⚠️ [useContatoData] ChatId vazio ou inválido: "${chatId}"`)
+      return null
+    }
+
     try {
-      const response = await fetch(`/api/contatos/${chatId}/dados-completos`)
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Token não encontrado')
+      }
+
+      // Encode chatId to prevent URL issues
+      const encodedChatId = encodeURIComponent(chatId)
+      console.log(`🔍 [useContatoData] Buscando contato para chatId: ${chatId}`)
+      
+      const response = await fetch(`/api/contatos/${encodedChatId}/dados-completos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (!response.ok) {
+        console.log(`❌ [useContatoData] Erro ${response.status} para chatId: ${chatId}`)
         throw new Error(`Erro ao buscar dados do contato: ${response.status}`)
       }
       const data = await response.json()
+      
+      if (data.isWhatsAppChat) {
+        console.log(`ℹ️ [useContatoData] Chat WAHA sem contato CRM: ${chatId}`)
+        return null
+      }
+      
+      console.log(`🏷️ [useContatoData] ${chatId} - Dados completos:`, data)
+      console.log(`🏷️ [useContatoData] ${chatId} - Tags específicas:`, data.tags)
+      console.log(`🏷️ [useContatoData] ${chatId} - Resposta completa:`, data)
       return data
     } catch (err) {
-      console.error('Erro ao buscar dados do contato:', err)
+      console.error('❌ [useContatoData] Erro ao buscar dados do contato:', err)
       return null
     }
   }
@@ -71,7 +101,14 @@ export function useContatoData(chatIds: string[]): UseContatoDataReturn {
       
       results.forEach(({ chatId, data }) => {
         if (data) {
+          console.log(`✅ [useContatoData] Salvando dados para ${chatId}:`, { 
+            id: data.id, 
+            tagsCount: data.tags?.length || 0,
+            tags: data.tags 
+          })
           newContatos[chatId] = data
+        } else {
+          console.log(`⚠️ [useContatoData] Sem dados para ${chatId}`)
         }
       })
       

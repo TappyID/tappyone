@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Menu, 
   X, 
@@ -207,8 +208,8 @@ const SolutionsMegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => (
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
-  const [isDark, setIsDark] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const { theme, actualTheme, setTheme } = useTheme()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -219,8 +220,7 @@ export default function Header() {
   }, [])
 
   const toggleTheme = () => {
-    setIsDark(!isDark)
-    document.documentElement.classList.toggle('dark')
+    setTheme(actualTheme === 'dark' ? 'light' : 'dark')
   }
 
   const handleMenuHover = (menu: string) => {
@@ -319,7 +319,7 @@ export default function Header() {
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {actualTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </motion.button>
 
             <div className="hidden lg:flex items-center space-x-3">

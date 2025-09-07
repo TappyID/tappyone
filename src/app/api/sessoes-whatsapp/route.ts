@@ -44,3 +44,51 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    // Extrair token do Authorization header
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Token de autorização necessário' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.substring(7)
+    const body = await request.json()
+    
+    console.log('📡 [POST SESSOES-WHATSAPP] Enviando para backend:', body)
+    
+    const response = await fetch(`${BACKEND_URL}/api/sessoes-whatsapp`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+
+    console.log('📡 [POST SESSOES-WHATSAPP] Resposta do backend status:', response.status)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ [POST SESSOES-WHATSAPP] Erro do backend:', errorText)
+      return NextResponse.json(
+        { error: `Erro do backend: ${response.status} - ${errorText}` },
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+    console.log('✅ [POST SESSOES-WHATSAPP] Sessão criada:', data)
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('❌ [POST SESSOES-WHATSAPP] Erro interno:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}

@@ -64,7 +64,7 @@ export function GlassClock({ sidebarCollapsed }: GlassClockProps) {
             : 'bg-white/10 border border-white/20 hover:bg-white/20'
           }
           backdrop-blur-sm shadow-sm hover:shadow-lg
-          p-3 min-w-[140px] h-12
+          p-2.5 min-w-[140px] h-10
         `}
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         whileHover={{ scale: 1.02 }}

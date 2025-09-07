@@ -3,12 +3,15 @@
 import { motion } from 'framer-motion'
 import { Users, UserCheck, Clock, MessageCircle, TrendingUp, Activity } from 'lucide-react'
 import { AtendenteComStats } from '@/hooks/useAtendentes'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface AtendentesStatsProps {
   atendentes: AtendenteComStats[]
 }
 
 export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
+  const { actualTheme } = useTheme()
+  
   const stats = {
     total: atendentes.length,
     ativo: atendentes.filter(a => a.ativo).length,
@@ -26,8 +29,8 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       value: stats.total,
       icon: Users,
       color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
+      bgColor: actualTheme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-50',
+      textColor: actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-700',
       trend: '+2 este mês'
     },
     {
@@ -35,8 +38,8 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       value: stats.ativo,
       icon: Activity,
       color: 'from-green-500 to-green-600',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-700',
+      bgColor: actualTheme === 'dark' ? 'bg-green-500/10' : 'bg-green-50',
+      textColor: actualTheme === 'dark' ? 'text-green-400' : 'text-green-700',
       trend: `${Math.round((stats.ativo / stats.total) * 100)}% da equipe`
     },
     {
@@ -44,8 +47,8 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       value: stats.inativo,
       icon: UserCheck,
       color: 'from-red-500 to-red-600',
-      bgColor: 'bg-red-50',
-      textColor: 'text-red-700',
+      bgColor: actualTheme === 'dark' ? 'bg-red-500/10' : 'bg-red-50',
+      textColor: actualTheme === 'dark' ? 'text-red-400' : 'text-red-700',
       trend: `${Math.round((stats.inativo / stats.total) * 100)}% da equipe`
     },
     {
@@ -53,8 +56,8 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       value: stats.conversasAtivas,
       icon: MessageCircle,
       color: 'from-purple-500 to-purple-600',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-700',
+      bgColor: actualTheme === 'dark' ? 'bg-purple-500/10' : 'bg-purple-50',
+      textColor: actualTheme === 'dark' ? 'text-purple-400' : 'text-purple-700',
       trend: 'Em tempo real'
     },
     {
@@ -62,8 +65,8 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       value: stats.totalConversas,
       icon: Clock,
       color: 'from-indigo-500 to-indigo-600',
-      bgColor: 'bg-indigo-50',
-      textColor: 'text-indigo-700',
+      bgColor: actualTheme === 'dark' ? 'bg-indigo-500/10' : 'bg-indigo-50',
+      textColor: actualTheme === 'dark' ? 'text-indigo-400' : 'text-indigo-700',
       trend: 'Todas as conversas'
     },
     {
@@ -71,8 +74,8 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
       value: stats.emAndamento,
       icon: TrendingUp,
       color: 'from-[#305e73] to-[#3a6d84]',
-      bgColor: 'bg-gray-50',
-      textColor: 'text-[#305e73]',
+      bgColor: actualTheme === 'dark' ? 'bg-slate-500/10' : 'bg-gray-50',
+      textColor: actualTheme === 'dark' ? 'text-slate-300' : 'text-[#305e73]',
       trend: 'Aguardando resposta'
     }
   ]
@@ -91,7 +94,11 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
               scale: 1.02,
               boxShadow: "0 10px 25px rgba(0,0,0,0.1)"
             }}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300"
+            className={`rounded-2xl p-6 shadow-sm border backdrop-blur-sm hover:shadow-lg transition-all duration-300 ${
+              actualTheme === 'dark'
+                ? 'bg-slate-800/60 border-slate-700/50'
+                : 'bg-white border-gray-100'
+            }`}
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-xl ${stat.bgColor}`}>
@@ -116,12 +123,16 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: index * 0.1 + 0.3 }}
-                className="text-3xl font-bold text-gray-900"
+                className={`text-3xl font-bold ${
+                  actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}
               >
                 {stat.value}
               </motion.div>
               
-              <div className="text-sm font-medium text-gray-600">
+              <div className={`text-sm font-medium ${
+                actualTheme === 'dark' ? 'text-white/80' : 'text-gray-600'
+              }`}>
                 {stat.title}
               </div>
               
@@ -129,7 +140,9 @@ export default function AtendentesStats({ atendentes }: AtendentesStatsProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: index * 0.1 + 0.5 }}
-                className="text-xs text-gray-500"
+                className={`text-xs ${
+                  actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                }`}
               >
                 {stat.trend}
               </motion.div>

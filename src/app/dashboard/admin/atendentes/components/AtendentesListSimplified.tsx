@@ -24,6 +24,7 @@ import {
 import { AtendenteComStats } from '@/hooks/useAtendentes'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface AtendentesListProps {
   atendentes: AtendenteComStats[]
@@ -42,6 +43,7 @@ export default function AtendentesList({
   onDeleteAtendente,
   onAtribuirFila
 }: AtendentesListProps) {
+  const { actualTheme } = useTheme()
   const [selectedAtendente, setSelectedAtendente] = useState<string | null>(null)
 
   const toggleAtendenteStatus = (atendente: AtendenteComStats) => {
@@ -67,24 +69,46 @@ export default function AtendentesList({
   }
 
   const getTipoColor = (tipo: string) => {
-    const colors: Record<string, string> = {
-      'ADMIN': 'text-purple-600 bg-purple-100',
-      'ATENDENTE_COMERCIAL': 'text-blue-600 bg-blue-100',
-      'ATENDENTE_FINANCEIRO': 'text-green-600 bg-green-100',
-      'ATENDENTE_JURIDICO': 'text-indigo-600 bg-indigo-100',
-      'ATENDENTE_SUPORTE': 'text-orange-600 bg-orange-100',
-      'ATENDENTE_VENDAS': 'text-pink-600 bg-pink-100',
-      'ASSINANTE': 'text-cyan-600 bg-cyan-100',
-      'AFILIADO': 'text-yellow-600 bg-yellow-100'
+    if (actualTheme === 'dark') {
+      const darkColors: Record<string, string> = {
+        'ADMIN': 'text-purple-400 bg-purple-500/10',
+        'ATENDENTE_COMERCIAL': 'text-blue-400 bg-blue-500/10',
+        'ATENDENTE_FINANCEIRO': 'text-green-400 bg-green-500/10',
+        'ATENDENTE_JURIDICO': 'text-indigo-400 bg-indigo-500/10',
+        'ATENDENTE_SUPORTE': 'text-orange-400 bg-orange-500/10',
+        'ATENDENTE_VENDAS': 'text-pink-400 bg-pink-500/10',
+        'ASSINANTE': 'text-cyan-400 bg-cyan-500/10',
+        'AFILIADO': 'text-yellow-400 bg-yellow-500/10'
+      }
+      return darkColors[tipo] || 'text-slate-400 bg-slate-500/10'
+    } else {
+      const lightColors: Record<string, string> = {
+        'ADMIN': 'text-purple-600 bg-purple-100',
+        'ATENDENTE_COMERCIAL': 'text-blue-600 bg-blue-100',
+        'ATENDENTE_FINANCEIRO': 'text-green-600 bg-green-100',
+        'ATENDENTE_JURIDICO': 'text-indigo-600 bg-indigo-100',
+        'ATENDENTE_SUPORTE': 'text-orange-600 bg-orange-100',
+        'ATENDENTE_VENDAS': 'text-pink-600 bg-pink-100',
+        'ASSINANTE': 'text-cyan-600 bg-cyan-100',
+        'AFILIADO': 'text-yellow-600 bg-yellow-100'
+      }
+      return lightColors[tipo] || 'text-gray-600 bg-gray-100'
     }
-    return colors[tipo] || 'text-gray-600 bg-gray-100'
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-      <div className="p-6 border-b border-gray-100">
+    <div className={`rounded-2xl shadow-sm border backdrop-blur-sm ${
+      actualTheme === 'dark'
+        ? 'bg-slate-800/60 border-slate-700/50'
+        : 'bg-white border-gray-100'
+    }`}>
+      <div className={`p-6 border-b ${
+        actualTheme === 'dark' ? 'border-slate-700/50' : 'border-gray-100'
+      }`}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className={`text-lg font-semibold ${
+            actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
             Lista de Atendentes ({atendentes.length})
           </h3>
         </div>
@@ -99,7 +123,11 @@ export default function AtendentesList({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             whileHover={{ y: -8, scale: 1.02 }}
-            className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-lg border border-gray-100/50 overflow-hidden hover:shadow-2xl transition-all duration-500 group"
+            className={`rounded-3xl shadow-lg border overflow-hidden hover:shadow-2xl transition-all duration-500 group backdrop-blur-sm ${
+              actualTheme === 'dark'
+                ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/60 border-slate-700/50'
+                : 'bg-gradient-to-br from-white to-gray-50 border-gray-100/50'
+            }`}
           >
             {/* Header com gradiente */}
             <div className={`h-2 bg-gradient-to-r ${
@@ -126,28 +154,24 @@ export default function AtendentesList({
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-[#305e73] transition-colors truncate">
+                    <h3 className={`text-xl font-bold mb-2 group-hover:text-[#305e73] transition-colors truncate ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
                       {atendente.nome}
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 mb-3">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                        atendente.tipo === 'admin' 
-                          ? 'text-purple-800 bg-purple-100 border border-purple-200' 
-                          : atendente.tipo === 'comercial'
-                          ? 'text-green-800 bg-green-100 border border-green-200'
-                          : atendente.tipo === 'suporte'
-                          ? 'text-blue-800 bg-blue-100 border border-blue-200'
-                          : 'text-gray-800 bg-gray-100 border border-gray-200'
-                      }`}>
-                        {atendente.tipo === 'admin' ? 'Admin' : 
-                         atendente.tipo === 'comercial' ? 'Comercial' : 
-                         atendente.tipo === 'suporte' ? 'Suporte' : 'Atendente'}
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${getTipoColor(atendente.tipo)}`}>
+                        {getTipoLabel(atendente.tipo)}
                       </span>
                       
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                         atendente.ativo 
-                          ? 'text-green-800 bg-green-100 border border-green-200' 
-                          : 'text-red-800 bg-red-100 border border-red-200'
+                          ? actualTheme === 'dark'
+                            ? 'text-green-400 bg-green-500/10 border border-green-500/30' 
+                            : 'text-green-800 bg-green-100 border border-green-200'
+                          : actualTheme === 'dark'
+                            ? 'text-red-400 bg-red-500/10 border border-red-500/30'
+                            : 'text-red-800 bg-red-100 border border-red-200'
                       }`}>
                         {atendente.ativo ? 'Ativo' : 'Inativo'}
                       </span>
@@ -159,7 +183,11 @@ export default function AtendentesList({
                 <div className="relative">
                   <button
                     onClick={() => setSelectedAtendente(selectedAtendente === atendente.id ? null : atendente.id)}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200 group-hover:scale-105"
+                    className={`p-2 rounded-xl transition-all duration-200 group-hover:scale-105 ${
+                      actualTheme === 'dark'
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                    }`}
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
@@ -169,14 +197,22 @@ export default function AtendentesList({
                       initial={{ opacity: 0, scale: 0.9, y: -10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 z-20 backdrop-blur-sm"
+                      className={`absolute right-0 top-full mt-2 w-56 rounded-2xl shadow-2xl border py-3 z-20 backdrop-blur-sm ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/90 border-slate-700/50'
+                          : 'bg-white border-gray-100'
+                      }`}
                     >
                       <button
                         onClick={() => {
                           toggleAtendenteStatus(atendente)
                           setSelectedAtendente(null)
                         }}
-                        className="flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                          actualTheme === 'dark'
+                            ? 'text-white/80 hover:bg-slate-700/50'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                       >
                         {atendente.ativo ? (
                           <><UserX className="w-4 h-4 text-red-500" />Desativar atendente</>
@@ -190,7 +226,11 @@ export default function AtendentesList({
                           onViewAtendente?.(atendente)
                           setSelectedAtendente(null)
                         }}
-                        className="flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                          actualTheme === 'dark'
+                            ? 'text-white/80 hover:bg-slate-700/50'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                       >
                         <Eye className="w-4 h-4 text-blue-500" />
                         Visualizar detalhes
@@ -201,7 +241,11 @@ export default function AtendentesList({
                           onEditAtendente?.(atendente)
                           setSelectedAtendente(null)
                         }}
-                        className="flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                          actualTheme === 'dark'
+                            ? 'text-white/80 hover:bg-slate-700/50'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                       >
                         <Edit className="w-4 h-4 text-orange-500" />
                         Editar atendente
@@ -219,7 +263,9 @@ export default function AtendentesList({
                           Atribuir à fila
                         </button>
 
-                        <hr className="my-2 border-gray-100" />
+                        <hr className={`my-2 ${
+                          actualTheme === 'dark' ? 'border-slate-600/50' : 'border-gray-100'
+                        }`} />
                         
                         <button
                           onClick={() => {
@@ -228,7 +274,11 @@ export default function AtendentesList({
                             }
                             setSelectedAtendente(null)
                           }}
-                          className="flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                          className={`flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                            actualTheme === 'dark'
+                              ? 'text-red-400 hover:bg-red-500/10'
+                              : 'text-red-600 hover:bg-red-50'
+                          }`}
                         >
                           <Trash2 className="w-4 h-4" />
                           Excluir atendente
@@ -241,13 +291,23 @@ export default function AtendentesList({
 
               {/* Fila Atual - DESTAQUE */}
               {atendente.fila && (
-                <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className={`mb-4 p-3 rounded-xl border ${
+                  actualTheme === 'dark'
+                    ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/30'
+                    : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'
+                }`}>
                   <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm text-blue-700 font-medium">Fila Atual:</span>
+                    <Layers className={`w-4 h-4 ${
+                      actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                    }`} />
+                    <span className={`text-sm font-medium ${
+                      actualTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'
+                    }`}>Fila Atual:</span>
                     <div className="flex items-center gap-2">
                       <div className={`w-3 h-3 rounded-full ${atendente.fila.cor}`} />
-                      <span className="text-sm font-bold text-blue-900">{atendente.fila.nome}</span>
+                      <span className={`text-sm font-bold ${
+                        actualTheme === 'dark' ? 'text-blue-200' : 'text-blue-900'
+                      }`}>{atendente.fila.nome}</span>
                     </div>
                   </div>
                 </div>
@@ -255,19 +315,27 @@ export default function AtendentesList({
 
               {/* Contact Info */}
               <div className="space-y-2 mb-4">
-                <div className="flex items-center text-sm text-gray-600">
+                <div className={`flex items-center text-sm ${
+                  actualTheme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                }`}>
                   <Mail className="w-4 h-4 mr-3 text-blue-500" />
                   <span className="font-medium truncate">{atendente.email}</span>
                 </div>
                 
                 {atendente.telefone && (
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className={`flex items-center text-sm ${
+                    actualTheme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                  }`}>
                     <Phone className="w-4 h-4 mr-3 text-green-500" />
                     <span className="font-medium">{atendente.telefone}</span>
                   </div>
                 )}
                 
-                <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                <div className={`flex items-center justify-between text-xs pt-2 border-t ${
+                  actualTheme === 'dark' 
+                    ? 'text-slate-500 border-slate-700/50' 
+                    : 'text-gray-500 border-gray-100'
+                }`}>
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {format(new Date(atendente.criadoEm), 'dd/MM/yyyy', { locale: ptBR })}
@@ -281,38 +349,70 @@ export default function AtendentesList({
 
               {/* Statistics - Visual Melhorado - Sempre Visível */}
               {atendente.estatisticas && (
-                <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-4 border border-gray-100 transition-opacity duration-300">
-                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-blue-600" />
+                <div className={`rounded-2xl p-4 border transition-opacity duration-300 ${
+                  actualTheme === 'dark'
+                    ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-slate-600/50'
+                    : 'bg-gradient-to-br from-gray-50 to-blue-50 border-gray-100'
+                }`}>
+                  <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${
+                    actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                  }`}>
+                    <BarChart3 className={`w-4 h-4 ${
+                      actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                    }`} />
                     Estatísticas de Performance
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-blue-100 group-hover:scale-105 transition-transform">
+                    <div className={`rounded-xl p-3 text-center shadow-sm border group-hover:scale-105 transition-transform ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-800/70 border-blue-500/30'
+                        : 'bg-white border-blue-100'
+                    }`}>
                       <div className="text-2xl font-bold text-blue-600 mb-1">
                         {atendente.estatisticas.conversasAtivas}
                       </div>
-                      <div className="text-xs text-gray-600 font-semibold">Conversas Ativas</div>
+                      <div className={`text-xs font-semibold ${
+                        actualTheme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                      }`}>Conversas Ativas</div>
                     </div>
                     
-                    <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-green-100 group-hover:scale-105 transition-transform">
+                    <div className={`rounded-xl p-3 text-center shadow-sm border group-hover:scale-105 transition-transform ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-800/70 border-green-500/30'
+                        : 'bg-white border-green-100'
+                    }`}>
                       <div className="text-2xl font-bold text-green-600 mb-1">
                         {atendente.estatisticas.totalConversas}
                       </div>
-                      <div className="text-xs text-gray-600 font-semibold">Total Conversas</div>
+                      <div className={`text-xs font-semibold ${
+                        actualTheme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                      }`}>Total Conversas</div>
                     </div>
                     
-                    <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-yellow-100 group-hover:scale-105 transition-transform">
+                    <div className={`rounded-xl p-3 text-center shadow-sm border group-hover:scale-105 transition-transform ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-800/70 border-yellow-500/30'
+                        : 'bg-white border-yellow-100'
+                    }`}>
                       <div className="text-2xl font-bold text-yellow-600 mb-1">
                         {atendente.estatisticas.emAndamento}
                       </div>
-                      <div className="text-xs text-gray-600 font-semibold">Em Andamento</div>
+                      <div className={`text-xs font-semibold ${
+                        actualTheme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                      }`}>Em Andamento</div>
                     </div>
                     
-                    <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-purple-100 group-hover:scale-105 transition-transform">
+                    <div className={`rounded-xl p-3 text-center shadow-sm border group-hover:scale-105 transition-transform ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-800/70 border-purple-500/30'
+                        : 'bg-white border-purple-100'
+                    }`}>
                       <div className="text-2xl font-bold text-purple-600 mb-1">
                         {atendente.estatisticas.concluidas}
                       </div>
-                      <div className="text-xs text-gray-600 font-semibold">Concluídas</div>
+                      <div className={`text-xs font-semibold ${
+                        actualTheme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                      }`}>Concluídas</div>
                     </div>
                   </div>
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Mail,
   Server,
@@ -22,6 +23,8 @@ interface EmailSectionProps {
 }
 
 export default function EmailSection({ onConfigChange }: EmailSectionProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [config, setConfig] = useState({
     // Configurações SMTP
     smtp: {

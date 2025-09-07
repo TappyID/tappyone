@@ -87,11 +87,32 @@ export async function POST(
       const errorText = await response.text()
       console.error(`❌ [SESSION ${sessionName} START] Erro do WAHA:`, response.status, errorText)
       
-      // Se for erro 422, pode ser que a sessão já existe mas não apareceu na lista
+      // Se for erro 422, sessão já existe - tentar com PUT para atualizar
       if (response.status === 422) {
+        console.log(`🔄 [SESSION ${sessionName} START] Sessão já existe, tentando PUT para atualizar...`)
+        
+        const updateResponse = await fetch(`${WAHA_URL}/api/sessions/${sessionName}`, {
+          method: 'PUT',
+          headers: {
+            'X-Api-Key': WAHA_API_KEY,
+            'Content-Type': 'application/json',
+            'accept': 'application/json'
+          },
+          body: JSON.stringify(sessionConfig.config)
+        })
+        
+        if (updateResponse.ok) {
+          const updateData = await updateResponse.json()
+          console.log(`✅ [SESSION ${sessionName} START] Sessão atualizada com sucesso`)
+          return NextResponse.json(updateData)
+        } else {
+          const updateErrorText = await updateResponse.text()
+          console.error(`❌ [SESSION ${sessionName} START] Erro ao atualizar sessão:`, updateResponse.status, updateErrorText)
+        }
+        
         return NextResponse.json(
           { 
-            error: 'Sessão já existe ou configuração inválida', 
+            error: 'Sessão já existe e falha ao atualizar', 
             details: errorText,
             suggestion: 'Tente parar a sessão existente primeiro'
           },

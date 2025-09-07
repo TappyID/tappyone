@@ -49,9 +49,9 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
         onClick={() => setShowTranslation(!showTranslation)}
         className={`w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 ${
           sidebarCollapsed
-            ? 'bg-white/10 border-gray-200/20 hover:bg-gray-100 text-gray-600'
+            ? 'bg-white/70 border-white/20 hover:bg-white/90 hover:shadow-md text-gray-600'
             : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
-        }`}
+        } shadow-sm hover:shadow-lg`}
         title="Tradução"
       >
         <Languages className="w-4 h-4" />

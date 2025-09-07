@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useOrcamentos, type Orcamento } from '@/hooks/useOrcamentos'
 import { AdminLayout } from '../components/AdminLayout'
 import { 
@@ -63,6 +64,8 @@ interface OrcamentoStats {
 }
 
 export default function OrcamentosPage() {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const { user, loading: authLoading } = useAuth()
   const { 
     orcamentos, 
@@ -117,9 +120,9 @@ export default function OrcamentosPage() {
       .sort((a, b) => {
         switch (sortBy) {
           case 'data':
-            return new Date(b.data).getTime() - new Date(a.data).getTime()
+            return new Date().getTime() - new Date().getTime()
           case 'valor':
-            return b.valorTotal - a.valorTotal
+            return (b.valorTotal || 0) - (a.valorTotal || 0)
           case 'cliente':
             return (a.contato?.nome || '').localeCompare(b.contato?.nome || '')
           case 'status':
@@ -174,23 +177,18 @@ export default function OrcamentosPage() {
         await updateOrcamento({
           id: editingOrcamento.id,
           titulo: novoOrcamento.titulo,
-          contato_nome: novoOrcamento.contato_nome,
-          contato_telefone: novoOrcamento.contato_telefone,
-          valor_total: novoOrcamento.valor_total,
           observacao: novoOrcamento.observacao,
-          itens: novoOrcamento.itens
+          valorTotal: novoOrcamento.valorTotal,
         })
         setEditingOrcamento(null)
       } else {
         // Criando novo orçamento
         await createOrcamento({
           titulo: novoOrcamento.titulo,
-          contato_nome: novoOrcamento.contato_nome,
-          contato_telefone: novoOrcamento.contato_telefone,
-          valor_total: novoOrcamento.valor_total,
           observacao: novoOrcamento.observacao,
-          status: 'rascunho',
-          itens: novoOrcamento.itens
+          valorTotal: novoOrcamento.valorTotal,
+          contato_id: novoOrcamento.contato_id || '',
+          tipo: 'orcamento'
         })
       }
       setShowCreateModal(false)
@@ -232,14 +230,17 @@ export default function OrcamentosPage() {
   // Função para duplicar orçamento
   const handleDuplicateOrcamento = async (orcamento: Orcamento) => {
     try {
+      const quickOrcamento = {
+        titulo: `Orçamento ${filteredOrcamentos.length + 1}`,
+        observacao: 'Orçamento criado rapidamente',
+        valorTotal: 0,
+        contato_id: '',
+      }
       await createOrcamento({
-        titulo: `${orcamento.titulo} (Cópia)`,
-        contato_id: orcamento.contatoId,
-        tipo: 'orcamento' as const,
-        valorTotal: orcamento.valorTotal,
-        observacao: orcamento.observacao,
-        status: 'rascunho',
-        itens: orcamento.itens
+        ...quickOrcamento,
+        valorTotal: orcamento.valorTotal || 0,
+        observacao: orcamento.observacao || 'Orçamento duplicado',
+        tipo: 'orcamento'
       })
     } catch (error) {
       handleError('Erro ao duplicar orçamento')
@@ -247,13 +248,24 @@ export default function OrcamentosPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'aprovado': return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' }
-      case 'enviado': return { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' }
-      case 'rascunho': return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
-      case 'rejeitado': return { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' }
-      case 'expirado': return { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' }
-      default: return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
+    if (isDark) {
+      switch (status) {
+        case 'aprovado': return { bg: 'bg-green-900/30', text: 'text-green-300', border: 'border-green-600/50' }
+        case 'enviado': return { bg: 'bg-blue-900/30', text: 'text-blue-300', border: 'border-blue-600/50' }
+        case 'rascunho': return { bg: 'bg-slate-700/50', text: 'text-slate-300', border: 'border-slate-600/50' }
+        case 'rejeitado': return { bg: 'bg-red-900/30', text: 'text-red-300', border: 'border-red-600/50' }
+        case 'expirado': return { bg: 'bg-orange-900/30', text: 'text-orange-300', border: 'border-orange-600/50' }
+        default: return { bg: 'bg-slate-700/50', text: 'text-slate-300', border: 'border-slate-600/50' }
+      }
+    } else {
+      switch (status) {
+        case 'aprovado': return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' }
+        case 'enviado': return { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' }
+        case 'rascunho': return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
+        case 'rejeitado': return { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' }
+        case 'expirado': return { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' }
+        default: return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
+      }
     }
   }
 
@@ -270,10 +282,18 @@ export default function OrcamentosPage() {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className={`min-h-screen ${
+        isDark 
+          ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+          : 'bg-gradient-to-br from-gray-50 to-gray-100'
+      }`}>
         {/* Header Ultra Sofisticado */}
         <motion.div
-          className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-xl"
+          className={`backdrop-blur-xl border-b shadow-xl ${
+            isDark 
+              ? 'bg-slate-800/90 border-slate-600/50' 
+              : 'bg-white/80 border-white/20'
+          }`}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -281,7 +301,11 @@ export default function OrcamentosPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
                 <motion.div
-                  className="w-16 h-16 bg-gradient-to-br from-[#305e73] via-[#3a6d84] to-[#4a7d94] rounded-2xl flex items-center justify-center shadow-2xl"
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl ${
+                    isDark 
+                      ? 'bg-gradient-to-br from-slate-600 via-slate-500 to-slate-400' 
+                      : 'bg-gradient-to-br from-[#305e73] via-[#3a6d84] to-[#4a7d94]'
+                  }`}
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -289,7 +313,9 @@ export default function OrcamentosPage() {
                 </motion.div>
                 <div>
                   <motion.h1 
-                    className="text-4xl font-black text-gray-900 flex items-center gap-3"
+                    className={`text-4xl font-black flex items-center gap-3 ${
+                      isDark ? 'text-slate-200' : 'text-gray-900'
+                    }`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
@@ -298,7 +324,9 @@ export default function OrcamentosPage() {
                     <Sparkles className="w-8 h-8 text-yellow-500" />
                   </motion.h1>
                   <motion.p 
-                    className="text-gray-600 mt-2 text-lg font-medium"
+                    className={`mt-2 text-lg font-medium ${
+                      isDark ? 'text-slate-400' : 'text-gray-600'
+                    }`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
@@ -312,7 +340,11 @@ export default function OrcamentosPage() {
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-[#305e73] via-[#3a6d84] to-[#4a7d94] text-white px-8 py-4 rounded-2xl font-bold shadow-2xl hover:shadow-3xl transition-all flex items-center gap-3 group"
+                className={`text-white px-8 py-4 rounded-2xl font-bold shadow-2xl hover:shadow-3xl transition-all flex items-center gap-3 group ${
+                  isDark 
+                    ? 'bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400 hover:from-slate-500 hover:via-slate-400 hover:to-slate-300' 
+                    : 'bg-gradient-to-r from-[#305e73] via-[#3a6d84] to-[#4a7d94]'
+                }`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
@@ -339,7 +371,11 @@ export default function OrcamentosPage() {
                 return (
                   <motion.div
                     key={stat.title}
-                    className="bg-white/60 backdrop-blur-lg rounded-2xl p-6 border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-300 group cursor-pointer"
+                    className={`backdrop-blur-lg rounded-2xl p-6 border shadow-xl hover:shadow-2xl transition-all duration-300 group cursor-pointer ${
+                      isDark 
+                        ? 'bg-slate-800/60 border-slate-600/30 hover:bg-slate-800/80' 
+                        : 'bg-white/60 border-white/30'
+                    }`}
                     whileHover={{ y: -8, scale: 1.02 }}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -352,10 +388,14 @@ export default function OrcamentosPage() {
                       <ArrowUp className="w-4 h-4 text-green-500" />
                     </div>
                     <div className="mt-4">
-                      <div className="text-2xl font-bold text-gray-900 group-hover:scale-105 transition-transform duration-300">
+                      <div className={`text-2xl font-bold group-hover:scale-105 transition-transform duration-300 ${
+                        isDark ? 'text-slate-200' : 'text-gray-900'
+                      }`}>
                         {stat.value}
                       </div>
-                      <div className="text-gray-600 font-medium">{stat.title}</div>
+                      <div className={`font-medium ${
+                        isDark ? 'text-slate-400' : 'text-gray-600'
+                      }`}>{stat.title}</div>
                     </div>
                   </motion.div>
                 )
@@ -364,7 +404,11 @@ export default function OrcamentosPage() {
 
             {/* Controles e Filtros */}
             <motion.div
-              className="flex items-center justify-between mt-8 bg-white/40 backdrop-blur-lg rounded-2xl p-6 border border-white/30"
+              className={`flex items-center justify-between mt-8 backdrop-blur-lg rounded-2xl p-6 border ${
+                isDark 
+                  ? 'bg-slate-800/40 border-slate-600/30' 
+                  : 'bg-white/40 border-white/30'
+              }`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
@@ -377,14 +421,22 @@ export default function OrcamentosPage() {
                     placeholder="Buscar orçamentos..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 pr-6 py-3 w-80 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-all"
+                    className={`pl-12 pr-6 py-3 w-80 backdrop-blur-sm border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all ${
+                      isDark 
+                        ? 'bg-slate-800/60 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:ring-blue-400/50' 
+                        : 'bg-white/60 border-white/30 focus:ring-[#305e73]'
+                    }`}
                   />
                 </div>
 
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as any)}
-                  className="px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-[#305e73] outline-none"
+                  className={`px-4 py-3 backdrop-blur-sm border rounded-xl focus:ring-2 outline-none ${
+                    isDark 
+                      ? 'bg-slate-800/60 border-slate-600/50 text-slate-200 focus:ring-blue-400/50' 
+                      : 'bg-white/60 border-white/30 focus:ring-[#305e73]'
+                  }`}
                 >
                   <option value="all">Todos Status</option>
                   <option value="rascunho">Rascunho</option>
@@ -397,7 +449,11 @@ export default function OrcamentosPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-[#305e73] outline-none"
+                  className={`px-4 py-3 backdrop-blur-sm border rounded-xl focus:ring-2 outline-none ${
+                    isDark 
+                      ? 'bg-slate-800/60 border-slate-600/50 text-slate-200 focus:ring-blue-400/50' 
+                      : 'bg-white/60 border-white/30 focus:ring-[#305e73]'
+                  }`}
                 >
                   <option value="data">Por Data</option>
                   <option value="valor">Por Valor</option>
@@ -410,8 +466,12 @@ export default function OrcamentosPage() {
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-3 rounded-xl transition-all ${viewMode === 'grid' 
-                    ? 'bg-[#305e73] text-white shadow-lg' 
-                    : 'bg-white/60 text-gray-600 hover:bg-white/80'
+                    ? isDark 
+                      ? 'bg-slate-600 text-white shadow-lg' 
+                      : 'bg-[#305e73] text-white shadow-lg'
+                    : isDark 
+                      ? 'bg-slate-800/60 text-slate-400 hover:bg-slate-800/80' 
+                      : 'bg-white/60 text-gray-600 hover:bg-white/80'
                   }`}
                 >
                   <Grid className="w-5 h-5" />
@@ -419,8 +479,12 @@ export default function OrcamentosPage() {
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-3 rounded-xl transition-all ${viewMode === 'list' 
-                    ? 'bg-[#305e73] text-white shadow-lg' 
-                    : 'bg-white/60 text-gray-600 hover:bg-white/80'
+                    ? isDark 
+                      ? 'bg-slate-600 text-white shadow-lg' 
+                      : 'bg-[#305e73] text-white shadow-lg'
+                    : isDark 
+                      ? 'bg-slate-800/60 text-slate-400 hover:bg-slate-800/80' 
+                      : 'bg-white/60 text-gray-600 hover:bg-white/80'
                   }`}
                 >
                   <List className="w-5 h-5" />
@@ -467,11 +531,19 @@ export default function OrcamentosPage() {
                       exit={{ opacity: 0, y: -20, scale: 0.9 }}
                       transition={{ delay: index * 0.1 }}
                       whileHover={{ y: -8, scale: 1.02 }}
-                      className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-500 group cursor-pointer relative overflow-hidden"
+                      className={`backdrop-blur-xl rounded-3xl p-6 border shadow-xl hover:shadow-2xl transition-all duration-500 group cursor-pointer relative overflow-hidden ${
+                        isDark 
+                          ? 'bg-slate-800/70 border-slate-600/30 hover:bg-slate-800/90' 
+                          : 'bg-white/70 border-white/30'
+                      }`}
                       onClick={() => setSelectedOrcamento(orcamento)}
                     >
                       {/* Background Pattern */}
-                      <div className="absolute inset-0 opacity-5 bg-gradient-to-br from-[#305e73] to-[#4a7d94]" />
+                      <div className={`absolute inset-0 opacity-5 bg-gradient-to-br ${
+                        isDark 
+                          ? 'from-slate-600 to-slate-400' 
+                          : 'from-[#305e73] to-[#4a7d94]'
+                      }`} />
                       
                       {/* Header do Card */}
                       <div className="flex items-start justify-between mb-4 relative z-10">
@@ -483,8 +555,10 @@ export default function OrcamentosPage() {
                             <StatusIcon className={`w-5 h-5 ${statusColor.text}`} />
                           </motion.div>
                           <div>
-                            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                              {orcamento.numero}
+                            <div className={`text-xs font-bold uppercase tracking-wider ${
+                              isDark ? 'text-slate-400' : 'text-gray-500'
+                            }`}>
+                              #{orcamento.id.slice(-6)}
                             </div>
                             <div className={`px-3 py-1 rounded-full text-xs font-bold ${statusColor.bg} ${statusColor.text} mt-1`}>
                               {orcamento.status.toUpperCase()}
@@ -510,107 +584,143 @@ export default function OrcamentosPage() {
 
                       {/* Título e Descrição */}
                       <div className="mb-6 relative z-10">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-[#305e73] transition-colors duration-300">
+                        <h3 className={`text-xl font-bold mb-2 transition-colors duration-300 ${
+                          isDark 
+                            ? 'text-slate-200 group-hover:text-blue-300' 
+                            : 'text-gray-900 group-hover:text-[#305e73]'
+                        }`}>
                           {orcamento.titulo}
                         </h3>
-                        <p className="text-gray-600 text-sm line-clamp-2">
+                        <p className={`text-sm line-clamp-2 ${
+                          isDark ? 'text-slate-400' : 'text-gray-600'
+                        }`}>
                           {orcamento.observacao}
                         </p>
                       </div>
 
                       {/* Cliente Info */}
                       <div className="flex items-center gap-3 mb-6 relative z-10">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#305e73] to-[#4a7c95] rounded-full flex items-center justify-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isDark 
+                            ? 'bg-gradient-to-br from-slate-600 to-slate-500' 
+                            : 'bg-gradient-to-br from-[#305e73] to-[#4a7c95]'
+                        }`}>
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-900">{orcamento.contato?.nome || 'Sem cliente'}</div>
-                          <div className="text-xs text-gray-500">{orcamento.contato?.telefone || 'Sem telefone'}</div>
+                          <div className={`font-semibold ${
+                            isDark ? 'text-slate-200' : 'text-gray-800'
+                          }`}>
+                            {orcamento.contato?.nome || 'Cliente não informado'}
+                          </div>
+                          <div className={`text-sm ${
+                            isDark ? 'text-slate-400' : 'text-gray-500'
+                          }`}>
+                            {orcamento.contato?.telefone || 'Telefone não informado'}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Detalhes adicionais */}
-                      <div className="space-y-3 mb-4 relative z-10">
-                        {/* Data de vencimento se existir */}
-                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">
-                          <Calendar className="w-3 h-3" />
-                          {orcamento.tipo.charAt(0).toUpperCase() + orcamento.tipo.slice(1)}
-                        </div>
-                        
-                        {/* Número de itens */}
-                        {orcamento.itens && orcamento.itens.length > 0 && (
-                          <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
-                            <Package className="w-3 h-3" />
-                            <span>{orcamento.itens.length} {orcamento.itens.length === 1 ? 'item' : 'itens'}</span>
-                          </div>
-                        )}
-                      </div>
-                      
                       {/* Valor e Data */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200/50 relative z-10">
+                      <div className="flex items-center justify-between mb-6 relative z-10">
                         <div>
-                          <div className="text-2xl font-black text-[#305e73] group-hover:scale-105 transition-transform duration-300">
-                            {new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL'
-                            }).format(orcamento.valorTotal || 0)}
+                          <div className={`text-2xl font-black flex items-center gap-2 ${
+                            isDark ? 'text-blue-300' : 'text-[#305e73]'
+                          }`}>
+                            R$ {orcamento.valorTotal?.toLocaleString() || '0'}
+                            <TrendingUp className="w-5 h-5" />
                           </div>
-                          <div className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Criado em: {new Date(orcamento.data).toLocaleDateString('pt-BR')}
+                          <div className={`text-xs mt-1 ${
+                            isDark ? 'text-slate-400' : 'text-gray-500'
+                          }`}>
+                            Valor do Orçamento
                           </div>
                         </div>
+                        <div className="text-right">
+                          <div className={`text-sm font-bold ${
+                            isDark ? 'text-slate-300' : 'text-gray-700'
+                          }`}>
+                            {new Date().toLocaleDateString()}
+                          </div>
+                          <div className={`text-xs ${
+                            isDark ? 'text-slate-400' : 'text-gray-500'
+                          }`}>
+                            Criado em
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tags de observações se existirem */}
+                      {orcamento.observacao && (
+                        <div className="mb-4 relative z-10">
+                          <div className="flex flex-wrap gap-2">
+                            {orcamento.observacao.split(' ').slice(0, 3).map((word, idx) => (
+                              <span 
+                                key={idx}
+                                className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  isDark 
+                                    ? 'bg-blue-900/50 text-blue-300 border border-blue-700/50' 
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}
+                              >
+                                {word}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Botões de Ação */}
+                      <div className="flex items-center gap-3 relative z-10">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`flex-1 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+                            isDark 
+                              ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-500 hover:to-emerald-600' 
+                              : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedOrcamento(orcamento)
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </motion.button>
                         
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleViewOrcamento(orcamento)
-                            }}
-                            className="p-2 rounded-xl bg-[#305e73]/10 hover:bg-[#305e73]/20 text-[#305e73] transition-all"
-                            title="Visualizar"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditOrcamento(orcamento)
-                            }}
-                            className="p-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 transition-all"
-                            title="Editar"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDuplicateOrcamento(orcamento)
-                            }}
-                            className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-all"
-                            title="Duplicar"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setShowDeleteConfirm(orcamento.id)
-                            }}
-                            className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all"
-                            title="Deletar"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </motion.button>
-                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`flex-1 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+                            isDark 
+                              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600' 
+                              : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingOrcamento(orcamento)
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                          Editar
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
+                            isDark 
+                              ? 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600' 
+                              : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowDeleteConfirm(orcamento.id)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
                       </div>
                     </motion.div>
                   )
@@ -622,7 +732,7 @@ export default function OrcamentosPage() {
 
         {/* Modals */}
         <AnimatePresence>
-          {showCreateModal && (
+        {showCreateModal && (
             <CriarOrcamentoModal
               isOpen={showCreateModal}
               onClose={() => {
@@ -647,33 +757,53 @@ export default function OrcamentosPage() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+                className={`rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl ${
+                  isDark ? 'bg-slate-800 border border-slate-600/50' : 'bg-white'
+                }`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    isDark ? 'bg-red-900/30' : 'bg-red-100'
+                  }`}>
+                    <AlertCircle className={`w-6 h-6 ${
+                      isDark ? 'text-red-400' : 'text-red-600'
+                    }`} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
-                    <p className="text-gray-600 text-sm">Esta ação não pode ser desfeita.</p>
+                    <h3 className={`text-lg font-bold ${
+                      isDark ? 'text-slate-200' : 'text-gray-900'
+                    }`}>Confirmar Exclusão</h3>
+                    <p className={`text-sm ${
+                      isDark ? 'text-slate-400' : 'text-gray-600'
+                    }`}>Esta ação não pode ser desfeita.</p>
                   </div>
                 </div>
                 
-                <p className="text-gray-700 mb-6">
+                <p className={`mb-6 ${
+                  isDark ? 'text-slate-300' : 'text-gray-700'
+                }`}>
                   Tem certeza que deseja excluir este orçamento?
                 </p>
                 
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setShowDeleteConfirm(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                    className={`px-4 py-2 font-medium transition-colors ${
+                      isDark 
+                        ? 'text-slate-400 hover:text-slate-200' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={() => handleDeleteOrcamento(showDeleteConfirm)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                    className={`px-4 py-2 text-white rounded-lg font-medium transition-colors ${
+                      isDark 
+                        ? 'bg-red-700 hover:bg-red-600' 
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
                   >
                     Excluir
                   </button>
@@ -695,84 +825,138 @@ export default function OrcamentosPage() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+                className={`rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto ${
+                  isDark ? 'bg-slate-800 border border-slate-600/50' : 'bg-white'
+                }`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#305e73]/10 rounded-full flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-[#305e73]" />
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      isDark ? 'bg-slate-600/30' : 'bg-[#305e73]/10'
+                    }`}>
+                      <FileText className={`w-6 h-6 ${
+                        isDark ? 'text-slate-300' : 'text-[#305e73]'
+                      }`} />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-gray-800">Orçamento #{selectedOrcamento.id.slice(-8)}</h2>
-                      <p className="text-gray-600 mt-1">{selectedOrcamento.observacao || 'Sem observações'}</p>
+                      <h2 className={`text-xl font-bold ${
+                        isDark ? 'text-slate-200' : 'text-gray-800'
+                      }`}>Orçamento #{selectedOrcamento.id.slice(-8)}</h2>
+                      <p className={`mt-1 ${
+                        isDark ? 'text-slate-400' : 'text-gray-600'
+                      }`}>{selectedOrcamento.observacao || 'Sem observações'}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedOrcamento(null)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
+                    }`}
                   >
-                    <XCircle className="w-5 h-5 text-gray-500" />
+                    <XCircle className={`w-5 h-5 ${
+                      isDark ? 'text-slate-400' : 'text-gray-500'
+                    }`} />
                   </button>
                 </div>
                 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Cliente</label>
-                      <p className="text-gray-900 font-medium">{selectedOrcamento.cliente_nome}</p>
+                      <label className={`text-sm font-medium ${
+                        isDark ? 'text-slate-400' : 'text-gray-500'
+                      }`}>Cliente</label>
+                      <p className={`font-medium ${
+                        isDark ? 'text-slate-200' : 'text-gray-900'
+                      }`}>{selectedOrcamento.contato?.nome || 'Cliente não informado'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Telefone</label>
-                      <p className="text-gray-900">{selectedOrcamento.cliente_telefone || 'Não informado'}</p>
+                      <label className={`text-sm font-medium ${
+                        isDark ? 'text-slate-400' : 'text-gray-500'
+                      }`}>Telefone</label>
+                      <p className={isDark ? 'text-slate-200' : 'text-gray-900'}>{selectedOrcamento.contato?.telefone || 'Não informado'}</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Status</label>
+                      <label className={`text-sm font-medium ${
+                        isDark ? 'text-slate-400' : 'text-gray-500'
+                      }`}>Status</label>
                       <div className={`inline-flex px-3 py-1 rounded-full text-xs font-bold mt-1 ${getStatusColor(selectedOrcamento.status).bg} ${getStatusColor(selectedOrcamento.status).text}`}>
                         {selectedOrcamento.status.toUpperCase()}
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Valor Total</label>
-                      <p className="text-2xl font-black text-[#305e73]">R$ {(selectedOrcamento.valor_total || 0).toLocaleString()}</p>
+                      <label className={`text-sm font-medium ${
+                        isDark ? 'text-slate-400' : 'text-gray-500'
+                      }`}>Valor Total</label>
+                      <p className={`text-2xl font-black ${
+                        isDark ? 'text-blue-300' : 'text-[#305e73]'
+                      }`}>R$ {(selectedOrcamento.valorTotal || 0).toLocaleString()}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Data de Criação</label>
-                    <p className="text-gray-900">{new Date(selectedOrcamento.data_criacao).toLocaleDateString('pt-BR')}</p>
+                    <label className={`text-sm font-medium ${
+                      isDark ? 'text-slate-400' : 'text-gray-500'
+                    }`}>Data de Criação</label>
+                    <p className={isDark ? 'text-slate-200' : 'text-gray-900'}>{new Date().toLocaleDateString('pt-BR')}</p>
                   </div>
                   
-                  {selectedOrcamento.observacoes && (
+                  {selectedOrcamento.observacao && (
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Observações</label>
-                      <p className="text-gray-900 whitespace-pre-wrap">{selectedOrcamento.observacoes}</p>
+                      <label className={`text-sm font-medium ${
+                        isDark ? 'text-slate-400' : 'text-gray-500'
+                      }`}>Observações</label>
+                      <p className={`whitespace-pre-wrap ${
+                        isDark ? 'text-slate-200' : 'text-gray-900'
+                      }`}>{selectedOrcamento.observacao}</p>
                     </div>
                   )}
                   
                   {selectedOrcamento.itens && selectedOrcamento.itens.length > 0 && (
                     <div>
-                      <label className="text-sm font-medium text-gray-500 mb-2 block">Itens</label>
-                      <div className="border rounded-lg overflow-hidden">
+                      <label className={`text-sm font-medium mb-2 block ${
+                        isDark ? 'text-slate-400' : 'text-gray-500'
+                      }`}>Itens</label>
+                      <div className={`border rounded-lg overflow-hidden ${
+                        isDark ? 'border-slate-600' : 'border-gray-200'
+                      }`}>
                         <table className="w-full">
-                          <thead className="bg-gray-50">
+                          <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
                             <tr>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Item</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Qtd</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Valor</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Total</th>
+                              <th className={`px-4 py-2 text-left text-sm font-medium ${
+                                isDark ? 'text-slate-400' : 'text-gray-500'
+                              }`}>Item</th>
+                              <th className={`px-4 py-2 text-left text-sm font-medium ${
+                                isDark ? 'text-slate-400' : 'text-gray-500'
+                              }`}>Qtd</th>
+                              <th className={`px-4 py-2 text-left text-sm font-medium ${
+                                isDark ? 'text-slate-400' : 'text-gray-500'
+                              }`}>Valor</th>
+                              <th className={`px-4 py-2 text-left text-sm font-medium ${
+                                isDark ? 'text-slate-400' : 'text-gray-500'
+                              }`}>Total</th>
                             </tr>
                           </thead>
                           <tbody>
                             {selectedOrcamento.itens.map((item, index) => (
-                              <tr key={index} className="border-t">
-                                <td className="px-4 py-2 text-sm text-gray-900">{item.nome}</td>
-                                <td className="px-4 py-2 text-sm text-gray-600">{item.quantidade}</td>
-                                <td className="px-4 py-2 text-sm text-gray-600">R$ {item.valor.toLocaleString()}</td>
-                                <td className="px-4 py-2 text-sm font-medium text-gray-900">R$ {(item.valor * item.quantidade).toLocaleString()}</td>
+                              <tr key={index} className={`border-t ${
+                                isDark ? 'border-slate-600' : 'border-gray-200'
+                              }`}>
+                                <td className={`px-4 py-2 text-sm ${
+                                  isDark ? 'text-slate-200' : 'text-gray-900'
+                                }`}>{item.nome}</td>
+                                <td className={`px-4 py-2 text-sm ${
+                                  isDark ? 'text-slate-400' : 'text-gray-600'
+                                }`}>{item.quantidade}</td>
+                                <td className={`px-4 py-2 text-sm ${
+                                  isDark ? 'text-slate-400' : 'text-gray-600'
+                                }`}>R$ {(item.valor || 0).toLocaleString()}</td>
+                                <td className={`px-4 py-2 text-sm font-medium ${
+                                  isDark ? 'text-slate-200' : 'text-gray-900'
+                                }`}>R$ {((item.valor || 0) * (item.quantidade || 0)).toLocaleString()}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -782,20 +966,30 @@ export default function OrcamentosPage() {
                   )}
                 </div>
                 
-                <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
+                <div className={`flex gap-3 justify-end mt-6 pt-4 border-t ${
+                  isDark ? 'border-slate-600' : 'border-gray-200'
+                }`}>
                   <button
                     onClick={() => {
                       setSelectedOrcamento(null)
                       handleEditOrcamento(selectedOrcamento)
                     }}
-                    className="px-4 py-2 bg-[#305e73] hover:bg-[#305e73]/90 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                    className={`px-4 py-2 text-white rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                      isDark 
+                        ? 'bg-slate-600 hover:bg-slate-500' 
+                        : 'bg-[#305e73] hover:bg-[#305e73]/90'
+                    }`}
                   >
                     <Edit className="w-4 h-4" />
                     Editar
                   </button>
                   <button
                     onClick={() => setSelectedOrcamento(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                    className={`px-4 py-2 font-medium transition-colors ${
+                      isDark 
+                        ? 'text-slate-400 hover:text-slate-200' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
                   >
                     Fechar
                   </button>

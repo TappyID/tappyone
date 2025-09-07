@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { AudioRecorder } from '@/components/shared/AudioRecorder'
 import MediaUpload from '@/components/shared/MediaUpload'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface CreateRespostaRequest {
   titulo: string
@@ -68,6 +69,7 @@ export default function CriarRespostaModal({
   editingResposta,
   fetchCategorias 
 }: CriarRespostaModalProps) {
+  const { actualTheme } = useTheme()
   const [loading, setLoading] = useState(false)
   const [acoes, setAcoes] = useState<AcaoForm[]>([])
   const [activeTab, setActiveTab] = useState<'basico' | 'acoes' | 'regras'>('basico')
@@ -379,21 +381,33 @@ export default function CriarRespostaModal({
         key={index}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-50 rounded-xl p-4 border border-gray-200"
+        className={`rounded-xl p-4 border ${
+          actualTheme === 'dark'
+            ? 'bg-slate-800/60 border-slate-600'
+            : 'bg-gray-50 border-gray-200'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-              <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold">
+              <GripVertical className={`w-4 h-4 cursor-move ${
+                actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-400'
+              }`} />
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                actualTheme === 'dark'
+                  ? 'bg-blue-900/50 text-blue-400'
+                  : 'bg-blue-100 text-blue-600'
+              }`}>
                 {index + 1}
               </div>
             </div>
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${tipoInfo?.color}`}>
               <Icon className="w-4 h-4" />
             </div>
-            <span className="font-medium text-gray-900">
+            <span className={`font-medium ${
+              actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               {tipoInfo?.label}
             </span>
           </div>
@@ -406,7 +420,11 @@ export default function CriarRespostaModal({
                   e.stopPropagation()
                   moveAcao(index, index - 1)
                 }}
-                className="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                  actualTheme === 'dark'
+                    ? 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
                 title="Mover para cima"
               >
                 <ChevronUp className="w-3 h-3" />
@@ -419,7 +437,11 @@ export default function CriarRespostaModal({
                   e.stopPropagation()
                   moveAcao(index, index + 1)
                 }}
-                className="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                  actualTheme === 'dark'
+                    ? 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
                 title="Mover para baixo"
               >
                 <ChevronDown className="w-3 h-3" />
@@ -452,7 +474,11 @@ export default function CriarRespostaModal({
         {acao.tipo === 'audio' && (
           <div className="space-y-4">
             {/* Debug info */}
-            <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+            <div className={`text-xs p-2 rounded ${
+              actualTheme === 'dark'
+                ? 'text-slate-400 bg-slate-800'
+                : 'text-gray-500 bg-gray-50'
+            }`}>
               Debug: currentAudioUrl = "{acao.conteudo.url || 'EMPTY'}"
               <br/>
               Conteúdo completo: {JSON.stringify(acao.conteudo)}
@@ -510,7 +536,9 @@ export default function CriarRespostaModal({
             
             {/* Opção alternativa: Upload de arquivo de áudio */}
             <div className="border-t pt-4">
-              <p className="text-sm text-gray-600 mb-2">Ou faça upload de um arquivo de áudio:</p>
+              <p className={`text-sm mb-2 ${
+                actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+              }`}>Ou faça upload de um arquivo de áudio:</p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 <input
                   type="file"
@@ -705,9 +733,15 @@ export default function CriarRespostaModal({
               max="300"
               value={acao.conteudo.segundos || 5}
               onChange={(e) => updateAcao(index, 'segundos', parseInt(e.target.value) || 5)}
-              className="w-20 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none text-center"
+              className={`w-20 p-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none text-center ${
+                actualTheme === 'dark'
+                  ? 'border-slate-600 bg-slate-800 text-white'
+                  : 'border-gray-200 bg-white text-gray-900'
+              }`}
             />
-            <span className="text-sm text-gray-600">segundos</span>
+            <span className={`text-sm ${
+              actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+            }`}>segundos</span>
           </div>
         )}
       </motion.div>
@@ -722,7 +756,9 @@ export default function CriarRespostaModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className={`fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${
+          actualTheme === 'dark' ? 'bg-black/70' : 'bg-black/50'
+        }`}
         onClick={onClose}
       >
         <motion.div
@@ -730,24 +766,34 @@ export default function CriarRespostaModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          className={`rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden backdrop-blur-xl ${
+            actualTheme === 'dark'
+              ? 'bg-slate-900/95 border border-slate-700/50'
+              : 'bg-white/95'
+          }`}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] p-6 text-white">
+          <div className={`p-6 text-white ${
+            actualTheme === 'dark'
+              ? 'bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border-b border-slate-600/30'
+              : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  actualTheme === 'dark' ? 'bg-slate-600/50' : 'bg-white/20'
+                }`}>
                   <Zap className="w-5 h-5" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">Nova Resposta Rápida</h2>
-                  <p className="text-white/80 text-sm">Configure uma nova automação</p>
+                  <p className="text-white/70 text-sm">Configure uma nova automação</p>
                 </div>
               </div>
               
               <button
                 onClick={onClose}
-                className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10 text-white/70 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -787,7 +833,9 @@ export default function CriarRespostaModal({
                 <div className="space-y-6">
                   {/* Título */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Título *
                     </label>
                     <input
@@ -795,20 +843,30 @@ export default function CriarRespostaModal({
                       required
                       value={formData.titulo}
                       onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
                       placeholder="Ex: Bom dia personalizado"
                     />
                   </div>
 
                   {/* Descrição */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Descrição
                     </label>
                     <textarea
                       value={formData.descricao}
                       onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none resize-none"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none resize-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
                       rows={3}
                       placeholder="Descreva o propósito desta resposta rápida..."
                     />
@@ -817,7 +875,9 @@ export default function CriarRespostaModal({
                   {/* Categoria */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className={`block text-sm font-medium ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                      }`}>
                         Categoria
                       </label>
                       <button
@@ -835,7 +895,11 @@ export default function CriarRespostaModal({
                     <select
                       value={formData.categoria_id}
                       onChange={(e) => setFormData(prev => ({ ...prev, categoria_id: e.target.value }))}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none bg-white"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white'
+                          : 'bg-white border-gray-200 text-gray-900'
+                      }`}
                     >
                       <option value="">Selecione uma categoria</option>
                       {categorias.map(categoria => (
@@ -848,7 +912,9 @@ export default function CriarRespostaModal({
 
                   {/* Triggers */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Palavras-chave (Triggers) *
                     </label>
                     <div className="space-y-3">
@@ -858,7 +924,11 @@ export default function CriarRespostaModal({
                             type="text"
                             value={trigger}
                             onChange={(e) => updateTrigger(index, e.target.value)}
-                            className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none"
+                            className={`flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-colors ${
+                              actualTheme === 'dark'
+                                ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                                : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                            }`}
                             placeholder="Ex: bom dia, oi, olá"
                           />
                           {formData.triggers.length > 1 && (
@@ -868,7 +938,11 @@ export default function CriarRespostaModal({
                                 e.stopPropagation()
                                 removeTrigger(index)
                               }}
-                              className="w-10 h-10 bg-red-100 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-200 transition-colors"
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                                actualTheme === 'dark'
+                                  ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                                  : 'bg-red-100 text-red-600 hover:bg-red-200'
+                              }`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -882,7 +956,11 @@ export default function CriarRespostaModal({
                           e.stopPropagation()
                           addTrigger()
                         }}
-                        className="flex items-center gap-2 text-[#305e73] hover:text-[#3a6d84] font-medium"
+                        className={`flex items-center gap-2 font-medium transition-colors ${
+                          actualTheme === 'dark'
+                            ? 'text-blue-400 hover:text-blue-300'
+                            : 'text-[#305e73] hover:text-[#3a6d84]'
+                        }`}
                       >
                         <Plus className="w-4 h-4" />
                         Adicionar trigger
@@ -897,8 +975,12 @@ export default function CriarRespostaModal({
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Ações da Resposta</h3>
-                      <p className="text-gray-600 text-sm">Configure as ações que serão executadas</p>
+                      <h3 className={`text-lg font-semibold ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>Ações da Resposta</h3>
+                      <p className={`text-sm ${
+                        actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                      }`}>Configure as ações que serão executadas</p>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -929,10 +1011,20 @@ export default function CriarRespostaModal({
                   </div>
 
                   {acoes.length === 0 && (
-                    <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                      <Zap className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-600 font-medium mb-2">Nenhuma ação configurada</p>
-                      <p className="text-gray-500 text-sm">Adicione ações usando os botões acima</p>
+                    <div className={`text-center py-12 rounded-xl border-2 border-dashed ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-800/50 border-slate-600'
+                        : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <Zap className={`w-12 h-12 mx-auto mb-3 ${
+                        actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-400'
+                      }`} />
+                      <p className={`font-medium mb-2 ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-600'
+                      }`}>Nenhuma ação configurada</p>
+                      <p className={`text-sm ${
+                        actualTheme === 'dark' ? 'text-white/70' : 'text-gray-500'
+                      }`}>Adicione ações usando os botões acima</p>
                     </div>
                   )}
                 </div>
@@ -942,8 +1034,14 @@ export default function CriarRespostaModal({
               {activeTab === 'regras' && (
                 <div className="space-y-6">
                   {/* Status da Resposta */}
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Status da Resposta</h3>
+                  <div className={`rounded-xl p-4 space-y-4 ${
+                    actualTheme === 'dark'
+                      ? 'bg-slate-800/50 border border-slate-700'
+                      : 'bg-gray-50'
+                  }`}>
+                    <h3 className={`text-sm font-semibold mb-3 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>Status da Resposta</h3>
                     
                     <div className="flex items-center gap-3">
                       <input
@@ -953,15 +1051,23 @@ export default function CriarRespostaModal({
                         onChange={(e) => setFormData(prev => ({ ...prev, ativo: e.target.checked }))}
                         className="w-4 h-4 text-[#305e73] border-gray-300 rounded focus:ring-[#305e73]"
                       />
-                      <label htmlFor="ativo" className="text-sm font-medium text-gray-700">
+                      <label htmlFor="ativo" className={`text-sm font-medium ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                      }`}>
                         Resposta ativa
                       </label>
                     </div>
                   </div>
 
                   {/* Modo de Operação */}
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Modo de Operação</h3>
+                  <div className={`rounded-xl p-4 space-y-4 ${
+                    actualTheme === 'dark'
+                      ? 'bg-slate-800/50 border border-slate-700'
+                      : 'bg-gray-50'
+                  }`}>
+                    <h3 className={`text-sm font-semibold mb-3 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>Modo de Operação</h3>
                     
                     <div className="flex items-center gap-3">
                       <input
@@ -971,7 +1077,9 @@ export default function CriarRespostaModal({
                         onChange={(e) => setFormData(prev => ({ ...prev, automatico: e.target.checked }))}
                         className="w-4 h-4 text-[#305e73] border-gray-300 rounded focus:ring-[#305e73]"
                       />
-                      <label htmlFor="automatico" className="text-sm font-medium text-gray-700">
+                      <label htmlFor="automatico" className={`text-sm font-medium ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                      }`}>
                         Modo automático
                       </label>
                     </div>
@@ -984,15 +1092,23 @@ export default function CriarRespostaModal({
                         onChange={(e) => setFormData(prev => ({ ...prev, fallback: e.target.checked }))}
                         className="w-4 h-4 text-[#305e73] border-gray-300 rounded focus:ring-[#305e73]"
                       />
-                      <label htmlFor="fallback" className="text-sm font-medium text-gray-700">
+                      <label htmlFor="fallback" className={`text-sm font-medium ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                      }`}>
                         Resposta fallback
                       </label>
                     </div>
                   </div>
 
                   {/* Informações sobre os modos */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <div className="space-y-2 text-sm text-blue-800">
+                  <div className={`rounded-xl p-4 border ${
+                    actualTheme === 'dark'
+                      ? 'bg-blue-900/30 border-blue-800/30'
+                      : 'bg-blue-50 border-blue-200'
+                  }`}>
+                    <div className={`space-y-2 text-sm ${
+                      actualTheme === 'dark' ? 'text-blue-300' : 'text-blue-800'
+                    }`}>
                       <p><strong>Modo Automático:</strong> A resposta será enviada automaticamente quando os triggers forem detectados.</p>
                       <p><strong>Modo Manual:</strong> A resposta aparecerá nas ações rápidas para envio manual.</p>
                       <p><strong>Fallback:</strong> Será usada quando nenhuma outra resposta for encontrada.</p>
@@ -1003,12 +1119,20 @@ export default function CriarRespostaModal({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
+            <div className={`border-t p-6 ${
+              actualTheme === 'dark'
+                ? 'border-slate-700 bg-slate-900/50'
+                : 'border-gray-200 bg-gray-50'
+            }`}>
               <div className="flex items-center justify-between">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  className={`px-6 py-2 font-medium transition-colors ${
+                    actualTheme === 'dark'
+                      ? 'text-slate-400 hover:text-white'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 >
                   Cancelar
                 </button>
@@ -1043,22 +1167,34 @@ export default function CriarRespostaModal({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              className={`fixed inset-0 flex items-center justify-center z-[60] ${
+                actualTheme === 'dark' ? 'bg-black/70' : 'bg-black/50'
+              }`}
               onClick={() => setShowCategoriaModal(false)}
             >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4"
+              className={`rounded-xl shadow-xl w-full max-w-md mx-4 ${
+                actualTheme === 'dark'
+                  ? 'bg-slate-900 border border-slate-700'
+                  : 'bg-white'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Nova Categoria</h3>
+                  <h3 className={`text-lg font-semibold ${
+                    actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Nova Categoria</h3>
                   <button
                     onClick={() => setShowCategoriaModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className={`transition-colors ${
+                      actualTheme === 'dark'
+                        ? 'text-slate-400 hover:text-white'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1066,7 +1202,9 @@ export default function CriarRespostaModal({
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Nome da categoria
                     </label>
                     <input
@@ -1074,7 +1212,11 @@ export default function CriarRespostaModal({
                       value={novaCategoria}
                       onChange={(e) => setNovaCategoria(e.target.value)}
                       placeholder="Ex: Vendas, Suporte, Cobrança..."
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
                       onKeyPress={(e) => e.key === 'Enter' && handleCriarCategoria()}
                     />
                   </div>
@@ -1083,7 +1225,11 @@ export default function CriarRespostaModal({
                     <button
                       type="button"
                       onClick={() => setShowCategoriaModal(false)}
-                      className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'text-white bg-slate-700 hover:bg-slate-600'
+                          : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                      }`}
                     >
                       Cancelar
                     </button>
@@ -1091,7 +1237,11 @@ export default function CriarRespostaModal({
                       type="button"
                       onClick={handleCriarCategoria}
                       disabled={!novaCategoria.trim() || loading}
-                      className="flex-1 px-4 py-2 bg-[#305e73] text-white rounded-lg hover:bg-[#2a5365] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                      className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
+                        actualTheme === 'dark'
+                          ? 'bg-blue-600 hover:bg-blue-700'
+                          : 'bg-[#305e73] hover:bg-[#2a5365]'
+                      } disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2`}
                     >
                       {loading ? (
                         <>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   X, 
   Tag,
@@ -64,6 +65,8 @@ export default function EditarTagModal({
   tag,
   categorias 
 }: EditarTagModalProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [formData, setFormData] = useState<Partial<TagData>>({})
   const [novaCategoria, setNovaCategoria] = useState('')
   const [showNovaCategoria, setShowNovaCategoria] = useState(false)
@@ -282,7 +285,9 @@ export default function EditarTagModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className={`fixed inset-0 backdrop-blur-sm z-50 ${
+              isDark ? 'bg-black/70' : 'bg-black/50'
+            }`}
           />
           
           <motion.div
@@ -292,9 +297,17 @@ export default function EditarTagModal({
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className={`rounded-2xl shadow-2xl border w-full max-w-2xl max-h-[90vh] overflow-hidden ${
+              isDark 
+                ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+                : 'bg-white border-gray-200'
+            }`}>
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] px-6 py-4">
+              <div className={`px-6 py-4 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-slate-700 to-slate-600' 
+                  : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div 
@@ -323,28 +336,44 @@ export default function EditarTagModal({
               {/* Content */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
                 {/* Info da Tag */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Informações da Tag</h4>
+                <div className={`rounded-xl p-4 mb-6 ${
+                  isDark ? 'bg-slate-700' : 'bg-gray-50'
+                }`}>
+                  <h4 className={`text-sm font-semibold mb-3 ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
+                  }`}>Informações da Tag</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-gray-400" />
                       <div>
-                        <p className="text-xs text-gray-500">Usos</p>
-                        <p className="font-semibold text-gray-900">{tag.uso_count}</p>
+                        <p className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>Usos</p>
+                        <p className={`font-semibold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{tag.uso_count}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <div>
-                        <p className="text-xs text-gray-500">Criada em</p>
-                        <p className="font-semibold text-gray-900">{formatDate(tag.criado_em)}</p>
+                        <p className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>Criada em</p>
+                        <p className={`font-semibold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{formatDate(tag.criado_em)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       <div>
-                        <p className="text-xs text-gray-500">Criada por</p>
-                        <p className="font-semibold text-gray-900">{tag.criado_por}</p>
+                        <p className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>Criada por</p>
+                        <p className={`font-semibold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{tag.criado_por}</p>
                       </div>
                     </div>
                   </div>
@@ -353,7 +382,9 @@ export default function EditarTagModal({
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Nome da Tag */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
                       <Hash className="w-4 h-4 inline mr-2" />
                       Nome da Tag
                     </label>
@@ -361,7 +392,11 @@ export default function EditarTagModal({
                       type="text"
                       value={formData.nome || ''}
                       onChange={(e) => handleChange('nome', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
+                        isDark 
+                          ? 'border-slate-600 bg-slate-700 text-white placeholder-gray-400 focus:ring-slate-500' 
+                          : 'border-gray-300 focus:ring-[#305e73]'
+                      }`}
                       placeholder="Ex: Urgente, Cliente VIP, Bug..."
                       required
                     />
@@ -369,7 +404,9 @@ export default function EditarTagModal({
 
                   {/* Descrição */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
                       <FileText className="w-4 h-4 inline mr-2" />
                       Descrição (Opcional)
                     </label>
@@ -377,14 +414,20 @@ export default function EditarTagModal({
                       value={formData.descricao || ''}
                       onChange={(e) => handleChange('descricao', e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all resize-none"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all resize-none ${
+                        isDark 
+                          ? 'border-slate-600 bg-slate-700 text-white placeholder-gray-400 focus:ring-slate-500' 
+                          : 'border-gray-300 focus:ring-[#305e73]'
+                      }`}
                       placeholder="Descreva quando e como usar esta tag..."
                     />
                   </div>
 
                   {/* Categoria */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
                       <Palette className="w-4 h-4 inline mr-2" />
                       Categoria
                     </label>
@@ -398,8 +441,12 @@ export default function EditarTagModal({
                           onClick={() => setShowNovaCategoria(!showNovaCategoria)}
                           className={`px-4 py-2 rounded-lg border-2 transition-all ${
                             showNovaCategoria
-                              ? 'border-[#305e73] bg-[#305e73]/5 text-[#305e73]'
-                              : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                              ? (isDark 
+                                  ? 'border-slate-500 bg-slate-700/50 text-slate-300' 
+                                  : 'border-[#305e73] bg-[#305e73]/5 text-[#305e73]')
+                              : (isDark 
+                                  ? 'border-slate-600 text-gray-300 hover:border-slate-500' 
+                                  : 'border-gray-300 text-gray-700 hover:border-gray-400')
                           }`}
                         >
                           <Plus className="w-4 h-4 inline mr-2" />
@@ -413,7 +460,11 @@ export default function EditarTagModal({
                             type="text"
                             value={novaCategoria}
                             onChange={(e) => setNovaCategoria(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${
+                              isDark 
+                                ? 'border-slate-600 bg-slate-700 text-white placeholder-gray-400 focus:ring-slate-500' 
+                                : 'border-gray-300 focus:ring-[#305e73]'
+                            }`}
                             placeholder="Nome da nova categoria"
                             required={showNovaCategoria}
                           />
@@ -424,7 +475,11 @@ export default function EditarTagModal({
                                 type="button"
                                 whileHover={{ scale: 1.05 }}
                                 onClick={() => setNovaCategoria(categoria)}
-                                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                                className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                                  isDark 
+                                    ? 'bg-slate-600 hover:bg-slate-500 text-gray-200' 
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                }`}
                               >
                                 {categoria}
                               </motion.button>
@@ -435,7 +490,11 @@ export default function EditarTagModal({
                         <select
                           value={formData.categoria || ''}
                           onChange={(e) => handleChange('categoria', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${
+                            isDark 
+                              ? 'border-slate-600 bg-slate-700 text-white focus:ring-slate-500' 
+                              : 'border-gray-300 focus:ring-[#305e73]'
+                          }`}
                           required={!showNovaCategoria}
                         >
                           <option value="">Selecione uma categoria</option>
@@ -451,7 +510,9 @@ export default function EditarTagModal({
 
                   {/* Cor */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label className={`block text-sm font-semibold mb-3 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
                       <Palette className="w-4 h-4 inline mr-2" />
                       Cor da Tag
                     </label>
@@ -479,7 +540,9 @@ export default function EditarTagModal({
                         type="color"
                         value={formData.cor || tag.cor}
                         onChange={(e) => handleChange('cor', e.target.value)}
-                        className="w-full h-12 rounded-xl border border-gray-300 cursor-pointer"
+                        className={`w-full h-12 rounded-xl border cursor-pointer ${
+                          isDark ? 'border-slate-600' : 'border-gray-300'
+                        }`}
                       />
                     </div>
                   </div>
@@ -488,7 +551,9 @@ export default function EditarTagModal({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Status */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <label className={`block text-sm font-semibold mb-3 ${
+                        isDark ? 'text-gray-200' : 'text-gray-700'
+                      }`}>
                         Status
                       </label>
                       <div className="flex items-center gap-4">
@@ -496,8 +561,8 @@ export default function EditarTagModal({
                           whileHover={{ scale: 1.02 }}
                           className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                             formData.ativo
-                              ? 'border-green-300 bg-green-50'
-                              : 'border-gray-300 hover:border-gray-400'
+                              ? (isDark ? 'border-green-600 bg-green-900/20' : 'border-green-300 bg-green-50')
+                              : (isDark ? 'border-slate-600 hover:border-slate-500' : 'border-gray-300 hover:border-gray-400')
                           }`}
                         >
                           <input
@@ -507,8 +572,8 @@ export default function EditarTagModal({
                             onChange={() => handleChange('ativo', true)}
                             className="sr-only"
                           />
-                          <Eye className={`w-5 h-5 ${formData.ativo ? 'text-green-600' : 'text-gray-400'}`} />
-                          <span className={`font-medium ${formData.ativo ? 'text-green-700' : 'text-gray-600'}`}>
+                          <Eye className={`w-5 h-5 ${formData.ativo ? (isDark ? 'text-green-400' : 'text-green-600') : 'text-gray-400'}`} />
+                          <span className={`font-medium ${formData.ativo ? (isDark ? 'text-green-300' : 'text-green-700') : (isDark ? 'text-gray-300' : 'text-gray-600')}`}>
                             Ativa
                           </span>
                         </motion.label>
@@ -517,8 +582,8 @@ export default function EditarTagModal({
                           whileHover={{ scale: 1.02 }}
                           className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                             !formData.ativo
-                              ? 'border-gray-400 bg-gray-50'
-                              : 'border-gray-300 hover:border-gray-400'
+                              ? (isDark ? 'border-slate-500 bg-slate-700/50' : 'border-gray-400 bg-gray-50')
+                              : (isDark ? 'border-slate-600 hover:border-slate-500' : 'border-gray-300 hover:border-gray-400')
                           }`}
                         >
                           <input
@@ -528,8 +593,8 @@ export default function EditarTagModal({
                             onChange={() => handleChange('ativo', false)}
                             className="sr-only"
                           />
-                          <EyeOff className={`w-5 h-5 ${!formData.ativo ? 'text-gray-600' : 'text-gray-400'}`} />
-                          <span className={`font-medium ${!formData.ativo ? 'text-gray-700' : 'text-gray-600'}`}>
+                          <EyeOff className={`w-5 h-5 ${!formData.ativo ? (isDark ? 'text-slate-300' : 'text-gray-600') : 'text-gray-400'}`} />
+                          <span className={`font-medium ${!formData.ativo ? (isDark ? 'text-slate-200' : 'text-gray-700') : (isDark ? 'text-gray-300' : 'text-gray-600')}`}>
                             Inativa
                           </span>
                         </motion.label>
@@ -538,15 +603,17 @@ export default function EditarTagModal({
 
                     {/* Favorito */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <label className={`block text-sm font-semibold mb-3 ${
+                        isDark ? 'text-gray-200' : 'text-gray-700'
+                      }`}>
                         Favorito
                       </label>
                       <motion.label
                         whileHover={{ scale: 1.02 }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                           formData.favorito
-                            ? 'border-yellow-300 bg-yellow-50'
-                            : 'border-gray-300 hover:border-gray-400'
+                            ? (isDark ? 'border-yellow-600 bg-yellow-900/20' : 'border-yellow-300 bg-yellow-50')
+                            : (isDark ? 'border-slate-600 hover:border-slate-500' : 'border-gray-300 hover:border-gray-400')
                         }`}
                       >
                         <input
@@ -561,7 +628,7 @@ export default function EditarTagModal({
                             : 'text-gray-400'
                         }`} />
                         <span className={`font-medium ${
-                          formData.favorito ? 'text-yellow-700' : 'text-gray-600'
+                          formData.favorito ? (isDark ? 'text-yellow-300' : 'text-yellow-700') : (isDark ? 'text-gray-300' : 'text-gray-600')
                         }`}>
                           Marcar como favorita
                         </span>
@@ -571,13 +638,19 @@ export default function EditarTagModal({
 
                   {/* Seleção de Contatos */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label className={`block text-sm font-semibold mb-3 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
                       <Users className="w-4 h-4 inline mr-2" />
                       Contatos Associados à Tag
                     </label>
-                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                    <div className={`border rounded-xl overflow-hidden ${
+                      isDark ? 'border-slate-600' : 'border-gray-300'
+                    }`}>
                       {/* Search */}
-                      <div className="p-3 border-b border-gray-200 bg-gray-50">
+                      <div className={`p-3 border-b ${
+                        isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'
+                      }`}>
                         <div className="relative">
                           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                           <input
@@ -585,7 +658,11 @@ export default function EditarTagModal({
                             placeholder="Buscar contatos..."
                             value={searchContatos}
                             onChange={(e) => setSearchContatos(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                              isDark 
+                                ? 'border-slate-600 bg-slate-800 text-white placeholder-gray-400 focus:ring-slate-500' 
+                                : 'border-gray-300 focus:ring-blue-500'
+                            }`}
                           />
                         </div>
                       </div>
@@ -593,37 +670,57 @@ export default function EditarTagModal({
                       {/* Lista de Contatos */}
                       <div className="max-h-48 overflow-y-auto">
                         {loadingContatos ? (
-                          <div className="p-4 text-center text-gray-500">
+                          <div className={`p-4 text-center ${
+                            isDark ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
                             Carregando contatos...
                           </div>
                         ) : filteredContatos.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">
+                          <div className={`p-4 text-center ${
+                            isDark ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
                             {searchContatos ? 'Nenhum contato encontrado' : 'Nenhum contato disponível'}
                           </div>
                         ) : (
                           filteredContatos.map((contato) => (
                             <motion.div
                               key={contato.id}
-                              whileHover={{ backgroundColor: '#f9fafb' }}
-                              className={`flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 cursor-pointer ${
-                                formData.contatos?.includes(contato.id) ? 'bg-blue-50' : ''
+                              whileHover={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
+                              className={`flex items-center justify-between p-3 border-b last:border-b-0 cursor-pointer ${
+                                isDark ? 'border-slate-600' : 'border-gray-100'
+                              } ${
+                                formData.contatos?.includes(contato.id) 
+                                  ? (isDark ? 'bg-slate-600/50' : 'bg-blue-50') 
+                                  : ''
                               }`}
                               onClick={() => toggleContato(contato.id)}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <User className="w-4 h-4 text-blue-600" />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  isDark ? 'bg-slate-600' : 'bg-blue-100'
+                                }`}>
+                                  <User className={`w-4 h-4 ${
+                                    isDark ? 'text-slate-300' : 'text-blue-600'
+                                  }`} />
                                 </div>
                                 <div>
-                                  <p className="font-medium text-gray-900">{contato.nome}</p>
-                                  <p className="text-sm text-gray-500">{contato.numeroTelefone}</p>
+                                  <p className={`font-medium ${
+                                    isDark ? 'text-white' : 'text-gray-900'
+                                  }`}>{contato.nome}</p>
+                                  <p className={`text-sm ${
+                                    isDark ? 'text-gray-400' : 'text-gray-500'
+                                  }`}>{contato.numeroTelefone}</p>
                                 </div>
                               </div>
                               <input
                                 type="checkbox"
                                 checked={formData.contatos?.includes(contato.id) || false}
                                 onChange={() => toggleContato(contato.id)}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                className={`w-4 h-4 rounded ${
+                                  isDark 
+                                    ? 'text-slate-400 focus:ring-slate-500' 
+                                    : 'text-blue-600 focus:ring-blue-500'
+                                }`}
                               />
                             </motion.div>
                           ))
@@ -632,8 +729,12 @@ export default function EditarTagModal({
 
                       {/* Resumo de selecionados */}
                       {formData.contatos && formData.contatos.length > 0 && (
-                        <div className="p-3 bg-blue-50 border-t border-blue-200">
-                          <p className="text-sm text-blue-700 font-medium mb-2">
+                        <div className={`p-3 border-t ${
+                          isDark ? 'bg-slate-700 border-slate-600' : 'bg-blue-50 border-blue-200'
+                        }`}>
+                          <p className={`text-sm font-medium mb-2 ${
+                            isDark ? 'text-slate-300' : 'text-blue-700'
+                          }`}>
                             {formData.contatos.length} contato(s) associado(s)
                           </p>
                           <div className="flex flex-wrap gap-1">
@@ -643,7 +744,9 @@ export default function EditarTagModal({
                               return (
                                 <span 
                                   key={contatoId}
-                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs"
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                                    isDark ? 'bg-slate-600/50 text-slate-300' : 'bg-blue-100 text-blue-700'
+                                  }`}
                                 >
                                   {contato.nome}
                                   <button
@@ -652,7 +755,9 @@ export default function EditarTagModal({
                                       e.stopPropagation()
                                       toggleContato(contatoId)
                                     }}
-                                    className="hover:bg-blue-200 rounded-full p-0.5"
+                                    className={`rounded-full p-0.5 ${
+                                      isDark ? 'hover:bg-slate-500' : 'hover:bg-blue-200'
+                                    }`}
                                   >
                                     <X className="w-3 h-3" />
                                   </button>
@@ -666,8 +771,12 @@ export default function EditarTagModal({
                   </div>
 
                   {/* Preview */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Preview</h4>
+                  <div className={`rounded-xl p-4 ${
+                    isDark ? 'bg-slate-700' : 'bg-gray-50'
+                  }`}>
+                    <h4 className={`text-sm font-semibold mb-3 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>Preview</h4>
                     <div className="flex items-center gap-3">
                       <div 
                         className="w-8 h-8 rounded-lg flex items-center justify-center border-2 border-white shadow-sm"
@@ -677,7 +786,9 @@ export default function EditarTagModal({
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
+                          <span className={`font-medium ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>
                             {formData.nome || tag.nome}
                           </span>
                           {formData.favorito && (
@@ -685,7 +796,9 @@ export default function EditarTagModal({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">
+                          <span className={`text-sm ${
+                            isDark ? 'text-gray-300' : 'text-gray-500'
+                          }`}>
                             {showNovaCategoria && novaCategoria ? novaCategoria : formData.categoria || tag.categoria}
                           </span>
                           <div className={`w-2 h-2 rounded-full ${
@@ -698,12 +811,20 @@ export default function EditarTagModal({
 
                   {/* Warning sobre uso */}
                   {tag.uso_count > 0 && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className={`border rounded-xl p-4 ${
+                      isDark 
+                        ? 'bg-amber-900/20 border-amber-700' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
                       <div className="flex items-start gap-3">
                         <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                         <div>
-                          <h4 className="font-semibold text-amber-800">Atenção</h4>
-                          <p className="text-sm text-amber-700">
+                          <h4 className={`font-semibold ${
+                            isDark ? 'text-amber-300' : 'text-amber-800'
+                          }`}>Atenção</h4>
+                          <p className={`text-sm ${
+                            isDark ? 'text-amber-200' : 'text-amber-700'
+                          }`}>
                             Esta tag está sendo usada em <strong>{tag.uso_count}</strong> {tag.uso_count === 1 ? 'item' : 'itens'}. 
                             Alterações podem afetar a organização existente.
                           </p>
@@ -713,13 +834,19 @@ export default function EditarTagModal({
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                  <div className={`flex items-center justify-between pt-6 border-t ${
+                    isDark ? 'border-slate-600' : 'border-gray-200'
+                  }`}>
                     <div className="flex items-center gap-3">
                       <motion.button
                         type="button"
                         whileHover={{ scale: 1.02 }}
                         onClick={onClose}
-                        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                        className={`px-6 py-3 border rounded-xl font-medium transition-colors ${
+                          isDark 
+                            ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
                       >
                         Cancelar
                       </motion.button>
@@ -728,7 +855,11 @@ export default function EditarTagModal({
                         type="button"
                         whileHover={{ scale: 1.02 }}
                         onClick={() => setShowDeleteConfirm(true)}
-                        className="px-6 py-3 border border-red-300 text-red-700 rounded-xl hover:bg-red-50 font-medium transition-colors"
+                        className={`px-6 py-3 border rounded-xl font-medium transition-colors ${
+                          isDark 
+                            ? 'border-red-600 text-red-400 hover:bg-red-900/20' 
+                            : 'border-red-300 text-red-700 hover:bg-red-50'
+                        }`}
                       >
                         Excluir
                       </motion.button>
@@ -737,7 +868,12 @@ export default function EditarTagModal({
                     <motion.button
                       type="submit"
                       whileHover={{ scale: 1.02 }}
-                      className="px-6 py-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl hover:shadow-lg font-medium flex items-center gap-2 transition-all"
+                      whileTap={{ scale: 0.98 }}
+                      className={`px-6 py-3 text-white rounded-xl hover:shadow-lg font-medium flex items-center gap-2 transition-all ${
+                        isDark 
+                          ? 'bg-gradient-to-r from-slate-600 to-slate-500 hover:from-slate-500 hover:to-slate-400' 
+                          : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] hover:from-[#3a6d84] hover:to-[#305e73]'
+                      }`}
                     >
                       <Save className="w-4 h-4" />
                       Salvar Alterações
@@ -755,20 +891,32 @@ export default function EditarTagModal({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-60 flex items-center justify-center p-4"
+                className={`fixed inset-0 backdrop-blur-sm z-60 flex items-center justify-center p-4 ${
+                  isDark ? 'bg-black/80' : 'bg-black/70'
+                }`}
               >
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                  className={`rounded-2xl p-6 max-w-md w-full shadow-2xl ${
+                    isDark 
+                      ? 'bg-gradient-to-br from-slate-800 to-slate-700' 
+                      : 'bg-white'
+                  }`}
                 >
                   <div className="text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                      isDark ? 'bg-red-900/30' : 'bg-red-100'
+                    }`}>
                       <AlertTriangle className="w-8 h-8 text-red-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmar Exclusão</h3>
-                    <p className="text-gray-600 mb-6">
+                    <h3 className={`text-xl font-bold mb-2 ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>Confirmar Exclusão</h3>
+                    <p className={`mb-6 ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
                       Tem certeza que deseja excluir a tag <strong>"{tag.nome}"</strong>? 
                       {tag.uso_count > 0 && (
                         <span className="block mt-2 text-red-600">
@@ -780,14 +928,19 @@ export default function EditarTagModal({
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium"
+                        className={`px-4 py-2 border rounded-lg ${
+                          isDark 
+                            ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
                       >
                         Cancelar
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handleDelete}
-                        className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium"
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                       >
                         Excluir Tag
                       </motion.button>

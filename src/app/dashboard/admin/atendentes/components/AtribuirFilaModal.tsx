@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Layers, Users, Check, AlertCircle } from 'lucide-react'
 import { AtendenteComStats } from '@/hooks/useAtendentes'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface FilaOption {
   id: string
@@ -24,6 +25,7 @@ export default function AtribuirFilaModal({
   onClose, 
   onAtribuirFila 
 }: AtribuirFilaModalProps) {
+  const { actualTheme } = useTheme()
   const [selectedFila, setSelectedFila] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -93,7 +95,11 @@ export default function AtribuirFilaModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          className={`rounded-2xl shadow-2xl w-full max-w-md overflow-hidden backdrop-blur-sm ${
+            actualTheme === 'dark'
+              ? 'bg-slate-800/90 border border-slate-700/50'
+              : 'bg-white'
+          }`}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-[#305e73] to-[#273155] px-6 py-4 text-white">
@@ -114,19 +120,29 @@ export default function AtribuirFilaModal({
           {/* Content */}
           <div className="p-6">
             {/* Atendente Info */}
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
+            <div className={`flex items-center gap-3 p-3 rounded-lg mb-4 ${
+              actualTheme === 'dark'
+                ? 'bg-slate-700/50 border border-slate-600/50'
+                : 'bg-gray-50'
+            }`}>
               <div className="w-10 h-10 bg-[#305e73] rounded-full flex items-center justify-center text-white font-semibold">
                 {atendente.nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">{atendente.nome}</h3>
-                <p className="text-sm text-gray-600">{atendente.email}</p>
+                <h3 className={`font-medium ${
+                  actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>{atendente.nome}</h3>
+                <p className={`text-sm ${
+                  actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                }`}>{atendente.email}</p>
               </div>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="space-y-3 mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${
+                  actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                }`}>
                   Selecione uma fila:
                 </label>
                 
@@ -135,8 +151,12 @@ export default function AtribuirFilaModal({
                     key={fila.id}
                     className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedFila === fila.id 
-                        ? 'border-[#305e73] bg-blue-50' 
-                        : 'border-gray-200 hover:bg-gray-50'
+                        ? actualTheme === 'dark'
+                          ? 'border-[#305e73] bg-blue-900/30'
+                          : 'border-[#305e73] bg-blue-50'
+                        : actualTheme === 'dark'
+                          ? 'border-slate-600/50 hover:bg-slate-700/50'
+                          : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     <input
@@ -152,14 +172,20 @@ export default function AtribuirFilaModal({
                       <div className={`w-4 h-4 rounded-full ${fila.cor}`}></div>
                       
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">{fila.nome}</div>
+                        <div className={`font-medium ${
+                          actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>{fila.nome}</div>
                         {fila.descricao && (
-                          <div className="text-sm text-gray-600">{fila.descricao}</div>
+                          <div className={`text-sm ${
+                            actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                          }`}>{fila.descricao}</div>
                         )}
                       </div>
                       
                       <div className="text-right">
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <div className={`flex items-center gap-1 text-sm ${
+                          actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                        }`}>
                           <Users className="w-4 h-4" />
                           {fila.atendentesCount}
                         </div>
@@ -174,22 +200,36 @@ export default function AtribuirFilaModal({
               </div>
 
               {selectedFilaInfo && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
-                  <div className="flex items-center gap-2 text-green-800">
+                <div className={`p-3 border rounded-lg mb-4 ${
+                  actualTheme === 'dark'
+                    ? 'bg-green-900/30 border-green-700/50'
+                    : 'bg-green-50 border-green-200'
+                }`}>
+                  <div className={`flex items-center gap-2 ${
+                    actualTheme === 'dark' ? 'text-green-300' : 'text-green-800'
+                  }`}>
                     <Check className="w-4 h-4" />
                     <span className="text-sm font-medium">
                       Atribuir à fila "{selectedFilaInfo.nome}"
                     </span>
                   </div>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className={`text-sm mt-1 ${
+                    actualTheme === 'dark' ? 'text-green-400' : 'text-green-700'
+                  }`}>
                     O atendente será adicionado à fila e poderá receber conversas deste tipo.
                   </p>
                 </div>
               )}
 
               {!selectedFila && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                  <div className="flex items-center gap-2 text-yellow-800">
+                <div className={`p-3 border rounded-lg mb-4 ${
+                  actualTheme === 'dark'
+                    ? 'bg-yellow-900/30 border-yellow-700/50'
+                    : 'bg-yellow-50 border-yellow-200'
+                }`}>
+                  <div className={`flex items-center gap-2 ${
+                    actualTheme === 'dark' ? 'text-yellow-300' : 'text-yellow-800'
+                  }`}>
                     <AlertCircle className="w-4 h-4" />
                     <span className="text-sm font-medium">
                       Selecione uma fila para continuar
@@ -203,7 +243,11 @@ export default function AtribuirFilaModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className={`flex-1 px-4 py-2 border rounded-lg transition-colors ${
+                    actualTheme === 'dark'
+                      ? 'text-white/80 border-slate-600/50 hover:bg-slate-700/50'
+                      : 'text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
                   disabled={isLoading}
                 >
                   Cancelar

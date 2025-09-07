@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Building,
   Globe,
@@ -26,6 +27,8 @@ interface GeralSectionProps {
 }
 
 export default function GeralSection({ onConfigChange }: GeralSectionProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [config, setConfig] = useState({
     // Informações da Empresa
     nomeEmpresa: 'TappyOne CRM',
@@ -107,60 +110,92 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200"
+        className={`rounded-2xl p-6 border ${
+          isDark 
+            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+        }`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Building className="w-6 h-6 text-blue-600" />
+          <div className={`p-3 rounded-xl ${
+            isDark ? 'bg-blue-500/20' : 'bg-blue-100'
+          }`}>
+            <Building className={`w-6 h-6 ${
+              isDark ? 'text-blue-400' : 'text-blue-600'
+            }`} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Informações da Empresa</h3>
-            <p className="text-gray-600">Configure os dados básicos da sua empresa</p>
+            <h3 className={`text-xl font-bold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>Informações da Empresa</h3>
+            <p className={`${
+              isDark ? 'text-slate-300' : 'text-gray-600'
+            }`}>Configure os dados básicos da sua empresa</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Nome da Empresa *
             </label>
             <input
               type="text"
               value={config.nomeEmpresa}
               onChange={(e) => handleConfigChange('nomeEmpresa', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="Digite o nome da empresa"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               CNPJ
             </label>
             <input
               type="text"
               value={config.cnpj}
               onChange={(e) => handleConfigChange('cnpj', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="00.000.000/0000-00"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Descrição da Empresa
             </label>
             <textarea
               value={config.descricaoEmpresa}
               onChange={(e) => handleConfigChange('descricaoEmpresa', e.target.value)}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="Descreva sua empresa..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <MapPin className="w-4 h-4 inline mr-2" />
               Endereço
             </label>
@@ -168,13 +203,19 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
               type="text"
               value={config.endereco}
               onChange={(e) => handleConfigChange('endereco', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="Rua, número, bairro"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Cidade / Estado
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -182,21 +223,31 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
                 type="text"
                 value={config.cidade}
                 onChange={(e) => handleConfigChange('cidade', e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
                 placeholder="Cidade"
               />
               <input
                 type="text"
                 value={config.estado}
                 onChange={(e) => handleConfigChange('estado', e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
                 placeholder="UF"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <Phone className="w-4 h-4 inline mr-2" />
               Telefone
             </label>
@@ -204,13 +255,19 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
               type="tel"
               value={config.telefone}
               onChange={(e) => handleConfigChange('telefone', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="(11) 99999-9999"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <Mail className="w-4 h-4 inline mr-2" />
               Email
             </label>
@@ -218,13 +275,19 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
               type="email"
               value={config.email}
               onChange={(e) => handleConfigChange('email', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="contato@empresa.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <Globe className="w-4 h-4 inline mr-2" />
               Website
             </label>
@@ -232,20 +295,30 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
               type="url"
               value={config.website}
               onChange={(e) => handleConfigChange('website', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="https://empresa.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               CEP
             </label>
             <input
               type="text"
               value={config.cep}
               onChange={(e) => handleConfigChange('cep', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="00000-000"
             />
           </div>
@@ -257,28 +330,46 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200"
+        className={`rounded-2xl p-6 border ${
+          isDark 
+            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
+            : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+        }`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-green-100 rounded-xl">
-            <Globe className="w-6 h-6 text-green-600" />
+          <div className={`p-3 rounded-xl ${
+            isDark ? 'bg-green-500/20' : 'bg-green-100'
+          }`}>
+            <Globe className={`w-6 h-6 ${
+              isDark ? 'text-green-400' : 'text-green-600'
+            }`} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Configurações Regionais</h3>
-            <p className="text-gray-600">Defina timezone, idioma e formatos</p>
+            <h3 className={`text-xl font-bold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>Configurações Regionais</h3>
+            <p className={`${
+              isDark ? 'text-slate-300' : 'text-gray-600'
+            }`}>Defina timezone, idioma e formatos</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <Clock className="w-4 h-4 inline mr-2" />
               Timezone
             </label>
             <select
               value={config.timezone}
               onChange={(e) => handleConfigChange('timezone', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
             >
               {timezones.map(tz => (
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -287,14 +378,20 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <Languages className="w-4 h-4 inline mr-2" />
               Idioma
             </label>
             <select
               value={config.idioma}
               onChange={(e) => handleConfigChange('idioma', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
             >
               {idiomas.map(lang => (
                 <option key={lang.value} value={lang.value}>{lang.label}</option>
@@ -303,14 +400,20 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <DollarSign className="w-4 h-4 inline mr-2" />
               Moeda
             </label>
             <select
               value={config.moeda}
               onChange={(e) => handleConfigChange('moeda', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
             >
               {moedas.map(currency => (
                 <option key={currency.value} value={currency.value}>{currency.label}</option>
@@ -319,14 +422,20 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               <Calendar className="w-4 h-4 inline mr-2" />
               Formato de Data
             </label>
             <select
               value={config.formatoData}
               onChange={(e) => handleConfigChange('formatoData', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
             >
               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
               <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -335,13 +444,19 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Formato de Hora
             </label>
             <select
               value={config.formatoHora}
               onChange={(e) => handleConfigChange('formatoHora', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
             >
               <option value="24h">24 horas (14:30)</option>
               <option value="12h">12 horas (2:30 PM)</option>
@@ -355,15 +470,27 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200"
+        className={`rounded-2xl p-6 border ${
+          isDark 
+            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
+            : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200'
+        }`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-purple-100 rounded-xl">
-            <ImageIcon className="w-6 h-6 text-purple-600" />
+          <div className={`p-3 rounded-xl ${
+            isDark ? 'bg-purple-500/20' : 'bg-purple-100'
+          }`}>
+            <ImageIcon className={`w-6 h-6 ${
+              isDark ? 'text-purple-400' : 'text-purple-600'
+            }`} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Logos e Imagens</h3>
-            <p className="text-gray-600">Configure as imagens da sua marca</p>
+            <h3 className={`text-xl font-bold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>Logos e Imagens</h3>
+            <p className={`${
+              isDark ? 'text-slate-300' : 'text-gray-600'
+            }`}>Configure as imagens da sua marca</p>
           </div>
         </div>
 
@@ -376,13 +503,21 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           ].map((item) => (
             <div key={item.key} className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className={`block text-sm font-semibold mb-1 ${
+                  isDark ? 'text-slate-300' : 'text-gray-700'
+                }`}>
                   {item.label}
                 </label>
-                <p className="text-xs text-gray-500">{item.description}</p>
+                <p className={`text-xs ${
+                  isDark ? 'text-slate-400' : 'text-gray-500'
+                }`}>{item.description}</p>
               </div>
               
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-purple-400 transition-colors">
+              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
+                isDark 
+                  ? 'border-slate-600 hover:border-purple-400' 
+                  : 'border-gray-300 hover:border-purple-400'
+              }`}>
                 {config[item.key as keyof typeof config] ? (
                   <div className="space-y-3">
                     <img
@@ -394,7 +529,11 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         onClick={() => handleConfigChange(item.key, '')}
-                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                        className={`px-3 py-1 text-sm rounded-lg ${
+                          isDark 
+                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        }`}
                       >
                         <Trash2 className="w-3 h-3 inline mr-1" />
                         Remover
@@ -403,8 +542,12 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
                   </div>
                 ) : (
                   <div>
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Clique para enviar</p>
+                    <Upload className={`w-8 h-8 mx-auto mb-2 ${
+                      isDark ? 'text-slate-500' : 'text-gray-400'
+                    }`} />
+                    <p className={`text-sm mb-2 ${
+                      isDark ? 'text-slate-400' : 'text-gray-600'
+                    }`}>Clique para enviar</p>
                     <input
                       type="file"
                       accept="image/*"
@@ -417,7 +560,11 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
                     />
                     <label
                       htmlFor={`upload-${item.key}`}
-                      className="cursor-pointer px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 inline-block"
+                      className={`cursor-pointer px-4 py-2 rounded-lg inline-block ${
+                        isDark 
+                          ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' 
+                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      }`}
                     >
                       Selecionar Arquivo
                     </label>
@@ -434,23 +581,39 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200"
+        className={`rounded-2xl p-6 border ${
+          isDark 
+            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
+            : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
+        }`}
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Users className="w-6 h-6 text-orange-600" />
+            <div className={`p-3 rounded-xl ${
+              isDark ? 'bg-orange-500/20' : 'bg-orange-100'
+            }`}>
+              <Users className={`w-6 h-6 ${
+                isDark ? 'text-orange-400' : 'text-orange-600'
+              }`} />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Configurações Avançadas</h3>
-              <p className="text-gray-600">Limites, quotas e configurações técnicas</p>
+              <h3 className={`text-xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>Configurações Avançadas</h3>
+              <p className={`${
+                isDark ? 'text-slate-300' : 'text-gray-600'
+              }`}>Limites, quotas e configurações técnicas</p>
             </div>
           </div>
           
           <motion.button
             whileHover={{ scale: 1.05 }}
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 flex items-center gap-2"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+              isDark 
+                ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' 
+                : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+            }`}
           >
             {showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {showAdvanced ? 'Ocultar' : 'Mostrar'}
@@ -465,37 +628,55 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
             className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Nome da Aplicação
               </label>
               <input
                 type="text"
                 value={config.nomeAplicacao}
                 onChange={(e) => handleConfigChange('nomeAplicacao', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Versão
               </label>
               <input
                 type="text"
                 value={config.versao}
                 onChange={(e) => handleConfigChange('versao', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Ambiente
               </label>
               <select
                 value={config.ambiente}
                 onChange={(e) => handleConfigChange('ambiente', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                }`}
               >
                 <option value="desenvolvimento">Desenvolvimento</option>
                 <option value="homologacao">Homologação</option>
@@ -504,38 +685,56 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Máximo de Usuários
               </label>
               <input
                 type="number"
                 value={config.maxUsuarios}
                 onChange={(e) => handleConfigChange('maxUsuarios', parseInt(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Armazenamento Máximo (GB)
               </label>
               <input
                 type="number"
                 value={config.maxArmazenamento}
                 onChange={(e) => handleConfigChange('maxArmazenamento', parseInt(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Tamanho Máximo de Upload (MB)
               </label>
               <input
                 type="number"
                 value={config.maxUploadSize}
                 onChange={(e) => handleConfigChange('maxUploadSize', parseInt(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
             </div>
 
@@ -548,7 +747,9 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
                     onChange={(e) => handleConfigChange('debugMode', e.target.checked)}
                     className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Modo Debug</span>
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-slate-300' : 'text-gray-700'
+                  }`}>Modo Debug</span>
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -558,7 +759,9 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
                     onChange={(e) => handleConfigChange('manutencao', e.target.checked)}
                     className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Modo Manutenção</span>
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-slate-300' : 'text-gray-700'
+                  }`}>Modo Manutenção</span>
                 </label>
               </div>
             </div>

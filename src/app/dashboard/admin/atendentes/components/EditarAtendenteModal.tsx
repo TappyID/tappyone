@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, User, Mail, Phone, Shield, Save, Loader2 } from 'lucide-react'
 import { AtendenteComStats } from '@/hooks/useAtendentes'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface EditarAtendenteModalProps {
   atendente: AtendenteComStats
@@ -16,6 +17,7 @@ export default function EditarAtendenteModal({
   onClose, 
   onUpdateAtendente 
 }: EditarAtendenteModalProps) {
+  const { actualTheme } = useTheme()
   const [formData, setFormData] = useState({
     nome: atendente.nome,
     email: atendente.email,
@@ -85,7 +87,11 @@ export default function EditarAtendenteModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          className={`rounded-2xl shadow-2xl w-full max-w-md overflow-hidden backdrop-blur-sm ${
+            actualTheme === 'dark'
+              ? 'bg-slate-800/90 border border-slate-700/50'
+              : 'bg-white'
+          }`}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-[#305e73] to-[#273155] px-6 py-4 text-white">
@@ -104,7 +110,9 @@ export default function EditarAtendenteModal({
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Nome */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 <User className="w-4 h-4 inline mr-2" />
                 Nome completo
               </label>
@@ -113,7 +121,9 @@ export default function EditarAtendenteModal({
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
-                  errors.nome ? 'border-red-300' : 'border-gray-300'
+                  errors.nome ? 'border-red-300' : actualTheme === 'dark' 
+                    ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                 }`}
                 placeholder="Digite o nome completo"
               />
@@ -124,7 +134,9 @@ export default function EditarAtendenteModal({
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 <Mail className="w-4 h-4 inline mr-2" />
                 Email
               </label>
@@ -133,7 +145,9 @@ export default function EditarAtendenteModal({
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
+                  errors.email ? 'border-red-300' : actualTheme === 'dark'
+                    ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                 }`}
                 placeholder="Digite o email"
               />
@@ -144,7 +158,9 @@ export default function EditarAtendenteModal({
 
             {/* Telefone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 <Phone className="w-4 h-4 inline mr-2" />
                 Telefone (opcional)
               </label>
@@ -152,21 +168,31 @@ export default function EditarAtendenteModal({
                 type="tel"
                 value={formData.telefone}
                 onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                  actualTheme === 'dark'
+                    ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                }`}
                 placeholder="Digite o telefone"
               />
             </div>
 
             {/* Tipo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 <Shield className="w-4 h-4 inline mr-2" />
                 Tipo de usuário
               </label>
               <select
                 value={formData.tipo}
                 onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                  actualTheme === 'dark'
+                    ? 'bg-slate-700/50 border-slate-600/50 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                }`}
               >
                 {tiposAtendente.map((tipo) => (
                   <option key={tipo.value} value={tipo.value}>
@@ -185,7 +211,9 @@ export default function EditarAtendenteModal({
                   onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
                   className="w-4 h-4 text-[#305e73] border-gray-300 rounded focus:ring-[#305e73]"
                 />
-                <span className="text-sm font-medium text-gray-700">Usuário ativo</span>
+                <span className={`text-sm font-medium ${
+                  actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                }`}>Usuário ativo</span>
               </label>
             </div>
 
@@ -194,7 +222,11 @@ export default function EditarAtendenteModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className={`flex-1 px-4 py-2 border rounded-lg transition-colors ${
+                  actualTheme === 'dark'
+                    ? 'text-white/80 border-slate-600/50 hover:bg-slate-700/50'
+                    : 'text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
                 disabled={isLoading}
               >
                 Cancelar

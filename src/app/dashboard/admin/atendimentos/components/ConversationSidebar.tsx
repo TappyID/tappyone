@@ -43,6 +43,7 @@ import {
 import { usePresencePolling } from '@/hooks/usePresencePolling'
 import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
+import { useConexoes } from '@/hooks/useConexoes'
 import { usePresence } from '@/hooks/usePresence'
 import { useContatoData } from '@/hooks/useContatoData'
 import { useInfiniteChats } from '@/hooks/useInfiniteChats'
@@ -172,20 +173,32 @@ export default function ConversationSidebar({
   const [showFilters, setShowFilters] = useState(false)
   const { tags: realTags } = useTags()
   const { filas } = useFilas()
+  const { conexoes, getFilasDaConexao } = useConexoes()
   const { isOnline, isTyping } = usePresence()
   
-  // Hook de scroll infinito (opcional)
-  const infiniteChatsHook = useInfiniteChats()
+  // Debug: Log dados carregados
+  console.log(`🔍 [SIDEBAR] Tags carregadas: ${realTags.length}`)
+  console.log(`🔍 [SIDEBAR] Filas carregadas: ${filas.length}`)
+  console.log(`🔗 [SIDEBAR] Conexões carregadas: ${conexoes.length}`)
+  console.log(`🔍 [SIDEBAR] Filas dados:`, filas)
+  console.log(`🔗 [SIDEBAR] Conexões dados:`, conexoes)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   
   // Buscar dados reais dos contatos
   const chatIds = chats.map(chat => chat.id?._serialized || chat.id || '')
+  // Estados do filtro em cascata
+  const [selectedConexao, setSelectedConexao] = useState('todas')
+  const [showConexaoDropdown, setShowConexaoDropdown] = useState(false)
   const [selectedQueue, setSelectedQueue] = useState('todas')
   const [showQueueDropdown, setShowQueueDropdown] = useState(false)
   const [selectedTag, setSelectedTag] = useState('todas')
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const [sortBy, setSortBy] = useState('recent')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  
+  // Refs para dropdowns
+  const conexaoButtonRef = useRef<HTMLButtonElement>(null)
+  const [conexaoDropdownPosition, setConexaoDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const [hiddenChats, setHiddenChats] = useState<Set<string>>(new Set())
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set())
@@ -229,11 +242,25 @@ export default function ConversationSidebar({
   useEffect(() => {
     if (showSortDropdown) updateDropdownPosition(sortButtonRef, setSortDropdownPosition)
   }, [showSortDropdown])
+  
+  useEffect(() => {
+    if (showConexaoDropdown) updateDropdownPosition(conexaoButtonRef, setConexaoDropdownPosition)
+  }, [showConexaoDropdown])
+  
+  // Resetar fila selecionada quando mudar de conexão
+  useEffect(() => {
+    if (selectedConexao !== 'todas') {
+      setSelectedQueue('todas')
+    }
+  }, [selectedConexao])
 
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
+      if (!target.closest('[data-conexao-dropdown]')) {
+        setShowConexaoDropdown(false)
+      }
       if (!target.closest('[data-queue-dropdown]')) {
         setShowQueueDropdown(false)
       }
@@ -245,17 +272,34 @@ export default function ConversationSidebar({
       }
     }
     
-    if (showQueueDropdown || showTagDropdown || showSortDropdown) {
+    if (showConexaoDropdown || showQueueDropdown || showTagDropdown || showSortDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showQueueDropdown, showTagDropdown, showSortDropdown])
+  }, [showConexaoDropdown, showQueueDropdown, showTagDropdown, showSortDropdown])
 
   
-  // Opções de filas reais
+  // Opções de conexões
+  const conexaoOptions = [
+    { value: 'todas', label: 'Todas as Conexões' },
+    ...conexoes.map(conexao => ({ 
+      value: conexao.id, 
+      label: conexao.session_name || `Conexão ${conexao.id.slice(0,8)}` 
+    }))
+  ]
+  
+  // Opções de filas filtradas pela conexão selecionada
+  const getFilasDisponiveis = () => {
+    if (selectedConexao === 'todas') {
+      return filas
+    }
+    const filasIds = getFilasDaConexao(selectedConexao)
+    return filas.filter(fila => filasIds.includes(fila.id))
+  }
+  
   const queueOptions = [
-    { value: 'todas', label: 'Filas' },
-    ...filas.map(fila => ({ value: fila.id, label: fila.nome }))
+    { value: 'todas', label: 'Todas as Filas' },
+    ...getFilasDisponiveis().map(fila => ({ value: fila.id, label: fila.nome }))
   ]
   
   // Opções de tags reais
@@ -420,50 +464,41 @@ export default function ConversationSidebar({
     }
   }
 
-  // Usar chats do infinite scroll ou chats normais
-  const activeChats = useInfiniteScroll ? infiniteChatsHook.chats : chats
-  const activeContacts = useInfiniteScroll ? [] : contacts
-  const activeLoading = useInfiniteScroll ? infiniteChatsHook.loading : isLoading
+  // Usar chats normais (infinite scroll desabilitado temporariamente)
+  const activeChats = chats
+  const activeContacts = contacts
+  const activeLoading = isLoading
   
   // Buscar dados reais dos contatos para fotos de perfil (sempre necessário)
   const activeChatIds = activeChats.map(chat => chat.id?._serialized || chat.id || '')
   const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
   
-  // Handler do scroll infinito
+  // Handler do scroll (desabilitado por enquanto)
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (useInfiniteScroll) {
-      infiniteChatsHook.handleScroll(e.currentTarget)
-    }
-  }, [useInfiniteScroll, infiniteChatsHook])
+    // Scroll infinito desabilitado temporariamente
+  }, [])
 
   // Criar conversas baseadas nos chats reais com dados dos contatos
   const conversations = activeChats.map((chat, index) => {
-    const name = getContactName(chat, useInfiniteScroll ? [] : contacts)
-    const lastMessage = useInfiniteScroll ? (chat.lastMessage || 'Nova conversa') : getLastMessage(chat)
-    // Extrair chatId corretamente para ambos os modos
-    let chatId
-    if (useInfiniteScroll) {
-      // No infinite scroll, o chat pode ter estruturas diferentes
-      if (typeof chat.id === 'string') {
-        chatId = chat.id
-      } else if (chat.id && typeof chat.id === 'object') {
-        chatId = chat.id._serialized || chat.id.id || chat.id.user || JSON.stringify(chat.id)
-      } else {
-        chatId = `chat-${index}`
-      }
-    } else {
-      // Modo normal
-      chatId = chat.id?._serialized || chat.id || `chat-${index}`
-    }
+    const name = getContactName(chat, contacts)
+    const lastMessage = getLastMessage(chat)
     
-    // Validar que chatId não seja undefined/null
-    if (!chatId || chatId === 'undefined') {
-      chatId = `chat-${index}`
-      console.warn('ChatId inválido detectado:', chat.id, 'usando fallback:', chatId)
-    }
+    // Extrair chatId corretamente
+    const chatId = chat.id?._serialized || chat.id || `chat-${index}`
     
-    // Buscar dados reais do contato (agora funciona para ambos os modos)
+    // Buscar dados reais do contato
     const contatoData = contatosData[chatId]
+    
+    // Debug: Log dados do contato
+    if (contatoData) {
+      console.log(`🔍 [SIDEBAR] Dados do contato ${chatId}:`, {
+        id: contatoData.id,
+        tags: contatoData.tags,
+        tagsLength: contatoData.tags?.length || 0,
+        fila: contatoData.fila,
+        hasQueue: !!contatoData.fila
+      })
+    }
     
     return {
       id: chatId,
@@ -471,11 +506,11 @@ export default function ConversationSidebar({
       lastMessage: lastMessage === 'Sem mensagens' ? 'Nova conversa' : lastMessage,
       timestamp: formatTimestamp(chat.timestamp),
       unread: chat.unreadCount || 0,
-      status: 'offline', // Will be updated by presence hook
+      status: 'offline',
       avatar: chat.profilePicUrl || chat.profilePictureUrl,
-      type: useInfiniteScroll ? (chat.isGroup ? 'group' : 'individual') : (chat.isGroup ? 'group' : 'individual'),
+      type: chat.isGroup ? 'group' : 'individual',
       
-      // Dados reais do contato (só para chats normais)
+      // Dados reais do contato
       tags: contatoData?.tags || [],
       queue: contatoData?.fila || null,
       atendente: contatoData?.atendente || null,
@@ -497,10 +532,8 @@ export default function ConversationSidebar({
     }
   })
 
-  // Carregar informações do Kanban apenas para chats visíveis (otimização) - só para chats normais
+  // Carregar informações do Kanban apenas para chats visíveis (otimização)
   useEffect(() => {
-    if (useInfiniteScroll) return // Pular para scroll infinito
-    
     const loadKanbanInfo = async () => {
       const newKanbanInfo: {[key: string]: any} = {}
       
@@ -519,7 +552,7 @@ export default function ConversationSidebar({
     if (chats.length > 0) {
       loadKanbanInfo()
     }
-  }, [chats, useInfiniteScroll])
+  }, [chats])
 
   const filters = [
     { id: 'all', label: 'Todas', icon: MessageCircle, count: conversations.filter(c => c.type !== 'group' && !c.isArchived).length },
@@ -543,9 +576,17 @@ export default function ConversationSidebar({
                          (activeFilter === 'archived' && conv.isArchived) ||
                          (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
     
-    // Filtro por fila real
-    const matchesQueue = selectedQueue === 'todas' || 
-                        (conv.queue && conv.queue.id === selectedQueue)
+    // Filtro por fila real (considerando conexão selecionada)
+    let matchesQueue = selectedQueue === 'todas'
+    if (!matchesQueue && conv.queue) {
+      matchesQueue = conv.queue.id === selectedQueue
+      
+      // Se uma conexão específica está selecionada, verificar se a fila do chat pertence àquela conexão
+      if (matchesQueue && selectedConexao !== 'todas') {
+        const filasConexao = getFilasDaConexao(selectedConexao)
+        matchesQueue = filasConexao.includes(conv.queue.id)
+      }
+    }
     
     // Filtro por tag real  
     const matchesTag = selectedTag === 'todas' ||
@@ -659,6 +700,33 @@ export default function ConversationSidebar({
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-semibold text-foreground">Conversas</h2>
             <div className="flex items-center gap-3">
+            {/* Select Conexões */}
+            <motion.div 
+              className="relative"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              data-conexao-dropdown
+            >
+              <div className="relative bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 p-[1px] rounded-lg shadow-lg">
+                <motion.button
+                  ref={conexaoButtonRef}
+                  onClick={() => setShowConexaoDropdown(!showConexaoDropdown)}
+                  className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[140px] hover:bg-accent transition-colors border border-border"
+                >
+                  <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full" />
+                  <span className="text-sm font-medium text-foreground flex-1 text-left">
+                    {conexaoOptions.find(c => c.value === selectedConexao)?.label}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: showConexaoDropdown ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  </motion.div>
+                </motion.button>
+              </div>
+            </motion.div>
+            
             {/* Select Filas Elegante */}
             <motion.div 
               className="relative"
@@ -994,31 +1062,43 @@ export default function ConversationSidebar({
                   {/* Informações da Fila e Tag */}
                   <div className="flex items-center gap-2 mb-2">
                     {/* Fila */}
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 rounded-md border border-purple-500/20">
-                      <Layers className="w-3 h-3 text-purple-400" />
-                      <span className="text-xs text-purple-300 font-medium">
-                        {/* Mock da fila - você pode substituir pela lógica real */}
-                        {'Vendas'}
-                      </span>
-                    </div>
-                    
-                    {/* Tag Principal */}
-                    {conversation.tags && conversation.tags.length > 0 && (
+                    {/* Fila do contato */}
+                    {conversation.queue && (
                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
-                        backgroundColor: `${conversation.tags[0].cor}20`,
-                        borderColor: `${conversation.tags[0].cor}40`
+                        backgroundColor: `${conversation.queue.cor}20`,
+                        borderColor: `${conversation.queue.cor}40`
                       }}>
-                        <Tag className="w-3 h-3" style={{ color: conversation.tags[0].cor }} />
-                        <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor }}>
-                          {conversation.tags[0].nome}
+                        <Layers className="w-3 h-3" style={{ color: conversation.queue.cor }} />
+                        <span className="text-xs font-medium" style={{ color: conversation.queue.cor }}>
+                          {conversation.queue.nome}
                         </span>
-                        {conversation.tags.length > 1 && (
-                          <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor }}>
-                            +{conversation.tags.length - 1}
-                          </span>
-                        )}
                       </div>
                     )}
+                    
+                    {/* Tag Principal - Debug */}
+                    {(() => {
+                      console.log(`🏷️ [SIDEBAR] Conversa ${conversation.id} - Tags:`, conversation.tags)
+                      if (conversation.tags && conversation.tags.length > 0) {
+                        console.log(`🏷️ [SIDEBAR] Exibindo tag para ${conversation.id}:`, conversation.tags[0])
+                        return (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
+                            backgroundColor: `${conversation.tags[0].cor || '#6b7280'}20`,
+                            borderColor: `${conversation.tags[0].cor || '#6b7280'}40`
+                          }}>
+                            <Tag className="w-3 h-3" style={{ color: conversation.tags[0].cor || '#6b7280' }} />
+                            <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor || '#6b7280' }}>
+                              {conversation.tags[0].nome}
+                            </span>
+                            {conversation.tags.length > 1 && (
+                              <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor || '#6b7280' }}>
+                                +{conversation.tags.length - 1}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
@@ -1083,57 +1163,7 @@ export default function ConversationSidebar({
           ))}
         </AnimatePresence>
         
-        {/* Loading e Load More para Scroll Infinito */}
-        {useInfiniteScroll && (
-          <>
-            {/* Loading Indicator */}
-            {infiniteChatsHook.loading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="p-4 flex items-center justify-center gap-2 text-muted-foreground"
-              >
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
-                />
-                {!isCollapsed && <span className="text-sm">Carregando mais conversas...</span>}
-              </motion.div>
-            )}
-            
-            {/* Load More Button */}
-            {!infiniteChatsHook.loading && infiniteChatsHook.hasMore && filteredConversations.length > 0 && (
-              <div className="p-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={infiniteChatsHook.loadMore}
-                  className="w-full py-2 px-4 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  {isCollapsed ? '+' : 'Carregar mais conversas'}
-                </motion.button>
-              </div>
-            )}
-            
-            {/* Status Footer para Infinite Scroll */}
-            {!isCollapsed && (
-              <div className="p-3 border-t border-border bg-card/30 backdrop-blur-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span>Scroll infinito ativo</span>
-                  </div>
-                  <span>{infiniteChatsHook.chats.length} conversas carregadas</span>
-                  {infiniteChatsHook.hasMore && (
-                    <span className="text-blue-500">+{infiniteChatsHook.hasMore ? 'mais disponíveis' : ''}</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        {/* Scroll infinito desabilitado temporariamente */}
 
           {/* Empty State */}
           {filteredConversations.length === 0 && (
@@ -1179,6 +1209,45 @@ export default function ConversationSidebar({
       {/* Dropdowns usando Portal */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
+          {showConexaoDropdown && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-slate-700/50 overflow-hidden z-[999999]"
+              style={{
+                top: conexaoDropdownPosition.top,
+                left: conexaoDropdownPosition.left,
+                width: conexaoDropdownPosition.width || 140
+              }}
+              data-conexao-dropdown
+            >
+              <div className="py-1">
+                {conexaoOptions.map((option, index) => (
+                  <motion.button
+                    key={option.value}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => {
+                      setSelectedConexao(option.value)
+                      setShowConexaoDropdown(false)
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-cyan-500/20 transition-all duration-200 flex items-center gap-2 ${
+                      selectedConexao === option.value ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 font-medium' : 'text-slate-300'
+                    }`}
+                  >
+                    {selectedConexao === option.value && (
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full" />
+                    )}
+                    {selectedConexao !== option.value && <div className="w-2" />}
+                    {option.label}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
           {showQueueDropdown && (
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}

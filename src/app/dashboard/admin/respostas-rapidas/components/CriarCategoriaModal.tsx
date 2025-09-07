@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Tag, Palette, Save, MessageCircle, Users, Headphones, DollarSign, HelpCircle, Star, Heart, Zap, Shield, Settings } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { CreateCategoriaRequest } from '@/hooks/useRespostasRapidas'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface CriarCategoriaModalProps {
   isOpen: boolean
@@ -39,6 +40,7 @@ export default function CriarCategoriaModal({
   onUpdate,
   editingCategoria
 }: CriarCategoriaModalProps) {
+  const { actualTheme } = useTheme()
   const [formData, setFormData] = useState<CreateCategoriaRequest>({
     nome: '',
     descricao: '',
@@ -115,7 +117,9 @@ export default function CriarCategoriaModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className={`fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${
+          actualTheme === 'dark' ? 'bg-black/70' : 'bg-black/50'
+        }`}
         onClick={onClose}
       >
         <motion.div
@@ -123,28 +127,38 @@ export default function CriarCategoriaModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden"
+          className={`rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto backdrop-blur-xl ${
+            actualTheme === 'dark'
+              ? 'bg-slate-900/95 border border-slate-700/50'
+              : 'bg-white/95'
+          }`}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] p-6 text-white">
+          <div className={`p-6 text-white ${
+            actualTheme === 'dark'
+              ? 'bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border-b border-slate-600/30'
+              : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  actualTheme === 'dark' ? 'bg-slate-600/50' : 'bg-white/20'
+                }`}>
                   <Tag className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">
+                  <h2 className="text-2xl font-bold text-white">
                     {editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}
                   </h2>
-                  <p className="text-white/80 text-sm">
-                    {editingCategoria ? 'Atualize os dados da categoria' : 'Organize suas respostas'}
+                  <p className="mt-1 text-white/70">
+                    {editingCategoria ? 'Modifique os dados da categoria' : 'Crie uma nova categoria para organizar suas respostas'}
                   </p>
                 </div>
               </div>
               
               <button
                 onClick={onClose}
-                className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
+                className="p-2 rounded-lg transition-colors hover:bg-white/10 text-white/70 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -184,7 +198,9 @@ export default function CriarCategoriaModal({
                 <div className="space-y-6">
                   {/* Nome */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Nome da Categoria *
                     </label>
                     <input
@@ -192,20 +208,30 @@ export default function CriarCategoriaModal({
                       required
                       value={formData.nome}
                       onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
                       placeholder="Ex: Atendimento, Vendas, Suporte..."
                     />
                   </div>
 
                   {/* Descrição */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Descrição
                     </label>
                     <textarea
                       value={formData.descricao}
                       onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none resize-none"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none resize-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
                       rows={3}
                       placeholder="Descreva o propósito desta categoria..."
                     />
@@ -213,7 +239,9 @@ export default function CriarCategoriaModal({
 
                   {/* Ordem */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Ordem de Exibição
                     </label>
                     <input
@@ -221,10 +249,16 @@ export default function CriarCategoriaModal({
                       min="0"
                       value={formData.ordem}
                       onChange={(e) => setFormData(prev => ({ ...prev, ordem: parseInt(e.target.value) || 0 }))}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none"
+                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none transition-colors ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
                       placeholder="0"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={`text-xs mt-1 ${
+                      actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                    }`}>
                       Menor número = aparece primeiro na lista
                     </p>
                   </div>
@@ -235,7 +269,11 @@ export default function CriarCategoriaModal({
               {activeTab === 'aparencia' && (
                 <div className="space-y-6">
                   {/* Preview */}
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className={`rounded-xl p-4 border ${
+                    actualTheme === 'dark'
+                      ? 'bg-slate-800/60 border-slate-600'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
                     <div className="flex items-center gap-3 mb-2">
                       {(() => {
                         const iconeAtual = iconesPredefinidos.find(i => i.name === formData.icone)
@@ -250,18 +288,26 @@ export default function CriarCategoriaModal({
                         )
                       })()}
                       <div>
-                        <h3 className="font-semibold text-gray-900">{formData.nome || 'Nome da Categoria'}</h3>
-                        <p className="text-sm text-gray-600">{formData.descricao || 'Descrição da categoria'}</p>
+                        <h3 className={`font-semibold ${
+                          actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>{formData.nome || 'Nome da Categoria'}</h3>
+                        <p className={`text-sm ${
+                          actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                        }`}>{formData.descricao || 'Descrição da categoria'}</p>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 font-mono">
+                    <div className={`text-xs font-mono ${
+                      actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                    }`}>
                       Cor: {formData.cor} • Ícone: {formData.icone}
                     </div>
                   </div>
 
                   {/* Ícone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className={`block text-sm font-medium mb-3 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Ícone da Categoria
                     </label>
                     
@@ -279,7 +325,9 @@ export default function CriarCategoriaModal({
                             className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all ${
                               formData.icone === icone.name 
                                 ? 'bg-[#305e73] text-white shadow-lg' 
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                : actualTheme === 'dark'
+                                  ? 'bg-slate-700/60 text-slate-400 hover:bg-slate-600/60 hover:text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                             title={icone.label}
                           >
@@ -292,13 +340,17 @@ export default function CriarCategoriaModal({
 
                   {/* Cor */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className={`block text-sm font-medium mb-3 ${
+                      actualTheme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
                       Cor da Categoria
                     </label>
                     
                     {/* Cores Predefinidas */}
                     <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-600 mb-2">Cores Predefinidas:</p>
+                      <p className={`text-sm font-medium mb-2 ${
+                        actualTheme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                      }`}>Cores Predefinidas:</p>
                       <div className="grid grid-cols-6 gap-2">
                         {coresPredefinidas.map((cor) => (
                           <motion.button
@@ -308,7 +360,9 @@ export default function CriarCategoriaModal({
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleCorChange(cor)}
                             className={`w-8 h-8 rounded-lg shadow-sm border-2 transition-all ${
-                              formData.cor === cor ? 'border-gray-400 scale-110' : 'border-white hover:border-gray-300'
+                              formData.cor === cor ? 'border-gray-400 scale-110' : actualTheme === 'dark'
+                                ? 'border-slate-600 hover:border-slate-500'
+                                : 'border-white hover:border-gray-300'
                             }`}
                             style={{ backgroundColor: cor }}
                           />
@@ -318,19 +372,27 @@ export default function CriarCategoriaModal({
 
                     {/* Cor Customizada */}
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-2">Ou escolha uma cor personalizada:</p>
+                      <p className={`text-sm font-medium mb-2 ${
+                        actualTheme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                      }`}>Ou escolha uma cor personalizada:</p>
                       <div className="flex items-center gap-3">
                         <input
                           type="color"
                           value={corCustomizada || formData.cor}
                           onChange={(e) => handleCorCustomizada(e.target.value)}
-                          className="w-12 h-10 border border-gray-200 rounded-lg cursor-pointer"
+                          className={`w-12 h-10 border rounded-lg cursor-pointer ${
+                            actualTheme === 'dark' ? 'border-slate-600' : 'border-gray-200'
+                          }`}
                         />
                         <input
                           type="text"
                           value={corCustomizada || formData.cor}
                           onChange={(e) => handleCorCustomizada(e.target.value)}
-                          className="flex-1 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none font-mono text-sm"
+                          className={`flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent outline-none font-mono text-sm transition-colors ${
+                            actualTheme === 'dark'
+                              ? 'bg-slate-800/60 border-slate-600 text-white placeholder-slate-400'
+                              : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                          }`}
                           placeholder="#305e73"
                         />
                       </div>
@@ -341,12 +403,18 @@ export default function CriarCategoriaModal({
             </div>
 
             {/* Actions */}
-            <div className="border-t border-gray-200 p-6">
+            <div className={`border-t p-6 ${
+              actualTheme === 'dark' ? 'border-slate-600' : 'border-gray-200'
+            }`}>
               <div className="flex items-center justify-between">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  className={`px-6 py-2 font-medium transition-colors ${
+                    actualTheme === 'dark'
+                      ? 'text-white/70 hover:text-white'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 >
                   Cancelar
                 </button>

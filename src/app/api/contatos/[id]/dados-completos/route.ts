@@ -8,15 +8,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const token = cookieStore.get('token')?.value
-
-    if (!token) {
+    // Obter token do header Authorization ao invés de cookies
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
     }
 
-    // Buscar dados completos do contato pelo chatId
-    const response = await fetch(`${BACKEND_URL}/api/contatos/chat/${params.id}/dados-completos`, {
+    const token = authHeader.substring(7)
+    
+    console.log(`🔍 [DADOS-COMPLETOS] Buscando dados para chatId: ${params.id}`)
+
+    // Buscar dados completos do contato pelo chatId (sem normalização)
+    const response = await fetch(`${BACKEND_URL}/api/contatos/chat/${encodeURIComponent(params.id)}/dados-completos`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -24,9 +27,12 @@ export async function GET(
       },
     })
 
+    console.log(`📡 [DADOS-COMPLETOS] Response status: ${response.status}`)
+
     if (!response.ok) {
       if (response.status === 404) {
-        // Contato não encontrado, retornar dados vazios
+        console.log(`ℹ️ [DADOS-COMPLETOS] Chat ainda não é contato CRM: ${params.id}`)
+        // Chat ainda não foi salvo como contato no CRM - isso é normal
         return NextResponse.json({
           id: params.id,
           fila: null,
@@ -34,18 +40,27 @@ export async function GET(
           atendente: null,
           kanbanBoard: null,
           orcamento: null,
-          agendamento: null
+          agendamento: null,
+          isWhatsAppChat: true, // Flag para indicar que é um chat WAHA sem contato CRM
+          whatsAppId: params.id
         })
       }
       
-      const errorData = await response.text()
+      const errorText = await response.text()
+      console.error(`❌ [DADOS-COMPLETOS] Erro do backend: ${response.status} - ${errorText}`)
       return NextResponse.json(
-        { error: `Erro do backend: ${response.status}`, details: errorData },
+        { error: `Erro do backend: ${response.status}`, details: errorText },
         { status: response.status }
       )
     }
 
     const data = await response.json()
+    console.log(`✅ [DADOS-COMPLETOS] Dados retornados:`, { 
+      id: data.id, 
+      tagsCount: data.tags?.length || 0,
+      tags: data.tags?.map((tag: any) => ({ id: tag.id, nome: tag.nome, cor: tag.cor })) || []
+    })
+    
     return NextResponse.json(data)
 
   } catch (error) {

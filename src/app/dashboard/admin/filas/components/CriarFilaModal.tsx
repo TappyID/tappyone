@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Palette, Users, Bot, Kanban, MessageSquare, AlertCircle, Loader2 } from 'lucide-react'
 import { Fila } from '../page'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Atendente {
   id: string
@@ -14,6 +15,7 @@ interface Atendente {
 }
 
 interface CriarFilaModalProps {
+  fila?: Fila // Para edição
   onClose: () => void
   onCreateFila: (fila: Omit<Fila, 'id' | 'criadoEm' | 'atualizadoEm' | 'estatisticas'>) => void
 }
@@ -24,18 +26,21 @@ const coresPredefinidas = [
   '#EC4899', '#6366F1', '#14B8A6', '#F43F5E'
 ]
 
-export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModalProps) {
+export default function CriarFilaModal({ fila, onClose, onCreateFila }: CriarFilaModalProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
+  
   const [formData, setFormData] = useState({
-    nome: '',
-    descricao: '',
-    cor: '#3B82F6',
-    ordenacao: 1,
-    ativa: true,
-    chatBot: false,
-    kanban: false,
-    whatsappChats: false,
-    prioridade: 'MEDIA' as 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE',
-    atendentes: [] as string[]
+    nome: fila?.nome || '',
+    descricao: fila?.descricao || '',
+    cor: fila?.cor || '#3B82F6',
+    ordenacao: fila?.ordenacao || 1,
+    ativa: fila?.ativa ?? true,
+    chatBot: fila?.chatBot || false,
+    kanban: fila?.kanban || false,
+    whatsappChats: fila?.whatsappChats || false,
+    prioridade: (fila?.prioridade || 'MEDIA') as 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE',
+    atendentes: fila?.atendentes?.map(a => a.usuarioId) || [] as string[]
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -46,6 +51,8 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
   const fetchAtendentes = async () => {
     setLoadingAtendentes(true)
     try {
+      console.log('🔍 [ATENDENTES] Buscando atendentes...')
+      
       const response = await fetch('/api/atendentes', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -53,14 +60,54 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
         },
       })
 
+      console.log('🔍 [ATENDENTES] Response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
-        setAtendentesDisponiveis(data.filter((user: Atendente) => user.ativo))
+        console.log('✅ [ATENDENTES] Dados recebidos:', data)
+        
+        // Verificar estrutura dos dados
+        const atendentesData = data.data || data.users || data
+        console.log('✅ [ATENDENTES] Dados processados:', atendentesData)
+        
+        if (Array.isArray(atendentesData)) {
+          const atendentesAtivos = atendentesData.filter((user: Atendente) => user.ativo)
+          console.log('✅ [ATENDENTES] Atendentes ativos:', atendentesAtivos)
+          setAtendentesDisponiveis(atendentesAtivos)
+        } else {
+          console.warn('⚠️ [ATENDENTES] Dados não são um array:', atendentesData)
+          setAtendentesDisponiveis([])
+        }
       } else {
-        console.error('Erro ao buscar atendentes:', response.status)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ [ATENDENTES] Erro ao buscar atendentes:', response.status, errorData)
+        
+        // Fallback: tentar endpoint de usuários
+        console.log('🔄 [ATENDENTES] Tentando endpoint /api/usuarios...')
+        const usersResponse = await fetch('/api/usuarios', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json()
+          console.log('✅ [USUARIOS] Dados recebidos:', usersData)
+          
+          const usuarios = usersData.data || usersData.users || usersData
+          if (Array.isArray(usuarios)) {
+            const usuariosAtivos = usuarios.filter((user: any) => user.ativo && user.tipo === 'ATENDENTE')
+            console.log('✅ [USUARIOS] Atendentes encontrados:', usuariosAtivos)
+            setAtendentesDisponiveis(usuariosAtivos)
+          } else {
+            setAtendentesDisponiveis([])
+          }
+        }
       }
     } catch (error) {
-      console.error('Erro ao buscar atendentes:', error)
+      console.error('❌ [ATENDENTES] Erro na requisição:', error)
+      setAtendentesDisponiveis([])
     } finally {
       setLoadingAtendentes(false)
     }
@@ -131,7 +178,9 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className={`fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${
+          isDark ? 'bg-black/60' : 'bg-black/50'
+        }`}
         onClick={onClose}
       >
         <motion.div
@@ -139,33 +188,49 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+          className={`rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden ${
+            isDark 
+              ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50' 
+              : 'bg-white'
+          }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className={`flex items-center justify-between p-6 border-b ${
+            isDark ? 'border-gray-700' : 'border-gray-200'
+          }`}>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Nova Fila de Atendimento</h2>
-              <p className="text-gray-600 mt-1">Etapa {currentStep} de 3</p>
+              <h2 className={`text-2xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>{fila ? 'Editar Fila de Atendimento' : 'Nova Fila de Atendimento'}</h2>
+              <p className={`mt-1 ${
+                isDark ? 'text-gray-300' : 'text-gray-600'
+              }`}>Etapa {currentStep} de 3</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className={`p-2 rounded-lg transition-colors ${
+                isDark 
+                  ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
             >
               <X className="w-6 h-6" />
             </motion.button>
           </div>
 
           {/* Progress Bar */}
-          <div className="px-6 py-4 bg-gray-50">
+          <div className={`px-6 py-4 ${
+            isDark ? 'bg-slate-800/50' : 'bg-gray-50'
+          }`}>
             <div className="flex items-center justify-between mb-2">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <motion.div
                     animate={{
-                      backgroundColor: step <= currentStep ? '#305e73' : '#E5E7EB',
-                      color: step <= currentStep ? '#FFFFFF' : '#6B7280'
+                      backgroundColor: step <= currentStep ? (isDark ? '#10B981' : '#305e73') : (isDark ? '#374151' : '#E5E7EB'),
+                      color: step <= currentStep ? '#FFFFFF' : (isDark ? '#9CA3AF' : '#6B7280')
                     }}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
                   >
@@ -174,7 +239,7 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                   {step < 3 && (
                     <motion.div
                       animate={{
-                        backgroundColor: step < currentStep ? '#305e73' : '#E5E7EB'
+                        backgroundColor: step < currentStep ? (isDark ? '#10B981' : '#305e73') : (isDark ? '#374151' : '#E5E7EB')
                       }}
                       className="w-16 h-1 mx-2"
                     />
@@ -182,7 +247,9 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 </div>
               ))}
             </div>
-            <div className="flex justify-between text-xs text-gray-600">
+            <div className={`flex justify-between text-xs ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
               <span>Informações Básicas</span>
               <span>Configurações</span>
               <span>Revisão</span>
@@ -199,15 +266,23 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 className="space-y-6"
               >
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Nome da Fila *
                   </label>
                   <input
                     type="text"
                     value={formData.nome}
                     onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all ${
-                      errors.nome ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition-all ${
+                      isDark
+                        ? `bg-slate-700 border-slate-600 text-white focus:ring-emerald-500 placeholder-gray-400 ${
+                            errors.nome ? 'border-red-500 bg-red-900/20' : ''
+                          }`
+                        : `focus:ring-[#305e73] focus:border-transparent ${
+                            errors.nome ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                          }`
                     }`}
                     placeholder="Ex: Suporte Técnico, Vendas Premium..."
                   />
@@ -220,15 +295,23 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Descrição *
                   </label>
                   <textarea
                     value={formData.descricao}
                     onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
                     rows={3}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all resize-none ${
-                      errors.descricao ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition-all resize-none ${
+                      isDark
+                        ? `bg-slate-700 border-slate-600 text-white focus:ring-emerald-500 placeholder-gray-400 ${
+                            errors.descricao ? 'border-red-500 bg-red-900/20' : ''
+                          }`
+                        : `focus:ring-[#305e73] focus:border-transparent ${
+                            errors.descricao ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                          }`
                     }`}
                     placeholder="Descreva o propósito e funcionamento desta fila..."
                   />
@@ -241,7 +324,9 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     <Palette className="w-4 h-4 inline mr-2" />
                     Cor da Fila
                   </label>
@@ -262,7 +347,9 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Ordenação
                   </label>
                   <input
@@ -270,10 +357,16 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                     min="1"
                     value={formData.ordenacao}
                     onChange={(e) => setFormData(prev => ({ ...prev, ordenacao: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all bg-white"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition-all ${
+                      isDark
+                        ? 'bg-slate-700 border-slate-600 text-white focus:ring-emerald-500'
+                        : 'border-gray-200 focus:ring-[#305e73] focus:border-transparent bg-white'
+                    }`}
                     placeholder="1"
                   />
-                  <p className="text-gray-500 text-sm mt-1">Ordem de prioridade da fila (menor número = maior prioridade)</p>
+                  <p className={`text-sm mt-1 ${
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  }`}>Ordem de prioridade da fila (menor número = maior prioridade)</p>
                 </div>
               </motion.div>
             )}
@@ -286,7 +379,9 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 className="space-y-6"
               >
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Prioridade da Fila
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -301,8 +396,12 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                         }))}
                         className={`p-3 rounded-xl border-2 transition-all ${
                           formData.prioridade === prioridade
-                            ? 'border-[#305e73] bg-[#305e73]/10 text-[#305e73]'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? isDark
+                              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                              : 'border-[#305e73] bg-[#305e73]/10 text-[#305e73]'
+                            : isDark
+                              ? 'border-gray-600 hover:border-gray-500 text-gray-300'
+                              : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         {prioridade.charAt(0).toUpperCase() + prioridade.slice(1).toLowerCase()}
@@ -312,7 +411,9 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Integrações Ativas
                   </label>
                   <div className="space-y-3">
@@ -328,8 +429,12 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                           whileHover={{ scale: 1.01 }}
                           className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                             formData[integracao.key as keyof typeof formData]
-                              ? 'border-[#305e73] bg-[#305e73]/10'
-                              : 'border-gray-200 hover:border-gray-300'
+                              ? isDark
+                                ? 'border-emerald-500 bg-emerald-500/20'
+                                : 'border-[#305e73] bg-[#305e73]/10'
+                              : isDark
+                                ? 'border-gray-600 hover:border-gray-500'
+                                : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <input
@@ -341,10 +446,16 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                             }))}
                             className="sr-only"
                           />
-                          <IconComponent className="w-6 h-6 text-gray-600" />
+                          <IconComponent className={`w-6 h-6 ${
+                            isDark ? 'text-gray-400' : 'text-gray-600'
+                          }`} />
                           <div className="flex-1">
-                            <p className="font-medium text-gray-900">{integracao.label}</p>
-                            <p className="text-sm text-gray-600">{integracao.desc}</p>
+                            <p className={`font-medium ${
+                              isDark ? 'text-white' : 'text-gray-900'
+                            }`}>{integracao.label}</p>
+                            <p className={`text-sm ${
+                              isDark ? 'text-gray-400' : 'text-gray-600'
+                            }`}>{integracao.desc}</p>
                           </div>
                         </motion.label>
                       )
@@ -353,25 +464,35 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     <Users className="w-4 h-4 inline mr-2" />
                     Atendentes Responsáveis *
                   </label>
                   {loadingAtendentes ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                      <span className="ml-2 text-gray-600">Carregando atendentes...</span>
+                      <span className={`ml-2 ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Carregando atendentes...</span>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-3">
+                    <div className={`grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-xl p-3 ${
+                      isDark ? 'border-gray-600' : 'border-gray-200'
+                    }`}>
                       {atendentesDisponiveis.map((atendente) => (
                         <motion.label
                           key={atendente.id}
                           whileHover={{ scale: 1.02 }}
                           className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
                             formData.atendentes.includes(atendente.id)
-                              ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                              : 'hover:bg-gray-50 border border-transparent'
+                              ? isDark
+                                ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-700'
+                                : 'bg-blue-100 text-blue-700 border border-blue-200'
+                              : isDark
+                                ? 'hover:bg-slate-700 border border-transparent'
+                                : 'hover:bg-gray-50 border border-transparent'
                           }`}
                         >
                           <input
@@ -382,21 +503,31 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                           />
                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
                             formData.atendentes.includes(atendente.id)
-                              ? 'border-blue-500 bg-blue-500'
-                              : 'border-gray-300'
+                              ? isDark
+                                ? 'border-emerald-500 bg-emerald-500'
+                                : 'border-blue-500 bg-blue-500'
+                              : isDark
+                                ? 'border-gray-500'
+                                : 'border-gray-300'
                           }`}>
                             {formData.atendentes.includes(atendente.id) && (
                               <div className="w-2 h-2 bg-white rounded-full" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{atendente.nome}</p>
-                            <p className="text-xs text-gray-500">{atendente.email}</p>
+                            <p className={`text-sm font-medium ${
+                              isDark ? 'text-gray-200' : 'text-gray-900'
+                            }`}>{atendente.nome}</p>
+                            <p className={`text-xs ${
+                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            }`}>{atendente.email}</p>
                           </div>
                         </motion.label>
                       ))}
                       {atendentesDisponiveis.length === 0 && (
-                        <div className="text-center py-4 text-gray-500">
+                        <div className={`text-center py-4 ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                           <p className="text-sm">Nenhum atendente disponível</p>
                         </div>
@@ -420,8 +551,12 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-6"
               >
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Resumo da Fila</h3>
+                <div className={`rounded-xl p-6 ${
+                  isDark ? 'bg-slate-800/50' : 'bg-gray-50'
+                }`}>
+                  <h3 className={`font-semibold mb-4 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>Resumo da Fila</h3>
                   
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
@@ -430,24 +565,30 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                         style={{ backgroundColor: formData.cor }}
                       />
                       <div>
-                        <p className="font-medium text-gray-900">{formData.nome}</p>
-                        <p className="text-sm text-gray-600">{formData.descricao}</p>
+                        <p className={`font-medium ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{formData.nome}</p>
+                        <p className={`text-sm ${
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>{formData.descricao}</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Prioridade:</span>
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Prioridade:</span>
                         <span className="ml-2 font-medium">{formData.prioridade.charAt(0).toUpperCase() + formData.prioridade.slice(1).toLowerCase()}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Ordenação:</span>
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Ordenação:</span>
                         <span className="ml-2 font-medium">#{formData.ordenacao}</span>
                       </div>
                     </div>
 
                     <div>
-                      <p className="text-gray-600 text-sm mb-2">Integrações:</p>
+                      <p className={`text-sm mb-2 ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Integrações:</p>
                       <div className="flex gap-2">
                         {formData.chatBot && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">ChatBot</span>}
                         {formData.kanban && <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Kanban</span>}
@@ -459,15 +600,19 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
                     </div>
 
                     <div>
-                      <p className="text-gray-600 text-sm mb-2">Atendentes ({formData.atendentes.length}):</p>
-                      <div className="text-sm text-gray-700">
+                      <p className={`text-sm mb-2 ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Atendentes ({formData.atendentes.length}):</p>
+                      <div className={`text-sm ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         {formData.atendentes.length > 0 ? (
                           formData.atendentes.map(atendenteId => {
                             const atendente = atendentesDisponiveis.find(a => a.id === atendenteId)
                             return atendente ? atendente.nome : 'Atendente não encontrado'
                           }).join(', ')
                         ) : (
-                          <span className="text-gray-500">Nenhum atendente selecionado</span>
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Nenhum atendente selecionado</span>
                         )}
                       </div>
                     </div>
@@ -478,12 +623,20 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+          <div className={`flex items-center justify-between p-6 border-t ${
+            isDark 
+              ? 'border-gray-700 bg-slate-800/50' 
+              : 'border-gray-200 bg-gray-50'
+          }`}>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={currentStep === 1 ? onClose : handlePrevious}
-              className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className={`px-6 py-2 transition-colors ${
+                isDark 
+                  ? 'text-gray-400 hover:text-gray-200' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
             >
               {currentStep === 1 ? 'Cancelar' : 'Voltar'}
             </motion.button>
@@ -492,9 +645,19 @@ export default function CriarFilaModal({ onClose, onCreateFila }: CriarFilaModal
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={currentStep === 3 ? handleSubmit : handleNext}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
+              className={`px-6 py-3 text-white rounded-xl font-medium transition-all relative overflow-hidden group ${
+                isDark
+                  ? ''
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:shadow-xl'
+              }`}
+              style={isDark ? {
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.8) 0%, rgba(5, 150, 105, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                boxShadow: '0 20px 40px -12px rgba(16, 185, 129, 0.6), 0 0 0 1px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+              } : {}}
             >
-              {currentStep === 3 ? 'Criar Fila' : 'Próximo'}
+              {currentStep === 3 ? (fila ? 'Salvar Alterações' : 'Criar Fila') : 'Próximo'}
             </motion.button>
           </div>
         </motion.div>

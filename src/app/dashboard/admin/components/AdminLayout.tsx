@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -11,13 +12,18 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const { actualTheme } = useTheme()
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex">
+    <div className={`min-h-screen flex transition-all duration-500 ${
+      actualTheme === 'dark' 
+        ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
+        : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
+    }`}>
       {/* Sidebar */}
       <div className="fixed left-0 top-0 z-40">
         <Sidebar 

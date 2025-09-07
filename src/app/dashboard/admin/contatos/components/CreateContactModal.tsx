@@ -6,6 +6,7 @@ import {
   X, User, Phone, Mail, Building2, MapPin, Save, Loader2,
   Search, UserPlus, MessageCircle, Users
 } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface WhatsAppContact {
   id: string
@@ -63,6 +64,8 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
   onSuccess,
   editContact
 }) => {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -234,7 +237,39 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
         sessaoWhatsappId = sessionsData.id
         console.log('✅ Sessão única encontrada:', sessionsData)
       } else {
-        throw new Error('Nenhuma sessão WhatsApp ativa encontrada na tabela sessoes_whatsapp')
+        // Criar sessão WhatsApp padrão para o usuário
+        console.log('🔄 Nenhuma sessão encontrada, criando sessão padrão...')
+        console.log('👤 userData:', userData)
+        
+        const createSessionResponse = await fetch('/api/sessoes-whatsapp', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nomeSessao: `user_${userData.id}_${Date.now()}`,
+            status: 'CONECTADO',
+            ativo: true
+          })
+        })
+        
+        console.log('📡 Create session response status:', createSessionResponse.status)
+        
+        if (!createSessionResponse.ok) {
+          const errorText = await createSessionResponse.text()
+          console.error('❌ Erro ao criar sessão:', errorText)
+          throw new Error(`Erro ao criar sessão WhatsApp padrão: ${errorText}`)
+        }
+        
+        const newSession = await createSessionResponse.json()
+        console.log('✅ Resposta da criação da sessão:', newSession)
+        
+        // Verificar se temos o ID da sessão
+        if (!newSession || (!newSession.id && !newSession.data?.id)) {
+          console.error('❌ Sessão criada mas sem ID válido:', newSession)
+          throw new Error('Sessão criada mas sem ID válido')
+        }
+        
+        sessaoWhatsappId = newSession.id || newSession.data?.id
+        console.log('✅ Sessão padrão criada com ID:', sessaoWhatsappId)
       }
 
       console.log('🔗 Using sessaoWhatsappId:', sessaoWhatsappId)
@@ -263,6 +298,7 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
       console.log('📦 contactData sendo enviado:', contactData)
       console.log('🔍 editContact?', !!editContact)
       console.log('🆔 sessaoWhatsappId:', sessaoWhatsappId)
+      console.log('📱 JSON sendo enviado:', JSON.stringify(contactData, null, 2))
 
       let response
       if (editContact) {
@@ -275,7 +311,10 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
         })
       } else {
         // Criar novo contato
-        console.log('➕ Criando novo contato')
+        console.log('➕ Criando novo contato no endpoint /api/contatos')
+        console.log('🔗 URL completa:', '/api/contatos')
+        console.log('📋 Headers:', { 'Authorization': `Bearer ${token.substring(0, 20)}...`, 'Content-Type': 'application/json' })
+        
         response = await fetch('/api/contatos', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -283,10 +322,25 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
         })
       }
 
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `Erro ao ${editContact ? 'atualizar' : 'criar'} contato`)
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+        
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText }
+        }
+        
+        throw new Error(errorData.error || `Erro ${response.status}: ${errorText}`)
       }
+
+      const successData = await response.json()
+      console.log('✅ Contato criado com sucesso:', successData)
 
       onSuccess()
       onClose()
@@ -339,40 +393,58 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+            className={`rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto ${
+              isDark ? 'bg-gray-800' : 'bg-white'
+            }`}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+            <div className={`sticky top-0 border-b p-6 rounded-t-2xl ${
+              isDark 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-200'
+            }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-xl flex items-center justify-center">
                     <UserPlus className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className={`text-2xl font-bold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
                       {editContact ? 'Editar Contato' : 'Adicionar Contato'}
                     </h2>
-                    <p className="text-gray-600">
+                    <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                       {step === 'search' ? 'Selecione um contato do WhatsApp' : 'Complete os dados do contato'}
                     </p>
                   </div>
                 </div>
-                <button onClick={onClose} className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all">
-                  <X className="w-5 h-5 text-gray-600" />
+                <button onClick={onClose} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  isDark 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                }`}>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
             <div className="p-6">
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-red-800 text-sm">{error}</p>
+                <div className={`mb-6 p-4 border rounded-xl ${
+                  isDark 
+                    ? 'bg-red-900/30 border-red-700 text-red-300'
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}>
+                  <p className="text-sm">{error}</p>
                 </div>
               )}
 
               {step === 'search' ? (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
                       <MessageCircle className="w-5 h-5 text-[#305e73]" />
                       Contatos do WhatsApp
                     </h3>
@@ -386,14 +458,20 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                         placeholder="Buscar contatos..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                          isDark 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                            : 'bg-white border-gray-300 text-gray-900'
+                        }`}
                       />
                     </div>
 
                     {isLoadingContacts ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-[#305e73]" />
-                        <span className="ml-2 text-gray-600">Carregando contatos...</span>
+                        <span className={`ml-2 ${
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>Carregando contatos...</span>
                       </div>
                     ) : (
                       <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -405,7 +483,11 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                               whileHover={{ scale: 1.01 }}
                               whileTap={{ scale: 0.99 }}
                               onClick={() => handleContactSelect(contact)}
-                              className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-all border border-transparent hover:border-[#305e73]"
+                              className={`w-full flex items-center gap-3 p-4 rounded-xl text-left transition-all border border-transparent hover:border-[#305e73] ${
+                                isDark 
+                                  ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                  : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
+                              }`}
                             >
                               <div className="w-12 h-12 bg-[#305e73] rounded-full flex items-center justify-center">
                                 {contact.profilePicUrl ? (
@@ -417,9 +499,13 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                                 )}
                               </div>
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900">{contact.name || contact.pushname}</p>
+                                <p className={`font-medium ${
+                                  isDark ? 'text-white' : 'text-gray-900'
+                                }`}>{contact.name || contact.pushname}</p>
                                 {contact.phone && (
-                                  <p className="text-sm text-gray-600">
+                                  <p className={`text-sm ${
+                                    isDark ? 'text-gray-400' : 'text-gray-600'
+                                  }`}>
                                     {formatPhone(contact.phone.replace('@c.us', '').replace(/\D/g, ''))}
                                   </p>
                                 )}
@@ -427,8 +513,12 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                             </motion.button>
                           ))
                         ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${
+                            isDark ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            <Users className={`w-12 h-12 mx-auto mb-2 ${
+                              isDark ? 'text-gray-500' : 'text-gray-300'
+                            }`} />
                             <p>{searchQuery ? 'Nenhum contato encontrado para sua busca' : 'Nenhum contato encontrado'}</p>
                           </div>
                         )}
@@ -439,7 +529,9 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {selectedContact && (
-                    <div className="p-4 bg-[#305e73]/5 border border-[#305e73] rounded-xl">
+                    <div className={`p-4 border border-[#305e73] rounded-xl ${
+                      isDark ? 'bg-[#305e73]/10' : 'bg-[#305e73]/5'
+                    }`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-[#305e73] rounded-full flex items-center justify-center">
@@ -450,9 +542,13 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                             )}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{selectedContact.name}</p>
+                            <p className={`font-medium ${
+                              isDark ? 'text-white' : 'text-gray-900'
+                            }`}>{selectedContact.name}</p>
                             {selectedContact.phone && (
-                              <p className="text-sm text-gray-600">
+                              <p className={`text-sm ${
+                                isDark ? 'text-gray-400' : 'text-gray-600'
+                              }`}>
                                 {formatPhone(selectedContact.phone.replace('@c.us', '').replace(/\D/g, ''))}
                               </p>
                             )}
@@ -467,50 +563,78 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>
                         <User className="w-5 h-5 text-[#305e73]" />
                         Dados Pessoais
                       </h3>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome *</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Nome *</label>
                         <input
                           type="text" required value={formData.nome} disabled
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
+                          className={`w-full px-4 py-3 border rounded-xl cursor-not-allowed ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-400'
+                              : 'border-gray-300 bg-gray-100 text-gray-600'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Telefone *</label>
                         <input
                           type="tel" required value={formatPhone(formData.numeroTelefone)} disabled
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
+                          className={`w-full px-4 py-3 border rounded-xl cursor-not-allowed ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-400'
+                              : 'border-gray-300 bg-gray-100 text-gray-600'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Email</label>
                         <input
                           type="email" value={formData.email}
                           onChange={(e) => handleInputChange('email', e.target.value)}
                           placeholder="contato@email.com"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Empresa</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Empresa</label>
                         <input
                           type="text" value={formData.empresa}
                           onChange={(e) => handleInputChange('empresa', e.target.value)}
                           placeholder="Nome da empresa"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">CPF</label>
+                          <label className={`block text-sm font-medium mb-2 ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>CPF</label>
                           <input
                             type="text" value={formatCPF(formData.cpf)}
                             onChange={(e) => {
@@ -518,11 +642,17 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                               if (cleaned.length <= 11) handleInputChange('cpf', cleaned)
                             }}
                             placeholder="000.000.000-00"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ</label>
+                          <label className={`block text-sm font-medium mb-2 ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>CNPJ</label>
                           <input
                             type="text" value={formatCNPJ(formData.cnpj)}
                             onChange={(e) => {
@@ -530,20 +660,28 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                               if (cleaned.length <= 14) handleInputChange('cnpj', cleaned)
                             }}
                             placeholder="00.000.000/0000-00"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
                           />
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>
                         <MapPin className="w-5 h-5 text-[#305e73]" />
                         Endereço
                       </h3>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">CEP</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>CEP</label>
                         <input
                           type="text" value={formatCEP(formData.cep)}
                           onChange={(e) => {
@@ -554,73 +692,119 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                             }
                           }}
                           placeholder="00000-000"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Rua</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Rua</label>
                         <input
                           type="text" value={formData.rua} onChange={(e) => handleInputChange('rua', e.target.value)}
                           placeholder="Nome da rua"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Número</label>
+                          <label className={`block text-sm font-medium mb-2 ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>Número</label>
                           <input
                             type="text" value={formData.numero} onChange={(e) => handleInputChange('numero', e.target.value)}
                             placeholder="123"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Bairro</label>
+                          <label className={`block text-sm font-medium mb-2 ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>Bairro</label>
                           <input
                             type="text" value={formData.bairro} onChange={(e) => handleInputChange('bairro', e.target.value)}
                             placeholder="Nome do bairro"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                          <label className={`block text-sm font-medium mb-2 ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>Cidade</label>
                           <input
                             type="text" value={formData.cidade} onChange={(e) => handleInputChange('cidade', e.target.value)}
                             placeholder="Nome da cidade"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                          <label className={`block text-sm font-medium mb-2 ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>Estado</label>
                           <input
                             type="text" value={formData.estado} onChange={(e) => handleInputChange('estado', e.target.value)}
                             placeholder="SP"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">País</label>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>País</label>
                         <input
                           type="text" value={formData.pais} onChange={(e) => handleInputChange('pais', e.target.value)}
                           placeholder="Brasil"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                            isDark 
+                              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-4 pt-6 border-t">
+                  <div className={`flex items-center justify-end gap-4 pt-6 border-t ${
+                    isDark ? 'border-gray-600' : 'border-gray-200'
+                  }`}>
                     {!editContact && (
                       <button
                         type="button" onClick={() => setStep('search')}
-                        className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-all"
+                        className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                          isDark 
+                            ? 'text-gray-300 bg-gray-700 hover:bg-gray-600'
+                            : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                        }`}
                       >
                         Voltar
                       </button>
@@ -628,7 +812,7 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white py-3 px-6 rounded-xl font-semibold hover:from-[#3a6d84] to-[#305e73] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white py-3 px-6 rounded-xl font-semibold hover:from-[#3a6d84] hover:to-[#305e73] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isLoading ? (
                         <>

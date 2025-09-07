@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, X } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface FilasFiltersProps {
   searchQuery: string
@@ -25,6 +26,8 @@ export default function FilasFilters({
   filterIntegracao,
   setFilterIntegracao
 }: FilasFiltersProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   const clearFilters = () => {
@@ -42,19 +45,29 @@ export default function FilasFilters({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+      className={`rounded-2xl p-6 shadow-lg ${
+        isDark 
+          ? 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 border border-slate-600/50' 
+          : 'bg-white border border-gray-100'
+      }`}
     >
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-4 flex-1 w-full">
           {/* Search Input */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+              isDark ? 'text-gray-500' : 'text-gray-400'
+            }`} />
             <input
               type="text"
               placeholder="Buscar filas por nome ou descrição..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+              className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 transition-all duration-200 ${
+                isDark
+                  ? 'bg-slate-700 border-slate-600 text-white focus:ring-emerald-500 focus:bg-slate-600 placeholder-gray-400'
+                  : 'border-gray-200 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white'
+              }`}
             />
             {searchQuery && (
               <motion.button
@@ -63,7 +76,9 @@ export default function FilasFilters({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 w-5 h-5"
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                  isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                }`}
               >
                 <X className="w-4 h-4" />
               </motion.button>
@@ -77,8 +92,12 @@ export default function FilasFilters({
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200 ${
               showAdvancedFilters || hasActiveFilters
-                ? 'bg-[#305e73]/10 border-[#305e73]/30 text-[#305e73]' 
-                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                ? isDark
+                  ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                  : 'bg-[#305e73]/10 border-[#305e73]/30 text-[#305e73]'
+                : isDark
+                  ? 'bg-slate-600 border-slate-500 text-gray-300 hover:bg-slate-500'
+                  : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
             }`}
           >
             <Filter className="w-5 h-5" />
@@ -87,7 +106,9 @@ export default function FilasFilters({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-2 h-2 bg-blue-600 rounded-full"
+                className={`w-2 h-2 rounded-full ${
+                  isDark ? 'bg-emerald-500' : 'bg-blue-600'
+                }`}
               />
             )}
           </motion.button>
@@ -100,7 +121,11 @@ export default function FilasFilters({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={clearFilters}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                isDark
+                  ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+                  : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+              }`}
             >
               <X className="w-4 h-4" />
               <span className="text-sm">Limpar</span>
@@ -116,10 +141,14 @@ export default function FilasFilters({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
                 filterStatus === status
-                  ? 'bg-[#305e73]/10 text-[#305e73] border border-[#305e73]/30 shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100 border border-transparent'
+                  ? isDark
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-sm'
+                    : 'bg-[#305e73]/10 text-[#305e73] border-[#305e73]/30 shadow-sm'
+                  : isDark
+                    ? 'text-gray-400 hover:bg-slate-600 border-transparent'
+                    : 'text-gray-600 hover:bg-gray-100 border-transparent'
               }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -136,16 +165,24 @@ export default function FilasFilters({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="mt-6 pt-6 border-t border-gray-200"
+            className={`mt-6 pt-6 border-t ${
+              isDark ? 'border-gray-600' : 'border-gray-200'
+            }`}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Prioridade Filter */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Prioridade</label>
+                <label className={`block text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>Prioridade</label>
                 <select
                   value={filterPrioridade}
                   onChange={(e) => setFilterPrioridade(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 transition-all duration-200 ${
+                    isDark
+                      ? 'bg-slate-700 border-slate-600 text-white focus:ring-emerald-500 focus:bg-slate-600'
+                      : 'border-gray-200 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white'
+                  }`}
                 >
                   <option value="">Todas as prioridades</option>
                   <option value="baixa">Baixa</option>
@@ -157,11 +194,17 @@ export default function FilasFilters({
 
               {/* Integração Filter */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Integração</label>
+                <label className={`block text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>Integração</label>
                 <select
                   value={filterIntegracao}
                   onChange={(e) => setFilterIntegracao(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 transition-all duration-200 ${
+                    isDark
+                      ? 'bg-slate-700 border-slate-600 text-white focus:ring-emerald-500 focus:bg-slate-600'
+                      : 'border-gray-200 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white'
+                  }`}
                 >
                   <option value="">Todas as integrações</option>
                   <option value="chatbot">ChatBot</option>
@@ -172,8 +215,14 @@ export default function FilasFilters({
 
               {/* Ordenação */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Ordenação</label>
-                <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200">
+                <label className={`block text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>Ordenação</label>
+                <select className={`w-full px-3 py-2 border rounded-lg focus:ring-2 transition-all duration-200 ${
+                  isDark
+                    ? 'bg-slate-700 border-slate-600 text-white focus:ring-emerald-500 focus:bg-slate-600'
+                    : 'border-gray-200 focus:ring-[#305e73] focus:border-transparent bg-gray-50 focus:bg-white'
+                }`}>
                   <option value="nome">Nome (A-Z)</option>
                   <option value="nome-desc">Nome (Z-A)</option>
                   <option value="criacao">Mais recentes</option>

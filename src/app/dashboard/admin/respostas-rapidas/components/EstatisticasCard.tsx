@@ -14,6 +14,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { EstatisticasResposta } from '@/hooks/useRespostasRapidas'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface EstatisticasCardProps {
   estatisticas: EstatisticasResposta | null
@@ -24,6 +25,7 @@ export default function EstatisticasCard({
   estatisticas,
   loading
 }: EstatisticasCardProps) {
+  const { actualTheme } = useTheme()
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -33,13 +35,25 @@ export default function EstatisticasCard({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+            className={`rounded-2xl p-6 shadow-lg border backdrop-blur-xl transition-all duration-300 ${
+              actualTheme === 'dark'
+                ? 'bg-slate-900/60 border-slate-700/50 shadow-2xl shadow-black/50'
+                : 'bg-white/80 border-gray-100'
+            }`}
           >
             <div className="animate-pulse">
-              <div className="w-12 h-12 bg-gray-200 rounded-xl mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <div className={`w-12 h-12 rounded-xl mb-4 ${
+                actualTheme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200'
+              }`}></div>
+              <div className={`h-4 rounded mb-2 ${
+                actualTheme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200'
+              }`}></div>
+              <div className={`h-8 rounded mb-2 ${
+                actualTheme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200'
+              }`}></div>
+              <div className={`h-3 rounded w-2/3 ${
+                actualTheme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200'
+              }`}></div>
             </div>
           </motion.div>
         ))}
@@ -54,13 +68,23 @@ export default function EstatisticasCard({
         animate={{ opacity: 1, y: 0 }}
         className="text-center py-16"
       >
-        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <BarChart3 className="w-12 h-12 text-gray-400" />
+        <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm ${
+          actualTheme === 'dark'
+            ? 'bg-slate-800/60 border border-slate-700/50'
+            : 'bg-gray-100'
+        }`}>
+          <BarChart3 className={`w-12 h-12 ${
+            actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-400'
+          }`} />
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <h3 className={`text-xl font-semibold mb-2 ${
+          actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>
           Estatísticas não disponíveis
         </h3>
-        <p className="text-gray-600">
+        <p className={`${
+          actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+        }`}>
           Não foi possível carregar as estatísticas no momento
         </p>
       </motion.div>
@@ -133,10 +157,14 @@ export default function EstatisticasCard({
     >
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className={`text-2xl font-bold mb-2 ${
+          actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>
           Estatísticas das Respostas Rápidas
         </h2>
-        <p className="text-gray-600">
+        <p className={`${
+          actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+        }`}>
           Acompanhe o desempenho e uso das suas automações
         </p>
       </div>
@@ -152,7 +180,11 @@ export default function EstatisticasCard({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+              className={`rounded-2xl p-6 shadow-lg border hover:shadow-xl transition-all duration-300 backdrop-blur-xl ${
+                actualTheme === 'dark'
+                  ? 'bg-slate-900/60 border-slate-700/50 shadow-2xl shadow-black/50 hover:bg-slate-900/80 hover:border-slate-600/60'
+                  : 'bg-white/80 border-gray-100 hover:bg-white'
+              }`}
             >
               {/* Icon */}
               <div className={`w-14 h-14 ${stat.bgColor} rounded-2xl flex items-center justify-center mb-4`}>
@@ -160,13 +192,17 @@ export default function EstatisticasCard({
               </div>
 
               {/* Title */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 className={`text-lg font-semibold mb-1 ${
+                actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
                 {stat.title}
               </h3>
 
               {/* Value */}
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-bold text-gray-900">
+                <span className={`text-3xl font-bold ${
+                  actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
                 </span>
                 {index === 4 && estatisticas.execucoes_hoje > 0 && (
@@ -178,14 +214,18 @@ export default function EstatisticasCard({
               </div>
 
               {/* Description */}
-              <p className="text-gray-600 text-sm">
+              <p className={`text-sm ${
+                actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+              }`}>
                 {stat.description}
               </p>
 
               {/* Progress Bar (for some stats) */}
               {(index === 2 || index === 5) && (
                 <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className={`w-full rounded-full h-2 ${
+                    actualTheme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200'
+                  }`}>
                     <div 
                       className={`bg-gradient-to-r ${stat.color} h-2 rounded-full transition-all duration-500`}
                       style={{ 
@@ -207,29 +247,51 @@ export default function EstatisticasCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+        className={`rounded-2xl p-6 shadow-lg border backdrop-blur-xl transition-all duration-300 ${
+          actualTheme === 'dark'
+            ? 'bg-slate-900/60 border-slate-700/50 shadow-2xl shadow-black/50'
+            : 'bg-white/80 border-gray-100'
+        }`}
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className={`text-lg font-semibold ${
+              actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Atividade Recente
             </h3>
-            <p className="text-gray-600 text-sm">
+            <p className={`text-sm ${
+              actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+            }`}>
               Execuções dos últimos 7 dias
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-gray-400" />
-            <span className="text-sm text-gray-500">Últimos 7 dias</span>
+            <Activity className={`w-5 h-5 ${
+              actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-400'
+            }`} />
+            <span className={`text-sm ${
+              actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+            }`}>Últimos 7 dias</span>
           </div>
         </div>
 
         {/* Chart Placeholder */}
-        <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
+        <div className={`h-64 rounded-xl flex items-center justify-center ${
+          actualTheme === 'dark'
+            ? 'bg-gradient-to-br from-slate-800/50 to-slate-700/50'
+            : 'bg-gradient-to-br from-gray-50 to-gray-100'
+        }`}>
           <div className="text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Gráfico de Atividade</p>
-            <p className="text-gray-400 text-sm">Em breve disponível</p>
+            <BarChart3 className={`w-12 h-12 mx-auto mb-3 ${
+              actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-400'
+            }`} />
+            <p className={`font-medium ${
+              actualTheme === 'dark' ? 'text-white/80' : 'text-gray-500'
+            }`}>Gráfico de Atividade</p>
+            <p className={`text-sm ${
+              actualTheme === 'dark' ? 'text-white/60' : 'text-gray-400'
+            }`}>Em breve disponível</p>
           </div>
         </div>
       </motion.div>

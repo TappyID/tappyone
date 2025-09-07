@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { AdminLayout } from '../components/AdminLayout'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Calendar as CalendarIcon,
   Plus,
@@ -98,6 +99,7 @@ interface Agendamento {
 
 export default function AgendamentosPage() {
   const { user, loading } = useAuth()
+  const { actualTheme } = useTheme()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [showCriarModal, setShowCriarModal] = useState(false)
@@ -214,7 +216,9 @@ export default function AgendamentosPage() {
 
   if (loading || loadingData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${
+        actualTheme === 'dark' ? 'bg-slate-900' : 'bg-gray-50'
+      }`}>
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#305e73]"></div>
       </div>
     )
@@ -340,18 +344,33 @@ export default function AgendamentosPage() {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-6">
+      <div className="min-h-screen p-6">
+        <div 
+          className="rounded-3xl shadow-sm border backdrop-blur-sm overflow-hidden"
+          style={{
+            background: actualTheme === 'dark' 
+              ? 'rgba(31, 41, 55, 0.3)' 
+              : 'rgba(255, 255, 255, 0.9)',
+            borderColor: actualTheme === 'dark' 
+              ? 'rgba(75, 85, 99, 0.3)' 
+              : 'rgb(229, 231, 235)',
+            backdropFilter: actualTheme === 'dark' ? 'blur(10px)' : undefined
+          }}
+        >
+          {/* Header */}
+          <div className="px-6 py-6 border-b border-gray-200/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-xl flex items-center justify-center shadow-lg">
                   <CalendarIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Agendamentos</h1>
-                  <p className="text-gray-600">Gerencie suas reuniões</p>
+                  <h1 className={`text-3xl font-bold ${
+                    actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Agenda</h1>
+                  <p className={`${
+                    actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                  }`}>Gerenciar reuniões</p>
                 </div>
               </div>
 
@@ -365,14 +384,22 @@ export default function AgendamentosPage() {
                       placeholder="Buscar agendamentos..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                      className={`pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                        actualTheme === 'dark'
+                          ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                      }`}
                     />
                   </div>
 
                   <select
                     value={filtroTipo}
                     onChange={(e) => setFiltroTipo(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                    className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-700/50 border-slate-600/50 text-white'
+                        : 'bg-white border-gray-300 text-gray-900'
+                    }`}
                   >
                     {tiposAgendamento.map(tipo => (
                       <option key={tipo.value} value={tipo.value}>
@@ -384,7 +411,11 @@ export default function AgendamentosPage() {
                   <select
                     value={filtroStatus}
                     onChange={(e) => setFiltroStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                    className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-700/50 border-slate-600/50 text-white'
+                        : 'bg-white border-gray-300 text-gray-900'
+                    }`}
                   >
                     {statusAgendamento.map(status => (
                       <option key={status.value} value={status.value}>
@@ -395,7 +426,9 @@ export default function AgendamentosPage() {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <div className={`flex items-center rounded-lg p-1 ${
+                  actualTheme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-100'
+                }`}>
                   {['month', 'week', 'day'].map((mode) => (
                     <motion.button
                       key={mode}
@@ -404,8 +437,12 @@ export default function AgendamentosPage() {
                       onClick={() => setViewMode(mode as any)}
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                         viewMode === mode
-                          ? 'bg-white text-[#305e73] shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? actualTheme === 'dark'
+                            ? 'bg-slate-600 text-white shadow-sm'
+                            : 'bg-white text-[#305e73] shadow-sm'
+                          : actualTheme === 'dark'
+                            ? 'text-white/70 hover:text-white'
+                            : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
                       {mode === 'month' ? 'Mês' : mode === 'week' ? 'Semana' : 'Dia'}
@@ -414,21 +451,51 @@ export default function AgendamentosPage() {
                 </div>
 
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.05, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowCriarModal(true)}
-                  className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hover:shadow-lg transition-all"
+                  className={`relative flex items-center gap-2 px-6 py-3 font-semibold transition-all duration-500 group overflow-hidden ${
+                    actualTheme === 'dark'
+                      ? 'text-white'
+                      : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl shadow-lg hover:shadow-xl'
+                  }`}
+                  style={actualTheme === 'dark' ? {
+                    background: 'linear-gradient(135deg, rgba(48, 94, 115, 0.8) 0%, rgba(58, 109, 132, 0.9) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 40px -12px rgba(48, 94, 115, 0.6), 0 0 0 1px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                  } : {}}
                 >
-                  <Plus className="w-5 h-5" />
-                  Novo Agendamento
+                  {/* Glass effect layers for dark mode */}
+                  {actualTheme === 'dark' && (
+                    <>
+                      {/* Base glass layer */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-slate-800/60 rounded-2xl" />
+                      
+                      {/* Blue accent layer */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-transparent to-cyan-500/20 rounded-2xl" />
+                      
+                      {/* Light reflection */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-2xl" />
+                      
+                      {/* Animated border glow */}
+                      <div className="absolute inset-0 rounded-2xl border border-white/20 group-hover:border-blue-400/50 transition-all duration-500" />
+                      
+                      {/* Shimmer effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                    </>
+                  )}
+                  
+                  <Plus className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Novo Agendamento</span>
                 </motion.button>
               </div>
             </div>
           </div>
-        </div>
 
-            {/* Calendar */}
-            <div className="px-6 pb-6">
+          {/* Calendar */}
+          <div className="px-6 pb-6 pt-6">
           <CalendarioSofisticado
             agendamentos={agendamentosFiltrados}
             selectedDate={selectedDate}
@@ -463,14 +530,13 @@ export default function AgendamentosPage() {
             }}
             contatos={contatos}
           />
-        </div>
+          </div>
 
-        {/* Stats */}
-        <div className="px-6 py-6">
-          <AgendamentoStats agendamentos={agendamentos} />
+          {/* Stats */}
+          <div className="px-6 py-6">
+            <AgendamentoStats agendamentos={agendamentos} />
+          </div>
         </div>
-
-    
 
         {/* Modais */}
         <UniversalAgendamentoModal

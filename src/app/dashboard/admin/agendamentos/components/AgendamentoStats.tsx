@@ -13,6 +13,7 @@ import {
   MapPin,
   Coffee
 } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Agendamento {
   id: string
@@ -38,6 +39,7 @@ interface AgendamentoStatsProps {
 }
 
 export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps) {
+  const { actualTheme } = useTheme()
   const hoje = new Date().toISOString().split('T')[0]
   const inicioSemana = new Date()
   inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay())
@@ -57,8 +59,8 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
       subtitle: `${agendamentosHoje.filter(ag => ag.status === 'confirmado').length} confirmados`,
       icon: Calendar,
       color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600',
+      bgColor: actualTheme === 'dark' ? 'bg-blue-900/30' : 'bg-blue-50',
+      textColor: actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600',
       trend: '+12%'
     },
     {
@@ -67,8 +69,8 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
       subtitle: `${agendamentosSemana.filter(ag => ag.status === 'agendado').length} pendentes`,
       icon: Clock,
       color: 'from-green-500 to-green-600',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-600',
+      bgColor: actualTheme === 'dark' ? 'bg-green-900/30' : 'bg-green-50',
+      textColor: actualTheme === 'dark' ? 'text-green-400' : 'text-green-600',
       trend: '+8%'
     },
     {
@@ -77,8 +79,8 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
       subtitle: `${Math.round((agendamentos.filter(ag => ag.status === 'confirmado').length / agendamentos.length) * 100)}% do total`,
       icon: CheckCircle,
       color: 'from-emerald-500 to-emerald-600',
-      bgColor: 'bg-emerald-50',
-      textColor: 'text-emerald-600',
+      bgColor: actualTheme === 'dark' ? 'bg-emerald-900/30' : 'bg-emerald-50',
+      textColor: actualTheme === 'dark' ? 'text-emerald-400' : 'text-emerald-600',
       trend: '+15%'
     },
     {
@@ -87,8 +89,8 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
       subtitle: 'Requer atenção',
       icon: AlertTriangle,
       color: 'from-orange-500 to-orange-600',
-      bgColor: 'bg-orange-50',
-      textColor: 'text-orange-600',
+      bgColor: actualTheme === 'dark' ? 'bg-orange-900/30' : 'bg-orange-50',
+      textColor: actualTheme === 'dark' ? 'text-orange-400' : 'text-orange-600',
       trend: '-5%'
     }
   ]
@@ -147,7 +149,11 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300"
+              className={`rounded-2xl p-6 shadow-sm border backdrop-blur-sm hover:shadow-lg transition-all duration-300 ${
+                actualTheme === 'dark'
+                  ? 'bg-slate-800/90 border-slate-700/50 hover:bg-slate-800'
+                  : 'bg-white/90 border-gray-200 hover:bg-white'
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -156,26 +162,38 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
                       <IconComponent className={`w-6 h-6 ${stat.textColor}`} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                      <p className={`text-sm font-medium ${
+                        actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                      }`}>{stat.title}</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-gray-900">{stat.value}</span>
+                        <span className={`text-2xl font-bold ${
+                          actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>{stat.value}</span>
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           stat.trend.startsWith('+') 
-                            ? 'bg-green-100 text-green-600' 
-                            : 'bg-red-100 text-red-600'
+                            ? actualTheme === 'dark'
+                              ? 'bg-green-900/50 text-green-400'
+                              : 'bg-green-100 text-green-600'
+                            : actualTheme === 'dark'
+                              ? 'bg-red-900/50 text-red-400'
+                              : 'bg-red-100 text-red-600'
                         }`}>
                           {stat.trend}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500">{stat.subtitle}</p>
+                  <p className={`text-sm ${
+                    actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                  }`}>{stat.subtitle}</p>
                 </div>
               </div>
 
               {/* Mini progress bar */}
               <div className="mt-4">
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className={`w-full rounded-full h-2 ${
+                  actualTheme === 'dark' ? 'bg-slate-700' : 'bg-gray-100'
+                }`}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(stat.value / Math.max(...stats.map(s => s.value))) * 100}%` }}
@@ -194,7 +212,11 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
+        className={`rounded-2xl p-6 shadow-sm border backdrop-blur-sm ${
+          actualTheme === 'dark'
+            ? 'bg-slate-800/90 border-slate-700/50'
+            : 'bg-white/90 border-gray-200'
+        }`}
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -202,13 +224,21 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Tipos de Agendamento</h3>
-              <p className="text-sm text-gray-600">Distribuição por categoria</p>
+              <h3 className={`text-lg font-bold ${
+                actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>Tipos de Agendamento</h3>
+              <p className={`text-sm ${
+                actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+              }`}>Distribuição por categoria</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-gray-900">{totalAgendamentos}</div>
-            <div className="text-sm text-gray-500">Total</div>
+            <div className={`text-2xl font-bold ${
+              actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>{totalAgendamentos}</div>
+            <div className={`text-sm ${
+              actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+            }`}>Total</div>
           </div>
         </div>
 
@@ -231,14 +261,22 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
                 
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">{tipo.label}</span>
+                    <span className={`text-sm font-medium ${
+                      actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                    }`}>{tipo.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">{tipo.count}</span>
-                      <span className="text-xs text-gray-500">({percentage.toFixed(1)}%)</span>
+                      <span className={`text-sm font-bold ${
+                        actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{tipo.count}</span>
+                      <span className={`text-xs ${
+                        actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                      }`}>({percentage.toFixed(1)}%)</span>
                     </div>
                   </div>
                   
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className={`w-full rounded-full h-2 ${
+                    actualTheme === 'dark' ? 'bg-slate-700' : 'bg-gray-100'
+                  }`}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${percentage}%` }}
@@ -253,8 +291,12 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
         </div>
 
         {/* Status Overview */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Status Overview</h4>
+        <div className={`mt-6 pt-6 border-t ${
+          actualTheme === 'dark' ? 'border-slate-700' : 'border-gray-200'
+        }`}>
+          <h4 className={`text-sm font-semibold mb-3 ${
+            actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+          }`}>Status Overview</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { status: 'agendado', label: 'Agendado', color: 'bg-yellow-500' },
@@ -274,9 +316,15 @@ export default function AgendamentoStats({ agendamentos }: AgendamentoStatsProps
                   className="text-center"
                 >
                   <div className={`w-8 h-8 ${statusItem.color} rounded-full mx-auto mb-2`} />
-                  <div className="text-lg font-bold text-gray-900">{count}</div>
-                  <div className="text-xs text-gray-500">{statusItem.label}</div>
-                  <div className="text-xs text-gray-400">({percentage.toFixed(1)}%)</div>
+                  <div className={`text-lg font-bold ${
+                    actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>{count}</div>
+                  <div className={`text-xs ${
+                    actualTheme === 'dark' ? 'text-white/70' : 'text-gray-500'
+                  }`}>{statusItem.label}</div>
+                  <div className={`text-xs ${
+                    actualTheme === 'dark' ? 'text-white/50' : 'text-gray-400'
+                  }`}>({percentage.toFixed(1)}%)</div>
                 </motion.div>
               )
             })}

@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Star, 
   Clock, 
@@ -66,16 +67,16 @@ const attendantsData = [
   }
 ]
 
-const qualityMetrics = [
+const getQualityMetrics = (theme: string) => [
   { 
     label: 'NCS Médio Geral', 
     value: '8.8', 
     target: '9.0',
     trend: '+0.2',
     icon: Star,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200'
+    color: theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600',
+    bgColor: theme === 'dark' ? 'bg-yellow-900/20' : 'bg-yellow-50',
+    borderColor: theme === 'dark' ? 'border-yellow-600/30' : 'border-yellow-200'
   },
   { 
     label: 'Tempo Resposta Médio', 
@@ -83,9 +84,9 @@ const qualityMetrics = [
     target: '< 3min',
     trend: '-0.3min',
     icon: Clock,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200'
+    color: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
+    bgColor: theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50',
+    borderColor: theme === 'dark' ? 'border-blue-600/30' : 'border-blue-200'
   },
   { 
     label: 'Taxa de Resolução', 
@@ -93,9 +94,9 @@ const qualityMetrics = [
     target: '90%',
     trend: '+2%',
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200'
+    color: theme === 'dark' ? 'text-green-400' : 'text-green-600',
+    bgColor: theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50',
+    borderColor: theme === 'dark' ? 'border-green-600/30' : 'border-green-200'
   },
   { 
     label: 'Satisfação Cliente', 
@@ -103,16 +104,16 @@ const qualityMetrics = [
     target: '95%',
     trend: '+1%',
     icon: ThumbsUp,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200'
+    color: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
+    bgColor: theme === 'dark' ? 'bg-purple-900/20' : 'bg-purple-50',
+    borderColor: theme === 'dark' ? 'border-purple-600/30' : 'border-purple-200'
   }
 ]
 
-const getScoreColor = (score: number) => {
-  if (score >= 9) return 'text-green-600 bg-green-100'
-  if (score >= 8) return 'text-yellow-600 bg-yellow-100'
-  return 'text-red-600 bg-red-100'
+const getScoreColor = (score: number, theme: string) => {
+  if (score >= 9) return theme === 'dark' ? 'text-green-300 bg-green-900/30' : 'text-green-600 bg-green-100'
+  if (score >= 8) return theme === 'dark' ? 'text-yellow-300 bg-yellow-900/30' : 'text-yellow-600 bg-yellow-100'
+  return theme === 'dark' ? 'text-red-300 bg-red-900/30' : 'text-red-600 bg-red-100'
 }
 
 const getStatusColor = (status: string) => {
@@ -125,8 +126,15 @@ const getStatusColor = (status: string) => {
 }
 
 export default function NCSAnalytics() {
+  const { theme } = useTheme()
+  const qualityMetrics = getQualityMetrics(theme)
+  
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-white to-emerald-50/30">
+    <div className={`h-full overflow-y-auto ${
+      theme === 'dark' 
+        ? 'bg-gradient-to-br from-slate-900 to-emerald-950/30' 
+        : 'bg-gradient-to-br from-white to-emerald-50/30'
+    }`}>
       <div className="p-8">
         {/* Header */}
         <motion.div
@@ -136,10 +144,16 @@ export default function NCSAnalytics() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Net Customer Score (NCS)</h1>
-              <p className="text-gray-600">Análise da qualidade dos atendimentos em tempo real</p>
+              <h1 className={`text-3xl font-bold mb-2 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>Net Customer Score (NCS)</h1>
+              <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Análise da qualidade dos atendimentos em tempo real</p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-800 rounded-full">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              theme === 'dark' 
+                ? 'bg-emerald-900/30 text-emerald-300' 
+                : 'bg-emerald-100 text-emerald-800'
+            }`}>
               <Award className="w-4 h-4" />
               <span className="text-sm font-semibold">Qualidade Excelente</span>
             </div>
@@ -164,17 +178,23 @@ export default function NCSAnalytics() {
                 <div className="flex items-center justify-between mb-4">
                   <Icon className={`w-6 h-6 ${metric.color}`} />
                   <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
-                    metric.trend.startsWith('+') ? 'bg-green-100 text-green-700' : 
-                    metric.trend.startsWith('-') && metric.label.includes('Tempo') ? 'bg-green-100 text-green-700' :
-                    'bg-red-100 text-red-700'
+                    metric.trend.startsWith('+') ? 
+                      (theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700') : 
+                    metric.trend.startsWith('-') && metric.label.includes('Tempo') ? 
+                      (theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700') :
+                      (theme === 'dark' ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700')
                   }`}>
                     <TrendingUp className="w-3 h-3" />
                     {metric.trend}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                  <div className="text-sm text-gray-600">Meta: {metric.target}</div>
+                  <div className={`text-2xl font-bold ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>{metric.value}</div>
+                  <div className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }`}>Meta: {metric.target}</div>
                 </div>
               </motion.div>
             )
@@ -186,16 +206,20 @@ export default function NCSAnalytics() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 shadow-xl"
+          className="bg-white/80 dark:bg-card/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 dark:border-border/50 shadow-xl"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ranking de Performance</h2>
-              <p className="text-gray-600">Avaliação individual dos atendentes</p>
+              <h2 className={`text-2xl font-bold mb-2 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>Ranking de Performance</h2>
+              <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Avaliação individual dos atendentes</p>
             </div>
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-gray-500" />
-              <span className="text-sm text-gray-500">{attendantsData.length} atendentes ativos</span>
+              <span className={`text-sm ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>{attendantsData.length} atendentes ativos</span>
             </div>
           </div>
 
@@ -207,7 +231,11 @@ export default function NCSAnalytics() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + index * 0.1 }}
                 whileHover={{ scale: 1.01, x: 5 }}
-                className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200/50 shadow-sm hover:shadow-md transition-all"
+                className={`rounded-2xl p-6 border shadow-sm hover:shadow-md transition-all ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-slate-600/50' 
+                    : 'bg-gradient-to-r from-gray-50 to-white border-gray-200/50'
+                }`}
               >
                 <div className="flex items-center justify-between">
                   {/* Ranking e Info do Atendente */}
@@ -241,8 +269,12 @@ export default function NCSAnalytics() {
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-gray-900">{attendant.name}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <h3 className={`font-semibold ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{attendant.name}</h3>
+                      <div className={`flex items-center gap-4 text-sm ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
                         <span>{attendant.totalChats} chats</span>
                         <span>•</span>
                         <span>{attendant.avgResponseTime} resposta</span>
@@ -254,22 +286,32 @@ export default function NCSAnalytics() {
                   <div className="flex items-center gap-8">
                     {/* NCS Score */}
                     <div className="text-center">
-                      <div className={`text-2xl font-bold px-3 py-1 rounded-lg ${getScoreColor(attendant.ncsScore)}`}>
+                      <div className={`text-2xl font-bold px-3 py-1 rounded-lg ${getScoreColor(attendant.ncsScore, theme)}`}>
                         {attendant.ncsScore}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">NCS</div>
+                      <div className={`text-xs mt-1 ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>NCS</div>
                     </div>
 
                     {/* Satisfação */}
                     <div className="text-center">
-                      <div className="text-xl font-semibold text-gray-900">{attendant.satisfaction}%</div>
-                      <div className="text-xs text-gray-500">Satisfação</div>
+                      <div className={`text-xl font-semibold ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{attendant.satisfaction}%</div>
+                      <div className={`text-xs ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>Satisfação</div>
                     </div>
 
                     {/* Taxa de Resolução */}
                     <div className="text-center">
-                      <div className="text-xl font-semibold text-gray-900">{attendant.resolutionRate}%</div>
-                      <div className="text-xs text-gray-500">Resolução</div>
+                      <div className={`text-xl font-semibold ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{attendant.resolutionRate}%</div>
+                      <div className={`text-xs ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>Resolução</div>
                     </div>
 
                     {/* Tendência */}
@@ -280,13 +322,17 @@ export default function NCSAnalytics() {
                         <TrendingUp className={`w-4 h-4 ${attendant.trend.startsWith('-') ? 'rotate-180' : ''}`} />
                         {attendant.trend}
                       </div>
-                      <div className="text-xs text-gray-500">Tendência</div>
+                      <div className={`text-xs ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>Tendência</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div className={`mt-4 rounded-full h-2 overflow-hidden ${
+                  theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
+                }`}>
                   <motion.div
                     className="h-full bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-full"
                     initial={{ width: 0 }}
@@ -305,24 +351,44 @@ export default function NCSAnalytics() {
             transition={{ delay: 0.8 }}
             className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
           >
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
+            <div className={`rounded-2xl p-6 border ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-green-950/30 to-emerald-950/30 border-green-600/30' 
+                : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200/50'
+            }`}>
               <div className="flex items-center gap-3 mb-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-green-900">Pontos Fortes</span>
+                <CheckCircle2 className={`w-5 h-5 ${
+                  theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                }`} />
+                <span className={`font-semibold ${
+                  theme === 'dark' ? 'text-green-300' : 'text-green-900'
+                }`}>Pontos Fortes</span>
               </div>
-              <ul className="space-y-2 text-sm text-green-800">
+              <ul className={`space-y-2 text-sm ${
+                theme === 'dark' ? 'text-green-200' : 'text-green-800'
+              }`}>
                 <li>• Ana Silva mantém excelente NCS (9.2)</li>
                 <li>• Tempo de resposta geral melhorou 15%</li>
                 <li>• Taxa de satisfação acima da meta</li>
               </ul>
             </div>
 
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200/50">
+            <div className={`rounded-2xl p-6 border ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-orange-950/30 to-red-950/30 border-orange-600/30' 
+                : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200/50'
+            }`}>
               <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="w-5 h-5 text-orange-600" />
-                <span className="font-semibold text-orange-900">Oportunidades</span>
+                <AlertCircle className={`w-5 h-5 ${
+                  theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
+                }`} />
+                <span className={`font-semibold ${
+                  theme === 'dark' ? 'text-orange-300' : 'text-orange-900'
+                }`}>Oportunidades</span>
               </div>
-              <ul className="space-y-2 text-sm text-orange-800">
+              <ul className={`space-y-2 text-sm ${
+                theme === 'dark' ? 'text-orange-200' : 'text-orange-800'
+              }`}>
                 <li>• João precisa melhorar tempo de resposta</li>
                 <li>• Foco em aumentar taxa de resolução</li>
                 <li>• Treinamento em técnicas de atendimento</li>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   X, 
   Upload,
@@ -41,6 +42,8 @@ export default function ImportarTagsModal({
   onImport,
   existingTags
 }: ImportarTagsModalProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'complete'>('upload')
   const [tagsToImport, setTagsToImport] = useState<TagImport[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -189,11 +192,20 @@ export default function ImportarTagsModal({
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'valid': return 'text-green-600 bg-green-100'
-      case 'invalid': return 'text-red-600 bg-red-100'
-      case 'duplicate': return 'text-yellow-600 bg-yellow-100'
-      default: return 'text-gray-600 bg-gray-100'
+    if (isDark) {
+      switch (status) {
+        case 'valid': return 'text-green-400 bg-green-900/30'
+        case 'invalid': return 'text-red-400 bg-red-900/30'
+        case 'duplicate': return 'text-yellow-400 bg-yellow-900/30'
+        default: return 'text-gray-400 bg-gray-700'
+      }
+    } else {
+      switch (status) {
+        case 'valid': return 'text-green-600 bg-green-100'
+        case 'invalid': return 'text-red-600 bg-red-100'
+        case 'duplicate': return 'text-yellow-600 bg-yellow-100'
+        default: return 'text-gray-600 bg-gray-100'
+      }
     }
   }
 
@@ -215,7 +227,9 @@ export default function ImportarTagsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className={`fixed inset-0 backdrop-blur-sm z-50 ${
+              isDark ? 'bg-black/70' : 'bg-black/50'
+            }`}
           />
           
           <motion.div
@@ -225,9 +239,17 @@ export default function ImportarTagsModal({
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className={`rounded-2xl shadow-2xl border w-full max-w-4xl max-h-[90vh] overflow-hidden ${
+              isDark 
+                ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+                : 'bg-white border-gray-200'
+            }`}>
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] px-6 py-4">
+              <div className={`px-6 py-4 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-slate-700 to-slate-600' 
+                  : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
@@ -261,14 +283,24 @@ export default function ImportarTagsModal({
                 {step === 'upload' && (
                   <div className="space-y-6">
                     {/* Upload Area */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-[#305e73] transition-colors">
-                      <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <div className={`border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
+                      isDark 
+                        ? 'border-slate-600 hover:border-slate-500' 
+                        : 'border-gray-300 hover:border-[#305e73]'
+                    }`}>
+                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+                        isDark ? 'bg-slate-700' : 'bg-gray-100'
+                      }`}>
                         <Upload className="w-10 h-10 text-gray-400" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      <h3 className={`text-xl font-bold mb-2 ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>
                         Arraste um arquivo ou clique para selecionar
                       </h3>
-                      <p className="text-gray-600 mb-6">
+                      <p className={`mb-6 ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
                         Suportamos arquivos CSV e JSON com as tags a serem importadas
                       </p>
                       
@@ -284,25 +316,41 @@ export default function ImportarTagsModal({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => fileInputRef.current?.click()}
-                        className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-semibold"
+                        className={`text-white px-6 py-3 rounded-xl font-semibold ${
+                          isDark 
+                            ? 'bg-gradient-to-r from-slate-600 to-slate-500' 
+                            : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+                        }`}
                       >
                         Selecionar Arquivo
                       </motion.button>
                     </div>
 
                     {/* Template Download */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className={`border rounded-xl p-4 ${
+                      isDark 
+                        ? 'bg-blue-900/20 border-blue-700' 
+                        : 'bg-blue-50 border-blue-200'
+                    }`}>
                       <div className="flex items-start gap-3">
                         <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-blue-800 mb-1">Precisa de um template?</h4>
-                          <p className="text-sm text-blue-700 mb-3">
+                          <h4 className={`font-semibold mb-1 ${
+                            isDark ? 'text-blue-300' : 'text-blue-800'
+                          }`}>Precisa de um template?</h4>
+                          <p className={`text-sm mb-3 ${
+                            isDark ? 'text-blue-200' : 'text-blue-700'
+                          }`}>
                             Baixe nosso template CSV com exemplos para facilitar a importação.
                           </p>
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             onClick={downloadTemplate}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            className={`text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                              isDark 
+                                ? 'bg-blue-700 hover:bg-blue-600' 
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
                           >
                             <Download className="w-4 h-4" />
                             Baixar Template
@@ -313,23 +361,39 @@ export default function ImportarTagsModal({
 
                     {/* Format Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-gray-50 rounded-xl p-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">Formato CSV</h4>
-                        <p className="text-sm text-gray-600 mb-2">
+                      <div className={`rounded-xl p-4 ${
+                        isDark ? 'bg-slate-700/50' : 'bg-gray-50'
+                      }`}>
+                        <h4 className={`font-semibold mb-2 ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>Formato CSV</h4>
+                        <p className={`text-sm mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           Colunas: nome, descricao, cor, categoria, ativo, favorito
                         </p>
-                        <code className="text-xs bg-white p-2 rounded block">
+                        <code className={`text-xs p-2 rounded block ${
+                          isDark ? 'bg-slate-800 text-gray-200' : 'bg-white text-gray-900'
+                        }`}>
                           nome,descricao,cor,categoria,ativo,favorito<br/>
                           Urgente,Para itens urgentes,#ef4444,Prioridade,true,false
                         </code>
                       </div>
                       
-                      <div className="bg-gray-50 rounded-xl p-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">Formato JSON</h4>
-                        <p className="text-sm text-gray-600 mb-2">
+                      <div className={`rounded-xl p-4 ${
+                        isDark ? 'bg-slate-700/50' : 'bg-gray-50'
+                      }`}>
+                        <h4 className={`font-semibold mb-2 ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>Formato JSON</h4>
+                        <p className={`text-sm mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           Array de objetos com as propriedades das tags
                         </p>
-                        <code className="text-xs bg-white p-2 rounded block">
+                        <code className={`text-xs p-2 rounded block ${
+                          isDark ? 'bg-slate-800 text-gray-200' : 'bg-white text-gray-900'
+                        }`}>
                           {`[{
   "nome": "Urgente",
   "cor": "#ef4444",
@@ -346,58 +410,113 @@ export default function ImportarTagsModal({
                   <div className="space-y-6">
                     {/* Summary */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="bg-green-50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-green-600">
+                      <div className={`rounded-xl p-4 text-center ${
+                        isDark ? 'bg-green-900/30' : 'bg-green-50'
+                      }`}>
+                        <div className={`text-2xl font-bold ${
+                          isDark ? 'text-green-400' : 'text-green-600'
+                        }`}>
                           {tagsToImport.filter(tag => tag.status === 'valid').length}
                         </div>
-                        <div className="text-sm text-green-700">Válidas</div>
+                        <div className={`text-sm ${
+                          isDark ? 'text-green-300' : 'text-green-700'
+                        }`}>Válidas</div>
                       </div>
-                      <div className="bg-red-50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-red-600">
+                      <div className={`rounded-xl p-4 text-center ${
+                        isDark ? 'bg-red-900/30' : 'bg-red-50'
+                      }`}>
+                        <div className={`text-2xl font-bold ${
+                          isDark ? 'text-red-400' : 'text-red-600'
+                        }`}>
                           {tagsToImport.filter(tag => tag.status === 'invalid').length}
                         </div>
-                        <div className="text-sm text-red-700">Inválidas</div>
+                        <div className={`text-sm ${
+                          isDark ? 'text-red-300' : 'text-red-700'
+                        }`}>Inválidas</div>
                       </div>
-                      <div className="bg-yellow-50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-yellow-600">
+                      <div className={`rounded-xl p-4 text-center ${
+                        isDark ? 'bg-yellow-900/30' : 'bg-yellow-50'
+                      }`}>
+                        <div className={`text-2xl font-bold ${
+                          isDark ? 'text-yellow-400' : 'text-yellow-600'
+                        }`}>
                           {tagsToImport.filter(tag => tag.status === 'duplicate').length}
                         </div>
-                        <div className="text-sm text-yellow-700">Duplicadas</div>
+                        <div className={`text-sm ${
+                          isDark ? 'text-yellow-300' : 'text-yellow-700'
+                        }`}>Duplicadas</div>
                       </div>
-                      <div className="bg-blue-50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-blue-600">
+                      <div className={`rounded-xl p-4 text-center ${
+                        isDark ? 'bg-blue-900/30' : 'bg-blue-50'
+                      }`}>
+                        <div className={`text-2xl font-bold ${
+                          isDark ? 'text-blue-400' : 'text-blue-600'
+                        }`}>
                           {selectedTags.length}
                         </div>
-                        <div className="text-sm text-blue-700">Selecionadas</div>
+                        <div className={`text-sm ${
+                          isDark ? 'text-blue-300' : 'text-blue-700'
+                        }`}>Selecionadas</div>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={`text-lg font-semibold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        Tags para Importar ({tagsToImport.length})
+                      </h3>
+                      <div className="flex gap-2">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
-                          onClick={handleSelectAll}
-                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedTags(tagsToImport.map(t => t.nome))}
+                          className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                            isDark 
+                              ? 'bg-blue-900/30 text-blue-300 hover:bg-blue-900/50' 
+                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          }`}
                         >
-                          {selectedTags.length === tagsToImport.filter(tag => tag.status === 'valid').length 
-                            ? 'Desmarcar Todas' 
-                            : 'Selecionar Válidas'
-                          }
+                          Selecionar Todos
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedTags([])}
+                          className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                            isDark 
+                              ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' 
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          Limpar Seleção
                         </motion.button>
                       </div>
                     </div>
 
                     {/* Tags List */}
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                        <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+                    <div className={`rounded-xl border overflow-hidden ${
+                      isDark ? 'bg-slate-800/50 border-slate-600' : 'bg-white border-gray-200'
+                    }`}>
+                      <div className={`px-4 py-3 border-b ${
+                        isDark 
+                          ? 'bg-slate-700/50 border-slate-600' 
+                          : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className={`grid grid-cols-12 gap-4 text-sm font-semibold ${
+                          isDark ? 'text-slate-300' : 'text-gray-700'
+                        }`}>
                           <div className="col-span-1">
                             <input
                               type="checkbox"
                               checked={selectedTags.length === tagsToImport.filter(tag => tag.status === 'valid').length}
                               onChange={handleSelectAll}
-                              className="rounded border-gray-300 text-[#305e73] focus:ring-[#305e73]"
+                              className={`rounded focus:ring-2 ${
+                                isDark 
+                                  ? 'border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500' 
+                                  : 'border-gray-300 text-[#305e73] focus:ring-[#305e73]'
+                              }`}
                             />
                           </div>
                           <div className="col-span-3">Tag</div>
@@ -408,72 +527,47 @@ export default function ImportarTagsModal({
                         </div>
                       </div>
 
-                      <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                      <div className="max-h-96 overflow-y-auto">
                         {tagsToImport.map((tag, index) => (
-                          <div key={index} className="px-4 py-3 hover:bg-gray-50">
-                            <div className="grid grid-cols-12 gap-4 items-center">
-                              <div className="col-span-1">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTags.includes(index.toString())}
-                                  onChange={() => handleSelectTag(index.toString())}
-                                  disabled={tag.status !== 'valid'}
-                                  className="rounded border-gray-300 text-[#305e73] focus:ring-[#305e73] disabled:opacity-50"
-                                />
-                              </div>
-
-                              <div className="col-span-3">
-                                <div className="flex items-center gap-3">
-                                  <div 
-                                    className="w-6 h-6 rounded-lg flex items-center justify-center"
-                                    style={{ backgroundColor: tag.cor }}
-                                  >
-                                    <Tag className="w-3 h-3 text-white" />
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-gray-900">{tag.nome}</div>
-                                    {tag.descricao && (
-                                      <div className="text-xs text-gray-500 truncate max-w-[150px]">
-                                        {tag.descricao}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="col-span-2">
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
-                                  {tag.categoria}
+                          <div key={index} className={`flex items-center p-4 transition-colors ${
+                            index !== tagsToImport.length - 1 
+                              ? (isDark ? 'border-b border-slate-600' : 'border-b border-gray-100') 
+                              : ''
+                          } ${
+                            isDark ? 'hover:bg-slate-700/30' : 'hover:bg-gray-50'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={selectedTags.includes(tag.nome)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTags([...selectedTags, tag.nome])
+                                } else {
+                                  setSelectedTags(selectedTags.filter(t => t !== tag.nome))
+                                }
+                              }}
+                              className={`mr-3 rounded focus:ring-2 ${
+                                isDark 
+                                  ? 'border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500' 
+                                  : 'focus:ring-[#305e73] text-[#305e73]'
+                              }`}
+                            />
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-4 h-4 rounded-full`} style={{ backgroundColor: tag.cor }} />
+                                <span className={`font-medium ${
+                                  isDark ? 'text-white' : 'text-gray-900'
+                                }`}>{tag.nome}</span>
+                                <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(tag.status)}`}>
+                                  {getStatusIcon(tag.status)}
                                 </span>
                               </div>
-
-                              <div className="col-span-2">
-                                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tag.status)}`}>
-                                  {getStatusIcon(tag.status)}
-                                  {tag.status === 'valid' && 'Válida'}
-                                  {tag.status === 'invalid' && 'Inválida'}
-                                  {tag.status === 'duplicate' && 'Duplicada'}
-                                </div>
-                              </div>
-
-                              <div className="col-span-2">
-                                <div className="flex items-center gap-2">
-                                  {tag.ativo ? (
-                                    <Eye className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <EyeOff className="w-4 h-4 text-gray-400" />
-                                  )}
-                                  {tag.favorito && (
-                                    <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="col-span-2">
-                                {tag.error && (
-                                  <span className="text-xs text-red-600">{tag.error}</span>
-                                )}
-                              </div>
+                              {tag.descricao && (
+                                <p className={`text-sm mt-1 ${
+                                  isDark ? 'text-gray-300' : 'text-gray-600'
+                                }`}>{tag.descricao}</p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -485,29 +579,89 @@ export default function ImportarTagsModal({
                 {/* Importing Step */}
                 {step === 'importing' && (
                   <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-[#305e73]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 ${
+                      isDark ? 'bg-slate-700/50' : 'bg-[#305e73]/10'
+                    }`}>
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                       >
-                        <RefreshCw className="w-10 h-10 text-[#305e73]" />
+                        <RefreshCw className={`w-10 h-10 ${
+                          isDark ? 'text-slate-400' : 'text-[#305e73]'
+                        }`} />
                       </motion.div>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Importando Tags</h3>
-                    <p className="text-gray-600 mb-6">
+                    <h3 className={`text-2xl font-bold mb-4 ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>Importando Tags</h3>
+                    <p className={`mb-6 ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
                       Processando {selectedTags.length} tags selecionadas...
                     </p>
                     
-                    <div className="max-w-md mx-auto">
-                      <div className="bg-gray-200 rounded-full h-3 mb-2">
-                        <motion.div
-                          className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] h-3 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${importProgress}%` }}
-                          transition={{ duration: 0.3 }}
-                        />
+                    <div className={`w-full max-w-md mx-auto rounded-full h-3 mb-4 ${
+                      isDark ? 'bg-slate-700' : 'bg-gray-200'
+                    }`}>
+                      <motion.div 
+                        className={`h-3 rounded-full ${
+                          isDark 
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' 
+                            : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+                        }`}
+                        initial={{ width: '0%' }}
+                        animate={{ width: `${importProgress}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                    <p className={`text-sm ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}>{importProgress}% concluído</p>
+                    
+                    <div className="space-y-4">
+                      <div className={`rounded-xl p-4 ${
+                        isDark ? 'bg-slate-700/50' : 'bg-gray-50'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isDark ? 'bg-blue-900/30' : 'bg-blue-100'
+                          }`}>
+                            <FileText className={`w-4 h-4 ${
+                              isDark ? 'text-blue-400' : 'text-blue-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <h4 className={`font-semibold ${
+                              isDark ? 'text-white' : 'text-gray-900'
+                            }`}>Formato CSV</h4>
+                            <p className={`text-sm ${
+                              isDark ? 'text-gray-300' : 'text-gray-600'
+                            }`}>Nome, Descrição, Categoria, Cor</p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">{importProgress}% concluído</p>
+                      
+                      <div className={`rounded-xl p-4 ${
+                        isDark ? 'bg-slate-700/50' : 'bg-gray-50'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isDark ? 'bg-green-900/30' : 'bg-green-100'
+                          }`}>
+                            <FileText className={`w-4 h-4 ${
+                              isDark ? 'text-green-400' : 'text-green-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <h4 className={`font-semibold ${
+                              isDark ? 'text-white' : 'text-gray-900'
+                            }`}>Formato JSON</h4>
+                            <p className={`text-sm ${
+                              isDark ? 'text-gray-300' : 'text-gray-600'
+                            }`}>Array de objetos com propriedades da tag</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -515,18 +669,31 @@ export default function ImportarTagsModal({
                 {/* Complete Step */}
                 {step === 'complete' && (
                   <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                      <Check className="w-10 h-10 text-green-600" />
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 ${
+                      isDark ? 'bg-green-900/30' : 'bg-green-100'
+                    }`}>
+                      <Check className={`w-10 h-10 ${
+                        isDark ? 'text-green-400' : 'text-green-600'
+                      }`} />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Importação Concluída!</h3>
-                    <p className="text-gray-600 mb-6">
+                    <h3 className={`text-2xl font-bold mb-4 ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>Importação Concluída!</h3>
+                    <p className={`mb-6 ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
                       {selectedTags.length} tags foram importadas com sucesso.
                     </p>
                     
                     <motion.button
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={handleClose}
-                      className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-semibold"
+                      className={`text-white px-6 py-3 rounded-xl font-semibold ${
+                        isDark 
+                          ? 'bg-gradient-to-r from-slate-600 to-slate-500' 
+                          : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+                      }`}
                     >
                       Fechar
                     </motion.button>
@@ -535,22 +702,35 @@ export default function ImportarTagsModal({
               </div>
 
               {/* Footer Actions */}
-              {(step === 'preview') && (
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
+              {step === 'preview' && (
+                <div className={`px-6 py-4 border-t ${
+                  isDark 
+                    ? 'bg-slate-800/50 border-slate-600' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="flex gap-3">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => setStep('upload')}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium"
+                      className={`flex-1 py-3 rounded-xl font-semibold transition-colors ${
+                        isDark 
+                          ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
                     >
                       Voltar
                     </motion.button>
-
                     <motion.button
                       whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={handleImport}
                       disabled={selectedTags.length === 0}
-                      className="px-6 py-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`flex-1 text-white py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isDark 
+                          ? 'bg-gradient-to-r from-slate-600 to-slate-500' 
+                          : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+                      }`}
                     >
                       Importar {selectedTags.length} Tags
                     </motion.button>

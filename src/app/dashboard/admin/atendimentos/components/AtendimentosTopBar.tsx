@@ -41,7 +41,7 @@ interface AtendimentosTopBarProps {
 }
 
 export default function AtendimentosTopBar({ searchQuery, onSearchChange }: AtendimentosTopBarProps) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const { chats } = useWhatsAppData()
@@ -51,6 +51,17 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
   const [showTranslation, setShowTranslation] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('pt-BR')
   const { actualTheme, setTheme } = useTheme()
+
+  const handleLogout = () => {
+    logout()
+    setShowProfile(false)
+  }
+
+  const handleMenuClick = (action: string) => {
+    setShowProfile(false)
+    // Todos os links direcionam para configurações
+    router.push('/dashboard/admin/configuracoes')
+  }
   
   // Mapeamento de idiomas para bandeiras
   const getCountryCode = (langCode: string) => {
@@ -138,7 +149,7 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
           {/* Quick Stats */}
           <div className="hidden lg:flex items-center gap-3 ml-6">
             <motion.div 
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
               title={`Chats ativos: ${stats?.chats_ativos || 0}`}
             >
@@ -170,16 +181,7 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </span>
             </motion.div>
             
-            {error && (
-              <motion.div 
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-red-500/20 rounded-lg backdrop-blur-sm border border-red-400/30"
-                whileHover={{ scale: 1.05 }}
-                title={`Erro ao carregar estatísticas: ${error}`}
-              >
-                <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-sm text-red-300 font-medium">Erro</span>
-              </motion.div>
-            )}
+          
           </div>
         </div>
 
@@ -759,31 +761,36 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
                         icon: User,
                         label: 'Meu Perfil',
                         description: 'Gerenciar informações pessoais',
-                        color: 'from-blue-500 to-blue-600'
+                        color: 'from-blue-500 to-blue-600',
+                        action: 'profile'
                       },
                       {
                         icon: Settings,
                         label: 'Configurações',
                         description: 'Preferências do sistema',
-                        color: 'from-gray-500 to-gray-600'
+                        color: 'from-gray-500 to-gray-600',
+                        action: 'settings'
                       },
                       {
                         icon: Bell,
                         label: 'Notificações',
                         description: 'Gerenciar alertas',
-                        color: 'from-yellow-500 to-yellow-600'
+                        color: 'from-yellow-500 to-yellow-600',
+                        action: 'notifications'
                       },
                       {
                         icon: Languages,
                         label: 'Idioma',
                         description: 'Português (Brasil)',
-                        color: 'from-green-500 to-green-600'
+                        color: 'from-green-500 to-green-600',
+                        action: 'language'
                       },
                       {
                         icon: Info,
                         label: 'Ajuda & Suporte',
                         description: 'Central de ajuda',
-                        color: 'from-purple-500 to-purple-600'
+                        color: 'from-purple-500 to-purple-600',
+                        action: 'help'
                       }
                     ].map((item, index) => {
                       const IconComponent = item.icon
@@ -792,6 +799,7 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
                           key={index}
                           whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.05)' }}
                           whileTap={{ scale: 0.98 }}
+                          onClick={() => handleMenuClick(item.action)}
                           className="w-full flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-white/5 text-left"
                         >
                           <div className={`w-10 h-10 bg-gradient-to-br ${item.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
@@ -816,6 +824,7 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        onClick={handleLogout}
                         className="px-4 py-2 bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-400/30 rounded-lg text-sm text-red-300 font-medium hover:from-red-500/30 hover:to-red-600/30 transition-all"
                       >
                         Sair

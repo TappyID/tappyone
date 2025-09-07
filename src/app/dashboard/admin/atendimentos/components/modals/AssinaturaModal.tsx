@@ -69,7 +69,6 @@ export default function AssinaturaModal({
   // Atualizar dados do contato quando mudarem
   useEffect(() => {
     if (contactData) {
-      console.log('ContactData recebido no modal:', contactData)
       setFormData(prev => ({
         ...prev,
         cliente: contactData.nome || '',

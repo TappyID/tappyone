@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Tag,
   TrendingUp,
@@ -31,6 +32,9 @@ interface TagsStatsProps {
 }
 
 export default function TagsStats({ tags }: TagsStatsProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  
   const totalTags = tags.length
   const tagsAtivas = tags.filter(tag => tag.ativo).length
   const tagsInativas = tags.filter(tag => !tag.ativo).length
@@ -111,18 +115,32 @@ export default function TagsStats({ tags }: TagsStatsProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300"
+              className={`rounded-2xl p-6 shadow-sm border transition-all duration-300 ${
+                isDark 
+                  ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600 hover:shadow-2xl hover:shadow-slate-900/20' 
+                  : 'bg-white border-gray-200 hover:shadow-lg'
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                      <IconComponent className={`w-6 h-6 ${stat.textColor}`} />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      isDark 
+                        ? 'bg-gradient-to-br from-slate-700 to-slate-600 border border-slate-500' 
+                        : stat.bgColor
+                    }`}>
+                      <IconComponent className={`w-6 h-6 ${
+                        isDark ? 'text-emerald-400' : stat.textColor
+                      }`} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                      <p className={`text-sm font-medium ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}>{stat.title}</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-gray-900">{stat.value}</span>
+                        <span className={`text-2xl font-bold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{stat.value}</span>
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           stat.trend.startsWith('+') 
                             ? 'bg-green-100 text-green-600' 
@@ -133,16 +151,24 @@ export default function TagsStats({ tags }: TagsStatsProps) {
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500">{stat.subtitle}</p>
+                  <p className={`text-sm ${
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  }`}>{stat.subtitle}</p>
                 </div>
               </div>
 
               {/* Mini progress bar */}
               <div className="mt-4">
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className={`w-full rounded-full h-2 ${
+                  isDark ? 'bg-slate-700' : 'bg-gray-100'
+                }`}>
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${(stat.value / Math.max(...stats.map(s => typeof s.value === 'string' ? parseInt(s.value.replace(/,/g, '')) : s.value))) * 100}%` }}
+                    animate={{ width: `${(() => {
+                      const numericValue = typeof stat.value === 'string' ? parseInt(stat.value.replace(/,/g, '')) || 0 : stat.value;
+                      const maxValue = Math.max(...stats.map(s => typeof s.value === 'string' ? parseInt(s.value.replace(/,/g, '')) || 0 : s.value));
+                      return maxValue > 0 ? (numericValue / maxValue) * 100 : 0;
+                    })()}%` }}
                     transition={{ delay: index * 0.1 + 0.5, duration: 1 }}
                     className={`h-2 rounded-full bg-gradient-to-r ${stat.color}`}
                   />
@@ -160,21 +186,37 @@ export default function TagsStats({ tags }: TagsStatsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
+          className={`rounded-2xl p-6 shadow-sm border ${
+            isDark 
+              ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+              : 'bg-white border-gray-200'
+          }`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-lg flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                isDark 
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' 
+                  : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+              }`}>
                 <Palette className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Categorias</h3>
-                <p className="text-sm text-gray-600">Distribuição por categoria</p>
+                <h3 className={`text-lg font-bold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>Categorias</h3>
+                <p className={`text-sm ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>Distribuição por categoria</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">{categorias.length}</div>
-              <div className="text-sm text-gray-500">Total</div>
+              <div className={`text-2xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>{categorias.length}</div>
+              <div className={`text-sm ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>Total</div>
             </div>
           </div>
 
@@ -190,31 +232,51 @@ export default function TagsStats({ tags }: TagsStatsProps) {
                   transition={{ delay: index * 0.1 + 0.6 }}
                   className="flex items-center gap-4"
                 >
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Hash className="w-5 h-5 text-gray-600" />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    isDark ? 'bg-slate-700' : 'bg-gray-100'
+                  }`}>
+                    <Hash className={`w-5 h-5 ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`} />
                   </div>
                   
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{categoria.categoria}</span>
+                      <span className={`text-sm font-medium ${
+                        isDark ? 'text-gray-200' : 'text-gray-700'
+                      }`}>{categoria.categoria}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900">{categoria.count}</span>
-                        <span className="text-xs text-gray-500">({percentage.toFixed(1)}%)</span>
+                        <span className={`text-sm font-bold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{categoria.count}</span>
+                        <span className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>({percentage.toFixed(1)}%)</span>
                       </div>
                     </div>
                     
-                    <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`w-full rounded-full h-2 ${
+                      isDark ? 'bg-slate-700' : 'bg-gray-100'
+                    }`}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
                         transition={{ delay: index * 0.1 + 0.8, duration: 1 }}
-                        className="h-2 rounded-full bg-gradient-to-r from-[#305e73] to-[#3a6d84]"
+                        className={`h-2 rounded-full ${
+                          isDark 
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' 
+                            : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+                        }`}
                       />
                     </div>
                     
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-500">{categoria.usos} usos</span>
-                      <span className="text-xs text-gray-500">{categoria.ativas} ativas</span>
+                      <span className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{categoria.usos} usos</span>
+                      <span className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{categoria.ativas} ativas</span>
                     </div>
                   </div>
                 </motion.div>
@@ -228,16 +290,28 @@ export default function TagsStats({ tags }: TagsStatsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
+          className={`rounded-2xl p-6 shadow-sm border ${
+            isDark 
+              ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+              : 'bg-white border-gray-200'
+          }`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#305e73] to-[#3a6d84] rounded-lg flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                isDark 
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' 
+                  : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+              }`}>
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Mais Usadas</h3>
-                <p className="text-sm text-gray-600">Top 5 tags por uso</p>
+                <h3 className={`text-lg font-bold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>Mais Usadas</h3>
+                <p className={`text-sm ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>Top 5 tags por uso</p>
               </div>
             </div>
           </div>
@@ -256,8 +330,12 @@ export default function TagsStats({ tags }: TagsStatsProps) {
                   className="flex items-center gap-4"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-600">#{index + 1}</span>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      isDark ? 'bg-slate-700' : 'bg-gray-100'
+                    }`}>
+                      <span className={`text-xs font-bold ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}>#{index + 1}</span>
                     </div>
                     <div 
                       className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
@@ -267,15 +345,23 @@ export default function TagsStats({ tags }: TagsStatsProps) {
                   
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{tag.nome}</span>
+                      <span className={`text-sm font-medium ${
+                        isDark ? 'text-gray-200' : 'text-gray-700'
+                      }`}>{tag.nome}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900">{tag.uso_count}</span>
-                        <span className="text-xs text-gray-500">usos</span>
+                        <span className={`text-sm font-bold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{tag.uso_count}</span>
+                        <span className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>usos</span>
                         {tag.favorito && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
                       </div>
                     </div>
                     
-                    <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`w-full rounded-full h-2 ${
+                      isDark ? 'bg-slate-700' : 'bg-gray-100'
+                    }`}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
@@ -286,9 +372,13 @@ export default function TagsStats({ tags }: TagsStatsProps) {
                     </div>
                     
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-500">{tag.categoria}</span>
+                      <span className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{tag.categoria}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        tag.ativo ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
+                        tag.ativo 
+                          ? (isDark ? 'bg-green-900/30 text-green-400 border border-green-700' : 'bg-green-100 text-green-600') 
+                          : (isDark ? 'bg-gray-700 text-gray-300 border border-gray-600' : 'bg-gray-100 text-gray-600')
                       }`}>
                         {tag.ativo ? 'Ativa' : 'Inativa'}
                       </span>

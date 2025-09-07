@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Agendamento {
   id: string
@@ -76,6 +77,7 @@ export default function CalendarioSofisticado({
 }: CalendarioSofisticadoProps) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate)
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
+  const { theme } = useTheme()
 
   const meses = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -93,10 +95,18 @@ export default function CalendarioSofisticado({
   }
 
   const statusColors = {
-    agendado: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-    confirmado: 'bg-green-100 border-green-300 text-green-800',
-    cancelado: 'bg-red-100 border-red-300 text-red-800',
-    concluido: 'bg-blue-100 border-blue-300 text-blue-800'
+    agendado: theme === 'dark' 
+      ? 'bg-yellow-900/30 border-yellow-600/50 text-yellow-300' 
+      : 'bg-yellow-100 border-yellow-300 text-yellow-800',
+    confirmado: theme === 'dark' 
+      ? 'bg-green-900/30 border-green-600/50 text-green-300' 
+      : 'bg-green-100 border-green-300 text-green-800',
+    cancelado: theme === 'dark' 
+      ? 'bg-red-900/30 border-red-600/50 text-red-300' 
+      : 'bg-red-100 border-red-300 text-red-800',
+    concluido: theme === 'dark' 
+      ? 'bg-blue-900/30 border-blue-600/50 text-blue-300' 
+      : 'bg-blue-100 border-blue-300 text-blue-800'
   }
 
   const prioridadeColors = {
@@ -243,6 +253,7 @@ export default function CalendarioSofisticado({
           ${statusColors[agendamento.status]}
           hover:shadow-md hover:scale-105 group transform
           ${isCompact ? 'mb-1' : 'mb-2'}
+          ${theme === 'dark' ? 'backdrop-blur-sm border-white/10' : ''}
         `}
         style={{ 
           backgroundColor: agendamento.cor ? `${agendamento.cor}15` : undefined,
@@ -269,8 +280,8 @@ export default function CalendarioSofisticado({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 mb-1">
-              <TipoIcon className="w-3 h-3 text-gray-600" />
-              <span className="text-xs font-medium text-gray-700 truncate">
+              <TipoIcon className={`w-3 h-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+              <span className={`text-xs font-medium truncate ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                 {agendamento.titulo}
               </span>
               {agendamento.prioridade === 'alta' && (
@@ -278,18 +289,18 @@ export default function CalendarioSofisticado({
               )}
             </div>
             
-            <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div className={`flex items-center gap-2 text-xs ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
               <Clock className="w-3 h-3" />
               <span>{agendamento.hora_inicio}</span>
               {!isCompact && (
-                <span className="text-gray-500">
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
                   • {agendamento.contato?.nome || 'Contato não encontrado'}
                 </span>
               )}
             </div>
 
             {!isCompact && agendamento.local && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+              <div className={`flex items-center gap-1 mt-1 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 <MapPin className="w-3 h-3" />
                 <span className="truncate">{agendamento.local}</span>
               </div>
@@ -308,7 +319,9 @@ export default function CalendarioSofisticado({
         </div>
 
         {/* Hover overlay com mais detalhes */}
-        <div className="absolute inset-0 bg-black/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity ${
+          theme === 'dark' ? 'bg-white/5' : 'bg-black/5'
+        }`} />
       </div>
     )
   }
@@ -317,7 +330,18 @@ export default function CalendarioSofisticado({
 
   if (viewMode === 'month') {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div 
+        className="rounded-2xl shadow-sm border overflow-hidden"
+        style={{
+          background: theme === 'dark' 
+            ? 'rgba(31, 41, 55, 0.3)' 
+            : 'white',
+          borderColor: theme === 'dark' 
+            ? 'rgba(75, 85, 99, 0.3)' 
+            : 'rgb(229, 231, 235)',
+          backdropFilter: theme === 'dark' ? 'blur(10px)' : undefined
+        }}
+      >
         {/* Header do Calendário */}
         <div className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] px-6 py-4">
           <div className="flex items-center justify-between">
@@ -359,10 +383,19 @@ export default function CalendarioSofisticado({
         </div>
 
         {/* Dias da Semana */}
-        <div className="grid grid-cols-7 border-b border-gray-200">
+        <div 
+          className="grid grid-cols-7 border-b"
+          style={{
+            borderColor: theme === 'dark' 
+              ? 'rgba(75, 85, 99, 0.3)' 
+              : 'rgb(229, 231, 235)'
+          }}
+        >
           {diasSemana.map((dia) => (
             <div key={dia} className="p-4 text-center">
-              <span className="text-sm font-semibold text-gray-700">{dia}</span>
+              <span className={`text-sm font-semibold ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>{dia}</span>
             </div>
           ))}
         </div>
@@ -379,12 +412,39 @@ export default function CalendarioSofisticado({
               <div
                 key={index}
                 className={`
-                  min-h-[120px] p-2 border-r border-b border-gray-100 cursor-pointer transition-all duration-200
-                  ${!day.isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white text-gray-900'}
-                  ${day.isToday ? 'bg-blue-50 border-blue-200' : ''}
-                  ${isHovered ? 'bg-blue-100 ring-2 ring-blue-300' : ''}
-                  hover:bg-gray-50 relative
+                  min-h-[120px] p-2 border-r border-b cursor-pointer transition-all duration-200
+                  ${!day.isCurrentMonth 
+                    ? theme === 'dark' 
+                      ? 'bg-gray-800/20 text-gray-500' 
+                      : 'bg-gray-50 text-gray-400'
+                    : theme === 'dark'
+                      ? 'text-gray-100'
+                      : 'bg-white text-gray-900'
+                  }
+                  ${day.isToday 
+                    ? theme === 'dark'
+                      ? 'bg-blue-900/30 border-blue-600/50'
+                      : 'bg-blue-50 border-blue-200'
+                    : ''
+                  }
+                  ${isHovered 
+                    ? theme === 'dark'
+                      ? 'bg-blue-800/30 ring-2 ring-blue-600/50'
+                      : 'bg-blue-100 ring-2 ring-blue-300'
+                    : ''
+                  }
+                  relative
                 `}
+                style={{
+                  borderColor: theme === 'dark' 
+                    ? 'rgba(75, 85, 99, 0.2)' 
+                    : 'rgb(243, 244, 246)',
+                  background: !day.isCurrentMonth && theme === 'dark'
+                    ? 'rgba(55, 65, 81, 0.1)'
+                    : day.isCurrentMonth && theme === 'dark'
+                      ? 'rgba(31, 41, 55, 0.2)'
+                      : undefined
+                }}
               >
                 {/* Drop zone overlay - cobre toda a área */}
                 <div
@@ -426,7 +486,10 @@ export default function CalendarioSofisticado({
                   <span className={`
                     text-sm font-medium
                     ${day.isToday ? 'bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center' : ''}
-                    ${!day.isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
+                    ${!day.isCurrentMonth 
+                      ? theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                      : theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+                    }
                   `}>
                     {day.date.getDate()}
                   </span>
@@ -434,7 +497,9 @@ export default function CalendarioSofisticado({
                   {dayAgendamentos.length > 0 && (
                     <div className="flex items-center gap-1">
                       <div className={`w-2 h-2 rounded-full ${getStatusDotColor(dayAgendamentos)}`} />
-                      <span className="text-xs text-gray-500">{dayAgendamentos.length}</span>
+                      <span className={`text-xs ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{dayAgendamentos.length}</span>
                     </div>
                   )}
                 </div>
@@ -448,7 +513,11 @@ export default function CalendarioSofisticado({
                   {dayAgendamentos.length > 3 && (
                     <motion.div
                       whileHover={{ scale: 1.05 }}
-                      className="text-xs text-gray-500 text-center py-1 bg-gray-100 rounded cursor-pointer hover:bg-gray-200 transition-colors"
+                      className={`text-xs text-center py-1 rounded cursor-pointer transition-colors ${
+                        theme === 'dark'
+                          ? 'text-gray-400 bg-gray-700/30 hover:bg-gray-600/40'
+                          : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+                      }`}
                     >
                       +{dayAgendamentos.length - 3} mais
                     </motion.div>
@@ -472,9 +541,13 @@ export default function CalendarioSofisticado({
                             className="w-4 h-4 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-4 h-4 bg-gray-300 rounded-full" />
+                          <div className={`w-4 h-4 rounded-full ${
+                            theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'
+                          }`} />
                         )}
-                        <span className="text-xs text-gray-400 truncate">
+                        <span className={`text-xs truncate ${
+                          theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                        }`}>
                           {contato.nome.split(' ')[0]}
                         </span>
                       </motion.div>
@@ -487,28 +560,48 @@ export default function CalendarioSofisticado({
         </div>
 
         {/* Legenda */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+        <div 
+          className="px-6 py-4 border-t"
+          style={{
+            background: theme === 'dark' 
+              ? 'rgba(55, 65, 81, 0.2)' 
+              : 'rgb(249, 250, 251)',
+            borderColor: theme === 'dark' 
+              ? 'rgba(75, 85, 99, 0.3)' 
+              : 'rgb(229, 231, 235)'
+          }}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full" />
-                <span className="text-xs text-gray-600">Confirmado</span>
+                <span className={`text-xs ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Confirmado</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-                <span className="text-xs text-gray-600">Agendado</span>
+                <span className={`text-xs ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Agendado</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full" />
-                <span className="text-xs text-gray-600">Cancelado</span>
+                <span className={`text-xs ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Cancelado</span>
               </div>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-3 h-3 text-red-500" />
-                <span className="text-xs text-gray-600">Alta Prioridade</span>
+                <span className={`text-xs ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Alta Prioridade</span>
               </div>
             </div>
             
-            <div className="text-xs text-gray-500">
+            <div className={`text-xs ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               Clique em uma data para ver detalhes • Clique em um agendamento para editar
             </div>
           </div>
@@ -519,8 +612,21 @@ export default function CalendarioSofisticado({
 
   // Views de semana e dia seriam implementadas aqui
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-      <div className="text-center text-gray-500">
+    <div 
+      className="rounded-2xl shadow-sm border p-6"
+      style={{
+        background: theme === 'dark' 
+          ? 'rgba(31, 41, 55, 0.3)' 
+          : 'white',
+        borderColor: theme === 'dark' 
+          ? 'rgba(75, 85, 99, 0.3)' 
+          : 'rgb(229, 231, 235)',
+        backdropFilter: theme === 'dark' ? 'blur(10px)' : undefined
+      }}
+    >
+      <div className={`text-center ${
+        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+      }`}>
         View mode "{viewMode}" em desenvolvimento...
       </div>
     </div>

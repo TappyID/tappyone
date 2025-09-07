@@ -127,6 +127,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               <ColorThemeSelector sidebarCollapsed={sidebarCollapsed} />
             </motion.div>
 
+            {/* ChatToggle temporariamente comentado para debug
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -134,6 +135,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
             >
               <ChatToggle sidebarCollapsed={sidebarCollapsed} />
             </motion.div>
+            */}
 
             {/* Glass Clock */}
             <motion.div

@@ -4,45 +4,71 @@ import { headers } from 'next/headers'
 // Forçar rota dinâmica para permitir uso de headers
 export const dynamic = 'force-dynamic'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+const wahaUrl = 'http://159.65.34.199:3001'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 [WHATSAPP CHATS] GET route chamado')
-    console.log('🔍 [WHATSAPP CHATS] BACKEND_URL:', BACKEND_URL)
-    console.log('🔍 [WHATSAPP CHATS] NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL)
     
     const authHeader = request.headers.get('Authorization')
+    console.log('🔍 [WHATSAPP CHATS] AuthHeader:', authHeader ? `${authHeader.substring(0, 20)}...` : 'null')
+    
     if (!authHeader) {
       console.log('❌ [WHATSAPP CHATS] Token não fornecido')
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    console.log('🔑 [WHATSAPP CHATS] Token encontrado:', authHeader.substring(0, 20) + '...')
-    console.log('📡 [WHATSAPP CHATS] Fazendo chamada para backend:', `${BACKEND_URL}/api/whatsapp/chats`)
-
-    // Proxy para o backend Go
-    const response = await fetch(`${BACKEND_URL}/api/whatsapp/chats`, {
-      method: 'GET',
+    // Buscar sessões ativas diretamente no WAHA
+    console.log('🔍 [WHATSAPP CHATS] Buscando sessões ativas no WAHA...')
+    const sessionsResponse = await fetch(`${wahaUrl}/api/sessions`, {
       headers: {
-        'Authorization': authHeader,
+        'X-API-Key': 'tappyone-waha-2024-secretkey',
         'Content-Type': 'application/json'
       }
     })
 
-    console.log('📡 [WHATSAPP CHATS] Status da resposta do backend:', response.status)
+    if (!sessionsResponse.ok) {
+      console.log('❌ [WHATSAPP CHATS] Erro ao buscar sessões WAHA:', sessionsResponse.status)
+      return NextResponse.json({ error: 'Erro ao conectar com WAHA' }, { status: 500 })
+    }
+
+    const sessions = await sessionsResponse.json()
+    console.log('📡 [WHATSAPP CHATS] Sessões WAHA encontradas:', sessions.length)
+    
+    // Buscar primeira sessão ativa (WORKING)
+    const activeSession = sessions.find((session: any) => session.status === 'WORKING')
+    
+    if (!activeSession) {
+      console.log('❌ [WHATSAPP CHATS] Nenhuma sessão ativa encontrada no WAHA')
+      return NextResponse.json([], { status: 200 })
+    }
+
+    const sessionName = activeSession.name
+    console.log('✅ [WHATSAPP CHATS] Sessão ativa encontrada:', sessionName)
+    console.log('📡 [WHATSAPP CHATS] Fazendo chamada para WAHA:', `${wahaUrl}/api/${sessionName}/chats`)
+
+    // Proxy direto para WAHA
+    const response = await fetch(`${wahaUrl}/api/${sessionName}/chats`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'tappyone-waha-2024-secretkey'
+      }
+    })
+
+    console.log('📡 [WHATSAPP CHATS] Status da resposta WAHA:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ [WHATSAPP CHATS] Erro do backend:', response.status, errorText)
+      console.error('❌ [WHATSAPP CHATS] Erro WAHA:', response.status, errorText)
       return NextResponse.json(
-        { error: `Erro do backend: ${response.status}` },
+        { error: `Erro WAHA: ${response.status}` },
         { status: response.status }
       )
     }
 
     const data = await response.json()
-    console.log('✅ [WHATSAPP CHATS] Dados obtidos do backend:', data?.length || 0, 'chats')
+    console.log('✅ [WHATSAPP CHATS] Dados obtidos WAHA:', data?.length || 0, 'chats')
     
     return NextResponse.json(data)
   } catch (error) {

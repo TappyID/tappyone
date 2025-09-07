@@ -41,7 +41,18 @@ export const useContatoTags = (chatId: string | null) => {
     try {
       setLoading(true)
       setError(null)
-      console.log('🏷️ [HOOK] Buscando tags do contato:', chatId)
+      console.log('🏷️ [HOOK] Verificando se é contato CRM:', chatId)
+      
+      // Primeiro verificar se é um contato CRM válido
+      const contatoData = await makeAuthenticatedRequest(`/contatos/${chatId}/dados-completos`)
+      
+      if (contatoData.isWhatsAppChat) {
+        console.log('ℹ️ [HOOK] Chat WAHA sem contato CRM, sem tags para buscar:', chatId)
+        setTags([])
+        return
+      }
+      
+      console.log('🏷️ [HOOK] Buscando tags do contato CRM:', chatId)
       const data = await makeAuthenticatedRequest(`/contatos/${chatId}/tags`)
       console.log('🏷️ [HOOK] Tags do contato carregadas:', data?.length || 0)
       setTags(Array.isArray(data) ? data : [])

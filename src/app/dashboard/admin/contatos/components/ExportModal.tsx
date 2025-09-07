@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Download, FileText, Database } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface ExportModalProps {
   isOpen: boolean
@@ -11,6 +12,8 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv')
   const [exportFields, setExportFields] = useState({
     nome: true,
@@ -70,7 +73,9 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+              isDark ? 'bg-black/70' : 'bg-black/50'
+            }`}
             onClick={onClose}
           >
             {/* Modal */}
@@ -79,28 +84,46 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+              className={`rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden ${
+                isDark 
+                  ? 'bg-gray-800 border border-gray-700' 
+                  : 'bg-white'
+              }`}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className={`flex items-center justify-between p-6 border-b ${
+                isDark ? 'border-gray-600' : 'border-gray-200'
+              }`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                    <Download className="w-5 h-5 text-green-600" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDark ? 'bg-green-900/30' : 'bg-green-100'
+                  }`}>
+                    <Download className={`w-5 h-5 ${
+                      isDark ? 'text-green-400' : 'text-green-600'
+                    }`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
+                    <h2 className={`text-xl font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
                       Exportar Contatos
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className={`text-sm ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
                       Baixe seus contatos em diferentes formatos
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className={`w-5 h-5 ${
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  }`} />
                 </button>
               </div>
 
@@ -108,7 +131,9 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
               <div className="p-6 space-y-6">
                 {/* Formato de exportação */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Formato de Exportação
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -116,33 +141,47 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
                       onClick={() => setExportFormat('csv')}
                       className={`p-4 rounded-lg border-2 transition-all ${
                         exportFormat === 'csv'
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? isDark
+                            ? 'border-green-500 bg-green-900/20 text-green-400'
+                            : 'border-green-500 bg-green-50 text-green-700'
+                          : isDark
+                            ? 'border-gray-600 hover:border-gray-500 text-gray-300'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
                       <FileText className="w-8 h-8 mx-auto mb-2" />
                       <div className="font-medium">CSV</div>
-                      <div className="text-xs text-gray-500">Excel, Sheets</div>
+                      <div className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>Excel, Sheets</div>
                     </button>
                     
                     <button
                       onClick={() => setExportFormat('json')}
                       className={`p-4 rounded-lg border-2 transition-all ${
                         exportFormat === 'json'
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? isDark
+                            ? 'border-green-500 bg-green-900/20 text-green-400'
+                            : 'border-green-500 bg-green-50 text-green-700'
+                          : isDark
+                            ? 'border-gray-600 hover:border-gray-500 text-gray-300'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
                       <Database className="w-8 h-8 mx-auto mb-2" />
                       <div className="font-medium">JSON</div>
-                      <div className="text-xs text-gray-500">Desenvolvedores</div>
+                      <div className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>Desenvolvedores</div>
                     </button>
                   </div>
                 </div>
 
                 {/* Campos para exportar */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Campos para Exportar
                   </label>
                   <div className="space-y-2">
@@ -163,9 +202,13 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
                             ...prev,
                             [key]: e.target.checked
                           }))}
-                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                          className={`w-4 h-4 text-green-600 rounded focus:ring-green-500 ${
+                            isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-white'
+                          }`}
                         />
-                        <span className="text-sm text-gray-700">{label}</span>
+                        <span className={`text-sm ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>{label}</span>
                       </label>
                     ))}
                   </div>
@@ -173,10 +216,16 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <div className={`flex justify-end gap-3 p-6 border-t ${
+                isDark ? 'border-gray-600' : 'border-gray-200'
+              }`}>
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    isDark 
+                      ? 'text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                      : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                  }`}
                 >
                   Cancelar
                 </button>

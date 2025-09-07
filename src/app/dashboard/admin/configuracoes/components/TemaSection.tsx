@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Palette,
   Type,
@@ -82,6 +83,8 @@ const fontFamilies = [
 ]
 
 export default function TemaSection({ onConfigChange }: TemaSectionProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [config, setConfig] = useState({
     paleta: 'TappyOne (Padrão)',
     corPrimaria: '#273155',
@@ -140,20 +143,34 @@ export default function TemaSection({ onConfigChange }: TemaSectionProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200"
+        className={`rounded-2xl p-6 border ${
+          isDark 
+            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
+            : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200'
+        }`}
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <Eye className="w-6 h-6 text-purple-600" />
+            <div className={`p-3 rounded-xl ${
+              isDark ? 'bg-purple-500/20' : 'bg-purple-100'
+            }`}>
+              <Eye className={`w-6 h-6 ${
+                isDark ? 'text-purple-400' : 'text-purple-600'
+              }`} />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Preview do Tema</h3>
-              <p className="text-gray-600">Visualize as mudanças em tempo real</p>
+              <h3 className={`text-xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>Preview do Tema</h3>
+              <p className={`${
+                isDark ? 'text-slate-300' : 'text-gray-600'
+              }`}>Visualize as mudanças em tempo real</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-white rounded-xl p-1 shadow-sm">
+          <div className={`flex items-center gap-2 rounded-xl p-1 shadow-sm ${
+            isDark ? 'bg-slate-700/50' : 'bg-white'
+          }`}>
             {[
               { mode: 'desktop', icon: Monitor },
               { mode: 'tablet', icon: Tablet },
@@ -164,7 +181,13 @@ export default function TemaSection({ onConfigChange }: TemaSectionProps) {
                 whileHover={{ scale: 1.05 }}
                 onClick={() => setPreviewMode(mode as any)}
                 className={`p-2 rounded-lg transition-colors ${
-                  previewMode === mode ? 'bg-purple-100 text-purple-600' : 'text-gray-600 hover:bg-gray-100'
+                  previewMode === mode 
+                    ? isDark
+                      ? 'bg-purple-500/30 text-purple-400'
+                      : 'bg-purple-100 text-purple-600'
+                    : isDark
+                      ? 'text-slate-400 hover:bg-slate-600/50'
+                      : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -174,7 +197,9 @@ export default function TemaSection({ onConfigChange }: TemaSectionProps) {
         </div>
 
         {/* Preview Frame */}
-        <div className="bg-white rounded-xl p-4 shadow-lg">
+        <div className={`rounded-xl p-4 shadow-lg ${
+          isDark ? 'bg-slate-700/50' : 'bg-white'
+        }`}>
           <motion.div
             initial={false}
             animate={{

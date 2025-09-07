@@ -9,15 +9,43 @@ const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 [WHATSAPP CONTACTS] GET route chamado')
+    
     const authHeader = request.headers.get('Authorization')
+    console.log('🔍 [WHATSAPP CONTACTS] AuthHeader:', authHeader ? `${authHeader.substring(0, 20)}...` : 'null')
+    
     if (!authHeader) {
+      console.log('❌ [WHATSAPP CONTACTS] Token não fornecido')
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    // Decodificar o token para pegar o user_id
-    const token = authHeader.replace('Bearer ', '')
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const sessionName = `user_${payload.user_id}`
+    // Buscar sessões ativas diretamente no WAHA (mesmo que chats/groups)
+    console.log('🔍 [WHATSAPP CONTACTS] Buscando sessões ativas no WAHA...')
+    const sessionsResponse = await fetch(`${WAHA_URL}/api/sessions`, {
+      headers: {
+        'X-API-Key': WAHA_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!sessionsResponse.ok) {
+      console.log('❌ [WHATSAPP CONTACTS] Erro ao buscar sessões WAHA:', sessionsResponse.status)
+      return NextResponse.json({ error: 'Erro ao conectar com WAHA' }, { status: 500 })
+    }
+
+    const sessions = await sessionsResponse.json()
+    console.log('📡 [WHATSAPP CONTACTS] Sessões WAHA encontradas:', sessions.length)
+    
+    // Buscar primeira sessão ativa (WORKING)
+    const activeSession = sessions.find((session: any) => session.status === 'WORKING')
+    
+    if (!activeSession) {
+      console.log('❌ [WHATSAPP CONTACTS] Nenhuma sessão ativa encontrada no WAHA')
+      return NextResponse.json([], { status: 200 })
+    }
+
+    const sessionName = activeSession.name
+    console.log('✅ [WHATSAPP CONTACTS] Sessão ativa encontrada:', sessionName)
 
     // Try different WAHA API endpoints for contacts
     const possibleEndpoints = [
@@ -31,7 +59,7 @@ export async function GET(request: NextRequest) {
     let successUrl = ''
 
     for (const url of possibleEndpoints) {
-      console.log('🔍 Tentando endpoint:', url)
+      console.log('🔍 [WHATSAPP CONTACTS] Tentando endpoint:', url)
       
       try {
         response = await fetch(url, {
@@ -42,22 +70,22 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        console.log('📡 Status:', response.status)
+        console.log('📡 [WHATSAPP CONTACTS] Status:', response.status)
         
         if (response.ok) {
           successUrl = url
-          console.log('✅ Endpoint funcionando:', url)
+          console.log('✅ [WHATSAPP CONTACTS] Endpoint funcionando:', url)
           break
         } else {
-          console.log('❌ Falhou:', url, response.status)
+          console.log('❌ [WHATSAPP CONTACTS] Falhou:', url, response.status)
         }
       } catch (err) {
-        console.log('❌ Erro de rede:', url, err)
+        console.log('❌ [WHATSAPP CONTACTS] Erro de rede:', url, err)
       }
     }
 
     if (!response || !response.ok) {
-      console.error('❌ Todos os endpoints falharam')
+      console.error('❌ [WHATSAPP CONTACTS] Todos os endpoints falharam')
       return NextResponse.json(
         { error: 'Nenhum endpoint de contatos WAHA funcionou' },
         { status: 404 }
@@ -65,10 +93,64 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('📋 Dados brutos da WAHA:', JSON.stringify(data.slice(0, 2), null, 2)) // Log primeiros 2 contatos
+    console.log('📋 [WHATSAPP CONTACTS] Dados brutos da WAHA:', JSON.stringify(data.slice(0, 2), null, 2))
     
-    // Mapear dados e buscar fotos de perfil para formato esperado pelo frontend
-    const mappedData = Array.isArray(data) ? await Promise.all(data.map(async (contact: any) => {
+    if (!Array.isArray(data)) {
+      console.log('❌ [WHATSAPP CONTACTS] Dados não são um array:', data)
+      return NextResponse.json([])
+    }
+    
+    // Filtrar apenas contatos individuais (excluir grupos e números inválidos)
+    const individualChats = data.filter((chat: any) => {
+      const isGroup = chat.id && (chat.id.includes('@g.us') || chat.isGroup)
+      const isInvalidNumber = chat.id === '0@c.us' || !chat.id || chat.id === 'status@broadcast'
+      const hasValidPhone = chat.id && chat.id.includes('@c.us') && !chat.id.includes('@g.us')
+      
+      return !isGroup && !isInvalidNumber && hasValidPhone
+    })
+    
+    console.log('📋 [WHATSAPP CONTACTS] Contatos individuais filtrados:', individualChats.length)
+    
+    // Se não temos contatos individuais, buscar do banco de dados como fallback
+    if (individualChats.length === 0) {
+      console.log('🔄 [WHATSAPP CONTACTS] Nenhum contato individual encontrado, buscando do banco...')
+      
+      try {
+        const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
+        const backendResponse = await fetch(`${backendUrl}/api/contatos`, {
+          headers: {
+            'Authorization': request.headers.get('Authorization') || '',
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (backendResponse.ok) {
+          const backendData = await backendResponse.json()
+          const contatos = Array.isArray(backendData.data) ? backendData.data : []
+          console.log('✅ [WHATSAPP CONTACTS] Contatos do banco encontrados:', contatos.length)
+          
+          const mappedBackendContacts = contatos.map((contato: any) => ({
+            id: `${contato.telefone}@c.us`,
+            name: contato.nome || '',
+            pushname: contato.nome || '',
+            phone: contato.telefone || '',
+            profilePicUrl: '',
+            isGroup: false,
+            isBlocked: false,
+            fromDatabase: true
+          }))
+          
+          return NextResponse.json(mappedBackendContacts)
+        }
+      } catch (error) {
+        console.error('❌ [WHATSAPP CONTACTS] Erro ao buscar contatos do banco:', error)
+      }
+      
+      return NextResponse.json([])
+    }
+    
+    // Mapear dados dos contatos individuais
+    const mappedData = await Promise.all(individualChats.map(async (contact: any) => {
       // Extrair phone do ID (formato: 5511999999999@c.us)
       let phone = ''
       let contactId = ''
@@ -111,14 +193,14 @@ export async function GET(request: NextRequest) {
       
       return {
         id: contactId,
-        name: contact.name || contact.pushname || contact.notify || '',
-        pushname: contact.pushname || contact.notify || contact.name || '',
+        name: contact.name || contact.pushname || contact.notify || phone,
+        pushname: contact.pushname || contact.notify || contact.name || phone,
         phone: phone,
         profilePicUrl: profilePictureUrl,
-        isGroup: contact.isGroup || false,
+        isGroup: false,
         isBlocked: contact.isBlocked || false
       }
-    })) : data
+    }))
     
     console.log('📋 Dados mapeados:', JSON.stringify(mappedData.slice(0, 2), null, 2)) // Log primeiros 2 mapeados
     return NextResponse.json(mappedData)

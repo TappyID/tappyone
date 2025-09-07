@@ -27,25 +27,33 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Background principal da cor da topbar/sidebar (#273155) */
+    --background: 224 35% 18%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    /* Cards um pouco mais claros que o background */
+    --card: 224 35% 22%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    /* Popovers mais escuros */
+    --popover: 224 35% 16%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
+    /* Primary mantém a identidade */
+    --primary: 223 33% 25%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary mais claro que o background */
+    --secondary: 224 30% 25%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    /* Muted similar ao secondary */
+    --muted: 224 30% 25%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    /* Accent um pouco diferente */
+    --accent: 224 30% 28%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    /* Bordas mais sutis */
+    --border: 224 30% 30%;
+    --input: 224 30% 25%;
+    --ring: 224 76% 94%;
   }
 
   * {

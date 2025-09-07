@@ -1,0 +1,227 @@
+[
+  {
+    "timestamp": "2025-09-06T19:48:23.417Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {
+      "status": 200,
+      "ok": true,
+      "statusText": "OK",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Sat, 06 Sep 2025 19:48:23 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
+      }
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:23.616Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_data_received",
+    "data": {
+      "type": "object",
+      "isArray": true,
+      "length": 0,
+      "sample": [],
+      "rawData": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:23.781Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "error"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:23.838Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_success",
+    "data": {
+      "finalChatCount": 0,
+      "success": true
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:23.852Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:23.876Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:43.776Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_started",
+    "data": {
+      "timestamp": "2025-09-06T19:48:43.776Z"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:43.847Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_config",
+    "data": {
+      "hasToken": true,
+      "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73",
+      "tokenLength": 365
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:43.856Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:43.944Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {
+      "status": 200,
+      "ok": true,
+      "statusText": "OK",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Sat, 06 Sep 2025 19:48:43 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
+      }
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:44.164Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_data_received",
+    "data": {
+      "type": "object",
+      "isArray": true,
+      "length": 0,
+      "sample": [],
+      "rawData": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:44.202Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_chats_transformed",
+    "data": {
+      "count": 0,
+      "firstChat": null,
+      "allChatNames": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:44.221Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_success",
+    "data": {
+      "finalChatCount": 0,
+      "success": true
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:44.241Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:44.318Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "error"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-06T19:48:44.348Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  }
+]

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, X, Download, RefreshCw, Users, Activity } from 'lucide-react'
 import { useState } from 'react'
 import { AtendenteComStats } from '@/hooks/useAtendentes'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface AtendentesFiltersProps {
   filters: {
@@ -16,6 +17,7 @@ interface AtendentesFiltersProps {
 }
 
 export default function AtendentesFilters({ filters, onFiltersChange, atendentes }: AtendentesFiltersProps) {
+  const { actualTheme } = useTheme()
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   const statusOptions = [
@@ -51,20 +53,30 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+      className={`rounded-2xl shadow-sm border p-6 backdrop-blur-sm ${
+        actualTheme === 'dark'
+          ? 'bg-slate-800/60 border-slate-700/50'
+          : 'bg-white border-gray-100'
+      }`}
     >
       <div className="space-y-4">
         {/* Linha principal de filtros */}
         <div className="flex flex-wrap items-center gap-4">
           {/* Busca */}
           <div className="relative flex-1 min-w-[300px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+              actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-400'
+            }`} />
             <input
               type="text"
               placeholder="Buscar por nome, email ou departamento..."
               value={filters.search}
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all"
+              className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all ${
+                actualTheme === 'dark'
+                  ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400'
+                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+              }`}
             />
           </div>
 
@@ -86,7 +98,9 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                     isActive 
                       ? 'bg-[#305e73] text-white border-[#305e73] shadow-lg' 
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#305e73] hover:text-[#305e73]'
+                      : actualTheme === 'dark'
+                        ? 'bg-slate-700/50 text-slate-300 border-slate-600/50 hover:border-[#305e73] hover:text-white'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#305e73] hover:text-[#305e73]'
                   }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${
@@ -94,7 +108,11 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
                   } ${isActive ? 'bg-white' : ''}`} />
                   <span className="text-sm font-medium">{status.label}</span>
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    isActive 
+                      ? 'bg-white/20 text-white' 
+                      : actualTheme === 'dark'
+                        ? 'bg-slate-600/50 text-slate-300'
+                        : 'bg-gray-100 text-gray-600'
                   }`}>
                     {count}
                   </span>
@@ -112,7 +130,9 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                 showAdvanced 
                   ? 'bg-[#305e73] text-white border-[#305e73]' 
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-[#305e73]'
+                  : actualTheme === 'dark'
+                    ? 'bg-slate-700/50 text-slate-300 border-slate-600/50 hover:border-[#305e73] hover:text-white'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#305e73]'
               }`}
             >
               <Filter className="w-4 h-4" />
@@ -122,7 +142,11 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200 hover:bg-green-100 transition-all"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                actualTheme === 'dark'
+                  ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20'
+                  : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+              }`}
             >
               <RefreshCw className="w-4 h-4" />
               <span className="text-sm font-medium">Atualizar</span>
@@ -131,7 +155,11 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                actualTheme === 'dark'
+                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
+                  : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+              }`}
             >
               <Download className="w-4 h-4" />
               <span className="text-sm font-medium">Exportar</span>
@@ -141,7 +169,9 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
 
         {/* Tipo de Usuário */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 mr-2">Tipo de Usuário:</span>
+          <span className={`text-sm font-medium mr-2 ${
+            actualTheme === 'dark' ? 'text-white/80' : 'text-gray-700'
+          }`}>Tipo de Usuário:</span>
           {tipoOptions.map((tipo) => {
             const count = tipo.value === 'todos' 
               ? atendentes.length 
@@ -160,12 +190,18 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
                   isActive 
                     ? 'bg-[#305e73] text-white shadow-lg' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : actualTheme === 'dark'
+                      ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <span>{tipo.label}</span>
                 <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-white text-gray-500'
+                  isActive 
+                    ? 'bg-white/20 text-white' 
+                    : actualTheme === 'dark'
+                      ? 'bg-slate-600/50 text-slate-400'
+                      : 'bg-white text-gray-500'
                 }`}>
                   {count}
                 </span>
@@ -181,9 +217,15 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3"
+            className={`flex items-center justify-between rounded-lg p-3 border ${
+              actualTheme === 'dark'
+                ? 'bg-blue-500/10 border-blue-500/30'
+                : 'bg-blue-50 border-blue-200'
+            }`}
           >
-            <div className="flex items-center gap-2 text-blue-700">
+            <div className={`flex items-center gap-2 ${
+              actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-700'
+            }`}>
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">
                 Filtros ativos - {atendentes.length} atendentes encontrados
@@ -193,7 +235,11 @@ export default function AtendentesFilters({ filters, onFiltersChange, atendentes
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={clearFilters}
-              className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
+              className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all ${
+                actualTheme === 'dark'
+                  ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              }`}
             >
               <X className="w-4 h-4" />
               <span className="text-sm font-medium">Limpar</span>

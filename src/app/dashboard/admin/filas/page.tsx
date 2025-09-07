@@ -50,6 +50,7 @@ export default function FilasPage() {
   const [filas, setFilas] = useState<Fila[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingFila, setEditingFila] = useState<Fila | null>(null)
   const [filterStatus, setFilterStatus] = useState<'todas' | 'ativas' | 'inativas'>('todas')
   const [filterPrioridade, setFilterPrioridade] = useState<string>('')
   const [filterIntegracao, setFilterIntegracao] = useState<string>('')
@@ -138,6 +139,8 @@ export default function FilasPage() {
 
   const handleUpdateFila = async (id: string, updates: Partial<Fila>) => {
     try {
+      console.log('🔄 [UPDATE] Atualizando fila:', id, updates)
+      
       const response = await fetch(`/api/filas/${id}`, {
         method: 'PUT',
         headers: {
@@ -148,15 +151,35 @@ export default function FilasPage() {
       })
 
       if (response.ok) {
-        const filaAtualizada = await response.json()
-        setFilas(prev => prev.map(fila => 
-          fila.id === id ? filaAtualizada : fila
-        ))
+        const responseData = await response.json()
+        console.log('✅ [UPDATE] Resposta da API:', responseData)
+        
+        // Verificar se é um objeto direto ou tem wrapper
+        const filaAtualizada = responseData.data || responseData
+        console.log('✅ [UPDATE] Fila processada:', filaAtualizada)
+        
+        setFilas(prev => {
+          console.log('🔍 [UPDATE] Estado anterior:', prev)
+          console.log('🔍 [UPDATE] Fila atualizada a ser inserida:', filaAtualizada)
+          console.log('🔍 [UPDATE] ID da fila (parâmetro):', id, 'tipo:', typeof id)
+          
+          const novasFilas = prev.map(fila => {
+            console.log('🔍 [UPDATE] Comparando:', fila.id, 'tipo:', typeof fila.id, 'com:', id, 'tipo:', typeof id)
+            if (fila.id === id || fila.id === String(id) || String(fila.id) === String(id)) {
+              console.log('🔍 [UPDATE] ✅ Match! Substituindo fila:', fila.id, 'por:', filaAtualizada)
+              return filaAtualizada
+            }
+            return fila
+          })
+          console.log('✅ [UPDATE] Estado final:', novasFilas)
+          return novasFilas
+        })
       } else {
-        console.error('Erro ao atualizar fila:', response.status)
+        const errorData = await response.json()
+        console.error('❌ [UPDATE] Erro ao atualizar fila:', response.status, errorData)
       }
     } catch (error) {
-      console.error('Erro ao atualizar fila:', error)
+      console.error('❌ [UPDATE] Erro na requisição:', error)
     }
   }
 
@@ -202,12 +225,24 @@ export default function FilasPage() {
           filas={filteredFilas}
           onUpdateFila={handleUpdateFila}
           onDeleteFila={handleDeleteFila}
+          onEditFila={setEditingFila}
         />
 
         {showCreateModal && (
           <CriarFilaModal
             onClose={() => setShowCreateModal(false)}
             onCreateFila={handleCreateFila}
+          />
+        )}
+
+        {editingFila && (
+          <CriarFilaModal
+            fila={editingFila}
+            onClose={() => setEditingFila(null)}
+            onCreateFila={(filaData) => {
+              handleUpdateFila(editingFila.id, filaData)
+              setEditingFila(null)
+            }}
           />
         )}
       </div>

@@ -1,0 +1,897 @@
+[
+  {
+    "timestamp": "2025-09-07T00:27:26.210Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_started",
+    "data": {
+      "timestamp": "2025-09-07T00:27:26.210Z"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:26.685Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:27.443Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {
+      "status": 200,
+      "ok": true,
+      "statusText": "OK",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Sun, 07 Sep 2025 00:27:27 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
+      }
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:28.046Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_data_received",
+    "data": {
+      "type": "object",
+      "isArray": true,
+      "length": 27,
+      "sample": [
+        {
+          "id": "0@c.us",
+          "name": "",
+          "conversationTimestamp": 1755003680
+        },
+        {
+          "id": "120363401035050552@g.us",
+          "name": "Racish",
+          "conversationTimestamp": 1756958019
+        },
+        {
+          "id": "120363401035050552@c.us",
+          "name": "",
+          "conversationTimestamp": 1756958027
+        }
+      ],
+      "rawData": [
+        {
+          "id": "0@c.us",
+          "name": "",
+          "conversationTimestamp": 1755003680
+        },
+        {
+          "id": "120363401035050552@g.us",
+          "name": "Racish",
+          "conversationTimestamp": 1756958019
+        },
+        {
+          "id": "120363401035050552@c.us",
+          "name": "",
+          "conversationTimestamp": 1756958027
+        },
+        {
+          "id": "120363419442598806@g.us",
+          "name": "Empresa",
+          "conversationTimestamp": 1755622792
+        },
+        {
+          "id": "2349162389789@c.us",
+          "name": "2349162389789",
+          "conversationTimestamp": 1755099018
+        },
+        {
+          "id": "5518981248008@c.us",
+          "name": "Champ",
+          "conversationTimestamp": 1757090799
+        },
+        {
+          "id": "5518991009380@c.us",
+          "name": "Jaque",
+          "conversationTimestamp": 1757165907
+        },
+        {
+          "id": "5518991089999@c.us",
+          "name": "Ane Caroline",
+          "conversationTimestamp": 1753819268
+        },
+        {
+          "id": "5518991222983@c.us",
+          "name": "+55 18 99122-2983",
+          "conversationTimestamp": 1757034918
+        },
+        {
+          "id": "5518991608009@c.us",
+          "name": "Gilberto",
+          "conversationTimestamp": 1756343420
+        },
+        {
+          "id": "5518996064455@c.us",
+          "name": "Willian",
+          "conversationTimestamp": 1756941181
+        },
+        {
+          "id": "5518996066756@c.us",
+          "name": "Clarice",
+          "conversationTimestamp": 1753713183
+        },
+        {
+          "id": "5518996595684@c.us",
+          "name": "Loh",
+          "conversationTimestamp": 1757153977
+        },
+        {
+          "id": "5518996721979@c.us",
+          "name": "romeuribeirosdias",
+          "conversationTimestamp": 1756154428
+        },
+        {
+          "id": "5518997062635@c.us",
+          "name": "Marcio",
+          "conversationTimestamp": 1755535304
+        },
+        {
+          "id": "5518997089040@c.us",
+          "name": "Renan Matos",
+          "conversationTimestamp": 1753877276
+        },
+        {
+          "id": "5518997200106@c.us",
+          "name": "Vyzer",
+          "conversationTimestamp": 1757204476
+        },
+        {
+          "id": "5518997262826@c.us",
+          "name": "Guilherme",
+          "conversationTimestamp": 1755533382
+        },
+        {
+          "id": "5518997402648@c.us",
+          "name": "Gusta",
+          "conversationTimestamp": 1757204268
+        },
+        {
+          "id": "5518997974883@c.us",
+          "name": "Yan",
+          "conversationTimestamp": 1757196300
+        },
+        {
+          "id": "554233018124@c.us",
+          "name": "Gilson Estamos buscando um desenvolvedor para projeto pontual!  A Agência TG09 está contratando um desenvolvedor web freelancer para criação de uma Landing Page profissional + página de contratação com cálculo automático e envio de dados.     Objetivo do Projeto:  Criar uma landing page moderna, leve e com foco em conversão para o nosso produto Rádio TG09 Indoor.  Também será necessário desenvolver uma segunda página de contratação e aceite, onde o cliente:  •\tEscolhe o plano (6 ou 12 meses)  •\tInforma número de lojas  •\tVê o valor total calculado automaticamente  •\tPreenche os dados  •\tAceita os termos via checkbox  •\tEnvia o formulário  •\tE recebe o contrato por e-mail      O que já temos pronto:  •\tDomínio e hospedagem ativa  •\tEstrutura da landing e textos finalizados  •\tIdentidade visual (logo, fontes, cores)  •\tVídeo principal e depoimentos de clientes     Precisamos que o desenvolvedor:  •\tCrie a landing com estrutura responsiva (mobile e desktop)  •\tImplemente o formulário com cálculo automático do plano  •\tConfigure o envio dos dados por e-mail e/ou WhatsApp  •\tIntegre o contrato com dados preenchidos + aceite  •\tEntregue o projeto com boa usabilidade e performance     Contato para proposta ou dúvidas: WhatsApp – Gilson / TG09",
+          "conversationTimestamp": 1755267381
+        },
+        {
+          "id": "554396532909@c.us",
+          "name": "Mae",
+          "conversationTimestamp": 1757032972
+        },
+        {
+          "id": "554399048381@c.us",
+          "name": "Ponei",
+          "conversationTimestamp": 1757007194
+        },
+        {
+          "id": "558004940140@c.us",
+          "name": "558004940140",
+          "conversationTimestamp": 1754096619
+        },
+        {
+          "id": "68268672970970@lid",
+          "name": "",
+          "conversationTimestamp": 1757197965
+        },
+        {
+          "id": "68268672970970@c.us",
+          "name": "",
+          "conversationTimestamp": 1757091859
+        },
+        {
+          "id": "status@broadcast",
+          "name": "",
+          "conversationTimestamp": 1757202968
+        }
+      ]
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:28.728Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:29.927Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": {
+        "demo-1": 0
+      },
+      "orcamentosDetalhes": {
+        "demo-1": []
+      },
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:31.498Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_chats_transformed",
+    "data": {
+      "count": 27,
+      "firstChat": {
+        "id": "0@c.us",
+        "name": "",
+        "conversationTimestamp": 1755003680,
+        "profilePictureUrl": null
+      },
+      "allChatNames": [
+        "",
+        "Racish",
+        "",
+        "Empresa",
+        "2349162389789",
+        "Champ",
+        "Jaque",
+        "Ane Caroline",
+        "+55 18 99122-2983",
+        "Gilberto",
+        "Willian",
+        "Clarice",
+        "Loh",
+        "romeuribeirosdias",
+        "Marcio",
+        "Renan Matos",
+        "Vyzer",
+        "Guilherme",
+        "Gusta",
+        "Yan",
+        "Gilson Estamos buscando um desenvolvedor para projeto pontual!  A Agência TG09 está contratando um desenvolvedor web freelancer para criação de uma Landing Page profissional + página de contratação com cálculo automático e envio de dados.     Objetivo do Projeto:  Criar uma landing page moderna, leve e com foco em conversão para o nosso produto Rádio TG09 Indoor.  Também será necessário desenvolver uma segunda página de contratação e aceite, onde o cliente:  •\tEscolhe o plano (6 ou 12 meses)  •\tInforma número de lojas  •\tVê o valor total calculado automaticamente  •\tPreenche os dados  •\tAceita os termos via checkbox  •\tEnvia o formulário  •\tE recebe o contrato por e-mail      O que já temos pronto:  •\tDomínio e hospedagem ativa  •\tEstrutura da landing e textos finalizados  •\tIdentidade visual (logo, fontes, cores)  •\tVídeo principal e depoimentos de clientes     Precisamos que o desenvolvedor:  •\tCrie a landing com estrutura responsiva (mobile e desktop)  •\tImplemente o formulário com cálculo automático do plano  •\tConfigure o envio dos dados por e-mail e/ou WhatsApp  •\tIntegre o contrato com dados preenchidos + aceite  •\tEntregue o projeto com boa usabilidade e performance     Contato para proposta ou dúvidas: WhatsApp – Gilson / TG09",
+        "Mae",
+        "Ponei",
+        "558004940140",
+        "",
+        "",
+        ""
+      ]
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:31.515Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_success",
+    "data": {
+      "finalChatCount": 27,
+      "success": true
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:31.613Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "whatsappLoading": false
+      }
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:31.625Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 27
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:31.723Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 27,
+      "uniqueCardIds": 27,
+      "sampleCardIds": [
+        "554396532909@c.us",
+        "554399048381@c.us",
+        "558004940140@c.us",
+        "68268672970970@lid",
+        "68268672970970@c.us"
+      ],
+      "allCardIds": [
+        "554396532909@c.us",
+        "554399048381@c.us",
+        "558004940140@c.us",
+        "68268672970970@lid",
+        "68268672970970@c.us",
+        "status@broadcast",
+        "120363401035050552@g.us",
+        "120363401035050552@c.us",
+        "120363419442598806@g.us",
+        "2349162389789@c.us",
+        "5518981248008@c.us",
+        "5518991009380@c.us",
+        "5518991089999@c.us",
+        "5518991222983@c.us",
+        "5518991608009@c.us",
+        "5518996064455@c.us",
+        "5518996066756@c.us",
+        "5518996595684@c.us",
+        "5518996721979@c.us",
+        "5518997062635@c.us",
+        "5518997089040@c.us",
+        "5518997200106@c.us",
+        "5518997262826@c.us",
+        "5518997402648@c.us",
+        "5518997974883@c.us",
+        "554233018124@c.us",
+        "0@c.us"
+      ]
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:32.867Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "554396532909@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:33.556Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "554399048381@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:34.242Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "558004940140@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:34.931Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "68268672970970@lid",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:35.626Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "68268672970970@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:36.312Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "status@broadcast",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:37.007Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "120363401035050552@g.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:38.455Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "120363401035050552@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:39.140Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "120363419442598806@g.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:39.837Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "2349162389789@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:40.525Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518981248008@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:41.206Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518991009380@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:41.889Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518991089999@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:42.587Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518991222983@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:43.273Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518991608009@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:43.956Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996064455@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:45.024Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996066756@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:45.711Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996595684@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:46.410Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996721979@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:47.095Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997062635@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:47.797Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997089040@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:48.523Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997200106@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:49.224Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997262826@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:49.942Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997402648@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:50.731Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997974883@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:52.195Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "554233018124@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:52.915Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "0@c.us",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  },
+  {
+    "timestamp": "2025-09-07T00:27:52.939Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "554396532909@c.us": 0,
+        "554399048381@c.us": 0,
+        "558004940140@c.us": 0,
+        "68268672970970@lid": 0,
+        "68268672970970@c.us": 0,
+        "status@broadcast": 0,
+        "120363401035050552@g.us": 0,
+        "120363401035050552@c.us": 0,
+        "120363419442598806@g.us": 0,
+        "2349162389789@c.us": 0,
+        "5518981248008@c.us": 0,
+        "5518991009380@c.us": 0,
+        "5518991089999@c.us": 0,
+        "5518991222983@c.us": 0,
+        "5518991608009@c.us": 0,
+        "5518996064455@c.us": 0,
+        "5518996066756@c.us": 0,
+        "5518996595684@c.us": 0,
+        "5518996721979@c.us": 0,
+        "5518997062635@c.us": 0,
+        "5518997089040@c.us": 0,
+        "5518997200106@c.us": 0,
+        "5518997262826@c.us": 0,
+        "5518997402648@c.us": 0,
+        "5518997974883@c.us": 0,
+        "554233018124@c.us": 0,
+        "0@c.us": 0
+      },
+      "orcamentosCounts": {
+        "554396532909@c.us": 0,
+        "554399048381@c.us": 0,
+        "558004940140@c.us": 0,
+        "68268672970970@lid": 0,
+        "68268672970970@c.us": 0,
+        "status@broadcast": 0,
+        "120363401035050552@g.us": 0,
+        "120363401035050552@c.us": 0,
+        "120363419442598806@g.us": 0,
+        "2349162389789@c.us": 0,
+        "5518981248008@c.us": 0,
+        "5518991009380@c.us": 0,
+        "5518991089999@c.us": 0,
+        "5518991222983@c.us": 0,
+        "5518991608009@c.us": 0,
+        "5518996064455@c.us": 0,
+        "5518996066756@c.us": 0,
+        "5518996595684@c.us": 0,
+        "5518996721979@c.us": 0,
+        "5518997062635@c.us": 0,
+        "5518997089040@c.us": 0,
+        "5518997200106@c.us": 0,
+        "5518997262826@c.us": 0,
+        "5518997402648@c.us": 0,
+        "5518997974883@c.us": 0,
+        "554233018124@c.us": 0,
+        "0@c.us": 0
+      },
+      "orcamentosDetalhes": {
+        "554396532909@c.us": [],
+        "554399048381@c.us": [],
+        "558004940140@c.us": [],
+        "68268672970970@lid": [],
+        "68268672970970@c.us": [],
+        "status@broadcast": [],
+        "120363401035050552@g.us": [],
+        "120363401035050552@c.us": [],
+        "120363419442598806@g.us": [],
+        "2349162389789@c.us": [],
+        "5518981248008@c.us": [],
+        "5518991009380@c.us": [],
+        "5518991089999@c.us": [],
+        "5518991222983@c.us": [],
+        "5518991608009@c.us": [],
+        "5518996064455@c.us": [],
+        "5518996066756@c.us": [],
+        "5518996595684@c.us": [],
+        "5518996721979@c.us": [],
+        "5518997062635@c.us": [],
+        "5518997089040@c.us": [],
+        "5518997200106@c.us": [],
+        "5518997262826@c.us": [],
+        "5518997402648@c.us": [],
+        "5518997974883@c.us": [],
+        "554233018124@c.us": [],
+        "0@c.us": []
+      },
+      "totalOrcamentosCards": 27,
+      "cardsWithOrcamentos": []
+    },
+    "userId": "5141316f-40bd-4e2e-bc5b-c0e582537d73"
+  }
+]

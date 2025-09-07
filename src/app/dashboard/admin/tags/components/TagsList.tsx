@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Tag,
   Edit,
@@ -40,6 +41,11 @@ interface Contato {
     id: string
     contatoId: string
     tagId: string
+    tag_id?: string  // Para compatibilidade backend
+    Tag?: {          // Dados da tag preloadada
+      id: string
+      nome: string
+    }
   }>
 }
 
@@ -66,13 +72,29 @@ export default function TagsList({
   onToggleFavorito,
   onToggleStatus
 }: TagsListProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [hoveredTag, setHoveredTag] = useState<string | null>(null)
   
   // Função para contar contatos associados a uma tag
   const getContatosCount = (tagId: string) => {
-    return contatos.filter(contato => 
-      contato.tags && contato.tags.some(tag => tag.tagId === tagId)
-    ).length
+    const count = contatos.filter(contato => {
+      if (!contato.tags || contato.tags.length === 0) return false
+      
+      // Verificar se há tags com este tagId (suportar diferentes formatos)
+      const hasTag = contato.tags.some(tag => 
+        tag.tagId === tagId || tag.tag_id === tagId || tag.Tag?.id === tagId
+      )
+      
+      if (hasTag) {
+        console.log(`🏷️ Contato "${contato.nome}" tem a tag ${tagId}:`, contato.tags)
+      }
+      
+      return hasTag
+    }).length
+    
+    console.log(`📊 Tag ${tagId} tem ${count} contatos associados`)
+    return count
   }
 
   const handleSelectTag = (tagId: string) => {
@@ -121,19 +143,35 @@ export default function TagsList({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-200"
+        className={`rounded-2xl p-12 text-center shadow-sm border ${
+          isDark 
+            ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+            : 'bg-white border-gray-200'
+        }`}
       >
-        <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Tag className="w-10 h-10 text-gray-400" />
+        <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+          isDark ? 'bg-slate-700' : 'bg-gray-100'
+        }`}>
+          <Tag className={`w-10 h-10 ${
+            isDark ? 'text-gray-400' : 'text-gray-400'
+          }`} />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma tag encontrada</h3>
-        <p className="text-gray-600 mb-6">
+        <h3 className={`text-xl font-bold mb-2 ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}>Nenhuma tag encontrada</h3>
+        <p className={`mb-6 ${
+          isDark ? 'text-gray-300' : 'text-gray-600'
+        }`}>
           Não há tags que correspondam aos filtros selecionados.
         </p>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-xl font-semibold"
+          className={`px-6 py-3 rounded-xl font-semibold ${
+            isDark 
+              ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white' 
+              : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white'
+          }`}
         >
           Criar primeira tag
         </motion.button>
@@ -153,10 +191,14 @@ export default function TagsList({
             whileHover={{ y: -4, scale: 1.02 }}
             onMouseEnter={() => setHoveredTag(tag.id)}
             onMouseLeave={() => setHoveredTag(null)}
-            className={`bg-white rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 cursor-pointer ${
+            className={`rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 cursor-pointer ${
               selectedTags.includes(tag.id)
-                ? 'border-[#305e73] bg-[#305e73]/5'
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
+                ? (isDark 
+                    ? 'border-emerald-500 bg-emerald-900/20'
+                    : 'border-[#305e73] bg-[#305e73]/5')
+                : (isDark 
+                    ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 hover:shadow-2xl hover:shadow-slate-900/20'
+                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-lg')
             }`}
             onClick={() => handleSelectTag(tag.id)}
           >
@@ -171,12 +213,16 @@ export default function TagsList({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-gray-900 truncate">{tag.nome}</h3>
+                    <h3 className={`font-bold truncate ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>{tag.nome}</h3>
                     {tag.favorito && (
                       <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-sm text-gray-500">{tag.categoria}</p>
+                  <p className={`text-sm ${
+                    isDark ? 'text-gray-300' : 'text-gray-500'
+                  }`}>{tag.categoria}</p>
                 </div>
               </div>
 
@@ -192,7 +238,9 @@ export default function TagsList({
                   className={`p-1.5 rounded-lg transition-colors ${
                     tag.favorito 
                       ? 'text-yellow-500 hover:bg-yellow-50' 
-                      : 'text-gray-400 hover:bg-gray-100'
+                      : (isDark 
+                          ? 'text-gray-400 hover:bg-slate-700' 
+                          : 'text-gray-400 hover:bg-gray-100')
                   }`}
                 >
                   <Star className={`w-4 h-4 ${tag.favorito ? 'fill-current' : ''}`} />
@@ -208,7 +256,9 @@ export default function TagsList({
                   className={`p-1.5 rounded-lg transition-colors ${
                     tag.ativo 
                       ? 'text-green-500 hover:bg-green-50' 
-                      : 'text-gray-400 hover:bg-gray-100'
+                      : (isDark 
+                          ? 'text-gray-400 hover:bg-slate-700' 
+                          : 'text-gray-400 hover:bg-gray-100')
                   }`}
                 >
                   {tag.ativo ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -218,7 +268,9 @@ export default function TagsList({
 
             {/* Description */}
             {tag.descricao && (
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+              <p className={`text-sm mb-4 line-clamp-2 ${
+                isDark ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 {tag.descricao}
               </p>
             )}
@@ -227,30 +279,42 @@ export default function TagsList({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <TrendingUp className={`w-4 h-4 ${
+                    isDark ? 'text-gray-400' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
+                  }`}>
                     {tag.uso_count} usos
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <Users className={`w-4 h-4 ${
+                    isDark ? 'text-gray-400' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
+                  }`}>
                     {getContatosCount(tag.id)} contatos
                   </span>
                 </div>
               </div>
               <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                 tag.ativo 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-gray-100 text-gray-600'
+                  ? (isDark ? 'bg-green-900/30 text-green-400 border border-green-700' : 'bg-green-100 text-green-700') 
+                  : (isDark ? 'bg-gray-700 text-gray-300 border border-gray-600' : 'bg-gray-100 text-gray-600')
               }`}>
                 {tag.ativo ? 'Ativa' : 'Inativa'}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className={`flex items-center justify-between pt-4 border-t ${
+              isDark ? 'border-slate-600' : 'border-gray-100'
+            }`}>
+              <div className={`flex items-center gap-2 text-xs ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 <Calendar className="w-3 h-3" />
                 <span>{formatDate(tag.criado_em)}</span>
               </div>
@@ -271,7 +335,11 @@ export default function TagsList({
                         e.stopPropagation()
                         copyTagName(tag.nome)
                       }}
-                      className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                      className={`p-1 rounded transition-colors ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-blue-400 hover:bg-slate-700' 
+                          : 'text-gray-400 hover:text-blue-500 hover:bg-blue-50'
+                      }`}
                     >
                       <Copy className="w-3 h-3" />
                     </motion.button>
@@ -283,7 +351,11 @@ export default function TagsList({
                         e.stopPropagation()
                         onEditTag(tag)
                       }}
-                      className="p-1 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded"
+                      className={`p-1 rounded transition-colors ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-green-400 hover:bg-slate-700' 
+                          : 'text-gray-400 hover:text-green-500 hover:bg-green-50'
+                      }`}
                     >
                       <Edit className="w-3 h-3" />
                     </motion.button>
@@ -295,7 +367,11 @@ export default function TagsList({
                         e.stopPropagation()
                         onDeleteTag(tag.id)
                       }}
-                      className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                      className={`p-1 rounded transition-colors ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-red-400 hover:bg-slate-700' 
+                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                      }`}
                     >
                       <Trash2 className="w-3 h-3" />
                     </motion.button>
@@ -309,7 +385,9 @@ export default function TagsList({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 bg-[#305e73] rounded-full flex items-center justify-center"
+                className={`absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center ${
+                  isDark ? 'bg-emerald-500' : 'bg-[#305e73]'
+                }`}
               >
                 <motion.div
                   initial={{ scale: 0 }}
@@ -327,10 +405,20 @@ export default function TagsList({
 
   // List View
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className={`rounded-2xl shadow-sm border overflow-hidden ${
+      isDark 
+        ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+        : 'bg-white border-gray-200'
+    }`}>
       {/* Header */}
-      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-        <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+      <div className={`px-6 py-4 border-b ${
+        isDark 
+          ? 'bg-slate-700/50 border-slate-600' 
+          : 'bg-gray-50 border-gray-200'
+      }`}>
+        <div className={`grid grid-cols-12 gap-4 text-sm font-semibold ${
+          isDark ? 'text-gray-200' : 'text-gray-700'
+        }`}>
           <div className="col-span-1">
             <input
               type="checkbox"
@@ -355,15 +443,19 @@ export default function TagsList({
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-gray-100">
+      <div className={`divide-y ${
+        isDark ? 'divide-slate-600' : 'divide-gray-100'
+      }`}>
         {tags.map((tag, index) => (
           <motion.div
             key={tag.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.03 }}
-            className={`px-6 py-4 hover:bg-gray-50 transition-colors ${
-              selectedTags.includes(tag.id) ? 'bg-[#305e73]/5' : ''
+            className={`px-6 py-4 transition-colors ${
+              selectedTags.includes(tag.id) 
+                ? (isDark ? 'bg-emerald-900/20' : 'bg-[#305e73]/5') 
+                : (isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50')
             }`}
           >
             <div className="grid grid-cols-12 gap-4 items-center">
@@ -373,7 +465,11 @@ export default function TagsList({
                   type="checkbox"
                   checked={selectedTags.includes(tag.id)}
                   onChange={() => handleSelectTag(tag.id)}
-                  className="rounded border-gray-300 text-[#305e73] focus:ring-[#305e73]"
+                  className={`rounded focus:ring-2 ${
+                    isDark 
+                      ? 'border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500' 
+                      : 'border-gray-300 text-[#305e73] focus:ring-[#305e73]'
+                  }`}
                 />
               </div>
 
@@ -388,13 +484,17 @@ export default function TagsList({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{tag.nome}</span>
+                      <span className={`font-medium ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>{tag.nome}</span>
                       {tag.favorito && (
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
                       )}
                     </div>
                     {tag.descricao && (
-                      <p className="text-sm text-gray-500 truncate max-w-[200px]">
+                      <p className={`text-sm truncate max-w-[200px] ${
+                        isDark ? 'text-gray-300' : 'text-gray-500'
+                      }`}>
                         {tag.descricao}
                       </p>
                     )}
@@ -404,7 +504,9 @@ export default function TagsList({
 
               {/* Categoria */}
               <div className="col-span-2">
-                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm">
+                <span className={`px-2 py-1 rounded-lg text-sm ${
+                  isDark ? 'bg-slate-600 text-gray-200' : 'bg-gray-100 text-gray-700'
+                }`}>
                   {tag.categoria}
                 </span>
               </div>
@@ -412,8 +514,12 @@ export default function TagsList({
               {/* Usos */}
               <div className="col-span-2">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium text-gray-900">{tag.uso_count}</span>
+                  <TrendingUp className={`w-4 h-4 ${
+                    isDark ? 'text-gray-400' : 'text-gray-400'
+                  }`} />
+                  <span className={`font-medium ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>{tag.uso_count}</span>
                 </div>
               </div>
 
@@ -424,7 +530,9 @@ export default function TagsList({
                     tag.ativo ? 'bg-green-500' : 'bg-gray-400'
                   }`} />
                   <span className={`text-sm ${
-                    tag.ativo ? 'text-green-700' : 'text-gray-500'
+                    tag.ativo 
+                      ? (isDark ? 'text-green-400' : 'text-green-700') 
+                      : (isDark ? 'text-gray-400' : 'text-gray-500')
                   }`}>
                     {tag.ativo ? 'Ativa' : 'Inativa'}
                   </span>
@@ -433,7 +541,9 @@ export default function TagsList({
 
               {/* Criado */}
               <div className="col-span-1">
-                <span className="text-sm text-gray-500">
+                <span className={`text-sm ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
                   {formatDate(tag.criado_em)}
                 </span>
               </div>
@@ -448,7 +558,9 @@ export default function TagsList({
                     className={`p-1.5 rounded-lg transition-colors ${
                       tag.favorito 
                         ? 'text-yellow-500 hover:bg-yellow-50' 
-                        : 'text-gray-400 hover:bg-gray-100'
+                        : (isDark 
+                            ? 'text-gray-400 hover:bg-slate-600' 
+                            : 'text-gray-400 hover:bg-gray-100')
                     }`}
                   >
                     <Star className={`w-4 h-4 ${tag.favorito ? 'fill-current' : ''}`} />
@@ -458,7 +570,11 @@ export default function TagsList({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => onEditTag(tag)}
-                    className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors"
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-green-400 hover:bg-slate-600' 
+                        : 'text-gray-400 hover:text-green-500 hover:bg-green-50'
+                    }`}
                   >
                     <Edit className="w-4 h-4" />
                   </motion.button>
@@ -467,7 +583,11 @@ export default function TagsList({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => onDeleteTag(tag.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-red-400 hover:bg-slate-600' 
+                        : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                    }`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </motion.button>

@@ -5,6 +5,7 @@ import { X, User, Mail, Phone, Calendar, Activity, Star, BarChart3, Clock, Check
 import { AtendenteComStats } from '@/hooks/useAtendentes'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface VisualizarAtendenteModalProps {
   atendente: AtendenteComStats
@@ -17,6 +18,7 @@ export default function VisualizarAtendenteModal({
   onClose,
   onEdit
 }: VisualizarAtendenteModalProps) {
+  const { actualTheme } = useTheme()
   const getInitials = (nome: string) => {
     return nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
@@ -36,7 +38,7 @@ export default function VisualizarAtendenteModal({
   }
 
   const getTipoColor = (tipo: string) => {
-    const colors: Record<string, string> = {
+    const lightColors: Record<string, string> = {
       'ADMIN': 'text-purple-600 bg-purple-100',
       'ATENDENTE_COMERCIAL': 'text-blue-600 bg-blue-100',
       'ATENDENTE_FINANCEIRO': 'text-green-600 bg-green-100',
@@ -46,7 +48,20 @@ export default function VisualizarAtendenteModal({
       'ASSINANTE': 'text-cyan-600 bg-cyan-100',
       'AFILIADO': 'text-yellow-600 bg-yellow-100'
     }
-    return colors[tipo] || 'text-gray-600 bg-gray-100'
+    
+    const darkColors: Record<string, string> = {
+      'ADMIN': 'text-purple-300 bg-purple-900/50',
+      'ATENDENTE_COMERCIAL': 'text-blue-300 bg-blue-900/50',
+      'ATENDENTE_FINANCEIRO': 'text-green-300 bg-green-900/50',
+      'ATENDENTE_JURIDICO': 'text-indigo-300 bg-indigo-900/50',
+      'ATENDENTE_SUPORTE': 'text-orange-300 bg-orange-900/50',
+      'ATENDENTE_VENDAS': 'text-pink-300 bg-pink-900/50',
+      'ASSINANTE': 'text-cyan-300 bg-cyan-900/50',
+      'AFILIADO': 'text-yellow-300 bg-yellow-900/50'
+    }
+    
+    const colors = actualTheme === 'dark' ? darkColors : lightColors
+    return colors[tipo] || (actualTheme === 'dark' ? 'text-gray-300 bg-gray-700/50' : 'text-gray-600 bg-gray-100')
   }
 
   return (
@@ -56,7 +71,11 @@ export default function VisualizarAtendenteModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+          className={`rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden backdrop-blur-sm ${
+            actualTheme === 'dark'
+              ? 'bg-slate-800/90 border border-slate-700/50'
+              : 'bg-white'
+          }`}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-[#305e73] to-[#273155] px-6 py-4 text-white">
@@ -76,7 +95,11 @@ export default function VisualizarAtendenteModal({
             {/* Profile Section */}
             <div className="flex items-start gap-6 mb-6">
               <div className="relative">
-                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold ${
+                  actualTheme === 'dark'
+                    ? 'bg-slate-700/50 text-white border border-slate-600/50'
+                    : 'bg-gray-100 text-gray-700 border border-gray-200'
+                }`}>
                   {getInitials(atendente.nome)}
                 </div>
                 <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white ${
@@ -86,14 +109,20 @@ export default function VisualizarAtendenteModal({
 
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-bold text-gray-900">{atendente.nome}</h3>
+                  <h3 className={`text-2xl font-bold ${
+                    actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>{atendente.nome}</h3>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTipoColor(atendente.tipo)}`}>
                     {getTipoLabel(atendente.tipo)}
                   </span>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
                     atendente.ativo 
-                      ? 'text-green-700 bg-green-100' 
-                      : 'text-red-700 bg-red-100'
+                      ? actualTheme === 'dark'
+                        ? 'text-green-300 bg-green-900/50'
+                        : 'text-green-700 bg-green-100'
+                      : actualTheme === 'dark'
+                        ? 'text-red-300 bg-red-900/50'
+                        : 'text-red-700 bg-red-100'
                   }`}>
                     {atendente.ativo ? (
                       <><CheckCircle className="w-4 h-4" />Ativo</>
@@ -103,7 +132,9 @@ export default function VisualizarAtendenteModal({
                   </span>
                 </div>
                 
-                <div className="space-y-2 text-gray-600">
+                <div className={`space-y-2 ${
+                  actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                }`}>
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4" />
                     <span>{atendente.email}</span>
@@ -121,22 +152,38 @@ export default function VisualizarAtendenteModal({
 
             {/* Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className={`rounded-xl p-4 ${
+                actualTheme === 'dark'
+                  ? 'bg-slate-700/50 border border-slate-600/50'
+                  : 'bg-gray-50'
+              }`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-5 h-5 text-[#305e73]" />
-                  <h4 className="font-semibold text-gray-900">Data de Criação</h4>
+                  <h4 className={`font-semibold ${
+                    actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Data de Criação</h4>
                 </div>
-                <p className="text-gray-600">
+                <p className={`${
+                  actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                }`}>
                   {format(new Date(atendente.criadoEm), 'dd/MM/yyyy \'às\' HH:mm', { locale: ptBR })}
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className={`rounded-xl p-4 ${
+                actualTheme === 'dark'
+                  ? 'bg-slate-700/50 border border-slate-600/50'
+                  : 'bg-gray-50'
+              }`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Activity className="w-5 h-5 text-[#305e73]" />
-                  <h4 className="font-semibold text-gray-900">Última Atualização</h4>
+                  <h4 className={`font-semibold ${
+                    actualTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Última Atualização</h4>
                 </div>
-                <p className="text-gray-600">
+                <p className={`${
+                  actualTheme === 'dark' ? 'text-white/70' : 'text-gray-600'
+                }`}>
                   {format(new Date(atendente.atualizadoEm), 'dd/MM/yyyy \'às\' HH:mm', { locale: ptBR })}
                 </p>
               </div>
@@ -204,7 +251,11 @@ export default function VisualizarAtendenteModal({
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className={`flex-1 px-4 py-2 border rounded-lg transition-colors ${
+                  actualTheme === 'dark'
+                    ? 'text-white/80 border-slate-600/50 hover:bg-slate-700/50'
+                    : 'text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
               >
                 Fechar
               </button>

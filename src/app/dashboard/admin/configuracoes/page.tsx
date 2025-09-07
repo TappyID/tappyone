@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AdminLayout } from '../components/AdminLayout'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Settings,
   Palette,
@@ -152,6 +153,8 @@ const configSections: ConfigSection[] = [
 export default function ConfiguracoesPage() {
   const { user, isAuthenticated, loading } = useAuth()
   const router = useRouter()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   
   const [activeSection, setActiveSection] = useState('geral')
   const [searchQuery, setSearchQuery] = useState('')
@@ -166,7 +169,11 @@ export default function ConfiguracoesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDark 
+          ? 'bg-gradient-to-br from-slate-900 to-slate-800'
+          : 'bg-gradient-to-br from-gray-50 to-gray-100'
+      }`}>
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#273155]"></div>
       </div>
     )
@@ -225,14 +232,26 @@ export default function ConfiguracoesPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="bg-gradient-to-r from-[#273155] to-[#1e2442] rounded-2xl p-8 text-white">
+          <div className={`rounded-2xl p-8 text-white relative overflow-hidden ${
+            isDark 
+              ? 'bg-gradient-to-r from-slate-800/90 to-slate-700/90 backdrop-blur-xl border border-slate-600/50'
+              : 'bg-gradient-to-r from-[#273155] to-[#1e2442]'
+          }`}>
+            {/* Glass effect layers for dark mode */}
+            {isDark && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-800/40 via-slate-900/20 to-slate-800/40 rounded-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/10 rounded-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+              </>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <motion.h1
@@ -287,23 +306,42 @@ export default function ConfiguracoesPage() {
             transition={{ delay: 0.4 }}
             className="lg:col-span-1"
           >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden sticky top-6">
+            <div className={`rounded-2xl shadow-lg border overflow-hidden sticky top-6 relative ${
+              isDark 
+                ? 'bg-slate-800/50 backdrop-blur-xl border-slate-600/50'
+                : 'bg-white border-gray-200'
+            }`}>
+              {/* Glass effect for dark mode */}
+              {isDark && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-800/40 via-slate-900/20 to-slate-800/40 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 rounded-2xl" />
+                </>
+              )}
               {/* Search */}
-              <div className="p-4 border-b border-gray-200">
+              <div className={`p-4 border-b relative z-10 ${
+                isDark ? 'border-slate-600/50' : 'border-gray-200'
+              }`}>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                    isDark ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Buscar configurações..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDark 
+                        ? 'border-slate-600 bg-slate-700/50 text-white placeholder:text-gray-400'
+                        : 'border-gray-300 bg-white text-gray-900 placeholder:text-gray-400'
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Seções */}
-              <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+              <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative z-10">
                 <div className="p-2">
                   {filteredSections.map((section, index) => {
                     const isActive = activeSection === section.id
@@ -318,19 +356,42 @@ export default function ConfiguracoesPage() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleSectionChange(section.id)}
-                        className={`w-full text-left p-4 rounded-xl transition-all duration-200 mb-2 group ${
+                        className={`w-full text-left p-4 rounded-xl transition-all duration-200 mb-2 group relative overflow-hidden ${
                           isActive
-                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-md'
-                            : 'hover:bg-gray-50 border-2 border-transparent'
+                            ? isDark
+                              ? 'border-2 border-blue-400/50 shadow-md'
+                              : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-md'
+                            : isDark
+                              ? 'hover:bg-slate-700/30 border-2 border-transparent'
+                              : 'hover:bg-gray-50 border-2 border-transparent'
                         }`}
+                        style={isActive && isDark ? {
+                          background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(55, 65, 81, 0.9) 100%)',
+                          backdropFilter: 'blur(20px)',
+                          border: '2px solid rgba(59, 130, 246, 0.3)',
+                          boxShadow: '0 20px 40px -12px rgba(31, 41, 55, 0.6), 0 0 0 1px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        } : {}}
                       >
-                        <div className="flex items-center gap-3">
+                        {/* Glass effect layers for active tab in dark mode */}
+                        {isActive && isDark && (
+                          <>
+                            <div className="absolute inset-0 bg-gradient-to-br from-slate-800/40 via-slate-900/20 to-slate-800/40 rounded-xl" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/10 rounded-xl" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-xl" />
+                            <div className="absolute inset-0 rounded-xl border border-white/10" />
+                          </>
+                        )}
+                        <div className="flex items-center gap-3 relative z-10">
                           <div className={`p-2 rounded-lg ${section.bgColor} ${isActive ? 'shadow-sm' : ''}`}>
                             <Icon className={`w-4 h-4 ${section.color}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <h3 className={`font-semibold text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+                              <h3 className={`font-semibold text-sm ${
+                              isActive 
+                                ? isDark ? 'text-blue-300' : 'text-blue-900'
+                                : isDark ? 'text-white' : 'text-gray-900'
+                            }`}>
                                 {section.title}
                               </h3>
                               {section.badge && (
@@ -344,12 +405,18 @@ export default function ConfiguracoesPage() {
                                 </span>
                               )}
                             </div>
-                            <p className={`text-xs mt-1 ${isActive ? 'text-blue-700' : 'text-gray-600'}`}>
+                            <p className={`text-xs mt-1 ${
+                              isActive 
+                                ? isDark ? 'text-blue-200' : 'text-blue-700'
+                                : isDark ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
                               {section.description}
                             </p>
                           </div>
                           <ChevronRight className={`w-4 h-4 transition-transform ${
-                            isActive ? 'rotate-90 text-blue-600' : 'text-gray-400 group-hover:text-gray-600'
+                            isActive 
+                              ? isDark ? 'rotate-90 text-blue-400' : 'rotate-90 text-blue-600'
+                              : isDark ? 'text-gray-500 group-hover:text-gray-400' : 'text-gray-400 group-hover:text-gray-600'
                           }`} />
                         </div>
                       </motion.button>
@@ -367,18 +434,35 @@ export default function ConfiguracoesPage() {
             transition={{ delay: 0.6 }}
             className="lg:col-span-3"
           >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 min-h-[600px]">
+            <div className={`rounded-2xl shadow-lg border min-h-[600px] relative ${
+              isDark 
+                ? 'bg-slate-800/50 backdrop-blur-xl border-slate-600/50'
+                : 'bg-white border-gray-200'
+            }`}>
+              {/* Glass effect for dark mode */}
+              {isDark && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-800/40 via-slate-900/20 to-slate-800/40 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 rounded-2xl" />
+                </>
+              )}
               {/* Header da Seção */}
               {activeConfig && (
-                <div className="p-6 border-b border-gray-200">
+                <div className={`p-6 border-b relative z-10 ${
+                  isDark ? 'border-slate-600/50' : 'border-gray-200'
+                }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`p-3 rounded-xl ${activeConfig.bgColor}`}>
                         <activeConfig.icon className={`w-6 h-6 ${activeConfig.color}`} />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">{activeConfig.title}</h2>
-                        <p className="text-gray-600 mt-1">{activeConfig.description}</p>
+                        <h2 className={`text-2xl font-bold ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>{activeConfig.title}</h2>
+                        <p className={`mt-1 ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>{activeConfig.description}</p>
                       </div>
                     </div>
 
@@ -388,7 +472,9 @@ export default function ConfiguracoesPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="flex items-center gap-3"
                       >
-                        <span className="text-sm text-orange-600 font-medium">Alterações não salvas</span>
+                        <span className={`text-sm font-medium ${
+                          isDark ? 'text-orange-400' : 'text-orange-600'
+                        }`}>Alterações não salvas</span>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -405,7 +491,7 @@ export default function ConfiguracoesPage() {
               )}
 
               {/* Conteúdo da Seção */}
-              <div className="p-6">
+              <div className="p-6 relative z-10">
                 <AnimatePresence mode="wait">
                   {ActiveComponent && (
                     <motion.div
@@ -442,9 +528,25 @@ export default function ConfiguracoesPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="fixed inset-0 z-50 flex items-center justify-center p-4"
               >
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-md w-full">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Alterações não salvas</h3>
-                  <p className="text-gray-600 mb-6">
+                <div className={`rounded-2xl shadow-2xl border p-6 max-w-md w-full relative ${
+                  isDark 
+                    ? 'bg-slate-800/90 backdrop-blur-xl border-slate-600/50'
+                    : 'bg-white border-gray-200'
+                }`}>
+                  {/* Glass effect for dark mode */}
+                  {isDark && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-800/40 via-slate-900/20 to-slate-800/40 rounded-2xl" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/10 rounded-2xl" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent rounded-2xl" />
+                    </>
+                  )}
+                  <h3 className={`text-lg font-bold mb-2 relative z-10 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>Alterações não salvas</h3>
+                  <p className={`mb-6 relative z-10 ${
+                    isDark ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
                     Você tem alterações não salvas. O que deseja fazer?
                   </p>
                   
@@ -461,7 +563,11 @@ export default function ConfiguracoesPage() {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       onClick={handleDiscardChanges}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
+                      className={`flex-1 px-4 py-2 border rounded-lg font-medium flex items-center justify-center gap-2 ${
+                        isDark 
+                          ? 'border-slate-600 text-slate-300 hover:bg-slate-700/30'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
                       <RotateCcw className="w-4 h-4" />
                       Descartar

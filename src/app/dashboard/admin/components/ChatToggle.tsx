@@ -264,11 +264,11 @@ export function ChatToggle({ sidebarCollapsed = true }: ChatToggleProps) {
       {/* WhatsApp Toggle Button */}
       <motion.button
         onClick={toggleModal}
-        className={`relative p-2 rounded-xl transition-colors duration-200 group ${
+        className={`w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 group ${
           sidebarCollapsed 
-            ? 'hover:bg-gray-100 text-gray-600'
-            : 'hover:bg-white/10 text-white'
-        }`}
+            ? 'bg-white/70 border-white/20 hover:bg-white/90 hover:shadow-md text-gray-600'
+            : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+        } shadow-sm hover:shadow-lg`}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >

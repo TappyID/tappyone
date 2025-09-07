@@ -7,6 +7,7 @@ import {
   Filter,
   Users,
   UserPlus,
+  RefreshCw,
   MoreHorizontal,
   Star,
   MessageCircle,
@@ -26,6 +27,7 @@ import {
   MoreVertical
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useTheme } from '@/contexts/ThemeContext'
 import ContactActionModal from './ContactActionModal'
 import CreateContactModal from './CreateContactModal'
 
@@ -59,7 +61,9 @@ interface Contato {
   estado?: string
 }
 
-export default function ContatosList({ searchQuery }: ContatosListProps) {
+export default function ContatosList({ searchQuery, refreshKey }: ContatosListProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [contatos, setContatos] = useState<Contato[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -135,7 +139,7 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
 
   useEffect(() => {
     loadContatos()
-  }, [])
+  }, [refreshKey])
 
   // Filtrar contatos baseado na busca
   const filteredContatos = contatos.filter(contato => {
@@ -207,10 +211,16 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+      <div className={`rounded-2xl p-8 shadow-sm border ${
+        isDark 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      }`}>
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#305e73]"></div>
-          <span className="ml-2 text-gray-600">Carregando contatos...</span>
+          <span className={`ml-2 ${
+            isDark ? 'text-gray-300' : 'text-gray-600'
+          }`}>Carregando contatos...</span>
         </div>
       </div>
     )
@@ -218,12 +228,22 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
 
   if (filteredContatos.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 text-center">
-        <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+      <div className={`rounded-2xl p-8 shadow-sm border text-center ${
+        isDark 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      }`}>
+        <Users className={`w-12 h-12 mx-auto mb-4 ${
+          isDark ? 'text-gray-500' : 'text-gray-400'
+        }`} />
+        <h3 className={`text-lg font-semibold mb-2 ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}>
           {searchQuery ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado'}
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className={`mb-6 ${
+          isDark ? 'text-gray-400' : 'text-gray-600'
+        }`}>
           {searchQuery 
             ? 'Tente ajustar sua busca para encontrar contatos'
             : 'Seus contatos do WhatsApp aparecerão aqui automaticamente'
@@ -231,22 +251,84 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
         </p>
         {!searchQuery && (
           <div className="flex gap-4 justify-center">
-            <motion.button 
+            <motion.button
+              whileHover={{ scale: 1.05, y: -3 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setIsCreateModalOpen(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
+              className={`relative flex items-center gap-2 px-6 py-3 font-semibold transition-all duration-500 group overflow-hidden ${
+                isDark
+                  ? 'text-white'
+                  : 'bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl shadow-lg hover:shadow-xl'
+              }`}
+              style={isDark ? {
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.8) 0%, rgba(21, 128, 61, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: '16px',
+                boxShadow: '0 20px 40px -12px rgba(34, 197, 94, 0.6), 0 0 0 1px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+              } : {}}
             >
-              <UserPlus className="w-5 h-5" />
-              Novo Contato
+              {/* Glass effect layers for dark mode */}
+              {isDark && (
+                <>
+                  {/* Base glass layer */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-slate-800/60 rounded-2xl" />
+                  
+                  {/* Green accent layer */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 via-transparent to-emerald-500/20 rounded-2xl" />
+                  
+                  {/* Light reflection */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-2xl" />
+                  
+                  {/* Animated border glow */}
+                  <div className="absolute inset-0 rounded-2xl border border-white/20 group-hover:border-green-400/50 transition-all duration-500" />
+                  
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                </>
+              )}
+              
+              <UserPlus className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">Novo Contato</span>
             </motion.button>
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
+            <motion.button
+              whileHover={{ scale: 1.05, y: -3 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
+              className={`relative flex items-center gap-2 px-6 py-3 font-semibold transition-all duration-500 group overflow-hidden ${
+                isDark
+                  ? 'text-white'
+                  : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl shadow-lg hover:shadow-xl'
+              }`}
+              style={isDark ? {
+                background: 'linear-gradient(135deg, rgba(48, 94, 115, 0.8) 0%, rgba(58, 109, 132, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: '16px',
+                boxShadow: '0 20px 40px -12px rgba(48, 94, 115, 0.6), 0 0 0 1px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+              } : {}}
             >
-              <UserPlus className="w-5 h-5" />
-              Sincronizar Contatos
+              {/* Glass effect layers for dark mode */}
+              {isDark && (
+                <>
+                  {/* Base glass layer */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-slate-800/60 rounded-2xl" />
+                  
+                  {/* Blue accent layer */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-transparent to-cyan-500/20 rounded-2xl" />
+                  
+                  {/* Light reflection */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-2xl" />
+                  
+                  {/* Animated border glow */}
+                  <div className="absolute inset-0 rounded-2xl border border-white/20 group-hover:border-blue-400/50 transition-all duration-500" />
+                  
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-2xl" />
+                </>
+              )}
+              
+              <RefreshCw className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">Sincronizar Contatos</span>
             </motion.button>
           </div>
         )}
@@ -255,7 +337,11 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+    <div className={`rounded-3xl shadow-xl border overflow-hidden ${
+      isDark 
+        ? 'bg-gray-800 border-gray-700' 
+        : 'bg-white border-gray-100'
+    }`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-[#305e73] via-[#3a6d84] to-[#305e73] px-6 py-5">
         <div className="flex items-center justify-between">
@@ -290,7 +376,11 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ delay: index * 0.05 }}
-              className="p-6 m-2 bg-gray-50/50 hover:bg-white hover:shadow-lg rounded-2xl transition-all duration-300 cursor-pointer group border border-gray-100 hover:border-gray-200"
+              className={`p-6 m-2 rounded-2xl transition-all duration-300 cursor-pointer group border ${
+                isDark 
+                  ? 'bg-gray-700/50 hover:bg-gray-600 hover:shadow-lg border-gray-600 hover:border-gray-500' 
+                  : 'bg-gray-50/50 hover:bg-white hover:shadow-lg border-gray-100 hover:border-gray-200'
+              }`}
             >
               <div className="flex items-start justify-between">
                 {/* Informações principais */}
@@ -323,7 +413,9 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900 truncate mb-1">
+                          <h3 className={`text-xl font-bold truncate mb-1 ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>
                             {contato.nome}
                             {contato.favorito && (
                               <Star className="w-5 h-5 text-yellow-500 fill-current inline-block ml-2" />
@@ -336,7 +428,9 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
                             <div className={`w-2 h-2 rounded-full ${
                               contato.status === 'online' ? 'bg-green-500' : 'bg-gray-300'
                             }`} />
-                            <span className="text-xs text-gray-500">
+                            <span className={`text-xs ${
+                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
                               {contato.status === 'online' ? 'Online' : 'Offline'}
                             </span>
                           </div>
@@ -350,8 +444,12 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
                           }}
                           className={`p-2.5 rounded-xl transition-all hover:scale-110 ${
                             contato.favorito 
-                              ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100' 
-                              : 'text-gray-400 bg-gray-50 hover:bg-yellow-50 hover:text-yellow-500'
+                              ? isDark
+                                ? 'text-yellow-400 bg-yellow-900/30 hover:bg-yellow-900/40'
+                                : 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100'
+                              : isDark
+                                ? 'text-gray-400 bg-gray-600 hover:bg-yellow-900/30 hover:text-yellow-400'
+                                : 'text-gray-400 bg-gray-50 hover:bg-yellow-50 hover:text-yellow-500'
                           }`}
                           title={contato.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                         >
@@ -363,7 +461,11 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
                             setSelectedContact(contato)
                             setIsActionModalOpen(true)
                           }}
-                          className="p-2.5 text-gray-400 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all hover:scale-110"
+                          className={`p-2.5 rounded-xl transition-all hover:scale-110 ${
+                            isDark 
+                              ? 'text-gray-400 bg-gray-600 hover:bg-blue-900/30 hover:text-blue-400'
+                              : 'text-gray-400 bg-gray-50 hover:bg-blue-50 hover:text-blue-600'
+                          }`}
                           title="Ações do contato"
                         >
                           <MoreVertical className="w-5 h-5" />
@@ -372,45 +474,77 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-                        <div className="p-2 bg-blue-100 rounded-lg">
+                      <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                        isDark 
+                          ? 'bg-blue-900/30 group-hover:bg-blue-900/40' 
+                          : 'bg-blue-50 group-hover:bg-blue-100'
+                      }`}>
+                        <div className={`p-2 rounded-lg ${
+                          isDark ? 'bg-blue-800/50' : 'bg-blue-100'
+                        }`}>
                           <Phone className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
                           <p className="text-xs text-blue-600 font-medium">Telefone</p>
-                          <p className="font-semibold text-gray-900">{contato.telefone}</p>
+                          <p className={`font-semibold ${
+                            isDark ? 'text-gray-100' : 'text-gray-900'
+                          }`}>{contato.telefone}</p>
                         </div>
                       </div>
                       {contato.email && (
-                        <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
-                          <div className="p-2 bg-purple-100 rounded-lg">
+                        <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                          isDark 
+                            ? 'bg-purple-900/30 group-hover:bg-purple-900/40' 
+                            : 'bg-purple-50 group-hover:bg-purple-100'
+                        }`}>
+                          <div className={`p-2 rounded-lg ${
+                            isDark ? 'bg-purple-800/50' : 'bg-purple-100'
+                          }`}>
                             <Mail className="w-4 h-4 text-purple-600" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs text-purple-600 font-medium">Email</p>
-                            <p className="font-semibold text-gray-900 truncate">{contato.email}</p>
+                            <p className={`font-semibold truncate ${
+                              isDark ? 'text-gray-100' : 'text-gray-900'
+                            }`}>{contato.email}</p>
                           </div>
                         </div>
                       )}
                       {contato.cidade && contato.estado && (
-                        <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl group-hover:bg-emerald-100 transition-colors">
-                          <div className="p-2 bg-emerald-100 rounded-lg">
+                        <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                          isDark 
+                            ? 'bg-emerald-900/30 group-hover:bg-emerald-900/40' 
+                            : 'bg-emerald-50 group-hover:bg-emerald-100'
+                        }`}>
+                          <div className={`p-2 rounded-lg ${
+                            isDark ? 'bg-emerald-800/50' : 'bg-emerald-100'
+                          }`}>
                             <MapPin className="w-4 h-4 text-emerald-600" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs text-emerald-600 font-medium">Localização</p>
-                            <p className="font-semibold text-gray-900 truncate">{contato.cidade}, {contato.estado}</p>
+                            <p className={`font-semibold truncate ${
+                              isDark ? 'text-gray-100' : 'text-gray-900'
+                            }`}>{contato.cidade}, {contato.estado}</p>
                           </div>
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div className={`flex items-center justify-between pt-4 border-t ${
+                      isDark ? 'border-gray-600' : 'border-gray-200'
+                    }`}>
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-gray-100 rounded-lg">
-                          <Calendar className="w-3 h-3 text-gray-500" />
+                        <div className={`p-1.5 rounded-lg ${
+                          isDark ? 'bg-gray-600' : 'bg-gray-100'
+                        }`}>
+                          <Calendar className={`w-3 h-3 ${
+                            isDark ? 'text-gray-400' : 'text-gray-500'
+                          }`} />
                         </div>
-                        <div className="text-sm text-gray-600 font-medium">
+                        <div className={`text-sm font-medium ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           {contato.ultima_interacao 
                             ? formatTimestamp(contato.ultima_interacao)
                             : 'Novo contato'
@@ -418,11 +552,19 @@ export default function ContatosList({ searchQuery }: ContatosListProps) {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-xs text-gray-500">
+                        <div className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           {contato.total_mensagens} msg{contato.total_mensagens !== 1 ? 's' : ''}
                         </div>
                         <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          contato.favorito ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
+                          contato.favorito 
+                            ? isDark
+                              ? 'bg-yellow-900/30 text-yellow-300'
+                              : 'bg-yellow-100 text-yellow-700'
+                            : isDark
+                              ? 'bg-gray-600 text-gray-300'
+                              : 'bg-gray-100 text-gray-600'
                         }`}>
                           {contato.favorito ? 'Favorito' : 'Normal'}
                         </div>

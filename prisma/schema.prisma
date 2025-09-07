@@ -119,6 +119,8 @@ model Usuario {
   cobrancas         Cobranca[]
   contratos         Contrato[]
   fluxosNos         FluxoNo[] @relation("FluxoNoUsuario")
+  orcamentos        Orcamento[]
+  anotacoes         Anotacao[]
 
   @@map("usuarios")
 }

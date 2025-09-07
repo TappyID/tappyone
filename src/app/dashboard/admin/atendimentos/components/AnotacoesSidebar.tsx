@@ -173,9 +173,6 @@ export default function AnotacoesSidebar({
     return matchesSearch
   })
   
-  console.log('🎯 Total anotações:', anotacoes.length)
-  console.log('🎯 Filtradas:', filteredAnotacoes.length)
-  console.log('🎯 Search query:', searchQuery)
 
   const handleAddAnotacao = async () => {
     if (!newAnotacao.titulo.trim() || !newAnotacao.conteudo.trim()) return

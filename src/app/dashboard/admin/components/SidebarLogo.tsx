@@ -3,12 +3,16 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface SidebarLogoProps {
   isCollapsed: boolean
 }
 
 export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  
   return (
     <Link href="/dashboard/admin">
       <motion.div
@@ -17,19 +21,25 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
         whileTap={{ scale: 0.98 }}
       >
         {/* Logo */}
-        <motion.div
-          className="relative flex-shrink-0"
-          whileHover={{ rotate: [0, -5, 5, 0] }}
-          transition={{ duration: 0.5 }}
-        >
+        {isCollapsed && (
+          <motion.div
+            className="relative flex-shrink-0"
+            whileHover={{ rotate: [0, -5, 5, 0] }}
+            transition={{ duration: 0.5 }}
+          >
           <div className="w-10 h-10 bg-gradient-to-br from-[#273155] to-[#1e2442] rounded-xl flex items-center justify-center shadow-lg">
             <motion.div
-              className="text-white font-bold text-lg"
               initial={{ scale: 1 }}
               whileHover={{ scale: 1.1 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
-              T
+              <Image
+                src="/favicon-white.svg"
+                alt="TappyOne Icon"
+                width={24}
+                height={24}
+                className="object-contain"
+              />
             </motion.div>
           </div>
           
@@ -39,11 +49,12 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
             initial={{ scale: 0.8 }}
             whileHover={{ scale: 1.2 }}
           />
-        </motion.div>
+          </motion.div>
+        )}
 
-        {/* Texto */}
+        {/* Logo SVG */}
         <motion.div
-          className="flex flex-col overflow-hidden"
+          className="flex items-center overflow-hidden"
           initial={false}
           animate={{
             opacity: isCollapsed ? 0 : 1,
@@ -52,26 +63,20 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
           }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          <motion.h1
-            className="text-xl font-bold leading-none"
-            initial={{ y: 0 }}
-            animate={{ color: isCollapsed ? "rgb(17 24 39)" : "rgb(255 255 255)" }}
-            whileHover={{ y: -1 }}
+          <motion.div
+            className="relative"
+            whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
-            TappyOne
-          </motion.h1>
-          <motion.p
-            className="text-xs font-medium"
-            initial={{ opacity: 0.7 }}
-            animate={{ 
-              opacity: 1,
-              color: isCollapsed ? "rgb(107 114 128)" : "rgb(255 255 255 / 0.7)"
-            }}
-            whileHover={{ opacity: 1 }}
-          >
-            CRM Dashboard
-          </motion.p>
+            <Image
+              src="/logo-branca.svg"
+              alt="TappyOne Logo"
+              width={160}
+              height={44}
+              className="object-contain"
+              priority
+            />
+          </motion.div>
         </motion.div>
       </motion.div>
     </Link>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   X, 
   User,
@@ -50,6 +51,8 @@ export default function EditarUsuarioModal({
   onDelete,
   usuario 
 }: EditarUsuarioModalProps) {
+  const { actualTheme } = useTheme()
+  const isDark = actualTheme === 'dark'
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -152,20 +155,38 @@ export default function EditarUsuarioModal({
   }
 
   const getTipoColor = (tipo: string) => {
-    switch (tipo) {
-      case 'admin': return 'text-red-600 bg-red-100'
-      case 'atendente': return 'text-orange-600 bg-orange-100'
-      case 'assinante': return 'text-indigo-600 bg-indigo-100'
-      default: return 'text-gray-600 bg-gray-100'
+    if (isDark) {
+      switch (tipo) {
+        case 'admin': return 'text-red-300 bg-red-900/30'
+        case 'atendente': return 'text-orange-300 bg-orange-900/30'
+        case 'assinante': return 'text-indigo-300 bg-indigo-900/30'
+        default: return 'text-slate-300 bg-slate-700/30'
+      }
+    } else {
+      switch (tipo) {
+        case 'admin': return 'text-red-600 bg-red-100'
+        case 'atendente': return 'text-orange-600 bg-orange-100'
+        case 'assinante': return 'text-indigo-600 bg-indigo-100'
+        default: return 'text-gray-600 bg-gray-100'
+      }
     }
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ativo': return 'text-green-600 bg-green-100'
-      case 'inativo': return 'text-gray-600 bg-gray-100'
-      case 'suspenso': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
+    if (isDark) {
+      switch (status) {
+        case 'ativo': return 'text-green-300 bg-green-900/30'
+        case 'inativo': return 'text-slate-300 bg-slate-700/30'
+        case 'suspenso': return 'text-red-300 bg-red-900/30'
+        default: return 'text-slate-300 bg-slate-700/30'
+      }
+    } else {
+      switch (status) {
+        case 'ativo': return 'text-green-600 bg-green-100'
+        case 'inativo': return 'text-gray-600 bg-gray-100'
+        case 'suspenso': return 'text-red-600 bg-red-100'
+        default: return 'text-gray-600 bg-gray-100'
+      }
     }
   }
 
@@ -182,7 +203,9 @@ export default function EditarUsuarioModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className={`fixed inset-0 backdrop-blur-sm z-50 ${
+              isDark ? 'bg-black/70' : 'bg-black/50'
+            }`}
           />
           
           <motion.div
@@ -192,9 +215,17 @@ export default function EditarUsuarioModal({
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className={`rounded-2xl shadow-2xl border w-full max-w-2xl max-h-[90vh] overflow-hidden ${
+              isDark 
+                ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 border-slate-600' 
+                : 'bg-white border-gray-200'
+            }`}>
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#305e73] to-[#3a6d84] px-6 py-4">
+              <div className={`px-6 py-4 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-slate-700 to-slate-600' 
+                  : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84]'
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
@@ -246,8 +277,12 @@ export default function EditarUsuarioModal({
                     </div>
                     
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{usuario.nome}</h3>
-                      <p className="text-gray-600 text-sm mb-2">{usuario.email}</p>
+                      <h3 className={`font-semibold mb-1 ${
+                        isDark ? 'text-slate-100' : 'text-gray-900'
+                      }`}>{usuario.nome}</h3>
+                      <p className={`text-sm mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-600'
+                      }`}>{usuario.email}</p>
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 ${getTipoColor(usuario.tipo)}`}>
                           <TipoIcon className="w-3 h-3" />
@@ -263,7 +298,9 @@ export default function EditarUsuarioModal({
                   {/* Informações Básicas */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-700'
+                      }`}>
                         <User className="w-4 h-4 inline mr-2" />
                         Nome Completo *
                       </label>
@@ -271,8 +308,12 @@ export default function EditarUsuarioModal({
                         type="text"
                         value={formData.nome}
                         onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
-                          errors.nome ? 'border-red-300' : 'border-gray-300'
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          errors.nome 
+                            ? 'border-red-400' 
+                            : isDark 
+                              ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                              : 'border-gray-300 bg-white text-gray-900'
                         }`}
                         placeholder="Digite o nome completo"
                       />
@@ -282,7 +323,9 @@ export default function EditarUsuarioModal({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-700'
+                      }`}>
                         <Mail className="w-4 h-4 inline mr-2" />
                         Email *
                       </label>
@@ -290,8 +333,12 @@ export default function EditarUsuarioModal({
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
-                          errors.email ? 'border-red-300' : 'border-gray-300'
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          errors.email 
+                            ? 'border-red-400' 
+                            : isDark 
+                              ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                              : 'border-gray-300 bg-white text-gray-900'
                         }`}
                         placeholder="Digite o email"
                       />
@@ -301,7 +348,9 @@ export default function EditarUsuarioModal({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-700'
+                      }`}>
                         <Phone className="w-4 h-4 inline mr-2" />
                         Telefone
                       </label>
@@ -309,19 +358,29 @@ export default function EditarUsuarioModal({
                         type="tel"
                         value={formData.telefone}
                         onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          isDark 
+                            ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                            : 'border-gray-300 bg-white text-gray-900'
+                        }`}
                         placeholder="(11) 99999-9999"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-700'
+                      }`}>
                         Tipo de Usuário *
                       </label>
                       <select
                         value={formData.tipo}
                         onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as any }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          isDark 
+                            ? 'border-slate-600 bg-slate-700/50 text-white' 
+                            : 'border-gray-300 bg-white text-gray-900'
+                        }`}
                       >
                         <option value="assinante">Assinante</option>
                         <option value="atendente">Atendente</option>
@@ -330,7 +389,9 @@ export default function EditarUsuarioModal({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-700'
+                      }`}>
                         <Building className="w-4 h-4 inline mr-2" />
                         Departamento
                       </label>
@@ -338,13 +399,19 @@ export default function EditarUsuarioModal({
                         type="text"
                         value={formData.departamento}
                         onChange={(e) => setFormData(prev => ({ ...prev, departamento: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          isDark 
+                            ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                            : 'border-gray-300 bg-white text-gray-900'
+                        }`}
                         placeholder="Ex: Atendimento, TI, Vendas"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        isDark ? 'text-slate-300' : 'text-gray-700'
+                      }`}>
                         <Briefcase className="w-4 h-4 inline mr-2" />
                         Cargo
                       </label>
@@ -352,7 +419,11 @@ export default function EditarUsuarioModal({
                         type="text"
                         value={formData.cargo}
                         onChange={(e) => setFormData(prev => ({ ...prev, cargo: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          isDark 
+                            ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                            : 'border-gray-300 bg-white text-gray-900'
+                        }`}
                         placeholder="Ex: Atendente, Gerente, Analista"
                       />
                     </div>
@@ -360,13 +431,19 @@ export default function EditarUsuarioModal({
 
                   {/* Status */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDark ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                       Status da Conta
                     </label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        isDark 
+                          ? 'border-slate-600 bg-slate-700/50 text-white' 
+                          : 'border-gray-300 bg-white text-gray-900'
+                      }`}
                     >
                       <option value="ativo">Ativo</option>
                       <option value="inativo">Inativo</option>
@@ -375,12 +452,18 @@ export default function EditarUsuarioModal({
                   </div>
 
                   {/* Alterar Senha */}
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Alterar Senha</h3>
+                  <div className={`border-t pt-6 ${
+                    isDark ? 'border-slate-600' : 'border-gray-200'
+                  }`}>
+                    <h3 className={`text-lg font-semibold mb-4 ${
+                      isDark ? 'text-slate-200' : 'text-gray-900'
+                    }`}>Alterar Senha</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${
+                          isDark ? 'text-slate-300' : 'text-gray-700'
+                        }`}>
                           Nova Senha
                         </label>
                         <div className="relative">
@@ -388,15 +471,21 @@ export default function EditarUsuarioModal({
                             type={showPassword ? 'text' : 'password'}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent pr-12 ${
-                              errors.password ? 'border-red-300' : 'border-gray-300'
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
+                              errors.password 
+                                ? 'border-red-400' 
+                                : isDark 
+                                  ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                                  : 'border-gray-300 bg-white text-gray-900'
                             }`}
                             placeholder="Digite a nova senha"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${
+                              isDark ? 'text-slate-400 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'
+                            }`}
                           >
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
@@ -407,15 +496,21 @@ export default function EditarUsuarioModal({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${
+                          isDark ? 'text-slate-300' : 'text-gray-700'
+                        }`}>
                           Confirmar Senha
                         </label>
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent ${
-                            errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            errors.confirmPassword 
+                              ? 'border-red-400' 
+                              : isDark 
+                                ? 'border-slate-600 bg-slate-700/50 text-white placeholder-slate-400' 
+                                : 'border-gray-300 bg-white text-gray-900'
                           }`}
                           placeholder="Confirme a nova senha"
                         />
@@ -425,19 +520,33 @@ export default function EditarUsuarioModal({
                       </div>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className={`text-sm mt-2 ${
+                      isDark ? 'text-slate-400' : 'text-gray-600'
+                    }`}>
                       Deixe em branco para manter a senha atual
                     </p>
                   </div>
 
                   {/* Zona de Perigo */}
-                  <div className="border-t border-gray-200 pt-6">
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className={`border-t pt-6 ${
+                    isDark ? 'border-slate-600' : 'border-gray-200'
+                  }`}>
+                    <div className={`rounded-xl p-4 border ${
+                      isDark 
+                        ? 'bg-red-900/20 border-red-400/30' 
+                        : 'bg-red-50 border-red-200'
+                    }`}>
                       <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                        <AlertTriangle className={`w-5 h-5 mt-0.5 ${
+                          isDark ? 'text-red-400' : 'text-red-600'
+                        }`} />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-red-900 mb-1">Zona de Perigo</h4>
-                          <p className="text-red-700 text-sm mb-3">
+                          <h4 className={`font-semibold mb-1 ${
+                            isDark ? 'text-red-300' : 'text-red-900'
+                          }`}>Zona de Perigo</h4>
+                          <p className={`text-sm mb-3 ${
+                            isDark ? 'text-red-200' : 'text-red-700'
+                          }`}>
                             Esta ação não pode ser desfeita. O usuário será permanentemente removido do sistema.
                           </p>
                           
@@ -453,7 +562,9 @@ export default function EditarUsuarioModal({
                             </motion.button>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <span className="text-red-700 font-medium">Tem certeza?</span>
+                              <span className={`font-medium ${
+                                isDark ? 'text-red-300' : 'text-red-700'
+                              }`}>Tem certeza?</span>
                               <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 type="button"
@@ -466,7 +577,11 @@ export default function EditarUsuarioModal({
                                 whileHover={{ scale: 1.02 }}
                                 type="button"
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                                className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
+                                  isDark 
+                                    ? 'border-slate-600 text-slate-300 hover:bg-slate-700' 
+                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
                               >
                                 Cancelar
                               </motion.button>
@@ -480,9 +595,15 @@ export default function EditarUsuarioModal({
               </div>
 
               {/* Footer */}
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+              <div className={`px-6 py-4 border-t ${
+                isDark 
+                  ? 'bg-slate-800 border-slate-600' 
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">
+                  <p className={`text-sm ${
+                    isDark ? 'text-slate-400' : 'text-gray-600'
+                  }`}>
                     Criado em {new Date(usuario.criado_em).toLocaleDateString('pt-BR')}
                   </p>
 
@@ -490,7 +611,11 @@ export default function EditarUsuarioModal({
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       onClick={onClose}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium"
+                      className={`px-6 py-3 border rounded-xl font-medium transition-colors ${
+                        isDark 
+                          ? 'border-slate-600 text-slate-300 hover:bg-slate-700' 
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
                       Cancelar
                     </motion.button>
@@ -498,7 +623,11 @@ export default function EditarUsuarioModal({
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       onClick={handleSubmit}
-                      className="px-6 py-3 bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white rounded-xl hover:shadow-lg font-medium flex items-center gap-2"
+                      className={`px-6 py-3 text-white rounded-xl font-medium flex items-center gap-2 transition-all ${
+                        isDark 
+                          ? 'bg-gradient-to-r from-slate-600 to-slate-500 hover:from-slate-500 hover:to-slate-400 hover:shadow-lg' 
+                          : 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] hover:shadow-lg'
+                      }`}
                     >
                       <Save className="w-4 h-4" />
                       Salvar Alterações

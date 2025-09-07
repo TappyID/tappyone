@@ -30,26 +30,8 @@ export function ProfileDropdown({ sidebarCollapsed = true }: ProfileDropdownProp
 
   const handleMenuClick = (action: string) => {
     setShowProfile(false)
-    
-    switch(action) {
-      case 'profile':
-        router.push('/dashboard/admin/perfil')
-        break
-      case 'settings':
-        router.push('/dashboard/admin/configuracoes')
-        break
-      case 'notifications':
-        router.push('/dashboard/admin/notificacoes')
-        break
-      case 'language':
-        // Já implementado no LanguageSelector
-        break
-      case 'help':
-        router.push('/dashboard/admin/ajuda')
-        break
-      default:
-        console.log('Menu item:', action)
-    }
+    // Todos os links direcionam para configurações
+    router.push('/dashboard/admin/configuracoes')
   }
 
   return (
