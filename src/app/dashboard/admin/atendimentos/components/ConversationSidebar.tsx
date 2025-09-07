@@ -28,24 +28,26 @@ import {
   SortAsc,
   SortDesc,
   ArrowUpDown,
+  Layers,
+  Kanban,
+  Trash2,
   DollarSign,
   Calendar,
   Hash,
   Eye,
   EyeOff,
   X,
-  Kanban,
-  Layers,
   Archive,
-  Trash2,
   ArrowRightLeft
 } from 'lucide-react'
 import { usePresencePolling } from '@/hooks/usePresencePolling'
 import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
 import { useConexoes } from '@/hooks/useConexoes'
-import { usePresence } from '@/hooks/usePresence'
+import { useChatAgente } from '@/hooks/useChatAgente'
+import { useContatoTags } from '@/hooks/useContatoTags'
 import { useContatoData } from '@/hooks/useContatoData'
+import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
 import { useInfiniteChats } from '@/hooks/useInfiniteChats'
 
 interface ConversationSidebarProps {
@@ -174,7 +176,7 @@ export default function ConversationSidebar({
   const { tags: realTags } = useTags()
   const { filas } = useFilas()
   const { conexoes, getFilasDaConexao } = useConexoes()
-  const { isOnline, isTyping } = usePresence()
+  // const { isOnline, isTyping } = usePresence() // Hook removido para evitar erro
   
   // Debug: Log dados carregados
   console.log(`🔍 [SIDEBAR] Tags carregadas: ${realTags.length}`)
@@ -195,6 +197,7 @@ export default function ConversationSidebar({
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const [sortBy, setSortBy] = useState('recent')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [connectionModulation, setConnectionModulation] = useState<any>(null)
   
   // Refs para dropdowns
   const conexaoButtonRef = useRef<HTMLButtonElement>(null)
@@ -207,8 +210,64 @@ export default function ConversationSidebar({
     selectedQueues: [] as string[],
     selectedTags: [] as string[],
     selectedKanbans: [] as string[],
-    selectedAtendentes: [] as string[]
+    selectedAtendentes: [] as string[],
+    dateRange: null as { start: Date; end: Date } | null,
+    messageCount: null as number | null
   })
+  const [showTransferirModal, setShowTransferirModal] = useState(false)
+  const [selectedConversationForTransfer, setSelectedConversationForTransfer] = useState<any>(null)
+
+  // Buscar modulation da conexão quando uma fila for selecionada
+  const fetchConnectionModulation = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return null
+
+      console.log('🔍 [MODULATION] Buscando modulation da conexão...')
+      const response = await fetch('/api/connections/', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const connections = data.connections || []
+        
+        // Encontrar a conexão WhatsApp atual
+        const currentConnection = connections.find((conn: any) => 
+          conn.platform === 'whatsapp' && conn.user_id
+        )
+
+        if (currentConnection?.modulation) {
+          const modulation = typeof currentConnection.modulation === 'string' 
+            ? JSON.parse(currentConnection.modulation) 
+            : currentConnection.modulation
+          
+          console.log('✅ [MODULATION] Modulation carregada:', modulation)
+          return modulation
+        }
+      }
+      
+      console.log('⚠️ [MODULATION] Nenhuma modulation encontrada')
+      return null
+    } catch (error) {
+      console.error('❌ [MODULATION] Erro ao buscar modulation:', error)
+      return null
+    }
+  }
+
+  // Carregar modulation quando uma fila for selecionada
+  useEffect(() => {
+    if (selectedQueue !== 'todas') {
+      fetchConnectionModulation().then(modulation => {
+        setConnectionModulation(modulation)
+      })
+    } else {
+      setConnectionModulation(null)
+    }
+  }, [selectedQueue])
   
   // Refs for dropdown positioning
   const queueButtonRef = useRef<HTMLButtonElement>(null)
@@ -247,12 +306,12 @@ export default function ConversationSidebar({
     if (showConexaoDropdown) updateDropdownPosition(conexaoButtonRef, setConexaoDropdownPosition)
   }, [showConexaoDropdown])
   
-  // Resetar fila selecionada quando mudar de conexão
+  // Resetar conexão quando selecionar uma fila (filtro reverso)
   useEffect(() => {
-    if (selectedConexao !== 'todas') {
-      setSelectedQueue('todas')
+    if (selectedQueue !== 'todas') {
+      setSelectedConexao('todas')
     }
-  }, [selectedConexao])
+  }, [selectedQueue])
 
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
@@ -298,7 +357,7 @@ export default function ConversationSidebar({
   }
   
   const queueOptions = [
-    { value: 'todas', label: 'Todas as Filas' },
+    { value: 'todas', label: 'Filas' },
     ...getFilasDisponiveis().map(fila => ({ value: fila.id, label: fila.nome }))
   ]
   
@@ -496,7 +555,14 @@ export default function ConversationSidebar({
         tags: contatoData.tags,
         tagsLength: contatoData.tags?.length || 0,
         fila: contatoData.fila,
-        hasQueue: !!contatoData.fila
+        hasQueue: !!contatoData.fila,
+        orcamento: contatoData.orcamento,
+        orcamentoValor: contatoData.orcamento?.valor,
+        orcamentoValorTotal: (contatoData.orcamento as any)?.valorTotal,
+        fullOrcamento: JSON.stringify(contatoData.orcamento),
+        agendamento: contatoData.agendamento,
+        agendamentoTitulo: (contatoData.agendamento as any)?.titulo,
+        fullAgendamento: JSON.stringify(contatoData.agendamento)
       })
     }
     
@@ -576,16 +642,31 @@ export default function ConversationSidebar({
                          (activeFilter === 'archived' && conv.isArchived) ||
                          (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
     
-    // Filtro por fila real (considerando conexão selecionada)
+    // FILTRO por fila baseado na MODULATION da conexão
     let matchesQueue = selectedQueue === 'todas'
-    if (!matchesQueue && conv.queue) {
-      matchesQueue = conv.queue.id === selectedQueue
+    
+    if (selectedQueue !== 'todas' && connectionModulation) {
+      // Verificar se o chat está na fila selecionada através da modulation
+      const isInSelectedFila = connectionModulation.selectedFilas?.includes(selectedQueue) &&
+                              connectionModulation.selectedChats?.includes(conv.id)
       
-      // Se uma conexão específica está selecionada, verificar se a fila do chat pertence àquela conexão
-      if (matchesQueue && selectedConexao !== 'todas') {
-        const filasConexao = getFilasDaConexao(selectedConexao)
-        matchesQueue = filasConexao.includes(conv.queue.id)
+      matchesQueue = isInSelectedFila
+      
+      // DEBUG: Logs para entender o filtro por modulation
+      if (conv.name.includes('Test') || conv.name.includes('Vyzer')) {
+        console.log(`🔎 [FILTRO MODULATION] Chat ${conv.name}:`, {
+          chatId: conv.id,
+          selectedQueue,
+          hasModulation: !!connectionModulation,
+          selectedFilas: connectionModulation.selectedFilas,
+          selectedChats: connectionModulation.selectedChats,
+          isInSelectedFila,
+          matchesQueue
+        })
       }
+    } else if (selectedQueue !== 'todas' && !connectionModulation) {
+      // Fallback: usar o método antigo se não tiver modulation
+      matchesQueue = conv.queue?.id === selectedQueue
     }
     
     // Filtro por tag real  
@@ -700,9 +781,9 @@ export default function ConversationSidebar({
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-semibold text-foreground">Conversas</h2>
             <div className="flex items-center gap-3">
-            {/* Select Conexões */}
+            {/* Select Conexão Elegante - OCULTO por enquanto */}
             <motion.div 
-              className="relative"
+              className="relative hidden"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               data-conexao-dropdown
@@ -957,15 +1038,9 @@ export default function ConversationSidebar({
                     </div>
                   </motion.div>
                   
-                  {/* Presence Status Indicator */}
-                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
-                    isOnline(conversation.id) ? 'bg-green-500' : 'bg-gray-400'
-                  }`}>
-                    {isOnline(conversation.id) ? (
-                      <Wifi className="w-2 h-2 text-white" />
-                    ) : (
-                      <WifiOff className="w-2 h-2 text-white" />
-                    )}
+                  {/* Presence Status Indicator - Temporariamente desabilitado */}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center bg-gray-400">
+                    <WifiOff className="w-2 h-2 text-white" />
                   </div>
                 </div>
 
@@ -1023,7 +1098,8 @@ export default function ConversationSidebar({
                         onClick={(e) => {
                           e.stopPropagation()
                           console.log('🔄 Transferir conversa:', conversation.id)
-                          // TODO: Abrir modal de transferência
+                          setSelectedConversationForTransfer(conversation)
+                          setShowTransferirModal(true)
                         }}
                         className="p-1 hover:bg-blue-100 hover:text-blue-600 rounded transition-colors"
                         title="Transferir atendimento"
@@ -1102,7 +1178,8 @@ export default function ConversationSidebar({
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
-                    {isTyping(conversation.id) ? (
+                    {/* Typing indicator temporariamente desabilitado */}
+                    {false ? (
                       <div className="flex items-center text-sm text-blue-600 flex-1">
                         <motion.div
                           animate={{ opacity: [1, 0.5, 1] }}
@@ -1132,21 +1209,53 @@ export default function ConversationSidebar({
                     ) : (
                       <p className="text-sm text-muted-foreground truncate flex-1">{conversation.lastMessage || 'Última mensagem vista'}</p>
                     )}
-                    {/* Badge do Kanban */}
-                    {conversation.badge && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="inline-flex items-center px-2 py-1 text-white rounded-full font-medium shadow-sm ml-2 flex-shrink-0"
-                        style={{ 
-                          backgroundColor: conversation.badge.backgroundColor || conversation.badge.color || '#6b7280',
-                          fontSize: '9px'
-                        }}
-                      >
-                        <Kanban className="w-3 h-3 mr-1" />
-                        {conversation.badge.text}
-                      </motion.span>
-                    )}
+                    
+                    {/* Badges: Kanban, Orçamento, Agendamento */}
+                    <div className="flex items-center gap-1 ml-2">
+                      {/* Badge do Kanban */}
+                      {conversation.badge && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="inline-flex items-center px-2 py-1 text-white rounded-full font-medium shadow-sm flex-shrink-0"
+                          style={{ 
+                            backgroundColor: conversation.badge.backgroundColor || conversation.badge.color || '#6b7280',
+                            fontSize: '9px'
+                          }}
+                        >
+                          <Kanban className="w-3 h-3 mr-1" />
+                          {conversation.badge.text}
+                        </motion.span>
+                      )}
+                      
+                      {/* Badge Orçamento */}
+                      {conversation.orcamento && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="inline-flex items-center px-2 py-1 bg-green-500 text-white rounded-full font-medium shadow-sm flex-shrink-0"
+                          style={{ fontSize: '10px' }}
+                          title={`Orçamento: R$ ${conversation.orcamento.valor || '0'}`}
+                        >
+                          <DollarSign className="w-3 h-3 mr-0.5" />
+                          R${conversation.orcamento.valor || '0'}
+                        </motion.span>
+                      )}
+                      
+                      {/* Badge Agendamento */}
+                      {conversation.agendamento && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="inline-flex items-center px-2 py-1 bg-purple-500 text-white rounded-full font-medium shadow-sm flex-shrink-0"
+                          style={{ fontSize: '10px' }}
+                          title={`Agendamento: ${conversation.agendamento.data || 'Sem data'}`}
+                        >
+                          <Calendar className="w-3 h-3 mr-0.5" />
+                          📅
+                        </motion.span>
+                      )}
+                    </div>
                   </div>
                   
                 </div>
@@ -1629,6 +1738,128 @@ export default function ConversationSidebar({
         </AnimatePresence>,
         document.body
       )}
+
+      {/* Modal de Transferir Atendimento */}
+      <TransferirAtendimentoModal
+        isOpen={showTransferirModal}
+        onClose={() => {
+          setShowTransferirModal(false)
+          setSelectedConversationForTransfer(null)
+        }}
+        onConfirm={async (transferData) => {
+          console.log('🔄 [ConversationSidebar] Transferindo chat via modulation:', {
+            chatId: selectedConversationForTransfer?.id,
+            ...transferData
+          })
+          
+          if (!selectedConversationForTransfer?.id) {
+            console.error('❌ [ConversationSidebar] Chat ID não encontrado')
+            throw new Error('Chat ID não encontrado')
+          }
+
+          if (!transferData.filaId) {
+            console.error('❌ [ConversationSidebar] Fila não selecionada')
+            throw new Error('Fila não selecionada')
+          }
+          
+          try {
+            const token = localStorage.getItem('token')
+            if (!token) {
+              console.error('❌ [ConversationSidebar] Token não encontrado')
+              throw new Error('Token não encontrado')
+            }
+
+            // 1. Buscar modulation atual da conexão
+            console.log('📡 [ConversationSidebar] Buscando modulation atual...')
+            const connectionsResponse = await fetch('/api/connections/', {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+
+            if (!connectionsResponse.ok) {
+              throw new Error('Erro ao buscar conexões')
+            }
+
+            const connectionsData = await connectionsResponse.json()
+            const connections = connectionsData.connections || []
+            
+            // Encontrar a conexão WhatsApp atual
+            const currentConnection = connections.find((conn: any) => 
+              conn.platform === 'whatsapp' && conn.user_id
+            )
+
+            if (!currentConnection) {
+              throw new Error('Conexão WhatsApp não encontrada')
+            }
+
+            // 2. Obter modulation atual
+            let modulation = { selectedChats: [], selectedFilas: [], selectedGrupos: [] }
+            if (currentConnection.modulation) {
+              modulation = typeof currentConnection.modulation === 'string' 
+                ? JSON.parse(currentConnection.modulation) 
+                : currentConnection.modulation
+            }
+
+            console.log('📋 [ConversationSidebar] Modulation atual:', modulation)
+
+            // 3. Atualizar modulation - adicionar chat na nova fila
+            if (!Array.isArray(modulation.selectedFilas)) {
+              modulation.selectedFilas = []
+            }
+            
+            // Adicionar nova fila se não existir
+            if (!modulation.selectedFilas.includes(transferData.filaId)) {
+              modulation.selectedFilas.push(transferData.filaId)
+            }
+
+            // Garantir que o chat está na lista de chats selecionados
+            if (!Array.isArray(modulation.selectedChats)) {
+              modulation.selectedChats = []
+            }
+            
+            if (!modulation.selectedChats.includes(selectedConversationForTransfer.id)) {
+              modulation.selectedChats.push(selectedConversationForTransfer.id)
+            }
+
+            console.log('📋 [ConversationSidebar] Modulation atualizada:', modulation)
+
+            // 4. Salvar modulation atualizada
+            console.log('📡 [ConversationSidebar] Atualizando conexão...')
+            const updateResponse = await fetch(`/api/connections/whatsapp/${currentConnection.session_name}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(modulation)
+            })
+
+            console.log('📡 [ConversationSidebar] Update response status:', updateResponse.status)
+
+            if (updateResponse.ok) {
+              const result = await updateResponse.json()
+              console.log('✅ [ConversationSidebar] Chat transferido com sucesso via modulation:', result)
+              console.log('✅ [ConversationSidebar] Chat', selectedConversationForTransfer.id, 'movido para fila', transferData.filaId)
+              setShowTransferirModal(false)
+              setSelectedConversationForTransfer(null)
+            } else {
+              const errorText = await updateResponse.text()
+              console.error('❌ [ConversationSidebar] Erro ao atualizar conexão:', updateResponse.statusText, errorText)
+              throw new Error(`Erro ${updateResponse.status}: ${updateResponse.statusText}`)
+            }
+          } catch (error) {
+            console.error('❌ [ConversationSidebar] Erro ao transferir via modulation:', error)
+            throw error // Re-throw para o modal não fechar
+          }
+        }}
+        chatId={selectedConversationForTransfer?.id}
+        contactData={{
+          nome: selectedConversationForTransfer?.name || '',
+          telefone: selectedConversationForTransfer?.id?.replace('@c.us', '') || ''
+        }}
+      />
     </motion.div>
   )
 }

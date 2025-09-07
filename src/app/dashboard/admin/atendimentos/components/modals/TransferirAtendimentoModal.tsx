@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   X, 
@@ -9,13 +9,16 @@ import {
   Users, 
   MessageSquare,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ArrowRightLeft,
+  Layers
 } from 'lucide-react'
 
 interface TransferirAtendimentoModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: (dados: TransferenciaData) => void
+  chatId?: string
   contactData?: {
     id?: string
     nome?: string
@@ -24,6 +27,7 @@ interface TransferirAtendimentoModalProps {
 }
 
 interface TransferenciaData {
+  filaId: string
   motivo: string
   notas?: string
   urgente: boolean
@@ -33,23 +37,98 @@ export default function TransferirAtendimentoModal({
   isOpen, 
   onClose, 
   onConfirm, 
+  chatId,
   contactData 
 }: TransferirAtendimentoModalProps) {
   const [formData, setFormData] = useState<TransferenciaData>({
+    filaId: '',
     motivo: '',
     notas: '',
     urgente: false
   })
+  const [filas, setFilas] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Buscar filas disponíveis quando o modal abrir
+  useEffect(() => {
+    if (isOpen && chatId) {
+      fetchFilas()
+    }
+  }, [isOpen, chatId])
+
+  const fetchFilas = async () => {
+    try {
+      setLoading(true)
+      console.log('🔄 [TransferModal] Iniciando busca de filas...')
+      
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.log('❌ [TransferModal] Token não encontrado')
+        return
+      }
+
+      // Buscar filas disponíveis baseado na conexão do chat
+      console.log('🔍 [TransferModal] Fazendo request para /api/filas')
+      const response = await fetch('/api/filas', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      })
+
+      console.log('📡 [TransferModal] Response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📋 [TransferModal] Filas recebidas:', data)
+        console.log('📊 [TransferModal] Tipo dos dados:', typeof data, 'É array:', Array.isArray(data))
+        
+        // A API retorna { success: true, data: [...] }
+        if (data.success && Array.isArray(data.data)) {
+          setFilas(data.data)
+          console.log('✅ [TransferModal] Filas definidas:', data.data.length, 'filas')
+        } else if (Array.isArray(data)) {
+          // Fallback caso retorne array direto
+          setFilas(data)
+          console.log('✅ [TransferModal] Filas definidas (array direto):', data.length, 'filas')
+        } else {
+          console.log('⚠️ [TransferModal] Formato de resposta não reconhecido:', data)
+          setFilas([])
+        }
+      } else {
+        console.log('❌ [TransferModal] Erro na resposta:', response.statusText)
+        const errorText = await response.text()
+        console.log('❌ [TransferModal] Erro detalhado:', errorText)
+      }
+    } catch (error) {
+      console.error('❌ [TransferModal] Erro ao buscar filas:', error)
+      setFilas([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onConfirm(formData)
-    onClose()
-    resetForm()
+    console.log('🚀 [TransferModal] Iniciando transferência:', formData)
+    
+    try {
+      setLoading(true)
+      await onConfirm(formData)
+      console.log('✅ [TransferModal] Transferência concluída')
+      onClose()
+      resetForm()
+    } catch (error) {
+      console.error('❌ [TransferModal] Erro na transferência:', error)
+      // Não fechar o modal em caso de erro, para o usuário ver o que aconteceu
+    } finally {
+      setLoading(false)
+    }
   }
 
   const resetForm = () => {
     setFormData({
+      filaId: '',
       motivo: '',
       notas: '',
       urgente: false
@@ -88,16 +167,16 @@ export default function TransferirAtendimentoModal({
           >
             <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg max-h-[90vh] overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+              <div className="bg-gradient-to-r from-[#273155] to-[#2a3660] px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                      <ArrowRight className="w-5 h-5 text-white" />
+                      <ArrowRightLeft className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-white">Transferir Atendimento</h2>
-                      <p className="text-orange-100 text-sm">
-                        {contactData?.nome ? `Cliente: ${contactData.nome}` : 'Transferir para outro atendente'}
+                      <p className="text-blue-100 text-sm">
+                        {contactData?.nome ? `Cliente: ${contactData.nome}` : 'Transferir para outra fila'}
                       </p>
                     </div>
                   </div>
@@ -130,6 +209,42 @@ export default function TransferirAtendimentoModal({
                     </div>
                   )}
 
+                  {/* Seleção de Fila */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <Layers className="w-4 h-4 inline mr-2" />
+                      Fila de Destino *
+                    </label>
+                    {loading ? (
+                      <div className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#273155]"></div>
+                          <span className="text-gray-500">Carregando filas...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <select
+                        value={formData.filaId}
+                        onChange={(e) => setFormData(prev => ({ ...prev, filaId: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#273155] focus:border-transparent transition-all"
+                        required
+                      >
+                        <option value="">Selecione a fila de destino</option>
+                        {filas.map(fila => (
+                          <option key={fila.id} value={fila.id}>
+                            {fila.nome} {fila.descricao && `- ${fila.descricao}`}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {filas.length === 0 && !loading && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        <AlertCircle className="w-4 h-4 inline mr-1" />
+                        Nenhuma fila disponível para transferência
+                      </p>
+                    )}
+                  </div>
+
                   {/* Motivo */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -139,7 +254,7 @@ export default function TransferirAtendimentoModal({
                     <select
                       value={formData.motivo}
                       onChange={(e) => setFormData(prev => ({ ...prev, motivo: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#273155] focus:border-transparent transition-all"
                       required
                     >
                       <option value="">Selecione o motivo</option>
@@ -160,7 +275,7 @@ export default function TransferirAtendimentoModal({
                       value={formData.notas}
                       onChange={(e) => setFormData(prev => ({ ...prev, notas: e.target.value }))}
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#273155] focus:border-transparent transition-all resize-none"
                       placeholder="Contexto adicional para o próximo atendente..."
                     />
                   </div>
@@ -194,10 +309,11 @@ export default function TransferirAtendimentoModal({
                   </div>
 
                   {/* Preview */}
-                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                    <h4 className="text-sm font-semibold text-orange-700 mb-2">Preview da Transferência</h4>
-                    <div className="text-sm text-orange-600">
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <h4 className="text-sm font-semibold text-[#273155] mb-2">Preview da Transferência</h4>
+                    <div className="text-sm text-blue-600">
                       <p><strong>Cliente:</strong> {contactData?.nome || 'N/A'}</p>
+                      <p><strong>Fila Destino:</strong> {filas.find(f => f.id === formData.filaId)?.nome || 'Não selecionada'}</p>
                       <p><strong>Motivo:</strong> {formData.motivo || 'Não informado'}</p>
                       <p><strong>Urgente:</strong> {formData.urgente ? 'Sim' : 'Não'}</p>
                       {formData.notas && <p><strong>Notas:</strong> {formData.notas}</p>}
@@ -219,7 +335,7 @@ export default function TransferirAtendimentoModal({
                       type="submit"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#273155] to-[#2a3660] text-white rounded-xl hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2"
                     >
                       <ArrowRight className="w-4 h-4" />
                       Transferir Atendimento

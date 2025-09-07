@@ -20,22 +20,21 @@ interface Conexao {
 }
 
 export function useConexoes() {
+  console.log('🔗 [useConexoes] Hook inicializado')
+  
   const { token } = useAuth()
   const [conexoes, setConexoes] = useState<Conexao[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  console.log('🔗 [useConexoes] Token do useAuth:', token ? 'Presente' : 'Ausente')
 
-  const getBaseURL = () => {
-    if (typeof window === 'undefined') {
-      return process.env.BACKEND_URL || 'http://localhost:8081'
-    }
-    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
-  }
-
-  const baseURL = `${getBaseURL()}/api/connections`
+  // Usar sempre as rotas proxy do Next.js para evitar CORS
+  const baseURL = '/api/connections'
 
   const fetchConexoes = useCallback(async () => {
     if (!token) {
+      console.log('❌ [useConexoes] Token não encontrado')
       setLoading(false)
       return
     }
@@ -45,6 +44,8 @@ export function useConexoes() {
       setError(null)
       
       console.log(`🔗 [useConexoes] Buscando conexões ativas...`)
+      console.log(`🔗 [useConexoes] URL: ${baseURL}`)
+      console.log(`🔗 [useConexoes] Token: ${token ? 'Presente' : 'Ausente'}`)
       
       const response = await fetch(baseURL, {
         headers: {
@@ -53,15 +54,23 @@ export function useConexoes() {
         },
       })
 
+      console.log(`🔗 [useConexoes] Response status: ${response.status}`)
+      console.log(`🔗 [useConexoes] Response ok: ${response.ok}`)
+
       if (!response.ok) {
-        throw new Error(`Erro ao buscar conexões: ${response.statusText}`)
+        const errorText = await response.text()
+        console.log(`🔗 [useConexoes] Error response: ${errorText}`)
+        throw new Error(`Erro ao buscar conexões: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
-      const data = result.success ? result.data : result
-      const conexoesAtivas = Array.isArray(data) ? data.filter(c => c.status === 'ACTIVE') : []
+      console.log(`🔗 [useConexoes] Response completa:`, result)
       
-      console.log(`🔗 [useConexoes] Encontradas ${conexoesAtivas.length} conexões ativas:`, conexoesAtivas)
+      const data = result.success ? result.data : result
+      console.log(`🔗 [useConexoes] Data extraída:`, data)
+      
+      const conexoesAtivas = Array.isArray(data) ? data.filter(c => c.status === 'ACTIVE') : []
+      console.log(`🔗 [useConexoes] Conexões ativas filtradas:`, conexoesAtivas)
       
       setConexoes(conexoesAtivas)
     } catch (err) {
@@ -83,6 +92,7 @@ export function useConexoes() {
   }, [conexoes])
 
   useEffect(() => {
+    console.log('🔗 [useConexoes] useEffect executando...')
     fetchConexoes()
   }, [fetchConexoes])
 

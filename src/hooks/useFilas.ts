@@ -30,23 +30,21 @@ interface FilaContato {
 }
 
 export function useFilas() {
+  console.log('🏷️ [useFilas] Hook inicializado')
+  
   const { token } = useAuth()
   const [filas, setFilas] = useState<Fila[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  console.log('🏷️ [useFilas] Token do useAuth:', token ? 'Presente' : 'Ausente')
 
-  // Usar variáveis de ambiente seguindo padrão do projeto
-  const getBaseURL = () => {
-    if (typeof window === 'undefined') {
-      return process.env.BACKEND_URL || 'http://localhost:8081'
-    }
-    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
-  }
-
-  const baseURL = `${getBaseURL()}/api/filas`
+  // Usar sempre as rotas proxy do Next.js para evitar CORS
+  const baseURL = '/api/filas'
 
   const fetchFilas = useCallback(async () => {
     if (!token) {
+      console.log('❌ [useFilas] Token não encontrado')
       setLoading(false)
       return
     }
@@ -55,6 +53,10 @@ export function useFilas() {
       setLoading(true)
       setError(null)
       
+      console.log(`🏷️ [useFilas] Buscando filas...`)
+      console.log(`🏷️ [useFilas] URL: ${baseURL}`)
+      console.log(`🏷️ [useFilas] Token: ${token ? 'Presente' : 'Ausente'}`)
+      
       const response = await fetch(baseURL, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,15 +64,27 @@ export function useFilas() {
         },
       })
 
+      console.log(`🏷️ [useFilas] Response status: ${response.status}`)
+      console.log(`🏷️ [useFilas] Response ok: ${response.ok}`)
+
       if (!response.ok) {
-        throw new Error(`Erro ao buscar filas: ${response.statusText}`)
+        const errorText = await response.text()
+        console.log(`🏷️ [useFilas] Error response: ${errorText}`)
+        throw new Error(`Erro ao buscar filas: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
+      console.log(`🏷️ [useFilas] Response completa:`, result)
+      
       const data = result.success ? result.data : result
-      setFilas(Array.isArray(data) ? data : [])
+      console.log(`🏷️ [useFilas] Data extraída:`, data)
+      
+      const filasArray = Array.isArray(data) ? data : []
+      console.log(`🏷️ [useFilas] Filas processadas:`, filasArray)
+      
+      setFilas(filasArray)
     } catch (err) {
-      console.error('Erro ao buscar filas:', err)
+      console.error('❌ [useFilas] Erro ao buscar filas:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       setFilas([])
     } finally {
@@ -211,6 +225,7 @@ export function useFilas() {
   }, [token, baseURL, fetchFilas])
 
   useEffect(() => {
+    console.log('🏷️ [useFilas] useEffect executando...')
     fetchFilas()
   }, [fetchFilas])
 

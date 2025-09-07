@@ -96,6 +96,7 @@ import AssinaturaModal from './modals/AssinaturaModal'
 import TagsModal from './modals/TagsModal'
 import VideoChamadaModal from './modals/VideoChamadaModal'
 import LigacaoModal from './modals/LigacaoModal'
+import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
 import CompartilharTelaModal from './modals/CompartilharTelaModal'
 import QuickActionsSidebar from './QuickActionsSidebar'
 import AnotacoesSidebar from './AnotacoesSidebar'
@@ -368,6 +369,7 @@ export default function ChatArea({
   const [showTagsModal, setShowTagsModal] = useState(false)
   const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
   const [showLigacaoModal, setShowLigacaoModal] = useState(false)
+  const [showTransferirModal, setShowTransferirModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
   
   // Estados para novas funcionalidades
@@ -825,31 +827,44 @@ export default function ChatArea({
     try {
       console.log('🚀 Criando assinatura:', assinatura)
       
-      const response = await fetch('/api/assinaturas', {
+      // Modal já faz o POST para a API automaticamente
+      console.log('✅ Assinatura salva via modal')
+    } catch (error) {
+      console.error('❌ Erro ao salvar assinatura:', error)
+    }
+  }
+
+  const handleTransferirSave = async (transferencia: any) => {
+    try {
+      console.log('🔄 Transferindo atendimento:', transferencia)
+      
+      // TODO: Implementar API de transferência
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      const response = await fetch('/api/atendimentos/transferir', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          nome: assinatura.nome,
-          valor: parseFloat(assinatura.valor.toString()),
-          renovacao: assinatura.renovacao,
-          forma_pagamento: assinatura.formaPagamento,
-          link_pagamento: assinatura.linkPagamento || null,
-          data_inicio: new Date(assinatura.dataInicio).toISOString(),
-          contato_id: conversation?.id
-        })
+          chatId: conversation?.id,
+          filaId: transferencia.filaId,
+          motivo: transferencia.motivo,
+          notas: transferencia.notas,
+          urgente: transferencia.urgente
+        }),
       })
-
+      
       if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Assinatura criada com sucesso:', result)
+        console.log('✅ Atendimento transferido com sucesso')
+        // Fechar modal será feito automaticamente pelo componente
       } else {
-        console.error('❌ Erro ao criar assinatura:', response.statusText)
+        console.error('❌ Erro ao transferir atendimento')
       }
     } catch (error) {
-      console.error('❌ Erro ao criar assinatura:', error)
+      console.error('❌ Erro ao transferir atendimento:', error)
     }
   }
 
@@ -1354,10 +1369,7 @@ export default function ChatArea({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              console.log('🔄 Transferir atendimento clicado:', chatId)
-              // TODO: Abrir modal de transferência
-            }}
+            onClick={() => setShowTransferirModal(true)}
             className="p-2 bg-gray-100 hover:bg-blue-200 dark:bg-gray-800 dark:hover:bg-blue-700 rounded-full transition-all duration-300"
             title="Transferir Atendimento"
           >
@@ -1399,7 +1411,7 @@ export default function ChatArea({
           </motion.button>
           
           <button
-            onClick={() => {}}
+            onClick={() => setShowAssinaturaModal(true)}
             className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Assinatura"
           >
@@ -2604,6 +2616,7 @@ export default function ChatArea({
         isOpen={showAssinaturaModal}
         onClose={() => setShowAssinaturaModal(false)}
         onSave={handleAssinaturaSave}
+        chatId={conversation?.id}
         contactData={getContactData()}
       />
       
@@ -2626,6 +2639,14 @@ export default function ChatArea({
         isOpen={showLigacaoModal}
         onClose={() => setShowLigacaoModal(false)}
         onStartCall={handleLigacaoStart}
+        contactData={getContactData()}
+      />
+      
+      <TransferirAtendimentoModal
+        isOpen={showTransferirModal}
+        onClose={() => setShowTransferirModal(false)}
+        onConfirm={handleTransferirSave}
+        chatId={conversation?.id}
         contactData={getContactData()}
       />
       
