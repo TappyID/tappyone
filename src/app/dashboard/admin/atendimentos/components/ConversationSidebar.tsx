@@ -586,19 +586,40 @@ export default function ConversationSidebar({
     }
   }, [useInfiniteScroll, infiniteScrollHandler])
 
-  // Criar conversas baseadas nos chats reais com dados dos contatos
-  const conversations = activeChats.map((chat, index) => {
+  // Função para encontrar a fila de um chat baseado nas conexões
+  const getChatQueue = useCallback((chatId: string) => {
+    // Primeiro, tentar encontrar pela conexão (vinculação do modal de conexões)
+    for (const conexao of conexoes) {
+      if (conexao.modulation?.selectedChats?.includes(chatId)) {
+        // Chat está vinculado a esta conexão, buscar a fila
+        const filaId = conexao.modulation.selectedFilas?.[0] // Pegar primeira fila selecionada
+        if (filaId) {
+          const fila = filas.find(f => f.id === filaId)
+          if (fila) {
+            return fila
+          }
+        }
+      }
+    }
+    
+    // Se não encontrar pela conexão, usar dados do contato do cache (fallback)
+    const contatoData = contatosData[chatId] || null
+    return contatoData?.fila || null
+  }, [conexoes, filas, contatosData])
+
+  const conversations = chats.map(chat => {
+    const chatId = chat.id?._serialized || chat.id || ''
     const name = getContactName(chat, contacts)
     const lastMessage = getLastMessage(chat)
     
-    // Extrair chatId corretamente
-    const chatId = chat.id?._serialized || chat.id || `chat-${index}`
-    
-    // Buscar dados reais do contato
-    const contatoData = contatosData[chatId]
+    // Buscar dados do contato do cache
+    const contatoData = contatosData[chatId] || null
     
     // Buscar tags do cache - igual ao ChatArea
     const contatoTags = tagsCache[chatId] || []
+    
+    // Buscar fila usando a nova lógica que considera conexões
+    const chatQueue = getChatQueue(chatId)
     
     // Debug: Log dados do contato
     if (contatoData) {
@@ -608,7 +629,8 @@ export default function ConversationSidebar({
         tagsFromCacheLength: contatoTags?.length || 0,
         tagsFromCacheRaw: JSON.stringify(contatoTags),
         fila: contatoData.fila,
-        hasQueue: !!contatoData.fila,
+        chatQueue: chatQueue,
+        hasQueue: !!chatQueue,
         orcamento: contatoData.orcamento,
         orcamentoValor: contatoData.orcamento?.valor,
         orcamentoValorTotal: (contatoData.orcamento as any)?.valorTotal,
@@ -633,7 +655,7 @@ export default function ConversationSidebar({
       
       // Dados reais do contato - usando tags do cache igual ao ChatArea
       tags: Array.isArray(contatoTags) ? contatoTags : [],
-      queue: contatoData?.fila || null,
+      queue: chatQueue, // Usar a nova lógica que considera conexões
       atendente: contatoData?.atendente || null,
       kanbanBoard: contatoData?.kanbanBoard || null,
       orcamento: contatoData?.orcamento || null,
@@ -642,8 +664,8 @@ export default function ConversationSidebar({
       // Badge do kanban se existir
       badge: contatoData?.kanbanBoard ? {
         text: contatoData.kanbanBoard,
-        color: contatoData.fila?.cor || '#6b7280',
-        backgroundColor: contatoData.fila?.cor || '#6b7280'
+        color: chatQueue?.cor || '#6b7280',
+        backgroundColor: chatQueue?.cor || '#6b7280'
       } : null,
       
       isPinned: false, // TODO: Implementar campo no backend
@@ -1182,10 +1204,9 @@ export default function ConversationSidebar({
                     </div>
                   </div>
                   
-                  {/* Informações da Fila e Tag */}
-                  <div className="flex items-center gap-2 mb-2">
+                  {/* Informações da Fila, Atendente e Tag */}
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     {/* Fila */}
-                    {/* Fila do contato */}
                     {conversation.queue && (
                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
                         backgroundColor: `${conversation.queue.cor}20`,
@@ -1194,6 +1215,16 @@ export default function ConversationSidebar({
                         <Layers className="w-3 h-3" style={{ color: conversation.queue.cor }} />
                         <span className="text-xs font-medium" style={{ color: conversation.queue.cor }}>
                           {conversation.queue.nome}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Atendente */}
+                    {conversation.atendente && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-blue-500/20 border-blue-400/40">
+                        <User className="w-3 h-3 text-blue-500" />
+                        <span className="text-xs font-medium text-blue-500">
+                          {conversation.atendente.nome || 'Atendente'}
                         </span>
                       </div>
                     )}
