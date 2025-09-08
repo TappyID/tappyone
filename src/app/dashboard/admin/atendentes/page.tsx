@@ -29,7 +29,7 @@ export default function AtendentesPage() {
   const [filters, setFilters] = useState({
     search: '',
     status: 'todos',
-    tipo: 'todos'
+    tipo: 'atendente'
   })
 
   // Usar hook real para dados de atendentes
@@ -230,6 +230,7 @@ export default function AtendentesPage() {
       {showAtribuirFilaModal && selectedAtendente && (
         <AtribuirFilaModal
           atendente={selectedAtendente}
+          isOpen={showAtribuirFilaModal}
           onClose={() => {
             setShowAtribuirFilaModal(false)
             setSelectedAtendente(null)

@@ -302,13 +302,7 @@ export function EditConnectionModal({
       }
     } catch (error) {
       console.error('Erro ao buscar filas:', error)
-      // Criar filas mock para desenvolvimento
-      setFilas([
-        { id: 'suporte', nome: 'Suporte Técnico' },
-        { id: 'vendas', nome: 'Vendas' },
-        { id: 'financeiro', nome: 'Financeiro' },
-        { id: 'atendimento', nome: 'Atendimento Geral' }
-      ])
+      setFilas([])
     }
   }
 

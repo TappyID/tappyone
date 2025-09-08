@@ -188,7 +188,7 @@ export function useAuth() {
       case 'ATENDENTE_JURIDICO':
       case 'ATENDENTE_SUPORTE':
       case 'ATENDENTE_VENDAS':
-        return '/dashboard/funcionario'
+        return '/dashboard/atendente'
       case 'ASSINANTE':
       case 'AFILIADO':
         return '/dashboard/assinante'

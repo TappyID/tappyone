@@ -53,7 +53,7 @@ export default function CriarFilaModal({ fila, onClose, onCreateFila }: CriarFil
     try {
       console.log('🔍 [ATENDENTES] Buscando atendentes...')
       
-      const response = await fetch('/api/atendentes', {
+      const response = await fetch('/api/users?tipo=atendente', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',

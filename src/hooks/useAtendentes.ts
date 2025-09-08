@@ -5,15 +5,22 @@ export interface Atendente {
   nome: string
   email: string
   telefone?: string
-  tipo: 'admin' | 'atendente' | 'comercial' | 'suporte'
+  tipo: string
   ativo: boolean
-  fila?: {
-    id: string
-    nome: string
-    cor: string
-  }
   criadoEm: string
   atualizadoEm: string
+  fila_id?: string // Mantido para compatibilidade
+  fila?: {  // Mantido para compatibilidade
+    id: string
+    nome: string
+    cor?: string
+  }
+  filas?: {  // Novo campo para múltiplas filas
+    id: string
+    nome: string
+    cor?: string
+    descricao?: string
+  }[]
 }
 
 export interface AtendenteComStats extends Atendente {
@@ -65,9 +72,9 @@ export function useAtendentes(filters?: {
       }
 
       const params = new URLSearchParams()
-      if (filters?.tipo && filters.tipo !== 'todos') {
-        params.append('tipo', filters.tipo)
-      }
+      // Sempre filtrar por tipo atendente
+      params.append('tipo', 'atendente')
+      
       if (filters?.status && filters.status !== 'todos') {
         params.append('status', filters.status)
       }
@@ -75,7 +82,7 @@ export function useAtendentes(filters?: {
         params.append('search', filters.search)
       }
 
-      const response = await fetch(`/api/atendentes?${params.toString()}`, {
+      const response = await fetch(`/api/users?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -89,26 +96,43 @@ export function useAtendentes(filters?: {
       const data = await response.json()
       
       // Transformar dados do backend para incluir estatísticas mock
-      const atendentesComStats: AtendenteComStats[] = data.map((atendente: Atendente) => {
-        const atendenteComStats: AtendenteComStats = {
-          ...atendente,
-          // Adicionar fila mock se não existir
-          fila: atendente.fila || {
-            id: ['1', '2', '3', '4', '5'][Math.floor(Math.random() * 5)],
-            nome: ['Suporte Técnico', 'Vendas', 'Financeiro', 'Jurídico', 'Geral'][Math.floor(Math.random() * 5)],
-            cor: ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-gray-500'][Math.floor(Math.random() * 5)]
-          },
-          estatisticas: {
-            conversasAtivas: Math.floor(Math.random() * 15) + 1,
-            totalConversas: Math.floor(Math.random() * 200) + 50,
-            emAndamento: Math.floor(Math.random() * 8) + 1,
-            concluidas: Math.floor(Math.random() * 150) + 25,
-            ticketsResolvidos: Math.floor(Math.random() * 100) + 10,
-            ticketsPendentes: Math.floor(Math.random() * 20) + 1
+      const atendentesComStats: AtendenteComStats[] = await Promise.all(
+        data.map(async (atendente: Atendente) => {
+          let filas: any[] = []
+          
+          // Buscar filas do atendente se for tipo atendente
+          if (atendente.tipo && atendente.tipo.startsWith('ATENDENTE_')) {
+            try {
+              const filasResponse = await fetch(`/api/users/${atendente.id}/filas`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              })
+              
+              if (filasResponse.ok) {
+                const filasData = await filasResponse.json()
+                filas = filasData.data || []
+              }
+            } catch (error) {
+              console.error(`Erro ao buscar filas do atendente ${atendente.id}:`, error)
+            }
           }
-        }
-        return atendenteComStats
-      })
+
+          const atendenteComStats: AtendenteComStats = {
+            ...atendente,
+            filas, // Adicionar filas múltiplas
+            estatisticas: {
+              conversasAtivas: Math.floor(Math.random() * 15) + 1,
+              totalConversas: Math.floor(Math.random() * 200) + 50,
+              emAndamento: Math.floor(Math.random() * 8) + 1,
+              concluidas: Math.floor(Math.random() * 150) + 25,
+              ticketsResolvidos: Math.floor(Math.random() * 100) + 10,
+              ticketsPendentes: Math.floor(Math.random() * 20) + 1
+            }
+          }
+          return atendenteComStats
+        })
+      )
 
       setAtendentes(atendentesComStats)
     } catch (err) {

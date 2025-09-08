@@ -69,7 +69,7 @@ export function useConexoes() {
       const data = result.success ? result.data : result
       console.log(`🔗 [useConexoes] Data extraída:`, data)
       
-      const conexoesAtivas = Array.isArray(data) ? data.filter(c => c.status === 'ACTIVE') : []
+      const conexoesAtivas = Array.isArray(data) ? data.filter(c => c.status === 'connected') : []
       console.log(`🔗 [useConexoes] Conexões ativas filtradas:`, conexoesAtivas)
       
       setConexoes(conexoesAtivas)

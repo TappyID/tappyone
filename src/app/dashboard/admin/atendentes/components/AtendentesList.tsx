@@ -151,10 +151,27 @@ export default function AtendentesList({ atendentes, onUpdateAtendente }: Atende
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {atendente.departamento}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        <div className="flex flex-wrap gap-1">
+                          {atendente.filas && atendente.filas.length > 0 ? (
+                            atendente.filas.map((fila, index) => (
+                              <span
+                                key={fila.id}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              >
+                                {fila.nome}
+                              </span>
+                            ))
+                          ) : atendente.fila?.nome ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              {atendente.fila.nome} (legado)
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">Sem filas</span>
+                          )}
+                        </div>
+                      </div>
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         Último login: {formatDistanceToNow(atendente.ultimoLogin, { locale: ptBR })}

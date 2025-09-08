@@ -280,13 +280,58 @@ export function ActiveConnectionsTable({
     }
   }
 
-  // Desconectar sessão
+  // Desconectar sessão (apenas pausar, não excluir)
   const handleDisconnectSession = async (connection: ActiveConnection) => {
     try {
       setLoading(true)
       const token = localStorage.getItem('token')
       
-      // Desconectar via API WhatsApp
+      // Pausar sessão na API WAHA sem excluir do banco
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+      const response = await fetch(`${backendUrl}/api/whatsapp/sessions/${connection.sessionName}/stop`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        // Atualizar status da conexão para disconnected
+        await fetch(`/api/connections/whatsapp/${connection.sessionName}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            modulation: {
+              status: 'disconnected'
+            }
+          })
+        })
+        fetchConnections()
+      } else {
+        console.error('Erro ao desconectar sessão:', response.status)
+      }
+    } catch (error) {
+      console.error('Erro ao desconectar:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Excluir conexão completamente (banco + sessão WAHA)
+  const handleDeleteConnection = async (connection: ActiveConnection) => {
+    if (!confirm('Tem certeza que deseja excluir esta conexão? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('token')
+      
+      // 1. Excluir conexão do banco
       const response = await fetch(`/api/connections/whatsapp/${connection.sessionName}`, {
         method: 'DELETE',
         headers: {
@@ -296,12 +341,25 @@ export function ActiveConnectionsTable({
       })
 
       if (response.ok) {
+        // 2. Remover sessão da API WAHA também
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+          await fetch(`${backendUrl}/api/whatsapp/sessions/${connection.sessionName}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+        } catch (wahaError) {
+          console.warn('Erro ao remover sessão WAHA (mas conexão foi excluída):', wahaError)
+        }
+        
         fetchConnections()
       } else {
-        console.error('Erro ao desconectar sessão:', response.status)
+        console.error('Erro ao excluir conexão:', response.status)
       }
     } catch (error) {
-      console.error('Erro ao desconectar:', error)
+      console.error('Erro ao excluir:', error)
     } finally {
       setLoading(false)
     }
@@ -655,10 +713,7 @@ export function ActiveConnectionsTable({
                         </motion.button>
 
                         <motion.button
-                          onClick={() => {
-                            // TODO: Implementar deletar conexão
-                            console.log('Deletar:', connection.id)
-                          }}
+                          onClick={() => handleDeleteConnection(connection)}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           className={`p-2 rounded-lg transition-colors ${
@@ -666,7 +721,7 @@ export function ActiveConnectionsTable({
                               ? 'hover:bg-slate-600/50 text-gray-400 hover:text-red-400' 
                               : 'hover:bg-red-50 text-gray-600 hover:text-red-600'
                           }`}
-                          title="Deletar conexão"
+                          title="Excluir conexão permanentemente"
                         >
                           <Trash2 className="w-4 h-4" />
                         </motion.button>

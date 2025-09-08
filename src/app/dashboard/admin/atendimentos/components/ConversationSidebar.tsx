@@ -45,8 +45,8 @@ import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
 import { useConexoes } from '@/hooks/useConexoes'
 import { useChatAgente } from '@/hooks/useChatAgente'
-import { useContatoTags } from '@/hooks/useContatoTags'
 import { useContatoData } from '@/hooks/useContatoData'
+import { useContatoTags } from '@/hooks/useContatoTags'
 import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
 import { useInfiniteChats } from '@/hooks/useInfiniteChats'
 
@@ -523,19 +523,68 @@ export default function ConversationSidebar({
     }
   }
 
-  // Usar chats normais (infinite scroll desabilitado temporariamente)
-  const activeChats = chats
-  const activeContacts = contacts
-  const activeLoading = isLoading
+  // Usar infinite scroll hook
+  const { 
+    chats: infiniteChats, 
+    loading: infiniteLoading, 
+    hasMore, 
+    loadMore, 
+    refresh, 
+    handleScroll: infiniteScrollHandler 
+  } = useInfiniteChats()
+  
+  // Usar dados do infinite scroll se ativado, senão usar props
+  const activeChats = useInfiniteScroll ? infiniteChats : chats
+  const activeContacts = contacts 
+  const activeLoading = useInfiniteScroll ? infiniteLoading : isLoading
   
   // Buscar dados reais dos contatos para fotos de perfil (sempre necessário)
   const activeChatIds = activeChats.map(chat => chat.id?._serialized || chat.id || '')
   const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
   
-  // Handler do scroll (desabilitado por enquanto)
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    // Scroll infinito desabilitado temporariamente
+  // Cache de tags por chatId - igual ao ChatArea para manter consistência
+  const [tagsCache, setTagsCache] = useState<{[chatId: string]: any[]}>({})
+  
+  // Função para buscar tags de um chatId específico - igual ao ChatArea
+  const fetchTagsForChat = useCallback(async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      const response = await fetch(`/api/contatos/${chatId}/tags`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const tags = data.data || data || []
+        setTagsCache(prev => ({ ...prev, [chatId]: tags }))
+        console.log(`🏷️ [SIDEBAR-CACHE] Tags para ${chatId}:`, tags)
+      } else {
+        setTagsCache(prev => ({ ...prev, [chatId]: [] }))
+        console.log(`🏷️ [SIDEBAR-CACHE] Sem tags para ${chatId}`)
+      }
+    } catch (error) {
+      console.error(`❌ [SIDEBAR-CACHE] Erro ao buscar tags para ${chatId}:`, error)
+      setTagsCache(prev => ({ ...prev, [chatId]: [] }))
+    }
   }, [])
+  
+  // Buscar tags para todos os chatIds ativos
+  useEffect(() => {
+    activeChatIds.forEach(chatId => {
+      if (!tagsCache[chatId] && chatId.trim() !== '') {
+        fetchTagsForChat(chatId)
+      }
+    })
+  }, [activeChatIds, tagsCache, fetchTagsForChat])
+  
+  // Handler do scroll com infinite scroll ativo
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (useInfiniteScroll && infiniteScrollHandler) {
+      infiniteScrollHandler(e.currentTarget)
+    }
+  }, [useInfiniteScroll, infiniteScrollHandler])
 
   // Criar conversas baseadas nos chats reais com dados dos contatos
   const conversations = activeChats.map((chat, index) => {
@@ -548,12 +597,16 @@ export default function ConversationSidebar({
     // Buscar dados reais do contato
     const contatoData = contatosData[chatId]
     
+    // Buscar tags do cache - igual ao ChatArea
+    const contatoTags = tagsCache[chatId] || []
+    
     // Debug: Log dados do contato
     if (contatoData) {
       console.log(`🔍 [SIDEBAR] Dados do contato ${chatId}:`, {
         id: contatoData.id,
-        tags: contatoData.tags,
-        tagsLength: contatoData.tags?.length || 0,
+        tagsFromCache: contatoTags,
+        tagsFromCacheLength: contatoTags?.length || 0,
+        tagsFromCacheRaw: JSON.stringify(contatoTags),
         fila: contatoData.fila,
         hasQueue: !!contatoData.fila,
         orcamento: contatoData.orcamento,
@@ -564,6 +617,8 @@ export default function ConversationSidebar({
         agendamentoTitulo: (contatoData.agendamento as any)?.titulo,
         fullAgendamento: JSON.stringify(contatoData.agendamento)
       })
+    } else {
+      console.log(`⚠️ [SIDEBAR] Sem dados para contato ${chatId}`)
     }
     
     return {
@@ -576,8 +631,8 @@ export default function ConversationSidebar({
       avatar: chat.profilePicUrl || chat.profilePictureUrl,
       type: chat.isGroup ? 'group' : 'individual',
       
-      // Dados reais do contato
-      tags: contatoData?.tags || [],
+      // Dados reais do contato - usando tags do cache igual ao ChatArea
+      tags: Array.isArray(contatoTags) ? contatoTags : [],
       queue: contatoData?.fila || null,
       atendente: contatoData?.atendente || null,
       kanbanBoard: contatoData?.kanbanBoard || null,
@@ -642,31 +697,23 @@ export default function ConversationSidebar({
                          (activeFilter === 'archived' && conv.isArchived) ||
                          (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
     
-    // FILTRO por fila baseado na MODULATION da conexão
+    // FILTRO por fila - usar queue do chat, não modulation restritiva
     let matchesQueue = selectedQueue === 'todas'
     
-    if (selectedQueue !== 'todas' && connectionModulation) {
-      // Verificar se o chat está na fila selecionada através da modulation
-      const isInSelectedFila = connectionModulation.selectedFilas?.includes(selectedQueue) &&
-                              connectionModulation.selectedChats?.includes(conv.id)
+    if (selectedQueue !== 'todas') {
+      // Usar sempre o método baseado na queue do chat
+      // A modulation é para filtrar dados no WhatsApp API, não na UI
+      matchesQueue = conv.queue?.id === selectedQueue
       
-      matchesQueue = isInSelectedFila
-      
-      // DEBUG: Logs para entender o filtro por modulation
+      // DEBUG: Logs para entender o filtro por queue
       if (conv.name.includes('Test') || conv.name.includes('Vyzer')) {
-        console.log(`🔎 [FILTRO MODULATION] Chat ${conv.name}:`, {
+        console.log(`🔎 [FILTRO QUEUE] Chat ${conv.name}:`, {
           chatId: conv.id,
           selectedQueue,
-          hasModulation: !!connectionModulation,
-          selectedFilas: connectionModulation.selectedFilas,
-          selectedChats: connectionModulation.selectedChats,
-          isInSelectedFila,
+          chatQueueId: conv.queue?.id,
           matchesQueue
         })
       }
-    } else if (selectedQueue !== 'todas' && !connectionModulation) {
-      // Fallback: usar o método antigo se não tiver modulation
-      matchesQueue = conv.queue?.id === selectedQueue
     }
     
     // Filtro por tag real  
@@ -1151,29 +1198,53 @@ export default function ConversationSidebar({
                       </div>
                     )}
                     
-                    {/* Tag Principal - Debug */}
+                    {/* Tag Principal */}
                     {(() => {
                       console.log(`🏷️ [SIDEBAR] Conversa ${conversation.id} - Tags:`, conversation.tags)
-                      if (conversation.tags && conversation.tags.length > 0) {
-                        console.log(`🏷️ [SIDEBAR] Exibindo tag para ${conversation.id}:`, conversation.tags[0])
+                      console.log(`🏷️ [SIDEBAR] Conversa ${conversation.id} - Array.isArray:`, Array.isArray(conversation.tags))
+                      console.log(`🏷️ [SIDEBAR] Conversa ${conversation.id} - Tags length:`, conversation.tags?.length)
+                      console.log(`🏷️ [SIDEBAR] Conversa ${conversation.id} - Tags type:`, typeof conversation.tags)
+                      
+                      if (Array.isArray(conversation.tags) && conversation.tags.length > 0) {
+                        console.log(`🏷️ [SIDEBAR] Exibindo ${conversation.tags.length} tags para ${conversation.id}:`, conversation.tags)
+                        return (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {conversation.tags.map((tag: any, index: number) => {
+                              const tagColor = tag.cor || '#6b7280'
+                              console.log(`🎨 [SIDEBAR] Tag ${index} - ${tag.nome}:`, tagColor)
+                              return (
+                                <div 
+                                  key={tag.id || index}
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded-md border" 
+                                  style={{
+                                    backgroundColor: `${tagColor}20`,
+                                    borderColor: `${tagColor}40`
+                                  }}
+                                >
+                                  <Tag className="w-3 h-3" style={{ color: tagColor }} />
+                                  <span className="text-xs font-medium" style={{ color: tagColor }}>
+                                    {tag.nome}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      } else {
+                        // Exibir "Em aberto" quando não tem tags
+                        console.log(`🏷️ [SIDEBAR] Exibindo "Em aberto" para ${conversation.id} - sem tags válidas`)
                         return (
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
-                            backgroundColor: `${conversation.tags[0].cor || '#6b7280'}20`,
-                            borderColor: `${conversation.tags[0].cor || '#6b7280'}40`
+                            backgroundColor: '#f3f4f620',
+                            borderColor: '#9ca3af40'
                           }}>
-                            <Tag className="w-3 h-3" style={{ color: conversation.tags[0].cor || '#6b7280' }} />
-                            <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor || '#6b7280' }}>
-                              {conversation.tags[0].nome}
+                            <Tag className="w-3 h-3" style={{ color: '#9ca3af' }} />
+                            <span className="text-xs font-medium" style={{ color: '#9ca3af' }}>
+                              Em aberto
                             </span>
-                            {conversation.tags.length > 1 && (
-                              <span className="text-xs font-medium" style={{ color: conversation.tags[0].cor || '#6b7280' }}>
-                                +{conversation.tags.length - 1}
-                              </span>
-                            )}
                           </div>
                         )
                       }
-                      return null
                     })()}
                   </div>
                   
@@ -1272,7 +1343,22 @@ export default function ConversationSidebar({
           ))}
         </AnimatePresence>
         
-        {/* Scroll infinito desabilitado temporariamente */}
+        {/* Loading indicator para scroll infinito */}
+        {useInfiniteScroll && activeLoading && (
+          <div className="flex items-center justify-center py-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm">Carregando mais conversas...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Indicador de fim da lista */}
+        {useInfiniteScroll && !hasMore && activeChats.length > 0 && (
+          <div className="flex items-center justify-center py-4">
+            <span className="text-xs text-muted-foreground">Todas as conversas foram carregadas</span>
+          </div>
+        )}
 
           {/* Empty State */}
           {filteredConversations.length === 0 && (

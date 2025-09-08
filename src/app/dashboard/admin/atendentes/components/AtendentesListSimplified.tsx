@@ -289,29 +289,58 @@ export default function AtendentesList({
                 </div>
               </div>
 
-              {/* Fila Atual - DESTAQUE */}
-              {atendente.fila && (
+              {/* Filas Atribuídas - DESTAQUE */}
+              {(atendente.filas && atendente.filas.length > 0) ? (
                 <div className={`mb-4 p-3 rounded-xl border ${
                   actualTheme === 'dark'
                     ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/30'
                     : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'
                 }`}>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-2">
                     <Layers className={`w-4 h-4 ${
                       actualTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                     }`} />
                     <span className={`text-sm font-medium ${
                       actualTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'
-                    }`}>Fila Atual:</span>
+                    }`}>Filas Atribuídas:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {atendente.filas.map((fila, index) => (
+                      <div key={fila.id} className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${fila.cor || 'bg-blue-500'}`} />
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${
+                          actualTheme === 'dark' 
+                            ? 'text-blue-300 bg-blue-500/10 border-blue-500/30' 
+                            : 'text-blue-700 bg-blue-100 border-blue-200'
+                        }`}>
+                          {fila.nome}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : atendente.fila ? (
+                <div className={`mb-4 p-3 rounded-xl border ${
+                  actualTheme === 'dark'
+                    ? 'bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30'
+                    : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-100'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <Layers className={`w-4 h-4 ${
+                      actualTheme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'
+                    }`} />
+                    <span className={`text-sm font-medium ${
+                      actualTheme === 'dark' ? 'text-yellow-300' : 'text-yellow-700'
+                    }`}>Fila (Legado):</span>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${atendente.fila.cor}`} />
+                      <div className={`w-3 h-3 rounded-full ${atendente.fila.cor || 'bg-yellow-500'}`} />
                       <span className={`text-sm font-bold ${
-                        actualTheme === 'dark' ? 'text-blue-200' : 'text-blue-900'
+                        actualTheme === 'dark' ? 'text-yellow-200' : 'text-yellow-900'
                       }`}>{atendente.fila.nome}</span>
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Contact Info */}
               <div className="space-y-2 mb-4">

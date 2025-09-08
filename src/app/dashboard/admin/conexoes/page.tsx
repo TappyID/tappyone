@@ -53,10 +53,8 @@ export default function ConexoesPage() {
       }
 
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
-      
-      // Salvar a modulação da conexão usando o endpoint correto
-      const connectionResponse = await fetch(`${backendUrl}/api/connections/whatsapp/${selectedConnection.sessionName}`, {
+      // Salvar a modulação da conexão usando a API Next.js que cria a conexão automaticamente
+      const connectionResponse = await fetch(`/api/connections/whatsapp/${selectedConnection.sessionName}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

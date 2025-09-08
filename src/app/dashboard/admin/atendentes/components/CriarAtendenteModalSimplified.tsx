@@ -1,8 +1,8 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, UserPlus, User, Mail, Phone, Shield } from 'lucide-react'
-import { useState } from 'react'
+import { X, UserPlus, User, Mail, Phone, Shield, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { AtendenteComStats } from '@/hooks/useAtendentes'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -14,6 +14,7 @@ interface CriarAtendenteModalProps {
     telefone?: string
     tipo: 'ADMIN' | 'ATENDENTE_FINANCEIRO' | 'ATENDENTE_COMERCIAL' | 'ATENDENTE_JURIDICO' | 'ATENDENTE_SUPORTE' | 'ATENDENTE_VENDAS' | 'ASSINANTE' | 'AFILIADO'
     senha: string
+    fila_id?: string
   }) => void
 }
 
@@ -24,9 +25,13 @@ export default function CriarAtendenteModal({ onClose, onCreateAtendente }: Cria
     email: '',
     telefone: '',
     tipo: 'ATENDENTE_SUPORTE' as const,
-    senha: ''
+    senha: '',
+    confirmarSenha: '',
+    fila_id: ''
   })
   const [loading, setLoading] = useState(false)
+  const [filas, setFilas] = useState<Array<{id: string, nome: string}>>([])  
+  const [loadingFilas, setLoadingFilas] = useState(false)
 
   const tipoOptions = [
     { value: 'ADMIN', label: 'Administrador' },
@@ -52,6 +57,11 @@ export default function CriarAtendenteModal({ onClose, onCreateAtendente }: Cria
       return
     }
 
+    if (formData.senha !== formData.confirmarSenha) {
+      alert('As senhas não coincidem')
+      return
+    }
+
     setLoading(true)
     try {
       await onCreateAtendente(formData)
@@ -63,6 +73,29 @@ export default function CriarAtendenteModal({ onClose, onCreateAtendente }: Cria
       setLoading(false)
     }
   }
+
+  // Buscar filas disponíveis
+  const fetchFilas = async () => {
+    setLoadingFilas(true)
+    try {
+      const response = await fetch('/api/filas', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setFilas(data.data || data || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar filas:', error)
+    }
+    setLoadingFilas(false)
+  }
+
+  useEffect(() => {
+    fetchFilas()
+  }, [])
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -208,6 +241,42 @@ export default function CriarAtendenteModal({ onClose, onCreateAtendente }: Cria
               </select>
             </div>
 
+            {/* Fila */}
+            {formData.tipo.startsWith('ATENDENTE_') && (
+              <div className="space-y-2">
+                <label className={`flex items-center gap-2 text-sm font-medium ${
+                  actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+                }`}>
+                  <Users className="w-4 h-4" />
+                  Fila de Atendimento
+                </label>
+                {loadingFilas ? (
+                  <div className="flex items-center justify-center py-3">
+                    <span className={`text-sm ${
+                      actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>Carregando filas...</span>
+                  </div>
+                ) : (
+                  <select
+                    value={formData.fila_id}
+                    onChange={(e) => handleChange('fila_id', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all ${
+                      actualTheme === 'dark'
+                        ? 'bg-slate-700/50 border-slate-600/50 text-white'
+                        : 'bg-white border-gray-200 text-gray-900'
+                    }`}
+                  >
+                    <option value="">Selecione uma fila (opcional)</option>
+                    {filas.map(fila => (
+                      <option key={fila.id} value={fila.id}>
+                        {fila.nome}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
             {/* Senha */}
             <div className="space-y-2">
               <label className={`flex items-center gap-2 text-sm font-medium ${
@@ -232,6 +301,30 @@ export default function CriarAtendenteModal({ onClose, onCreateAtendente }: Cria
               <p className={`text-xs ${
                 actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-500'
               }`}>A senha deve ter pelo menos 6 caracteres</p>
+            </div>
+
+            {/* Confirmar Senha */}
+            <div className="space-y-2">
+              <label className={`flex items-center gap-2 text-sm font-medium ${
+                actualTheme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
+                <Shield className="w-4 h-4" />
+                Confirmar Senha *
+              </label>
+              <input
+                type="password"
+                value={formData.confirmarSenha}
+                onChange={(e) => handleChange('confirmarSenha', e.target.value)}
+                placeholder="Confirme a senha"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#305e73] focus:border-transparent transition-all ${
+                  actualTheme === 'dark'
+                    ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+                }`}
+              />
+              <p className={`text-xs ${
+                actualTheme === 'dark' ? 'text-slate-400' : 'text-gray-500'
+              }`}>A senha deve ter pelo menos 6 caracteres e coincidir</p>
             </div>
 
             {/* Buttons */}

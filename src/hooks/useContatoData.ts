@@ -29,14 +29,14 @@ interface ContatoData {
 }
 
 interface UseContatoDataReturn {
-  contatos: { [chatId: string]: ContatoData }
+  contatos: { [chatId: string]: ContatoData | null }
   loading: boolean
   error: string | null
   refreshContato: (chatId: string) => void
 }
 
-export function useContatoData(chatIds: string[]): UseContatoDataReturn {
-  const [contatos, setContatos] = useState<{ [chatId: string]: ContatoData }>({})
+export function useContatoData(chatIds: string[]) {
+  const [contatos, setContatos] = useState<{ [chatId: string]: ContatoData | null }>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,35 +49,124 @@ export function useContatoData(chatIds: string[]): UseContatoDataReturn {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
+        console.error('❌ [useContatoData] Token não encontrado no localStorage')
         throw new Error('Token não encontrado')
       }
-
-      // Encode chatId to prevent URL issues
-      const encodedChatId = encodeURIComponent(chatId)
-      console.log(`🔍 [useContatoData] Buscando contato para chatId: ${chatId}`)
       
-      const response = await fetch(`/api/contatos/${encodedChatId}/dados-completos`, {
+      console.log(`🔑 [useContatoData] Token encontrado para ${chatId}`)
+
+      // Extrair número do telefone do chatId (mesmo formato do Kanban)
+      const numeroTelefone = chatId.replace('@c.us', '').replace('@g.us', '')
+      console.log(`🔍 [useContatoData] Buscando dados para número: ${numeroTelefone}`)
+
+      // Buscar contato base pelo número do telefone
+      const contatoResponse = await fetch(`/api/contatos?numero_telefone=${numeroTelefone}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
-      
-      if (!response.ok) {
-        console.log(`❌ [useContatoData] Erro ${response.status} para chatId: ${chatId}`)
-        throw new Error(`Erro ao buscar dados do contato: ${response.status}`)
+
+      let contatoData = null
+      if (contatoResponse.ok) {
+        const contatos = await contatoResponse.json()
+        contatoData = contatos.length > 0 ? contatos[0] : null
+        console.log(`📱 [useContatoData] Contato encontrado:`, contatoData?.id || 'Não encontrado')
       }
-      const data = await response.json()
-      
-      if (data.isWhatsAppChat) {
-        console.log(`ℹ️ [useContatoData] Chat WAHA sem contato CRM: ${chatId}`)
+
+      if (!contatoData) {
+        console.log(`ℹ️ [useContatoData] Chat sem contato CRM: ${chatId}`)
         return null
       }
-      
-      console.log(`🏷️ [useContatoData] ${chatId} - Dados completos:`, data)
-      console.log(`🏷️ [useContatoData] ${chatId} - Tags específicas:`, data.tags)
-      console.log(`🏷️ [useContatoData] ${chatId} - Resposta completa:`, data)
-      return data
+
+      // Buscar dados relacionados usando contato_id (mesmo método do Kanban)
+      const [tagsResponse, orcamentosResponse, agendamentosResponse] = await Promise.all([
+        fetch(`/api/contatos/${contatoData.id}/tags`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null),
+        
+        fetch(`/api/orcamentos?contato_id=${numeroTelefone}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null),
+        
+        fetch(`/api/agendamentos?contato_id=${numeroTelefone}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null)
+      ])
+
+      // Processar tags
+      let tags = []
+      if (tagsResponse?.ok) {
+        const tagsData = await tagsResponse.json()
+        tags = tagsData.data || tagsData || []
+        console.log(`🏷️ [useContatoData] ${chatId} - Tags encontradas:`, tags.length)
+        console.log(`🏷️ [useContatoData] ${chatId} - Tags raw:`, tagsData)
+        console.log(`🏷️ [useContatoData] ${chatId} - Tags processadas:`, tags)
+        
+        // Verificar se há tags "padrão" sendo retornadas incorretamente
+        if (tags.length > 0) {
+          tags.forEach((tag, index) => {
+            console.log(`🏷️ [useContatoData] ${chatId} - Tag ${index}:`, {
+              id: tag.id,
+              nome: tag.nome,
+              cor: tag.cor
+            })
+          })
+        }
+      } else {
+        console.log(`🏷️ [useContatoData] ${chatId} - Sem tags - Response OK: ${tagsResponse?.ok}`)
+        console.log(`🏷️ [useContatoData] ${chatId} - Response status:`, tagsResponse?.status)
+        console.log(`🏷️ [useContatoData] ${chatId} - Response statusText:`, tagsResponse?.statusText)
+      }
+
+      // Processar orçamentos
+      let orcamento = null
+      if (orcamentosResponse?.ok) {
+        const orcamentos = await orcamentosResponse.json()
+        if (orcamentos.length > 0) {
+          orcamento = {
+            valor: orcamentos[0].valor || orcamentos[0].valorTotal || 0,
+            status: orcamentos[0].status
+          }
+          console.log(`💰 [useContatoData] ${chatId} - Orçamento encontrado:`, orcamento.valor)
+        }
+      }
+
+      // Processar agendamentos
+      let agendamento = null
+      if (agendamentosResponse?.ok) {
+        const agendamentos = await agendamentosResponse.json()
+        if (agendamentos.length > 0) {
+          agendamento = {
+            data: agendamentos[0].data_agendamento || agendamentos[0].data,
+            status: agendamentos[0].status
+          }
+          console.log(`📅 [useContatoData] ${chatId} - Agendamento encontrado:`, agendamento.data)
+        }
+      }
+
+      const result = {
+        id: contatoData.id,
+        fila: contatoData.fila ? {
+          id: contatoData.fila.id,
+          nome: contatoData.fila.nome,
+          cor: contatoData.fila.cor
+        } : undefined,
+        tags,
+        atendente: contatoData.atendente,
+        kanbanBoard: contatoData.kanbanBoard,
+        orcamento,
+        agendamento
+      }
+
+      console.log(`✅ [useContatoData] ${chatId} - Dados completos:`, {
+        id: result.id,
+        tagsCount: result.tags?.length || 0,
+        hasOrcamento: !!result.orcamento,
+        hasAgendamento: !!result.agendamento
+      })
+
+      return result
     } catch (err) {
       console.error('❌ [useContatoData] Erro ao buscar dados do contato:', err)
       return null
@@ -85,37 +174,44 @@ export function useContatoData(chatIds: string[]): UseContatoDataReturn {
   }
 
   const loadContatosData = async () => {
-    if (chatIds.length === 0) return
+    // Filtrar apenas chatIds que ainda não foram carregados
+    const pendingChatIds = chatIds.filter(id => !contatos[id] && !loading && id.trim() !== '')
     
+    console.log(`🔍 [useContatoData] loadContatosData - Total: ${chatIds.length}, Pendentes: ${pendingChatIds.length}`)
+    
+    if (pendingChatIds.length === 0) {
+      console.log(`⚠️ [useContatoData] Nenhum chatId pendente, saindo...`)
+      return
+    }
+
     setLoading(true)
     setError(null)
-    
+
     try {
-      const promises = chatIds.map(async (chatId) => {
-        const data = await fetchContatoData(chatId)
-        return { chatId, data }
-      })
-      
+      // Processar apenas os chatIds pendentes em paralelo
+      const promises = pendingChatIds.map(chatId => fetchContatoData(chatId))
       const results = await Promise.all(promises)
-      const newContatos: { [chatId: string]: ContatoData } = {}
-      
-      results.forEach(({ chatId, data }) => {
-        if (data) {
-          console.log(`✅ [useContatoData] Salvando dados para ${chatId}:`, { 
-            id: data.id, 
-            tagsCount: data.tags?.length || 0,
-            tags: data.tags 
-          })
-          newContatos[chatId] = data
+
+      // Salvar resultados no estado
+      const newContatos: { [chatId: string]: ContatoData | null } = {}
+      pendingChatIds.forEach((chatId, index) => {
+        const result = results[index]
+        if (result) {
+          console.log(`✅ [useContatoData] Salvando dados para ${chatId}:`, result)
+          newContatos[chatId] = result
         } else {
-          console.log(`⚠️ [useContatoData] Sem dados para ${chatId}`)
+          console.log(`❌ [useContatoData] Sem dados para ${chatId}`)
+          newContatos[chatId] = null
         }
       })
-      
-      setContatos(newContatos)
+
+      setContatos(prev => ({
+        ...prev,
+        ...newContatos
+      }))
     } catch (err) {
-      setError('Erro ao carregar dados dos contatos')
-      console.error('Erro ao carregar dados dos contatos:', err)
+      console.error('❌ [useContatoData] Erro geral:', err)
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -132,7 +228,21 @@ export function useContatoData(chatIds: string[]): UseContatoDataReturn {
   }
 
   useEffect(() => {
-    loadContatosData()
+    console.log(`🔄 [useContatoData] useEffect disparado, chatIds:`, chatIds)
+    
+    // Evitar requests duplicados - só carregar se há chatIds novos
+    const newChatIds = chatIds.filter(id => !contatos[id] && id.trim() !== '')
+    if (newChatIds.length === 0) {
+      console.log(`⏭️ [useContatoData] Nenhum chatId novo para carregar`)
+      return
+    }
+    
+    // Debounce para evitar requests múltiplos rápidos
+    const timeoutId = setTimeout(() => {
+      loadContatosData()
+    }, 100)
+    
+    return () => clearTimeout(timeoutId)
   }, [chatIds.join(',')])
 
   return {

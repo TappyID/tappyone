@@ -1465,24 +1465,7 @@ export default function ChatArea({
               </span>
             )}
           </motion.button>
-          
-          {/* Badge Tag */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowTagsModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
-            title={contatoTags.length > 0 ? `Tags: ${contatoTags.map(t => t.nome).join(', ')}` : "Tags"}
-          >
-            <Hash className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            {/* Badge dinâmico com contagem de tags */}
-            {contatoTags.length > 0 && (
-              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
-                {contatoTags.length > 99 ? '99+' : contatoTags.length}
-              </span>
-            )}
-          </motion.button>
-          
+            
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}

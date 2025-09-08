@@ -3,11 +3,24 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, MessageSquare, Calendar, BarChart3 } from 'lucide-react'
+import { 
+  Users, 
+  MessageSquare, 
+  Calendar, 
+  BarChart3, 
+  MessageCircle,
+  UserCheck,
+  ClipboardList,
+  Tag,
+  Home,
+  Kanban,
+  UserCircle
+} from 'lucide-react'
 
-export default function FuncionarioDashboard() {
+export default function AtendenteDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
 
@@ -35,15 +48,57 @@ export default function FuncionarioDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard Funcionário</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard Atendente</h1>
               <p className="text-gray-600">Bem-vindo, {user.nome}</p>
             </div>
-            <Button onClick={logout} variant="outline">
-              Sair
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <UserCircle className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-500">{user.tipo}</span>
+              </div>
+              <Button onClick={logout} variant="outline">
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Navegação */}
+      <nav className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8 py-3">
+            <Link href="/dashboard/atendente" className="flex items-center gap-2 text-gray-900 font-medium">
+              <Home className="h-4 w-4" />
+              Home
+            </Link>
+            <Link href="/dashboard/atendente/kanban" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <Kanban className="h-4 w-4" />
+              Kanban
+            </Link>
+            <Link href="/dashboard/atendente/atendimentos" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <MessageCircle className="h-4 w-4" />
+              Atendimentos
+            </Link>
+            <Link href="/dashboard/atendente/contatos" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <UserCheck className="h-4 w-4" />
+              Contatos
+            </Link>
+            <Link href="/dashboard/atendente/agendamentos" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <Calendar className="h-4 w-4" />
+              Agendamentos
+            </Link>
+            <Link href="/dashboard/atendente/tags" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <Tag className="h-4 w-4" />
+              Tags
+            </Link>
+            <Link href="/dashboard/atendente/respostas-rapidas" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <ClipboardList className="h-4 w-4" />
+              Respostas Rápidas
+            </Link>
+          </div>
+        </div>
+      </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
