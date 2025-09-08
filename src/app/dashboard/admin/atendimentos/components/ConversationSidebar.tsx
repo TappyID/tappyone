@@ -958,7 +958,7 @@ export default function ConversationSidebar({
         {/* Filters Header */}
         <div className="p-4 pb-2 border-b border-border bg-card/30 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-semibold text-foreground">Conversas</h2>
+            <h2 className="text-base font-semibold text-foreground mr-[10px]">Chats</h2>
             <div className="flex items-center gap-3">
             {/* Select Conexão Elegante - OCULTO por enquanto */}
             <motion.div 
@@ -1418,57 +1418,111 @@ export default function ConversationSidebar({
                   <div className="flex items-center justify-between mb-2">
                     {/* Badges na posição principal - substituindo lastMessage */}
                     <div className="flex items-center gap-1 flex-1">
-                      {/* Badge Agendamento - PRIMEIRO */}
+                      {/* Badge Agendamento - Minimalista */}
                       {conversation.agendamento && (
-                        <motion.span
+                        <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded-full font-bold shadow-sm flex-shrink-0"
-                          style={{ fontSize: '14px' }}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                          style={{
+                            backgroundColor: '#3b82f620',
+                            borderColor: '#3b82f640'
+                          }}
                           title={`Agendamento: ${conversation.agendamento.data || 'Sem data'}`}
-                          onClick={() => console.log('AGENDAMENTO CLICADO - POSIÇÃO 1')}
+                          onClick={() => console.log('AGENDAMENTO CLICADO')}
                         >
-                          📅 AGENDA
-                        </motion.span>
+                          <svg className="w-3 h-3" style={{ color: '#3b82f6' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>
+                            Agenda
+                          </span>
+                        </motion.div>
                       )}
                       
-                      {/* Badge Orçamento - SEGUNDO */}
-                      {conversation.orcamento && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="inline-flex items-center px-2 py-1 text-green-600 dark:text-green-400 font-bold flex-shrink-0"
-                          style={{ fontSize: '22px' }}
-                          title={`Orçamento: ${new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(Number(conversation.orcamento.valor || 0))}`}
-                          onClick={() => console.log('ORÇAMENTO CLICADO - POSIÇÃO 2')}
-                        >
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(Number(conversation.orcamento.valor || 0))}
-                        </motion.span>
-                      )}
+                      {/* Badge Assinatura - Minimalista */}
+                      {(() => {
+                        const contatoData = contatosData[conversation.id?._serialized || conversation.id || '']
+                        const assinatura = contatoData?.assinatura
+                        return assinatura && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                            style={{
+                              backgroundColor: '#7c3aed20',
+                              borderColor: '#7c3aed40'
+                            }}
+                            title={`Assinatura: ${assinatura.descricao} - ${new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(Number(assinatura.valor || 0))}`}
+                            onClick={() => console.log('ASSINATURA CLICADO')}
+                          >
+                            <svg className="w-3 h-3" style={{ color: '#7c3aed' }} fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-xs font-medium" style={{ color: '#7c3aed' }}>
+                              Assinatura
+                            </span>
+                          </motion.div>
+                        )
+                      })()}
                       
-                      {/* Badge Tickets - TERCEIRO */}
+                      {/* Badge Tickets - Minimalista */}
                       {(() => {
                         const contatoData = contatosData[conversation.id?._serialized || conversation.id || '']
                         const tickets = contatoData?.tickets
                         return tickets && tickets.length > 0 && (
-                          <motion.span
+                          <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="inline-flex items-center px-2 py-1 bg-blue-500 text-white rounded-full font-bold shadow-sm flex-shrink-0"
-                            style={{ fontSize: '14px' }}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                            style={{
+                              backgroundColor: '#ef444420',
+                              borderColor: '#ef444440'
+                            }}
                             title={`${tickets.length} ticket(s) - ${tickets.filter(t => t.status === 'ABERTO').length} aberto(s)`}
-                            onClick={() => console.log('TICKETS CLICADO - POSIÇÃO 3')}
+                            onClick={() => console.log('TICKETS CLICADO')}
                           >
-                            🎫 {tickets.length}
-                          </motion.span>
+                            <svg className="w-3 h-3" style={{ color: '#ef4444' }} fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-xs font-medium" style={{ color: '#ef4444' }}>
+                              {tickets.length}
+                            </span>
+                          </motion.div>
                         )
                       })()}
+                      
+                      {/* Badge Orçamento - Minimalista */}
+                      {conversation.orcamento && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                          style={{
+                            backgroundColor: '#10b98120',
+                            borderColor: '#10b98140'
+                          }}
+                          title={`Orçamento: ${new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(Number(conversation.orcamento.valor || 0))}`}
+                          onClick={() => console.log('ORÇAMENTO CLICADO')}
+                        >
+                          <svg className="w-3 h-3" style={{ color: '#10b981' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs font-medium" style={{ color: '#10b981' }}>
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(Number(conversation.orcamento.valor || 0))}
+                          </span>
+                        </motion.div>
+                      )}
                       
                       {/* Badge do Kanban */}
                       {conversation.badge && (

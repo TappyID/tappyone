@@ -1,1309 +1,306 @@
 [
   {
-    "timestamp": "2025-09-08T18:16:10.802Z",
+    "timestamp": "2025-09-08T22:06:45.680Z",
     "component": "Kanban",
-    "action": "loadChatsManual_chats_transformed",
+    "action": "loadAllCounts_cards_mapped",
     "data": {
-      "count": 28,
-      "firstChat": {
-        "id": "0@c.us",
-        "name": "",
-        "conversationTimestamp": 1755003680,
-        "profilePictureUrl": null
-      },
-      "allChatNames": [
-        "",
-        "Racish",
-        "",
-        "Empresa",
-        "2349162389789",
-        "Tuane",
-        "Champ",
-        "Jaque",
-        "Ane Caroline",
-        "La",
-        "+55 18 99122-2983",
-        "Gilberto",
-        "",
-        "Clarice",
-        "Loh",
-        "romeuribeirosdias",
-        "Marcio",
-        "Renan Matos",
-        "Vyzer",
-        "Guilherme",
-        "Gusta",
-        "Yan",
-        "Gilson Estamos buscando um desenvolvedor para projeto pontual!  A Agência TG09 está contratando um desenvolvedor web freelancer para criação de uma Landing Page profissional + página de contratação com cálculo automático e envio de dados.     Objetivo do Projeto:  Criar uma landing page moderna, leve e com foco em conversão para o nosso produto Rádio TG09 Indoor.  Também será necessário desenvolver uma segunda página de contratação e aceite, onde o cliente:  •\tEscolhe o plano (6 ou 12 meses)  •\tInforma número de lojas  •\tVê o valor total calculado automaticamente  •\tPreenche os dados  •\tAceita os termos via checkbox  •\tEnvia o formulário  •\tE recebe o contrato por e-mail      O que já temos pronto:  •\tDomínio e hospedagem ativa  •\tEstrutura da landing e textos finalizados  •\tIdentidade visual (logo, fontes, cores)  •\tVídeo principal e depoimentos de clientes     Precisamos que o desenvolvedor:  •\tCrie a landing com estrutura responsiva (mobile e desktop)  •\tImplemente o formulário com cálculo automático do plano  •\tConfigure o envio dos dados por e-mail e/ou WhatsApp  •\tIntegre o contrato com dados preenchidos + aceite  •\tEntregue o projeto com boa usabilidade e performance     Contato para proposta ou dúvidas: WhatsApp – Gilson / TG09",
-        "Lucas",
-        "Mae",
-        "Ponei",
-        "558004940140",
-        ""
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
       ]
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-08T18:16:12.481Z",
+    "timestamp": "2025-09-08T22:06:52.632Z",
     "component": "Kanban",
-    "action": "loadChatsManual_success",
+    "action": "loadChatsManual_response",
     "data": {
-      "finalChatCount": 28,
-      "success": true
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:12.560Z",
-    "component": "Kanban",
-    "action": "loadChatsManual_finished",
-    "data": {
-      "finalState": {
-        "chatsLength": 0,
-        "whatsappLoading": false
+      "status": 200,
+      "ok": true,
+      "statusText": "OK",
+      "headers": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Mon, 08 Sep 2025 22:06:52 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
       }
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-08T18:16:12.652Z",
+    "timestamp": "2025-09-08T22:06:55.807Z",
     "component": "Kanban",
-    "action": "loadAllCounts_cards_mapped",
+    "action": "loadAllCounts_card_processed",
     "data": {
-      "totalCards": 28,
-      "uniqueCardIds": 28,
-      "sampleCardIds": [
-        "5518991089999@c.us",
-        "5518981248008@c.us",
-        "5518996066756@c.us",
-        "68268672970970@c.us",
-        "120363401035050552@c.us"
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "orcamentosCount": 0,
+      "agendamentosCount": 0,
+      "assinaturasCount": 0,
+      "orcamentosDetalhesCount": 0,
+      "orcamentosDetalhesData": [],
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-08T22:06:56.527Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_data_received",
+    "data": {
+      "type": "object",
+      "isArray": true,
+      "length": 28,
+      "sample": [
+        {
+          "id": "0@c.us",
+          "name": "",
+          "conversationTimestamp": 1755003680
+        },
+        {
+          "id": "120363401035050552@g.us",
+          "name": "Racish",
+          "conversationTimestamp": 1756958019
+        },
+        {
+          "id": "120363401035050552@c.us",
+          "name": "",
+          "conversationTimestamp": 1756958027
+        }
       ],
-      "allCardIds": [
-        "5518991089999@c.us",
-        "5518981248008@c.us",
-        "5518996066756@c.us",
-        "68268672970970@c.us",
-        "120363401035050552@c.us",
-        "5518996064455@c.us",
-        "120363419442598806@g.us",
-        "5518991608009@c.us",
-        "554233018124@c.us",
-        "5518997262826@c.us",
-        "5518997402648@c.us",
-        "5518991009380@c.us",
-        "5518991161341@c.us",
-        "5518996595684@c.us",
-        "554396159222@c.us",
-        "554396532909@c.us",
-        "5518997062635@c.us",
-        "554399048381@c.us",
-        "120363401035050552@g.us",
-        "5518997089040@c.us",
-        "5518996721979@c.us",
-        "5518981144999@c.us",
-        "5518997200106@c.us",
-        "5518997974883@c.us",
-        "0@c.us",
-        "5518991222983@c.us",
-        "558004940140@c.us",
-        "2349162389789@c.us"
+      "rawData": [
+        {
+          "id": "0@c.us",
+          "name": "",
+          "conversationTimestamp": 1755003680
+        },
+        {
+          "id": "120363401035050552@g.us",
+          "name": "Racish",
+          "conversationTimestamp": 1756958019
+        },
+        {
+          "id": "120363401035050552@c.us",
+          "name": "",
+          "conversationTimestamp": 1756958027
+        },
+        {
+          "id": "120363419442598806@g.us",
+          "name": "Empresa",
+          "conversationTimestamp": 1755622792
+        },
+        {
+          "id": "2349162389789@c.us",
+          "name": "2349162389789",
+          "conversationTimestamp": 1755099018
+        },
+        {
+          "id": "5518981144999@c.us",
+          "name": "Tuane",
+          "conversationTimestamp": 1757272265
+        },
+        {
+          "id": "5518981248008@c.us",
+          "name": "Champ",
+          "conversationTimestamp": 1757253175
+        },
+        {
+          "id": "5518991009380@c.us",
+          "name": "Jaque",
+          "conversationTimestamp": 1757365772
+        },
+        {
+          "id": "5518991089999@c.us",
+          "name": "Ane Caroline",
+          "conversationTimestamp": 1753819268
+        },
+        {
+          "id": "5518991161341@c.us",
+          "name": "La",
+          "conversationTimestamp": 1757267357
+        },
+        {
+          "id": "5518991222983@c.us",
+          "name": "+55 18 99122-2983",
+          "conversationTimestamp": 1757034918
+        },
+        {
+          "id": "5518991608009@c.us",
+          "name": "Gilberto",
+          "conversationTimestamp": 1756343420
+        },
+        {
+          "id": "5518996064455@c.us",
+          "name": "Willian",
+          "conversationTimestamp": 1756941181
+        },
+        {
+          "id": "5518996066756@c.us",
+          "name": "Clarice",
+          "conversationTimestamp": 1753713183
+        },
+        {
+          "id": "5518996595684@c.us",
+          "name": "Loh",
+          "conversationTimestamp": 1757337423
+        },
+        {
+          "id": "5518996721979@c.us",
+          "name": "romeuribeirosdias",
+          "conversationTimestamp": 1756154428
+        },
+        {
+          "id": "5518997062635@c.us",
+          "name": "Marcio",
+          "conversationTimestamp": 1755535304
+        },
+        {
+          "id": "5518997089040@c.us",
+          "name": "Renan Matos",
+          "conversationTimestamp": 1753877276
+        },
+        {
+          "id": "5518997200106@c.us",
+          "name": "Vyzer",
+          "conversationTimestamp": 1757364443
+        },
+        {
+          "id": "5518997262826@c.us",
+          "name": "Guilherme",
+          "conversationTimestamp": 1755533382
+        },
+        {
+          "id": "5518997402648@c.us",
+          "name": "Gusta",
+          "conversationTimestamp": 1757359851
+        },
+        {
+          "id": "5518997974883@c.us",
+          "name": "Yan",
+          "conversationTimestamp": 1757341842
+        },
+        {
+          "id": "554233018124@c.us",
+          "name": "Gilson Estamos buscando um desenvolvedor para projeto pontual!  A Agência TG09 está contratando um desenvolvedor web freelancer para criação de uma Landing Page profissional + página de contratação com cálculo automático e envio de dados.     Objetivo do Projeto:  Criar uma landing page moderna, leve e com foco em conversão para o nosso produto Rádio TG09 Indoor.  Também será necessário desenvolver uma segunda página de contratação e aceite, onde o cliente:  •\tEscolhe o plano (6 ou 12 meses)  •\tInforma número de lojas  •\tVê o valor total calculado automaticamente  •\tPreenche os dados  •\tAceita os termos via checkbox  •\tEnvia o formulário  •\tE recebe o contrato por e-mail      O que já temos pronto:  •\tDomínio e hospedagem ativa  •\tEstrutura da landing e textos finalizados  •\tIdentidade visual (logo, fontes, cores)  •\tVídeo principal e depoimentos de clientes     Precisamos que o desenvolvedor:  •\tCrie a landing com estrutura responsiva (mobile e desktop)  •\tImplemente o formulário com cálculo automático do plano  •\tConfigure o envio dos dados por e-mail e/ou WhatsApp  •\tIntegre o contrato com dados preenchidos + aceite  •\tEntregue o projeto com boa usabilidade e performance     Contato para proposta ou dúvidas: WhatsApp – Gilson / TG09",
+          "conversationTimestamp": 1755267381
+        },
+        {
+          "id": "554396159222@c.us",
+          "name": "Lucas",
+          "conversationTimestamp": 1757337391
+        },
+        {
+          "id": "554396532909@c.us",
+          "name": "Mae",
+          "conversationTimestamp": 1757334117
+        },
+        {
+          "id": "554399048381@c.us",
+          "name": "Ponei",
+          "conversationTimestamp": 1757007194
+        },
+        {
+          "id": "558004940140@c.us",
+          "name": "558004940140",
+          "conversationTimestamp": 1754096619
+        },
+        {
+          "id": "68268672970970@c.us",
+          "name": "",
+          "conversationTimestamp": 1757280651
+        }
       ]
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-08T18:16:13.744Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991089999@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:14.852Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518981248008@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:15.629Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996066756@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:16.395Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "68268672970970@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:17.168Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "120363401035050552@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:17.946Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996064455@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:18.719Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "120363419442598806@g.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:19.487Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991608009@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:20.258Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554233018124@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:21.042Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997262826@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:21.867Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997402648@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:22.914Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991009380@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:23.686Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991161341@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:24.444Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996595684@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:25.212Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554396159222@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:25.983Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554396532909@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:26.849Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997062635@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:27.644Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "554399048381@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:28.456Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "120363401035050552@g.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:29.313Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997089040@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:30.087Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518996721979@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:30.856Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518981144999@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:31.630Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997200106@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:32.408Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518997974883@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:33.185Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "0@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 1,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 1,
-      "orcamentosDetalhesData": [
-        {
-          "id": "03850189-b2d0-4af5-b552-606675aa1346",
-          "criadoEm": "2025-09-08T18:15:36.312116Z",
-          "atualizadoEm": "2025-09-08T18:15:36.312116Z",
-          "titulo": "fdsfds",
-          "data": "2025-09-08T00:00:00Z",
-          "tipo": "orcamento",
-          "observacao": null,
-          "valorTotal": 3213,
-          "status": "PENDENTE",
-          "usuarioId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18",
-          "contatoId": "1bad9ac7-fce9-442a-88fa-333d76be1559",
-          "usuario": {
-            "id": "",
-            "criadoEm": "0001-01-01T00:00:00Z",
-            "atualizadoEm": "0001-01-01T00:00:00Z",
-            "email": "",
-            "nome": "",
-            "telefone": null,
-            "avatar": null,
-            "tipo": "",
-            "ativo": false,
-            "fila_id": null
-          },
-          "contato": {
-            "id": "1bad9ac7-fce9-442a-88fa-333d76be1559",
-            "criadoEm": "2025-09-08T18:15:36.308685Z",
-            "atualizadoEm": "2025-09-08T18:15:36.308685Z",
-            "numeroTelefone": "0",
-            "nome": "0",
-            "fotoPerfil": null,
-            "sobre": null,
-            "bloqueado": false,
-            "sessaoWhatsappId": "7a6a86d0-fc46-4ada-84c8-6b1815159dbe",
-            "contactid": null,
-            "email": null,
-            "empresa": null,
-            "cpf": null,
-            "cnpj": null,
-            "cep": null,
-            "rua": null,
-            "numero": null,
-            "bairro": null,
-            "cidade": null,
-            "estado": null,
-            "pais": null,
-            "favorito": false,
-            "sessaoWhatsapp": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "nomeSessao": "",
-              "numeroTelefone": null,
-              "status": "",
-              "codigoQr": null,
-              "urlWebhook": null,
-              "ativo": false,
-              "usuarioId": "",
-              "usuario": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "email": "",
-                "nome": "",
-                "telefone": null,
-                "avatar": null,
-                "tipo": "",
-                "ativo": false,
-                "fila_id": null
-              }
-            }
-          },
-          "itens": [
-            {
-              "id": "9e569f8b-bfd3-4e9e-85ba-09157e55d444",
-              "criadoEm": "2025-09-08T18:15:36.313746Z",
-              "atualizadoEm": "2025-09-08T18:15:36.313746Z",
-              "nome": "dsa",
-              "valor": 3213,
-              "quantidade": 1,
-              "subtotal": 3213,
-              "orcamentoId": "03850189-b2d0-4af5-b552-606675aa1346",
-              "orcamento": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "titulo": "",
-                "data": "0001-01-01T00:00:00Z",
-                "tipo": "",
-                "observacao": null,
-                "valorTotal": 0,
-                "status": "",
-                "usuarioId": "",
-                "contatoId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false,
-                  "fila_id": null
-                },
-                "contato": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "numeroTelefone": "",
-                  "nome": null,
-                  "fotoPerfil": null,
-                  "sobre": null,
-                  "bloqueado": false,
-                  "sessaoWhatsappId": "",
-                  "contactid": null,
-                  "email": null,
-                  "empresa": null,
-                  "cpf": null,
-                  "cnpj": null,
-                  "cep": null,
-                  "rua": null,
-                  "numero": null,
-                  "bairro": null,
-                  "cidade": null,
-                  "estado": null,
-                  "pais": null,
-                  "favorito": false,
-                  "sessaoWhatsapp": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "nomeSessao": "",
-                    "numeroTelefone": null,
-                    "status": "",
-                    "codigoQr": null,
-                    "urlWebhook": null,
-                    "ativo": false,
-                    "usuarioId": "",
-                    "usuario": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "email": "",
-                      "nome": "",
-                      "telefone": null,
-                      "avatar": null,
-                      "tipo": "",
-                      "ativo": false,
-                      "fila_id": null
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:33.957Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991222983@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 1,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 1,
-      "orcamentosDetalhesData": [
-        {
-          "id": "edef2170-7e4e-4db2-928b-d7ba68000649",
-          "criadoEm": "2025-09-08T18:16:27.319405Z",
-          "atualizadoEm": "2025-09-08T18:16:27.319405Z",
-          "titulo": "teste",
-          "data": "2025-09-08T00:00:00Z",
-          "tipo": "orcamento",
-          "observacao": null,
-          "valorTotal": 3213,
-          "status": "PENDENTE",
-          "usuarioId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18",
-          "contatoId": "4c634498-b2d0-44b0-ab51-e975db103d59",
-          "usuario": {
-            "id": "",
-            "criadoEm": "0001-01-01T00:00:00Z",
-            "atualizadoEm": "0001-01-01T00:00:00Z",
-            "email": "",
-            "nome": "",
-            "telefone": null,
-            "avatar": null,
-            "tipo": "",
-            "ativo": false,
-            "fila_id": null
-          },
-          "contato": {
-            "id": "4c634498-b2d0-44b0-ab51-e975db103d59",
-            "criadoEm": "2025-09-08T18:16:27.315576Z",
-            "atualizadoEm": "2025-09-08T18:16:27.315576Z",
-            "numeroTelefone": "5518991222983",
-            "nome": "5518991222983",
-            "fotoPerfil": null,
-            "sobre": null,
-            "bloqueado": false,
-            "sessaoWhatsappId": "7a6a86d0-fc46-4ada-84c8-6b1815159dbe",
-            "contactid": null,
-            "email": null,
-            "empresa": null,
-            "cpf": null,
-            "cnpj": null,
-            "cep": null,
-            "rua": null,
-            "numero": null,
-            "bairro": null,
-            "cidade": null,
-            "estado": null,
-            "pais": null,
-            "favorito": false,
-            "sessaoWhatsapp": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "nomeSessao": "",
-              "numeroTelefone": null,
-              "status": "",
-              "codigoQr": null,
-              "urlWebhook": null,
-              "ativo": false,
-              "usuarioId": "",
-              "usuario": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "email": "",
-                "nome": "",
-                "telefone": null,
-                "avatar": null,
-                "tipo": "",
-                "ativo": false,
-                "fila_id": null
-              }
-            }
-          },
-          "itens": [
-            {
-              "id": "d96d3a54-5d76-4c20-8cae-c1ecb96d42da",
-              "criadoEm": "2025-09-08T18:16:27.320289Z",
-              "atualizadoEm": "2025-09-08T18:16:27.320289Z",
-              "nome": "tes",
-              "valor": 3213,
-              "quantidade": 1,
-              "subtotal": 3213,
-              "orcamentoId": "edef2170-7e4e-4db2-928b-d7ba68000649",
-              "orcamento": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "titulo": "",
-                "data": "0001-01-01T00:00:00Z",
-                "tipo": "",
-                "observacao": null,
-                "valorTotal": 0,
-                "status": "",
-                "usuarioId": "",
-                "contatoId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false,
-                  "fila_id": null
-                },
-                "contato": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "numeroTelefone": "",
-                  "nome": null,
-                  "fotoPerfil": null,
-                  "sobre": null,
-                  "bloqueado": false,
-                  "sessaoWhatsappId": "",
-                  "contactid": null,
-                  "email": null,
-                  "empresa": null,
-                  "cpf": null,
-                  "cnpj": null,
-                  "cep": null,
-                  "rua": null,
-                  "numero": null,
-                  "bairro": null,
-                  "cidade": null,
-                  "estado": null,
-                  "pais": null,
-                  "favorito": false,
-                  "sessaoWhatsapp": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "nomeSessao": "",
-                    "numeroTelefone": null,
-                    "status": "",
-                    "codigoQr": null,
-                    "urlWebhook": null,
-                    "ativo": false,
-                    "usuarioId": "",
-                    "usuario": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "email": "",
-                      "nome": "",
-                      "telefone": null,
-                      "avatar": null,
-                      "tipo": "",
-                      "ativo": false,
-                      "fila_id": null
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:34.751Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "558004940140@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:35.536Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "2349162389789@c.us",
-      "notesCount": 0,
-      "orcamentosCount": 0,
-      "agendamentosCount": 0,
-      "assinaturasCount": 0,
-      "orcamentosDetalhesCount": 0,
-      "orcamentosDetalhesData": [],
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-08T18:16:35.585Z",
+    "timestamp": "2025-09-08T22:07:00.916Z",
     "component": "Kanban",
     "action": "loadAllCounts_final_data",
     "data": {
       "notesCounts": {
-        "5518991089999@c.us": 0,
-        "5518981248008@c.us": 0,
-        "5518996066756@c.us": 0,
-        "68268672970970@c.us": 0,
-        "120363401035050552@c.us": 0,
-        "5518996064455@c.us": 0,
-        "120363419442598806@g.us": 0,
-        "5518991608009@c.us": 0,
-        "554233018124@c.us": 0,
-        "5518997262826@c.us": 0,
-        "5518997402648@c.us": 0,
-        "5518991009380@c.us": 0,
-        "5518991161341@c.us": 0,
-        "5518996595684@c.us": 0,
-        "554396159222@c.us": 0,
-        "554396532909@c.us": 0,
-        "5518997062635@c.us": 0,
-        "554399048381@c.us": 0,
-        "120363401035050552@g.us": 0,
-        "5518997089040@c.us": 0,
-        "5518996721979@c.us": 0,
-        "5518981144999@c.us": 0,
-        "5518997200106@c.us": 0,
-        "5518997974883@c.us": 0,
-        "0@c.us": 0,
-        "5518991222983@c.us": 0,
-        "558004940140@c.us": 0,
-        "2349162389789@c.us": 0
+        "demo-1": 0
       },
       "orcamentosCounts": {
-        "5518991089999@c.us": 0,
-        "5518981248008@c.us": 0,
-        "5518996066756@c.us": 0,
-        "68268672970970@c.us": 0,
-        "120363401035050552@c.us": 0,
-        "5518996064455@c.us": 0,
-        "120363419442598806@g.us": 0,
-        "5518991608009@c.us": 0,
-        "554233018124@c.us": 0,
-        "5518997262826@c.us": 0,
-        "5518997402648@c.us": 0,
-        "5518991009380@c.us": 0,
-        "5518991161341@c.us": 0,
-        "5518996595684@c.us": 0,
-        "554396159222@c.us": 0,
-        "554396532909@c.us": 0,
-        "5518997062635@c.us": 0,
-        "554399048381@c.us": 0,
-        "120363401035050552@g.us": 0,
-        "5518997089040@c.us": 0,
-        "5518996721979@c.us": 0,
-        "5518981144999@c.us": 0,
-        "5518997200106@c.us": 0,
-        "5518997974883@c.us": 0,
-        "0@c.us": 1,
-        "5518991222983@c.us": 1,
-        "558004940140@c.us": 0,
-        "2349162389789@c.us": 0
+        "demo-1": 0
       },
       "orcamentosDetalhes": {
-        "5518991089999@c.us": [],
-        "5518981248008@c.us": [],
-        "5518996066756@c.us": [],
-        "68268672970970@c.us": [],
-        "120363401035050552@c.us": [],
-        "5518996064455@c.us": [],
-        "120363419442598806@g.us": [],
-        "5518991608009@c.us": [],
-        "554233018124@c.us": [],
-        "5518997262826@c.us": [],
-        "5518997402648@c.us": [],
-        "5518991009380@c.us": [],
-        "5518991161341@c.us": [],
-        "5518996595684@c.us": [],
-        "554396159222@c.us": [],
-        "554396532909@c.us": [],
-        "5518997062635@c.us": [],
-        "554399048381@c.us": [],
-        "120363401035050552@g.us": [],
-        "5518997089040@c.us": [],
-        "5518996721979@c.us": [],
-        "5518981144999@c.us": [],
-        "5518997200106@c.us": [],
-        "5518997974883@c.us": [],
-        "0@c.us": [
-          {
-            "id": "03850189-b2d0-4af5-b552-606675aa1346",
-            "criadoEm": "2025-09-08T18:15:36.312116Z",
-            "atualizadoEm": "2025-09-08T18:15:36.312116Z",
-            "titulo": "fdsfds",
-            "data": "2025-09-08T00:00:00Z",
-            "tipo": "orcamento",
-            "observacao": null,
-            "valorTotal": 3213,
-            "status": "PENDENTE",
-            "usuarioId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18",
-            "contatoId": "1bad9ac7-fce9-442a-88fa-333d76be1559",
-            "usuario": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "email": "",
-              "nome": "",
-              "telefone": null,
-              "avatar": null,
-              "tipo": "",
-              "ativo": false,
-              "fila_id": null
-            },
-            "contato": {
-              "id": "1bad9ac7-fce9-442a-88fa-333d76be1559",
-              "criadoEm": "2025-09-08T18:15:36.308685Z",
-              "atualizadoEm": "2025-09-08T18:15:36.308685Z",
-              "numeroTelefone": "0",
-              "nome": "0",
-              "fotoPerfil": null,
-              "sobre": null,
-              "bloqueado": false,
-              "sessaoWhatsappId": "7a6a86d0-fc46-4ada-84c8-6b1815159dbe",
-              "contactid": null,
-              "email": null,
-              "empresa": null,
-              "cpf": null,
-              "cnpj": null,
-              "cep": null,
-              "rua": null,
-              "numero": null,
-              "bairro": null,
-              "cidade": null,
-              "estado": null,
-              "pais": null,
-              "favorito": false,
-              "sessaoWhatsapp": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "nomeSessao": "",
-                "numeroTelefone": null,
-                "status": "",
-                "codigoQr": null,
-                "urlWebhook": null,
-                "ativo": false,
-                "usuarioId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false,
-                  "fila_id": null
-                }
-              }
-            },
-            "itens": [
-              {
-                "id": "9e569f8b-bfd3-4e9e-85ba-09157e55d444",
-                "criadoEm": "2025-09-08T18:15:36.313746Z",
-                "atualizadoEm": "2025-09-08T18:15:36.313746Z",
-                "nome": "dsa",
-                "valor": 3213,
-                "quantidade": 1,
-                "subtotal": 3213,
-                "orcamentoId": "03850189-b2d0-4af5-b552-606675aa1346",
-                "orcamento": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "titulo": "",
-                  "data": "0001-01-01T00:00:00Z",
-                  "tipo": "",
-                  "observacao": null,
-                  "valorTotal": 0,
-                  "status": "",
-                  "usuarioId": "",
-                  "contatoId": "",
-                  "usuario": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "email": "",
-                    "nome": "",
-                    "telefone": null,
-                    "avatar": null,
-                    "tipo": "",
-                    "ativo": false,
-                    "fila_id": null
-                  },
-                  "contato": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "numeroTelefone": "",
-                    "nome": null,
-                    "fotoPerfil": null,
-                    "sobre": null,
-                    "bloqueado": false,
-                    "sessaoWhatsappId": "",
-                    "contactid": null,
-                    "email": null,
-                    "empresa": null,
-                    "cpf": null,
-                    "cnpj": null,
-                    "cep": null,
-                    "rua": null,
-                    "numero": null,
-                    "bairro": null,
-                    "cidade": null,
-                    "estado": null,
-                    "pais": null,
-                    "favorito": false,
-                    "sessaoWhatsapp": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "nomeSessao": "",
-                      "numeroTelefone": null,
-                      "status": "",
-                      "codigoQr": null,
-                      "urlWebhook": null,
-                      "ativo": false,
-                      "usuarioId": "",
-                      "usuario": {
-                        "id": "",
-                        "criadoEm": "0001-01-01T00:00:00Z",
-                        "atualizadoEm": "0001-01-01T00:00:00Z",
-                        "email": "",
-                        "nome": "",
-                        "telefone": null,
-                        "avatar": null,
-                        "tipo": "",
-                        "ativo": false,
-                        "fila_id": null
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ],
-        "5518991222983@c.us": [
-          {
-            "id": "edef2170-7e4e-4db2-928b-d7ba68000649",
-            "criadoEm": "2025-09-08T18:16:27.319405Z",
-            "atualizadoEm": "2025-09-08T18:16:27.319405Z",
-            "titulo": "teste",
-            "data": "2025-09-08T00:00:00Z",
-            "tipo": "orcamento",
-            "observacao": null,
-            "valorTotal": 3213,
-            "status": "PENDENTE",
-            "usuarioId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18",
-            "contatoId": "4c634498-b2d0-44b0-ab51-e975db103d59",
-            "usuario": {
-              "id": "",
-              "criadoEm": "0001-01-01T00:00:00Z",
-              "atualizadoEm": "0001-01-01T00:00:00Z",
-              "email": "",
-              "nome": "",
-              "telefone": null,
-              "avatar": null,
-              "tipo": "",
-              "ativo": false,
-              "fila_id": null
-            },
-            "contato": {
-              "id": "4c634498-b2d0-44b0-ab51-e975db103d59",
-              "criadoEm": "2025-09-08T18:16:27.315576Z",
-              "atualizadoEm": "2025-09-08T18:16:27.315576Z",
-              "numeroTelefone": "5518991222983",
-              "nome": "5518991222983",
-              "fotoPerfil": null,
-              "sobre": null,
-              "bloqueado": false,
-              "sessaoWhatsappId": "7a6a86d0-fc46-4ada-84c8-6b1815159dbe",
-              "contactid": null,
-              "email": null,
-              "empresa": null,
-              "cpf": null,
-              "cnpj": null,
-              "cep": null,
-              "rua": null,
-              "numero": null,
-              "bairro": null,
-              "cidade": null,
-              "estado": null,
-              "pais": null,
-              "favorito": false,
-              "sessaoWhatsapp": {
-                "id": "",
-                "criadoEm": "0001-01-01T00:00:00Z",
-                "atualizadoEm": "0001-01-01T00:00:00Z",
-                "nomeSessao": "",
-                "numeroTelefone": null,
-                "status": "",
-                "codigoQr": null,
-                "urlWebhook": null,
-                "ativo": false,
-                "usuarioId": "",
-                "usuario": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "email": "",
-                  "nome": "",
-                  "telefone": null,
-                  "avatar": null,
-                  "tipo": "",
-                  "ativo": false,
-                  "fila_id": null
-                }
-              }
-            },
-            "itens": [
-              {
-                "id": "d96d3a54-5d76-4c20-8cae-c1ecb96d42da",
-                "criadoEm": "2025-09-08T18:16:27.320289Z",
-                "atualizadoEm": "2025-09-08T18:16:27.320289Z",
-                "nome": "tes",
-                "valor": 3213,
-                "quantidade": 1,
-                "subtotal": 3213,
-                "orcamentoId": "edef2170-7e4e-4db2-928b-d7ba68000649",
-                "orcamento": {
-                  "id": "",
-                  "criadoEm": "0001-01-01T00:00:00Z",
-                  "atualizadoEm": "0001-01-01T00:00:00Z",
-                  "titulo": "",
-                  "data": "0001-01-01T00:00:00Z",
-                  "tipo": "",
-                  "observacao": null,
-                  "valorTotal": 0,
-                  "status": "",
-                  "usuarioId": "",
-                  "contatoId": "",
-                  "usuario": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "email": "",
-                    "nome": "",
-                    "telefone": null,
-                    "avatar": null,
-                    "tipo": "",
-                    "ativo": false,
-                    "fila_id": null
-                  },
-                  "contato": {
-                    "id": "",
-                    "criadoEm": "0001-01-01T00:00:00Z",
-                    "atualizadoEm": "0001-01-01T00:00:00Z",
-                    "numeroTelefone": "",
-                    "nome": null,
-                    "fotoPerfil": null,
-                    "sobre": null,
-                    "bloqueado": false,
-                    "sessaoWhatsappId": "",
-                    "contactid": null,
-                    "email": null,
-                    "empresa": null,
-                    "cpf": null,
-                    "cnpj": null,
-                    "cep": null,
-                    "rua": null,
-                    "numero": null,
-                    "bairro": null,
-                    "cidade": null,
-                    "estado": null,
-                    "pais": null,
-                    "favorito": false,
-                    "sessaoWhatsapp": {
-                      "id": "",
-                      "criadoEm": "0001-01-01T00:00:00Z",
-                      "atualizadoEm": "0001-01-01T00:00:00Z",
-                      "nomeSessao": "",
-                      "numeroTelefone": null,
-                      "status": "",
-                      "codigoQr": null,
-                      "urlWebhook": null,
-                      "ativo": false,
-                      "usuarioId": "",
-                      "usuario": {
-                        "id": "",
-                        "criadoEm": "0001-01-01T00:00:00Z",
-                        "atualizadoEm": "0001-01-01T00:00:00Z",
-                        "email": "",
-                        "nome": "",
-                        "telefone": null,
-                        "avatar": null,
-                        "tipo": "",
-                        "ativo": false,
-                        "fila_id": null
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ],
-        "558004940140@c.us": [],
-        "2349162389789@c.us": []
+        "demo-1": []
       },
-      "totalOrcamentosCards": 28,
-      "cardsWithOrcamentos": [
-        {
-          "cardId": "0@c.us",
-          "count": 1
-        },
-        {
-          "cardId": "5518991222983@c.us",
-          "count": 1
-        }
-      ]
+      "totalOrcamentosCards": 1,
+      "cardsWithOrcamentos": []
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-08T22:08:14.450Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    }
+  },
+  {
+    "timestamp": "2025-09-08T22:08:16.025Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 0,
+      "uniqueCardIds": 0,
+      "sampleCardIds": [],
+      "allCardIds": []
+    }
+  },
+  {
+    "timestamp": "2025-09-08T22:08:16.635Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {},
+      "orcamentosCounts": {},
+      "orcamentosDetalhes": {},
+      "totalOrcamentosCards": 0,
+      "cardsWithOrcamentos": []
+    }
+  },
+  {
+    "timestamp": "2025-09-08T22:10:53.327Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    }
+  },
+  {
+    "timestamp": "2025-09-08T22:10:54.194Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 0,
+      "uniqueCardIds": 0,
+      "sampleCardIds": [],
+      "allCardIds": []
+    }
+  },
+  {
+    "timestamp": "2025-09-08T22:10:56.016Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {},
+      "orcamentosCounts": {},
+      "orcamentosDetalhes": {},
+      "totalOrcamentosCards": 0,
+      "cardsWithOrcamentos": []
+    }
   }
 ]

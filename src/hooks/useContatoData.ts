@@ -26,6 +26,12 @@ interface ContatoData {
     data: string
     status: string
   }
+  assinatura?: {
+    id: string
+    valor: number
+    status: string
+    descricao: string
+  }
   tickets?: {
     id: string
     titulo: string
@@ -86,7 +92,7 @@ export function useContatoData(chatIds: string[]) {
       }
 
       // Buscar dados relacionados usando contato_id (mesmo método do Kanban)
-      const [tagsResponse, orcamentosResponse, agendamentosResponse, ticketsResponse] = await Promise.all([
+      const [tagsResponse, orcamentosResponse, agendamentosResponse, assinaturasResponse, ticketsResponse] = await Promise.all([
         fetch(`/api/contatos/${contatoData.id}/tags`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => null),
@@ -96,6 +102,10 @@ export function useContatoData(chatIds: string[]) {
         }).catch(() => null),
         
         fetch(`/api/agendamentos?contato_id=${numeroTelefone}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null),
+        
+        fetch(`/api/assinaturas?contato_id=${numeroTelefone}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => null),
         
@@ -155,6 +165,24 @@ export function useContatoData(chatIds: string[]) {
         }
       }
 
+      // Processar assinaturas
+      let assinatura = null
+      if (assinaturasResponse?.ok) {
+        const assinaturasData = await assinaturasResponse.json()
+        if (Array.isArray(assinaturasData) && assinaturasData.length > 0) {
+          const assinaturasAtivas = assinaturasData.filter(a => a.status === 'ATIVA' || a.status === 'ATIVO')
+          if (assinaturasAtivas.length > 0) {
+            assinatura = {
+              id: assinaturasAtivas[0].id,
+              valor: assinaturasAtivas[0].valor || 0,
+              status: assinaturasAtivas[0].status,
+              descricao: assinaturasAtivas[0].descricao || assinaturasAtivas[0].nome || 'Assinatura'
+            }
+            console.log(`📝 [useContatoData] ${chatId} - Assinatura encontrada:`, assinatura.descricao)
+          }
+        }
+      }
+
       // Processar tickets
       let tickets = null
       if (ticketsResponse?.ok) {
@@ -182,6 +210,7 @@ export function useContatoData(chatIds: string[]) {
         kanbanBoard: contatoData.kanbanBoard,
         orcamento,
         agendamento,
+        assinatura,
         tickets
       }
 
@@ -190,6 +219,7 @@ export function useContatoData(chatIds: string[]) {
         tagsCount: result.tags?.length || 0,
         hasOrcamento: !!result.orcamento,
         hasAgendamento: !!result.agendamento,
+        hasAssinatura: !!result.assinatura,
         ticketsCount: result.tickets?.length || 0
       })
 
