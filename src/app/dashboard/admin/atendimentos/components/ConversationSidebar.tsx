@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -182,21 +182,28 @@ export default function ConversationSidebar({
   
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   
-  // Buscar dados reais dos contatos
-  const chatIds = chats.map(chat => chat.id?._serialized || chat.id || '')
+  // Buscar dados reais dos contatos - OTIMIZADO: só processar se há chats
+  const chatIds = chats.length > 0 ? chats.map(chat => chat.id?._serialized || chat.id || '').filter(id => id) : []
+  
+  // LAZY LOADING: Carregar apenas os primeiros 7 chats visíveis inicialmente
+  const [lazyLoadedChatIds, setLazyLoadedChatIds] = useState<string[]>([])
+  
+  useEffect(() => {
+    if (chatIds.length > 0) {
+      // Carregar apenas os primeiros 7 chats para acelerar o carregamento inicial
+      setLazyLoadedChatIds(chatIds.slice(0, 7))
+      
+      // Carregar o resto gradualmente após 300ms
+      setTimeout(() => {
+        setLazyLoadedChatIds(chatIds)
+      }, 300)
+    }
+  }, [chatIds.join(',')])
+  
   // Estados do filtro em cascata
   const [selectedConexao, setSelectedConexao] = useState('todas')
   const [showConexaoDropdown, setShowConexaoDropdown] = useState(false)
   const [selectedQueue, setSelectedQueue] = useState('todas')
-  
-  // Debug: Log dados carregados
-  console.log(`🔍 [SIDEBAR] activeFilter: ${activeFilter}`)
-  console.log(`🔍 [SIDEBAR] selectedQueue: ${selectedQueue}`)
-  console.log(`🔍 [SIDEBAR] Tags carregadas: ${realTags.length}`)
-  console.log(`🔍 [SIDEBAR] Filas carregadas: ${filas.length}`)
-  console.log(`🔗 [SIDEBAR] Conexões carregadas: ${conexoes.length}`)
-  console.log(`🔍 [SIDEBAR] Filas dados:`, filas)
-  console.log(`🔗 [SIDEBAR] Conexões dados:`, conexoes)
   
   // Auto-selecionar fila baseada na conexão quando dados carregam (APENAS UMA VEZ)
   const [hasAutoSelected, setHasAutoSelected] = useState(false)
@@ -210,7 +217,6 @@ export default function ConversationSidebar({
         const fila = filas.find(f => f.id === filaId)
         
         if (fila) {
-          console.log(`🎯 [AUTO_SELECT] Auto-selecionando fila: ${fila.nome} (${fila.id})`)
           setSelectedQueue(fila.id)
           setHasAutoSelected(true) // Marcar que já foi feita a auto-seleção
         }
@@ -695,9 +701,10 @@ export default function ConversationSidebar({
     ).slice(0, 3) // Limitar a 3 atendentes para não sobrecarregar
   }, [atendentes])
 
-  const conversations = chats.map(chat => {
+  // Memoizar a transformação de chats em conversations para evitar recálculos
+  const conversations = useMemo(() => activeChats.map(chat => {
     const chatId = chat.id?._serialized || chat.id || ''
-    const name = getContactName(chat, contacts)
+    const name = getContactName(chat, activeContacts)
     const lastMessage = getLastMessage(chat)
     
     // Buscar dados do contato do cache
@@ -761,7 +768,7 @@ export default function ConversationSidebar({
       hasReply: chat.lastMessage !== 'Nova conversa' && chat.lastMessage !== 'Sem mensagens',
       originalChat: chat
     }
-  })
+  }), [activeChats, contatosData, tagsCache, conexoes, filas, atendentes])
 
   // Carregar informações do Kanban apenas para chats visíveis (otimização)
   useEffect(() => {
@@ -769,7 +776,7 @@ export default function ConversationSidebar({
       const newKanbanInfo: {[key: string]: any} = {}
       
       // Carregar apenas para os primeiros 10 chats (visíveis)
-      const visibleChats = chats.slice(0, 10)
+      const visibleChats = activeChats.slice(0, 10)
       
       for (const chat of visibleChats) {
         const chatId = chat.id._serialized || chat.id
@@ -780,12 +787,13 @@ export default function ConversationSidebar({
       setKanbanInfo(newKanbanInfo)
     }
     
-    if (chats.length > 0) {
+    if (activeChats.length > 0) {
       loadKanbanInfo()
     }
-  }, [chats])
+  }, [activeChats])
 
-  const filters = [
+  // Memoizar cálculo dos filtros para evitar recálculos custosos
+  const filters = useMemo(() => [
     { id: 'all', label: 'Todas', icon: MessageCircle, count: conversations.filter(c => c.type !== 'group' && !c.isArchived).length },
     { id: 'unread', label: 'Não lidas', icon: Circle, count: conversations.filter(c => c.unread > 0 && c.type !== 'group' && !c.isArchived).length },
     { id: 'read', label: 'Lidas', icon: CheckCircle2, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived).length },
@@ -793,120 +801,108 @@ export default function ConversationSidebar({
     { id: 'em-aberto', label: 'Em aberto', icon: Tag, count: conversations.filter(c => c.type !== 'group' && !c.isArchived && (!Array.isArray(c.tags) || c.tags.length === 0)).length },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: conversations.filter(c => c.isArchived).length },
     { id: 'groups', label: 'Grupos', icon: Users, count: conversations.filter(c => c.type === 'group' && !c.isArchived).length },
-  ]
+  ], [conversations])
 
-  const filteredConversations = conversations.filter(conv => {
-    // Filtro de busca
-    const matchesSearch = conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    // DEBUG: Log para conversas importantes
-    if (conv.name.includes('Vyzer') || conv.name.includes('Test')) {
-      console.log(`🐛 [FILTER_DEBUG] ${conv.name}:`, {
-        activeFilter,
-        tags: conv.tags,
-        hasValidTags: Array.isArray(conv.tags) && conv.tags.length > 0,
-        type: conv.type,
-        isArchived: conv.isArchived,
-        selectedQueue,
-        convQueue: conv.queue,
-        matchesFilter: (activeFilter === 'all' && conv.type !== 'group' && !conv.isArchived) ||
-                      (activeFilter === 'unread' && conv.unread > 0 && conv.type !== 'group' && !conv.isArchived) ||
-                      (activeFilter === 'read' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived) ||
-                      (activeFilter === 'read-no-reply' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived && !conv.hasReply) ||
-                      (activeFilter === 'em-aberto' && conv.type !== 'group' && !conv.isArchived && (!Array.isArray(conv.tags) || conv.tags.length === 0)) ||
-                      (activeFilter === 'archived' && conv.isArchived) ||
-                      (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
-      })
-    }
-    
-    // Filtros básicos com suporte a arquivados e lidos não respondidos
-    const matchesFilter = (activeFilter === 'all' && conv.type !== 'group' && !conv.isArchived) ||
-                         (activeFilter === 'unread' && conv.unread > 0 && conv.type !== 'group' && !conv.isArchived) ||
-                         (activeFilter === 'read' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived) ||
-                         (activeFilter === 'read-no-reply' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived && !conv.hasReply) ||
-                         (activeFilter === 'em-aberto' && conv.type !== 'group' && !conv.isArchived && (!Array.isArray(conv.tags) || conv.tags.length === 0)) ||
-                         (activeFilter === 'archived' && conv.isArchived) ||
-                         (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
-    
-    // FILTRO por fila - usar queue do chat, não modulation restritiva
-    let matchesQueue = selectedQueue === 'todas'
-    
-    if (selectedQueue !== 'todas') {
-      // Usar sempre o método baseado na queue do chat
-      // A modulation é para filtrar dados no WhatsApp API, não na UI
-      matchesQueue = conv.queue?.id === selectedQueue
-      
-      // DEBUG: Logs para entender o filtro por queue
-      if (conv.name.includes('Test') || conv.name.includes('Vyzer')) {
-        console.log(`🔎 [FILTRO QUEUE] Chat ${conv.name}:`, {
-          chatId: conv.id,
-          selectedQueue,
-          chatQueueId: conv.queue?.id,
-          matchesQueue
-        })
+  // Aplicação dos filtros - OTIMIZADA com early returns para melhor performance
+  const filteredConversations = useMemo(() => {
+    return conversations.filter(conv => {
+      // Early return: Filtro de busca - mais eficiente quando há searchQuery
+      if (searchQuery.trim()) {
+        const searchLower = searchQuery.toLowerCase()
+        const matchesSearch = conv.name.toLowerCase().includes(searchLower) ||
+                             conv.lastMessage.toLowerCase().includes(searchLower)
+        if (!matchesSearch) return false
       }
-    }
-    
-    // Filtro por tag real  
-    const matchesTag = selectedTag === 'todas' ||
-                      (conv.tags && conv.tags.some((tag: any) => tag.id === selectedTag))
-    
-    // Filtros avançados do modal
-    const matchesVisibility = advancedFilters.showHidden ? 
-      hiddenChats.has(conv.id) :   // Se está mostrando ocultas, mostra apenas as ocultas
-      !hiddenChats.has(conv.id)    // Se não está mostrando ocultas, mostra apenas as não ocultas
-    
-    const matchesAdvancedQueues = advancedFilters.selectedQueues.length === 0 ||
-                                 (conv.queue && advancedFilters.selectedQueues.includes(conv.queue.id))
-    
-    const matchesAdvancedTags = advancedFilters.selectedTags.length === 0 ||
-                               (conv.tags && conv.tags.some((tag: any) => advancedFilters.selectedTags.includes(tag.id)))
-    
-    const matchesAdvancedKanbans = advancedFilters.selectedKanbans.length === 0 ||
-                                  (conv.kanbanBoard && advancedFilters.selectedKanbans.includes(conv.kanbanBoard))
-    
-    const matchesAdvancedAtendentes = advancedFilters.selectedAtendentes.length === 0 ||
-                                     (conv.atendente && advancedFilters.selectedAtendentes.includes(conv.atendente.id))
-    
-    return matchesSearch && 
-           matchesFilter && 
-           matchesQueue && 
-           matchesTag &&
-           matchesVisibility &&
-           matchesAdvancedQueues &&
-           matchesAdvancedTags &&
-           matchesAdvancedKanbans &&
-           matchesAdvancedAtendentes
-  }).sort((a, b) => {
-    // Implementar ordenação baseada em sortBy
-    switch (sortBy) {
-      case 'recent':
-        return new Date(b.originalChat?.timestamp || 0).getTime() - new Date(a.originalChat?.timestamp || 0).getTime()
-      case 'oldest':
-        return new Date(a.originalChat?.timestamp || 0).getTime() - new Date(b.originalChat?.timestamp || 0).getTime()
-      case 'budget_high':
-        // TODO: implementar ordenação por orçamento quando disponível
-        return 0
-      case 'budget_low':
-        // TODO: implementar ordenação por orçamento quando disponível
-        return 0
-      case 'tag':
-        return (a.badge?.text || '').localeCompare(b.badge?.text || '')
-      case 'name':
-        return a.name.localeCompare(b.name)
-      default:
-        return 0
-    }
-  })
+      
+      // Early return: Filtros básicos - otimizados com condições específicas
+      switch (activeFilter) {
+        case 'all':
+          if (conv.type === 'group' || conv.isArchived) return false
+          break
+        case 'unread':
+          if (conv.unread <= 0 || conv.type === 'group' || conv.isArchived) return false
+          break
+        case 'read':
+          if (conv.unread > 0 || conv.type === 'group' || conv.isArchived) return false
+          break
+        case 'read-no-reply':
+          if (conv.unread > 0 || conv.type === 'group' || conv.isArchived || conv.hasReply) return false
+          break
+        case 'em-aberto':
+          if (conv.type === 'group' || conv.isArchived || (Array.isArray(conv.tags) && conv.tags.length > 0)) return false
+          break
+        case 'archived':
+          if (!conv.isArchived) return false
+          break
+        case 'groups':
+          if (conv.type !== 'group' || conv.isArchived) return false
+          break
+      }
+      
+      // Early return: FILTRO por fila - mais eficiente
+      if (selectedQueue !== 'todas' && conv.queue?.id !== selectedQueue) {
+        return false
+      }
+      
+      // Early return: Filtro por tag  
+      if (selectedTag !== 'todas') {
+        if (!conv.tags || !conv.tags.some((tag: any) => tag.id === selectedTag)) {
+          return false
+        }
+      }
+      
+      // Early return: Filtros avançados - só verifica se necessário
+      if (advancedFilters.showHidden) {
+        if (!hiddenChats.has(conv.id)) return false
+      } else {
+        if (hiddenChats.has(conv.id)) return false
+      }
+      
+      if (advancedFilters.selectedQueues.length > 0) {
+        if (!conv.queue || !advancedFilters.selectedQueues.includes(conv.queue.id)) return false
+      }
+      
+      if (advancedFilters.selectedTags.length > 0) {
+        if (!conv.tags || !conv.tags.some((tag: any) => advancedFilters.selectedTags.includes(tag.id))) return false
+      }
+      
+      if (advancedFilters.selectedKanbans.length > 0) {
+        if (!conv.kanbanBoard || !advancedFilters.selectedKanbans.includes(conv.kanbanBoard)) return false
+      }
+      
+      if (advancedFilters.selectedAtendentes.length > 0) {
+        if (!conv.atendente || !advancedFilters.selectedAtendentes.includes(conv.atendente.id)) return false
+      }
+      
+      return true
+    }).sort((a, b) => {
+      // Ordenação otimizada - evita recálculos desnecessários
+      switch (sortBy) {
+        case 'recent':
+          const timestampB = new Date(b.originalChat?.timestamp || 0).getTime()
+          const timestampA = new Date(a.originalChat?.timestamp || 0).getTime()
+          return timestampB - timestampA
+        case 'oldest':
+          const timestampA2 = new Date(a.originalChat?.timestamp || 0).getTime()
+          const timestampB2 = new Date(b.originalChat?.timestamp || 0).getTime()
+          return timestampA2 - timestampB2
+        case 'name':
+          return a.name.localeCompare(b.name)
+        case 'tag':
+          return (a.badge?.text || '').localeCompare(b.badge?.text || '')
+        default:
+          return 0
+      }
+    })
+  }, [conversations, searchQuery, activeFilter, selectedQueue, selectedTag, advancedFilters, hiddenChats, sortBy])
 
-  // Configurar polling de presença para chats visíveis
-  const visibleChatIds = filteredConversations.slice(0, 10).map(conv => conv.id)
+  // Configurar polling de presença para chats visíveis - DESABILITADO para performance
+  const pollingChatIds = filteredConversations.slice(0, 5).map(conv => conv.id)
   
   usePresencePolling({
-    chatIds: visibleChatIds,
-    enabled: visibleChatIds.length > 0,
-    interval: 30000 // 30 segundos
+    chatIds: pollingChatIds,
+    enabled: false, // DESABILITADO temporariamente para melhorar performance
+    interval: 60000 // 60 segundos
   })
 
   // Presença removida para melhorar performance

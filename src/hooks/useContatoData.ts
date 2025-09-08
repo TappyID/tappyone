@@ -51,11 +51,22 @@ export function useContatoData(chatIds: string[]) {
   const [contatos, setContatos] = useState<{ [chatId: string]: ContatoData | null }>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Cache global com TTL de 2 minutos
+  const CACHE_TTL = 2 * 60 * 1000
+  const [cache, setCache] = useState<{ [key: string]: { data: ContatoData | null, timestamp: number } }>({})
 
   const fetchContatoData = async (chatId: string) => {
     if (!chatId || chatId.trim() === '') {
       console.log(`⚠️ [useContatoData] ChatId vazio ou inválido: "${chatId}"`)
       return null
+    }
+
+    // Verificar cache primeiro
+    const cached = cache[chatId]
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+      console.log(`💾 [useContatoData] Cache hit para ${chatId}`)
+      return cached.data
     }
 
     try {
@@ -223,6 +234,12 @@ export function useContatoData(chatIds: string[]) {
         ticketsCount: result.tickets?.length || 0
       })
 
+      // Salvar no cache
+      setCache(prev => ({
+        ...prev,
+        [chatId]: { data: result, timestamp: Date.now() }
+      }))
+
       return result
     } catch (err) {
       console.error('❌ [useContatoData] Erro ao buscar dados do contato:', err)
@@ -231,41 +248,55 @@ export function useContatoData(chatIds: string[]) {
   }
 
   const loadContatosData = async () => {
-    // Filtrar apenas chatIds que ainda não foram carregados
-    const pendingChatIds = chatIds.filter(id => !contatos[id] && !loading && id.trim() !== '')
+    // Filtrar apenas chatIds que ainda não foram carregados e não estão em cache válido
+    const pendingChatIds = chatIds.filter(id => {
+      if (!id || id.trim() === '') return false
+      if (contatos[id]) return false
+      
+      const cached = cache[id]
+      if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+        // Se está em cache válido, usar direto
+        setContatos(prev => ({ ...prev, [id]: cached.data }))
+        return false
+      }
+      return true
+    })
     
-    console.log(`🔍 [useContatoData] loadContatosData - Total: ${chatIds.length}, Pendentes: ${pendingChatIds.length}`)
-    
-    if (pendingChatIds.length === 0) {
-      console.log(`⚠️ [useContatoData] Nenhum chatId pendente, saindo...`)
-      return
-    }
+    if (pendingChatIds.length === 0) return
 
     setLoading(true)
     setError(null)
 
     try {
-      // Processar apenas os chatIds pendentes em paralelo
-      const promises = pendingChatIds.map(chatId => fetchContatoData(chatId))
-      const results = await Promise.all(promises)
+      // OTIMIZAÇÃO: Processar em lotes menores para evitar sobrecarga
+      const BATCH_SIZE = 5
+      const batches = []
+      for (let i = 0; i < pendingChatIds.length; i += BATCH_SIZE) {
+        batches.push(pendingChatIds.slice(i, i + BATCH_SIZE))
+      }
 
-      // Salvar resultados no estado
-      const newContatos: { [chatId: string]: ContatoData | null } = {}
-      pendingChatIds.forEach((chatId, index) => {
-        const result = results[index]
-        if (result) {
-          console.log(`✅ [useContatoData] Salvando dados para ${chatId}:`, result)
+      // Processar lotes sequencialmente para evitar muitas requests simultâneas
+      for (const batch of batches) {
+        const promises = batch.map(chatId => fetchContatoData(chatId))
+        const results = await Promise.all(promises)
+
+        // Salvar resultados do lote
+        const newContatos: { [chatId: string]: ContatoData | null } = {}
+        batch.forEach((chatId, index) => {
+          const result = results[index]
           newContatos[chatId] = result
-        } else {
-          console.log(`❌ [useContatoData] Sem dados para ${chatId}`)
-          newContatos[chatId] = null
-        }
-      })
+        })
 
-      setContatos(prev => ({
-        ...prev,
-        ...newContatos
-      }))
+        setContatos(prev => ({
+          ...prev,
+          ...newContatos
+        }))
+
+        // Pequena pausa entre lotes para não sobrecarregar o servidor
+        if (batches.indexOf(batch) < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
     } catch (err) {
       console.error('❌ [useContatoData] Erro geral:', err)
       setError(err instanceof Error ? err.message : String(err))
