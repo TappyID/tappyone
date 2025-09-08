@@ -26,6 +26,12 @@ interface ContatoData {
     data: string
     status: string
   }
+  tickets?: {
+    id: string
+    titulo: string
+    status: string
+    prioridade: string
+  }[]
 }
 
 interface UseContatoDataReturn {
@@ -80,7 +86,7 @@ export function useContatoData(chatIds: string[]) {
       }
 
       // Buscar dados relacionados usando contato_id (mesmo método do Kanban)
-      const [tagsResponse, orcamentosResponse, agendamentosResponse] = await Promise.all([
+      const [tagsResponse, orcamentosResponse, agendamentosResponse, ticketsResponse] = await Promise.all([
         fetch(`/api/contatos/${contatoData.id}/tags`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => null),
@@ -90,6 +96,10 @@ export function useContatoData(chatIds: string[]) {
         }).catch(() => null),
         
         fetch(`/api/agendamentos?contato_id=${numeroTelefone}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null),
+        
+        fetch(`/api/tickets?contato_id=${numeroTelefone}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => null)
       ])
@@ -145,6 +155,21 @@ export function useContatoData(chatIds: string[]) {
         }
       }
 
+      // Processar tickets
+      let tickets = null
+      if (ticketsResponse?.ok) {
+        const ticketsData = await ticketsResponse.json()
+        if (Array.isArray(ticketsData) && ticketsData.length > 0) {
+          tickets = ticketsData.map(ticket => ({
+            id: ticket.id,
+            titulo: ticket.titulo,
+            status: ticket.status,
+            prioridade: ticket.prioridade
+          }))
+          console.log(`🎫 [useContatoData] ${chatId} - Tickets encontrados:`, tickets.length)
+        }
+      }
+
       const result = {
         id: contatoData.id,
         fila: contatoData.fila ? {
@@ -156,14 +181,16 @@ export function useContatoData(chatIds: string[]) {
         atendente: contatoData.atendente,
         kanbanBoard: contatoData.kanbanBoard,
         orcamento,
-        agendamento
+        agendamento,
+        tickets
       }
 
       console.log(`✅ [useContatoData] ${chatId} - Dados completos:`, {
         id: result.id,
         tagsCount: result.tags?.length || 0,
         hasOrcamento: !!result.orcamento,
-        hasAgendamento: !!result.agendamento
+        hasAgendamento: !!result.agendamento,
+        ticketsCount: result.tickets?.length || 0
       })
 
       return result

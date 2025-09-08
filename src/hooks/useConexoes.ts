@@ -66,7 +66,8 @@ export function useConexoes() {
       const result = await response.json()
       console.log(`🔗 [useConexoes] Response completa:`, result)
       
-      const data = result.success ? result.data : result
+      // A API retorna { connections: [...] }, não { success: true, data: [...] }
+      const data = result.connections || result.data || result
       console.log(`🔗 [useConexoes] Data extraída:`, data)
       
       const conexoesAtivas = Array.isArray(data) ? data.filter(c => c.status === 'connected') : []

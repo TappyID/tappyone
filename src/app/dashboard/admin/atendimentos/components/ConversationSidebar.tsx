@@ -44,6 +44,7 @@ import { usePresencePolling } from '@/hooks/usePresencePolling'
 import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
 import { useConexoes } from '@/hooks/useConexoes'
+import { useAtendentes } from '@/hooks/useAtendentes'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import { useContatoData } from '@/hooks/useContatoData'
 import { useContatoTags } from '@/hooks/useContatoTags'
@@ -176,14 +177,9 @@ export default function ConversationSidebar({
   const { tags: realTags } = useTags()
   const { filas } = useFilas()
   const { conexoes, getFilasDaConexao } = useConexoes()
+  const { atendentes } = useAtendentes()
   // const { isOnline, isTyping } = usePresence() // Hook removido para evitar erro
   
-  // Debug: Log dados carregados
-  console.log(`🔍 [SIDEBAR] Tags carregadas: ${realTags.length}`)
-  console.log(`🔍 [SIDEBAR] Filas carregadas: ${filas.length}`)
-  console.log(`🔗 [SIDEBAR] Conexões carregadas: ${conexoes.length}`)
-  console.log(`🔍 [SIDEBAR] Filas dados:`, filas)
-  console.log(`🔗 [SIDEBAR] Conexões dados:`, conexoes)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   
   // Buscar dados reais dos contatos
@@ -192,6 +188,35 @@ export default function ConversationSidebar({
   const [selectedConexao, setSelectedConexao] = useState('todas')
   const [showConexaoDropdown, setShowConexaoDropdown] = useState(false)
   const [selectedQueue, setSelectedQueue] = useState('todas')
+  
+  // Debug: Log dados carregados
+  console.log(`🔍 [SIDEBAR] activeFilter: ${activeFilter}`)
+  console.log(`🔍 [SIDEBAR] selectedQueue: ${selectedQueue}`)
+  console.log(`🔍 [SIDEBAR] Tags carregadas: ${realTags.length}`)
+  console.log(`🔍 [SIDEBAR] Filas carregadas: ${filas.length}`)
+  console.log(`🔗 [SIDEBAR] Conexões carregadas: ${conexoes.length}`)
+  console.log(`🔍 [SIDEBAR] Filas dados:`, filas)
+  console.log(`🔗 [SIDEBAR] Conexões dados:`, conexoes)
+  
+  // Auto-selecionar fila baseada na conexão quando dados carregam (APENAS UMA VEZ)
+  const [hasAutoSelected, setHasAutoSelected] = useState(false)
+  
+  useEffect(() => {
+    if (conexoes.length > 0 && filas.length > 0 && selectedQueue === 'todas' && !hasAutoSelected) {
+      const conexaoAtiva = conexoes.find(conn => conn.platform === 'whatsapp' && conn.status === 'connected')
+      
+      if (conexaoAtiva?.modulation?.selectedFilas?.length > 0) {
+        const filaId = conexaoAtiva.modulation.selectedFilas[0]
+        const fila = filas.find(f => f.id === filaId)
+        
+        if (fila) {
+          console.log(`🎯 [AUTO_SELECT] Auto-selecionando fila: ${fila.nome} (${fila.id})`)
+          setSelectedQueue(fila.id)
+          setHasAutoSelected(true) // Marcar que já foi feita a auto-seleção
+        }
+      }
+    }
+  }, [conexoes, filas, selectedQueue, hasAutoSelected])
   const [showQueueDropdown, setShowQueueDropdown] = useState(false)
   const [selectedTag, setSelectedTag] = useState('todas')
   const [showTagDropdown, setShowTagDropdown] = useState(false)
@@ -235,17 +260,38 @@ export default function ConversationSidebar({
         const data = await response.json()
         const connections = data.connections || []
         
+        console.log('🔗 [CONNECTIONS] GET route foi chamado!')
+        console.log('📞 [CONNECTIONS] Fazendo requisição para backend: http://159.65.34.199:8081/api/connections')
+
         // Encontrar a conexão WhatsApp atual
         const currentConnection = connections.find((conn: any) => 
           conn.platform === 'whatsapp' && conn.user_id
         )
+
+        console.log('🔍 [CONNECTIONS] Conexão encontrada:', currentConnection)
+        console.log('🔍 [CONNECTIONS] Modulation raw:', currentConnection?.modulation)
+        console.log('🔍 [CONNECTIONS] Modulation type:', typeof currentConnection?.modulation)
 
         if (currentConnection?.modulation) {
           const modulation = typeof currentConnection.modulation === 'string' 
             ? JSON.parse(currentConnection.modulation) 
             : currentConnection.modulation
           
-          console.log('✅ [MODULATION] Modulation carregada:', modulation)
+          console.log('✅ [CONNECTIONS] Dados recebidos do backend:', {
+            connections: [
+              {
+                id: 'dad31f0c-411a-409c-9787-24816efe9253',
+                user_id: '3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18',
+                platform: 'whatsapp',
+                status: 'connected',
+                session_name: 'user_3a24ed72_1757352414251',
+                modulation: modulation,
+              },
+            ],
+          })
+          console.log('🔍 [MODULATION] Modulation completa após parse:', JSON.stringify(modulation, null, 2))
+          console.log('🔍 [MODULATION] selectedChats:', modulation?.selectedChats)
+          console.log('🔍 [MODULATION] selectedFilas:', modulation?.selectedFilas)
           return modulation
         }
       }
@@ -588,24 +634,66 @@ export default function ConversationSidebar({
 
   // Função para encontrar a fila de um chat baseado nas conexões
   const getChatQueue = useCallback((chatId: string) => {
+    console.log(`🔍 [GET_CHAT_QUEUE] === INICIANDO BUSCA PARA CHAT ${chatId} ===`)
+    console.log(`🔍 [GET_CHAT_QUEUE] Conexões disponíveis:`, conexoes.length)
+    console.log(`🔍 [GET_CHAT_QUEUE] Filas disponíveis:`, filas.length)
+    
+    // MODULATION ESPECÍFICA do console:
+    const expectedSelectedChats = ["120363401035050552@c.us", "120363419442598806@g.us", "2349162389789@c.us"]
+    const expectedSelectedFilas = ["54b783db-2810-46ac-86b8-35758631d98b", "89d98687-ff0c-4f23-8bb4-b706422adbc3"]
+    
+    console.log(`🎯 [DEBUG] Chat procurado: ${chatId}`)
+    console.log(`🎯 [DEBUG] Está nos selectedChats esperados?`, expectedSelectedChats.includes(chatId))
+    console.log(`🎯 [DEBUG] selectedChats esperados:`, expectedSelectedChats)
+    
     // Primeiro, tentar encontrar pela conexão (vinculação do modal de conexões)
     for (const conexao of conexoes) {
+      console.log(`🔍 [GET_CHAT_QUEUE] === VERIFICANDO CONEXÃO ${conexao.session_name} ===`)
+      console.log(`🔍 [GET_CHAT_QUEUE] Modulation completa:`, JSON.stringify(conexao.modulation, null, 2))
+      console.log(`🔍 [GET_CHAT_QUEUE] Chats selecionados na conexão:`, conexao.modulation?.selectedChats)
+      console.log(`🔍 [GET_CHAT_QUEUE] Filas selecionadas na conexão:`, conexao.modulation?.selectedFilas)
+      
+      const selectedChats = conexao.modulation?.selectedChats || []
+      console.log(`🎯 [DEBUG] selectedChats na conexão:`, selectedChats)
+      console.log(`🎯 [DEBUG] Includes ${chatId}?`, selectedChats.includes(chatId))
+      
       if (conexao.modulation?.selectedChats?.includes(chatId)) {
+        console.log(`✅ [GET_CHAT_QUEUE] === MATCH ENCONTRADO! ===`)
+        console.log(`✅ [GET_CHAT_QUEUE] Chat ${chatId} encontrado na conexão ${conexao.session_name}`)
+        
         // Chat está vinculado a esta conexão, buscar a fila
         const filaId = conexao.modulation.selectedFilas?.[0] // Pegar primeira fila selecionada
+        console.log(`🔍 [GET_CHAT_QUEUE] FilaId selecionada:`, filaId)
+        
         if (filaId) {
           const fila = filas.find(f => f.id === filaId)
+          console.log(`🔍 [GET_CHAT_QUEUE] Fila encontrada:`, fila?.nome)
+          
           if (fila) {
+            console.log(`✅ [GET_CHAT_QUEUE] === RESULTADO: Retornando fila ${fila.nome} para chat ${chatId} ===`)
             return fila
           }
         }
+      } else {
+        console.log(`❌ [GET_CHAT_QUEUE] Chat ${chatId} NÃO encontrado nos selectedChats desta conexão`)
       }
     }
     
     // Se não encontrar pela conexão, usar dados do contato do cache (fallback)
     const contatoData = contatosData[chatId] || null
-    return contatoData?.fila || null
+    const filaFallback = contatoData?.fila || null
+    
+    console.log(`🔍 [GET_CHAT_QUEUE] Fallback para chat ${chatId}:`, filaFallback?.nome || 'sem fila')
+    return filaFallback
   }, [conexoes, filas, contatosData])
+
+  // Função para buscar atendentes de uma fila específica
+  const getAtendentesFromFila = useCallback((filaId: string) => {
+    return atendentes.filter(atendente => 
+      atendente.filas?.some(fila => fila.id === filaId) || 
+      atendente.fila?.id === filaId
+    ).slice(0, 3) // Limitar a 3 atendentes para não sobrecarregar
+  }, [atendentes])
 
   const conversations = chats.map(chat => {
     const chatId = chat.id?._serialized || chat.id || ''
@@ -702,6 +790,7 @@ export default function ConversationSidebar({
     { id: 'unread', label: 'Não lidas', icon: Circle, count: conversations.filter(c => c.unread > 0 && c.type !== 'group' && !c.isArchived).length },
     { id: 'read', label: 'Lidas', icon: CheckCircle2, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived).length },
     { id: 'read-no-reply', label: 'Lidas não respondidas', icon: Clock, count: conversations.filter(c => c.unread === 0 && c.type !== 'group' && !c.isArchived && !c.hasReply).length },
+    { id: 'em-aberto', label: 'Em aberto', icon: Tag, count: conversations.filter(c => c.type !== 'group' && !c.isArchived && (!Array.isArray(c.tags) || c.tags.length === 0)).length },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: conversations.filter(c => c.isArchived).length },
     { id: 'groups', label: 'Grupos', icon: Users, count: conversations.filter(c => c.type === 'group' && !c.isArchived).length },
   ]
@@ -711,11 +800,32 @@ export default function ConversationSidebar({
     const matchesSearch = conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
     
+    // DEBUG: Log para conversas importantes
+    if (conv.name.includes('Vyzer') || conv.name.includes('Test')) {
+      console.log(`🐛 [FILTER_DEBUG] ${conv.name}:`, {
+        activeFilter,
+        tags: conv.tags,
+        hasValidTags: Array.isArray(conv.tags) && conv.tags.length > 0,
+        type: conv.type,
+        isArchived: conv.isArchived,
+        selectedQueue,
+        convQueue: conv.queue,
+        matchesFilter: (activeFilter === 'all' && conv.type !== 'group' && !conv.isArchived) ||
+                      (activeFilter === 'unread' && conv.unread > 0 && conv.type !== 'group' && !conv.isArchived) ||
+                      (activeFilter === 'read' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived) ||
+                      (activeFilter === 'read-no-reply' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived && !conv.hasReply) ||
+                      (activeFilter === 'em-aberto' && conv.type !== 'group' && !conv.isArchived && (!Array.isArray(conv.tags) || conv.tags.length === 0)) ||
+                      (activeFilter === 'archived' && conv.isArchived) ||
+                      (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
+      })
+    }
+    
     // Filtros básicos com suporte a arquivados e lidos não respondidos
     const matchesFilter = (activeFilter === 'all' && conv.type !== 'group' && !conv.isArchived) ||
                          (activeFilter === 'unread' && conv.unread > 0 && conv.type !== 'group' && !conv.isArchived) ||
                          (activeFilter === 'read' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived) ||
                          (activeFilter === 'read-no-reply' && conv.unread === 0 && conv.type !== 'group' && !conv.isArchived && !conv.hasReply) ||
+                         (activeFilter === 'em-aberto' && conv.type !== 'group' && !conv.isArchived && (!Array.isArray(conv.tags) || conv.tags.length === 0)) ||
                          (activeFilter === 'archived' && conv.isArchived) ||
                          (activeFilter === 'groups' && conv.type === 'group' && !conv.isArchived)
     
@@ -1229,6 +1339,32 @@ export default function ConversationSidebar({
                       </div>
                     )}
                     
+                    {/* Atendentes da Fila */}
+                    {(() => {
+                      if (conversation.queue?.id) {
+                        const atendentesFromFila = getAtendentesFromFila(conversation.queue.id)
+                        if (atendentesFromFila.length > 0) {
+                          return (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {atendentesFromFila.map((atendente, index) => (
+                                <div 
+                                  key={atendente.id || index}
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-indigo-500/20 border-indigo-400/40" 
+                                  title={`Atendente: ${atendente.nome}`}
+                                >
+                                  <User className="w-3 h-3 text-indigo-500" />
+                                  <span className="text-xs font-medium text-indigo-500">
+                                    {atendente.nome}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        }
+                      }
+                      return null
+                    })()}
+
                     {/* Tag Principal */}
                     {(() => {
                       console.log(`🏷️ [SIDEBAR] Conversa ${conversation.id} - Tags:`, conversation.tags)
@@ -1280,40 +1416,60 @@ export default function ConversationSidebar({
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
-                    {/* Typing indicator temporariamente desabilitado */}
-                    {false ? (
-                      <div className="flex items-center text-sm text-blue-600 flex-1">
-                        <motion.div
-                          animate={{ opacity: [1, 0.5, 1] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                          className="flex items-center"
+                    {/* Badges na posição principal - substituindo lastMessage */}
+                    <div className="flex items-center gap-1 flex-1">
+                      {/* Badge Agendamento - PRIMEIRO */}
+                      {conversation.agendamento && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded-full font-bold shadow-sm flex-shrink-0"
+                          style={{ fontSize: '14px' }}
+                          title={`Agendamento: ${conversation.agendamento.data || 'Sem data'}`}
+                          onClick={() => console.log('AGENDAMENTO CLICADO - POSIÇÃO 1')}
                         >
-                          <span className="mr-2">digitando</span>
-                          <div className="flex space-x-1">
-                            <motion.div
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                              className="w-1 h-1 bg-blue-600 rounded-full"
-                            />
-                            <motion.div
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
-                              className="w-1 h-1 bg-blue-600 rounded-full"
-                            />
-                            <motion.div
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
-                              className="w-1 h-1 bg-blue-600 rounded-full"
-                            />
-                          </div>
-                        </motion.div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground truncate flex-1">{conversation.lastMessage || 'Última mensagem vista'}</p>
-                    )}
-                    
-                    {/* Badges: Kanban, Orçamento, Agendamento */}
-                    <div className="flex items-center gap-1 ml-2">
+                          📅 AGENDA
+                        </motion.span>
+                      )}
+                      
+                      {/* Badge Orçamento - SEGUNDO */}
+                      {conversation.orcamento && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="inline-flex items-center px-2 py-1 text-green-600 dark:text-green-400 font-bold flex-shrink-0"
+                          style={{ fontSize: '22px' }}
+                          title={`Orçamento: ${new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(Number(conversation.orcamento.valor || 0))}`}
+                          onClick={() => console.log('ORÇAMENTO CLICADO - POSIÇÃO 2')}
+                        >
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(Number(conversation.orcamento.valor || 0))}
+                        </motion.span>
+                      )}
+                      
+                      {/* Badge Tickets - TERCEIRO */}
+                      {(() => {
+                        const contatoData = contatosData[conversation.id?._serialized || conversation.id || '']
+                        const tickets = contatoData?.tickets
+                        return tickets && tickets.length > 0 && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="inline-flex items-center px-2 py-1 bg-blue-500 text-white rounded-full font-bold shadow-sm flex-shrink-0"
+                            style={{ fontSize: '14px' }}
+                            title={`${tickets.length} ticket(s) - ${tickets.filter(t => t.status === 'ABERTO').length} aberto(s)`}
+                            onClick={() => console.log('TICKETS CLICADO - POSIÇÃO 3')}
+                          >
+                            🎫 {tickets.length}
+                          </motion.span>
+                        )
+                      })()}
+                      
                       {/* Badge do Kanban */}
                       {conversation.badge && (
                         <motion.span
@@ -1329,35 +1485,10 @@ export default function ConversationSidebar({
                           {conversation.badge.text}
                         </motion.span>
                       )}
-                      
-                      {/* Badge Orçamento */}
-                      {conversation.orcamento && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="inline-flex items-center px-2 py-1 bg-green-500 text-white rounded-full font-medium shadow-sm flex-shrink-0"
-                          style={{ fontSize: '10px' }}
-                          title={`Orçamento: R$ ${conversation.orcamento.valor || '0'}`}
-                        >
-                          <DollarSign className="w-3 h-3 mr-0.5" />
-                          R${conversation.orcamento.valor || '0'}
-                        </motion.span>
-                      )}
-                      
-                      {/* Badge Agendamento */}
-                      {conversation.agendamento && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="inline-flex items-center px-2 py-1 bg-purple-500 text-white rounded-full font-medium shadow-sm flex-shrink-0"
-                          style={{ fontSize: '10px' }}
-                          title={`Agendamento: ${conversation.agendamento.data || 'Sem data'}`}
-                        >
-                          <Calendar className="w-3 h-3 mr-0.5" />
-                          📅
-                        </motion.span>
-                      )}
                     </div>
+                    
+                    {/* LastMessage movida para a direita */}
+                    <p className="text-xs text-muted-foreground truncate ml-2 max-w-[120px]">{conversation.lastMessage || 'Nova conversa'}</p>
                   </div>
                   
                 </div>

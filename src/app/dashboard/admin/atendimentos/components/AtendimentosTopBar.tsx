@@ -7,7 +7,8 @@ import {
   Bell, 
   Settings, 
   User, 
-  MessageSquare, 
+  MessageSquare,
+  ArrowLeft, 
   Users, 
   Clock,
   Filter,
@@ -137,9 +138,12 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-white/20 to-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center border border-white/20">
-              <MessageSquare className="w-4 h-4 text-white" />
-            </div>
+            <button 
+              onClick={() => router.back()}
+              className="w-8 h-8 bg-gradient-to-br from-white/20 to-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center border border-white/20 hover:bg-white/30 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-white" />
+            </button>
             <div>
               <h1 className="text-lg font-bold text-white">Atendimentos</h1>
               <p className="text-xs text-white/70">Central de conversas</p>

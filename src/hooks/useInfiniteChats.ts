@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { globalCache, cacheKeys, fetchWithCache } from '@/utils/globalCache'
 
-const ITEMS_PER_PAGE = 8
+const ITEMS_PER_PAGE = 14
 
 export interface ChatItem {
   id: string

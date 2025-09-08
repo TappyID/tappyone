@@ -78,7 +78,9 @@ import {
   Upload,
   ImageIcon,
   Contact,
-  Square
+  Square,
+  Expand,
+  Ticket
 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useAudioRecorder, formatDuration, blobToFile } from '@/hooks/useAudioRecorder'
@@ -98,6 +100,7 @@ import VideoChamadaModal from './modals/VideoChamadaModal'
 import LigacaoModal from './modals/LigacaoModal'
 import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
 import CompartilharTelaModal from './modals/CompartilharTelaModal'
+import TicketModal from './modals/TicketModal'
 import QuickActionsSidebar from './QuickActionsSidebar'
 import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
@@ -371,6 +374,19 @@ export default function ChatArea({
   const [showLigacaoModal, setShowLigacaoModal] = useState(false)
   const [showTransferirModal, setShowTransferirModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  
+  // Função para toggle fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }
   
   // Estados para novas funcionalidades
   const [showSearch, setShowSearch] = useState(false)
@@ -1499,6 +1515,30 @@ export default function ChatArea({
             <Monitor className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge */}
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-background"></div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTicketModal(true)}
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
+            title="Gerenciar Tickets"
+          >
+            <Ticket className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleFullscreen}
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
+            title={isFullscreen ? "Sair do Fullscreen" : "Fullscreen"}
+          >
+            <Expand className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-background"></div>
           </motion.button>
           
           {/* Badge do Kanban */}
@@ -2760,6 +2800,14 @@ export default function ChatArea({
         onClose={() => onToggleAnotacoesSidebar?.()}
         activeChatId={conversation?.id || conversation?.jid}
         selectedContact={conversation}
+      />
+
+      {/* Ticket Modal */}
+      <TicketModal
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        contactId={conversation?.id || ''}
+        contactName={conversation?.name || conversation?.pushname}
       />
 
       {/* Edit Text Modal */}

@@ -22,6 +22,7 @@ export default function AtendimentosPage() {
   const [orcamentosCount, setOrcamentosCount] = useState(0)
   const [agendamentosCount, setAgendamentosCount] = useState(0)
   const [assinaturasCount, setAssinaturasCount] = useState(0)
+  const [ticketsCount, setTicketsCount] = useState(0)
   const [contactStatus, setContactStatus] = useState<'synced' | 'error'>('error')
   
   // Funções para buscar contagens
@@ -85,6 +86,22 @@ export default function AtendimentosPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar assinaturas:', error)
+    }
+    return 0
+  }
+
+  const fetchTicketsCount = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/tickets?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+      }
+    } catch (error) {
+      console.error('Erro ao buscar tickets:', error)
     }
     return 0
   }
@@ -158,11 +175,12 @@ export default function AtendimentosPage() {
       // Buscar contagens dos badges
       const fetchBadgeCounts = async () => {
         try {
-          const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, contactStatusResult] = await Promise.all([
+          const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, ticketsCountResult, contactStatusResult] = await Promise.all([
             fetchNotesCount(chatId),
             fetchOrcamentosCount(chatId),
             fetchAgendamentosCount(chatId),
             fetchAssinaturasCount(chatId),
+            fetchTicketsCount(chatId),
             checkContactStatus(chatId)
           ])
           
@@ -170,9 +188,10 @@ export default function AtendimentosPage() {
           setOrcamentosCount(orcamentosCountResult)
           setAgendamentosCount(agendamentosCountResult)
           setAssinaturasCount(assinaturasCountResult)
+          setTicketsCount(ticketsCountResult)
           setContactStatus(contactStatusResult)
           
-          console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, status: ${contactStatusResult}`)
+          console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, ${ticketsCountResult} tickets, status: ${contactStatusResult}`)
         } catch (error) {
           console.error('Erro ao buscar contagens:', error)
         }
@@ -185,6 +204,7 @@ export default function AtendimentosPage() {
       setOrcamentosCount(0)
       setAgendamentosCount(0)
       setAssinaturasCount(0)
+      setTicketsCount(0)
       setContactStatus('error')
     }
   }, [selectedConversation, loadChatMessages])
