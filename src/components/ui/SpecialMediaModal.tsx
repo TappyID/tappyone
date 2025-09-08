@@ -96,14 +96,65 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      setIsLoading(true)
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLatitude(position.coords.latitude.toString())
-          setLongitude(position.coords.longitude.toString())
+        async (position) => {
+          const lat = position.coords.latitude.toString()
+          const lng = position.coords.longitude.toString()
+          
+          setLatitude(lat)
+          setLongitude(lng)
+          
+          // Fazer geocoding reverso para preencher endereço
+          try {
+            console.log('📍 LOCALIZAÇÃO - Fazendo geocoding reverso...')
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+              {
+                headers: {
+                  'User-Agent': 'TappyOne-CRM'
+                }
+              }
+            )
+            
+            if (response.ok) {
+              const data = await response.json()
+              console.log('📍 LOCALIZAÇÃO - Dados do geocoding:', data)
+              
+              if (data.display_name) {
+                setAddress(data.display_name)
+                
+                // Se não tem título, usar o nome do local
+                if (!locationTitle && data.name) {
+                  setLocationTitle(data.name)
+                } else if (!locationTitle && data.address) {
+                  // Usar uma parte mais específica do endereço como título
+                  const title = data.address.shop || 
+                               data.address.amenity || 
+                               data.address.building || 
+                               data.address.house_number + ' ' + data.address.road || 
+                               data.address.suburb || 
+                               data.address.city || 
+                               'Localização atual'
+                  setLocationTitle(title)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('📍 LOCALIZAÇÃO - Erro no geocoding:', error)
+          } finally {
+            setIsLoading(false)
+          }
         },
         (error) => {
           console.error('Erro ao obter localização:', error)
           alert('Erro ao obter sua localização. Verifique as permissões.')
+          setIsLoading(false)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
         }
       )
     } else {

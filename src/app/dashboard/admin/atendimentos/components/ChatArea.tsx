@@ -651,16 +651,75 @@ export default function ChatArea({
   }
 
   // Handler para favoritar/desfavoritar mensagem
-  const toggleStarred = (messageId: string) => {
-    setStarredMessages(prev => {
-      const newStarred = new Set(prev)
-      if (newStarred.has(messageId)) {
-        newStarred.delete(messageId)
+  const toggleStarred = async (messageId: string) => {
+    if (!chatId) return
+    
+    const isCurrentlyStarred = starredMessages.has(messageId)
+    const action = isCurrentlyStarred ? 'unstar' : 'star'
+    
+    console.log(`⭐ FAVORITOS - ${action} mensagem:`, messageId)
+    
+    try {
+      // Atualizar estado local imediatamente para feedback visual
+      setStarredMessages(prev => {
+        const newStarred = new Set(prev)
+        if (isCurrentlyStarred) {
+          newStarred.delete(messageId)
+        } else {
+          newStarred.add(messageId)
+        }
+        
+        // Salvar no localStorage
+        if (conversation?.id) {
+          localStorage.setItem(`starredMessages_${conversation.id}`, JSON.stringify(Array.from(newStarred)))
+        }
+        
+        return newStarred
+      })
+      
+      // Chamar API para persistir no servidor WAHA
+      const response = await fetch(`/api/whatsapp/messages/star`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          messageId,
+          chatId,
+          action // 'star' ou 'unstar'
+        })
+      })
+      
+      if (!response.ok) {
+        console.error('❌ FAVORITOS - Erro na API:', response.status)
+        // Reverter estado local se API falhar
+        setStarredMessages(prev => {
+          const revertStarred = new Set(prev)
+          if (isCurrentlyStarred) {
+            revertStarred.add(messageId) // Re-adicionar se estava removendo
+          } else {
+            revertStarred.delete(messageId) // Remover se estava adicionando
+          }
+          return revertStarred
+        })
       } else {
-        newStarred.add(messageId)
+        console.log(`✅ FAVORITOS - ${action} realizado com sucesso`)
       }
-      return newStarred
-    })
+      
+    } catch (error) {
+      console.error('❌ FAVORITOS - Erro:', error)
+      // Reverter estado local se houver erro
+      setStarredMessages(prev => {
+        const revertStarred = new Set(prev)
+        if (isCurrentlyStarred) {
+          revertStarred.add(messageId)
+        } else {
+          revertStarred.delete(messageId)
+        }
+        return revertStarred
+      })
+    }
   }
 
   // Handler para envio de mídia com legenda
@@ -1117,10 +1176,19 @@ export default function ChatArea({
   }
   
   const handleAudioRecord = async () => {
+    console.log('🎤 BOTÃO - handleAudioRecord clicado, isRecording:', audioRecorder.isRecording)
+    
     if (audioRecorder.isRecording) {
+      console.log('🎤 BOTÃO - Parando gravação...')
       audioRecorder.stopRecording()
     } else {
-      await audioRecorder.startRecording()
+      console.log('🎤 BOTÃO - Iniciando gravação...')
+      try {
+        await audioRecorder.startRecording()
+        console.log('🎤 BOTÃO - Gravação iniciada com sucesso')
+      } catch (error) {
+        console.error('🎤 BOTÃO - Erro ao iniciar gravação:', error)
+      }
     }
   }
   
@@ -1254,16 +1322,16 @@ export default function ChatArea({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="flex-1 flex items-center justify-center bg-white">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="w-24 h-24 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-600/50">
+          <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-gray-200">
             <User className="w-12 h-12 text-slate-200" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-100 mb-2">Selecione uma conversa</h3>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">Selecione uma conversa</h3>
           <p className="text-slate-400">Escolha uma conversa da lista para começar a atender</p>
         </motion.div>
       </div>
@@ -1271,7 +1339,7 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative">
+    <div className="flex-1 flex flex-col bg-white relative">
 
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -1285,7 +1353,7 @@ export default function ChatArea({
             className="relative"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl flex items-center justify-center overflow-hidden border border-slate-600/50">
+            <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200">
               {conversation.profilePictureUrl ? (
                 <img 
                   src={conversation.profilePictureUrl} 
@@ -1581,7 +1649,7 @@ export default function ChatArea({
       )}
 
       {/* Messages Area */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-white/80 to-gray-50/90 dark:from-slate-800/20 dark:to-slate-900/30 backdrop-blur-sm scrollbar-chat">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-white scrollbar-chat">
         <AnimatePresence>
           {displayMessages.map((msg, index) => (
             <motion.div
@@ -1600,8 +1668,8 @@ export default function ChatArea({
                 <div 
                   className={`p-3 rounded-lg ${
                     msg.sender === 'agent' 
-                      ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg border border-blue-500/30' 
-                      : 'bg-white/95 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-slate-100 shadow-sm dark:shadow-2xl'
+                      ? 'bg-blue-600 text-white shadow-sm border border-blue-500/20' 
+                      : 'bg-gray-50 border border-gray-200 text-gray-900 shadow-sm'
                   } max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl`}
                   onDoubleClick={() => {
                     if (msg.sender === 'agent' && msg.type === 'text') {
@@ -2398,7 +2466,7 @@ export default function ChatArea({
                         }}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <ImageIcon className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Imagem</span>
@@ -2415,7 +2483,7 @@ export default function ChatArea({
                         }}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-purple-400 hover:bg-purple-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Play className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Vídeo</span>
@@ -2432,7 +2500,7 @@ export default function ChatArea({
                         }}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <FileText className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Documento</span>
@@ -2449,7 +2517,7 @@ export default function ChatArea({
                         }}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Contact className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Contato</span>
@@ -2466,7 +2534,7 @@ export default function ChatArea({
                         }}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <MapPin className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Localização</span>
@@ -2483,7 +2551,7 @@ export default function ChatArea({
                         }}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-purple-400 hover:bg-purple-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Users className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Enquete</span>
@@ -2581,7 +2649,51 @@ export default function ChatArea({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleAudioRecord}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                
+                // Criar log detalhado para download
+                const debugLog = {
+                  timestamp: new Date().toISOString(),
+                  event: 'Audio Button Click',
+                  audioRecorder: {
+                    isRecording: audioRecorder?.isRecording,
+                    isPaused: audioRecorder?.isPaused,
+                    duration: audioRecorder?.duration,
+                    error: audioRecorder?.error,
+                    audioBlob: audioRecorder?.audioBlob ? 'exists' : 'null',
+                    audioUrl: audioRecorder?.audioUrl ? 'exists' : 'null'
+                  },
+                  browser: {
+                    userAgent: navigator.userAgent,
+                    hasGetUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+                    hasMediaRecorder: typeof MediaRecorder !== 'undefined'
+                  },
+                  permissions: 'checking...'
+                }
+                
+                // Baixar arquivo de log
+                const logText = JSON.stringify(debugLog, null, 2)
+                const blob = new Blob([logText], { type: 'application/json' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `audio-debug-${Date.now()}.json`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+                
+                alert('Log baixado! Agora testando gravação...')
+                
+                try {
+                  handleAudioRecord()
+                } catch (error) {
+                  console.error('🎤 ERRO no handleAudioRecord:', error)
+                  alert('ERRO: ' + error)
+                }
+              }}
               className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300"
               title="Gravar áudio"
             >
@@ -2610,7 +2722,7 @@ export default function ChatArea({
             whileTap={{ scale: 0.95 }}
             onClick={sendMessage}
             disabled={!message.trim()}
-            className="p-3 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-3 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Enviar mensagem"
           >
             <Send className="w-5 h-5" />

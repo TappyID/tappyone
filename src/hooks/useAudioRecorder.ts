@@ -35,16 +35,37 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
 
   const startRecording = useCallback(async () => {
     try {
+      console.log('🎤 ÁUDIO - Iniciando gravação...')
       setError(null)
       
-      // Solicitar permissão para usar o microfone
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      })
+      // Verificar se o browser suporta getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Browser não suporta gravação de áudio')
+      }
+      
+      console.log('🎤 ÁUDIO - Solicitando permissão do microfone...')
+      
+      // Tentar primeiro com configuração simples
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        console.log('🎤 ÁUDIO - Acesso básico ao microfone obtido')
+      } catch (basicError) {
+        console.log('🎤 ÁUDIO - Erro no acesso básico, tentando configuração detalhada...', basicError)
+        
+        // Fallback com configurações específicas
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            deviceId: 'default'
+          } 
+        })
+        console.log('🎤 ÁUDIO - Acesso detalhado ao microfone obtido')
+      }
+      
+      console.log('🎤 ÁUDIO - Permissão concedida, stream obtido')
       
       streamRef.current = stream
       chunksRef.current = []
