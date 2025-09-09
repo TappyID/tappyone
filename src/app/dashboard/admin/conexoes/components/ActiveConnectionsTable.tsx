@@ -120,6 +120,15 @@ export function ActiveConnectionsTable({
 
       // Buscar sessões do WAHA com token de autorização
       const token = localStorage.getItem('token')
+      console.log('🔍 [TOKEN] Token do localStorage:', token ? `${token.substring(0, 20)}...` : 'NULO/AUSENTE')
+      
+      if (!token) {
+        console.log('❌ [TOKEN] Token não encontrado no localStorage, redirecionando para login...')
+        // Redirecionar para login ou mostrar erro
+        setError('Sessão expirada. Faça login novamente.')
+        return
+      }
+      
       const wahaResponse = await fetch('/api/whatsapp/sessions', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -130,6 +139,11 @@ export function ActiveConnectionsTable({
       
       if (wahaResponse.ok) {
         wahaSessions = await wahaResponse.json()
+        console.log('🔍 [WAHA] Sessões WAHA obtidas:', wahaSessions)
+      } else {
+        console.error('❌ [WAHA] Erro ao buscar sessões WAHA:', wahaResponse.status)
+        const errorText = await wahaResponse.text()
+        console.error('❌ [WAHA] Erro detalhado:', errorText)
       }
 
       // Buscar conexões do backend
@@ -146,12 +160,16 @@ export function ActiveConnectionsTable({
         backendConnections = backendData.connections || []
       }
 
-        // Combinar dados do WAHA com backend
+        // Combinar dados das duas APIs
       const activeConnections: ActiveConnection[] = []
+      
+      console.log('📊 [DEBUG] Total WAHA sessions:', wahaSessions.length)
+      console.log('📊 [DEBUG] Total backend connections:', backendConnections.length)
 
       // Processar sessões WAHA
       for (const session of wahaSessions) {
         console.log('🔍 [TABLE] Processando sessão WAHA:', session.name)
+        console.log('🔍 [TABLE] Status da sessão WAHA:', session.status)
         console.log('🔍 [TABLE] Backend connections disponíveis:', backendConnections.map(bc => bc.session_name || bc.id))
         
         const backendConnection = backendConnections.find(
@@ -162,6 +180,12 @@ export function ActiveConnectionsTable({
         if (backendConnection) {
           console.log('🔍 [TABLE] Modulation exists:', !!backendConnection.modulation)
           console.log('🔍 [TABLE] Modulation content:', backendConnection.modulation)
+        }
+
+        // Se a sessão está ativa no WAHA mas não tem conexão no backend, sincronizar
+        if (session.status === 'WORKING' && !backendConnection) {
+          console.log(`🔄 [AUTO-SYNC] Sincronizando sessão ativa não registrada: ${session.name}`)
+          syncSessionInBackground(session.name)
         }
 
         // Buscar estatísticas dos dados salvos (modulation) se existir
@@ -218,22 +242,25 @@ export function ActiveConnectionsTable({
           }
         }
 
-        activeConnections.push({
+        const connectionData = {
           id: session.name,
-          platform: 'whatsapp',
           sessionName: session.name,
-          status: session.status === 'WORKING' ? 'connected' : 
-                 session.status === 'STARTING' ? 'connecting' :
-                 session.status === 'SCAN_QR_CODE' ? 'connecting' : 'disconnected',
-          wahaSession: session,
-          createdAt: backendConnection?.created_at || new Date().toISOString(),
-          lastActivity: backendConnection?.updated_at,
-          stats,
-          assignedQueues,
+          status: (session.status === 'WORKING' ? 'connected' : session.status === 'SCAN_QR_CODE' ? 'connecting' : 'disconnected') as 'connected' | 'connecting' | 'disconnected' | 'error',
+          platform: 'whatsapp' as const,
+          stats: stats,
+          assignedQueues: assignedQueues,
+          lastActivity: session.me?.pushName || 'N/A',
+          createdAt: new Date().toISOString(),
           isActive: session.status === 'WORKING'
-        })
+        }
+        
+        console.log('✅ [TABLE] Adicionando conexão ativa:', connectionData)
+        activeConnections.push(connectionData)
       }
 
+      console.log('📊 [FINAL] Total conexões ativas processadas:', activeConnections.length)
+      console.log('📊 [FINAL] Conexões ativas:', activeConnections)
+      
       setConnections(activeConnections)
     } catch (err) {
       console.error('Erro ao buscar conexões:', err)
@@ -275,6 +302,9 @@ export function ActiveConnectionsTable({
           fetchConnections()
           checkForQRCode(connection.sessionName)
         }, 2000)
+        
+        // Iniciar monitoramento de QR code para sincronização automática
+        startQRMonitoring(connection.sessionName)
       } else {
         console.error('Erro ao conectar sessão:', response.status)
       }
@@ -392,6 +422,89 @@ export function ActiveConnectionsTable({
       }
     } catch (error) {
       console.error('Erro ao buscar QR Code:', error)
+    }
+  }
+
+  // Monitorar QR code e sincronizar quando conectado
+  const startQRMonitoring = (sessionName: string) => {
+    const monitorInterval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token')
+        
+        // Verificar status da sessão no WAHA
+        const wahaResponse = await fetch('/api/whatsapp/sessions', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (wahaResponse.ok) {
+          const sessions = await wahaResponse.json()
+          const session = sessions.find((s: any) => s.name === sessionName)
+          
+          if (session && session.status === 'WORKING') {
+            console.log(`🔄 [SYNC] Sessão ${sessionName} conectada, sincronizando...`)
+            
+            // Sincronizar com backend
+            await fetch(`/api/connections/whatsapp/sync/${sessionName}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            // Fechar modal QR se estiver aberto
+            if (showQRModal && currentSessionName === sessionName) {
+              setShowQRModal(false)
+              setQrCode(null)
+            }
+            
+            // Atualizar lista de conexões
+            fetchConnections()
+            
+            // Parar monitoramento
+            clearInterval(monitorInterval)
+            console.log(`✅ [SYNC] Sincronização concluída para ${sessionName}`)
+          }
+        }
+      } catch (error) {
+        console.error('Erro no monitoramento:', error)
+      }
+    }, 3000) // Verificar a cada 3 segundos
+    
+    // Limpar após 5 minutos para evitar polling infinito
+    setTimeout(() => {
+      clearInterval(monitorInterval)
+      console.log(`⏰ [SYNC] Timeout do monitoramento para ${sessionName}`)
+    }, 300000) // 5 minutos
+  }
+
+  // Sincronizar sessão em background sem bloquear a UI
+  const syncSessionInBackground = async (sessionName: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      
+      console.log(`🔄 [BACKGROUND-SYNC] Iniciando sincronização para ${sessionName}`)
+      
+      const response = await fetch(`/api/connections/whatsapp/sync/${sessionName}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        console.log(`✅ [BACKGROUND-SYNC] Sessão ${sessionName} sincronizada com sucesso`)
+        // Recarregar conexões após sincronizar
+        setTimeout(() => fetchConnections(), 1000)
+      } else {
+        console.error(`❌ [BACKGROUND-SYNC] Erro ao sincronizar ${sessionName}:`, response.status)
+      }
+    } catch (error) {
+      console.error(`❌ [BACKGROUND-SYNC] Erro na sincronização de ${sessionName}:`, error)
     }
   }
 

@@ -10,19 +10,43 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 [SESSIONS] GET iniciado')
+    
     // Validar token JWT
     const authorization = request.headers.get('authorization')
+    console.log('🔍 [SESSIONS] Authorization header:', authorization ? `Bearer ${authorization.split(' ')[1]?.substring(0, 20)}...` : 'AUSENTE')
+    
     if (!authorization || !authorization.startsWith('Bearer ')) {
+      console.log('🚫 [SESSIONS] Header de autorização ausente ou inválido')
       return NextResponse.json({ error: 'Token de autorização necessário' }, { status: 401 })
     }
 
     const token = authorization.split(' ')[1]
+    console.log('🔍 [SESSIONS] Token extraído:', token.substring(0, 20) + '...')
+    console.log('🔍 [SESSIONS] JWT_SECRET configurado:', JWT_SECRET ? 'SIM' : 'NÃO')
+    
     let userID: string
     
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any
-      userID = decoded.userID
+      console.log('🔍 [SESSIONS] Token decodificado:', { 
+        user_id: decoded.user_id, 
+        email: decoded.email,
+        exp: decoded.exp,
+        iat: decoded.iat 
+      })
+      
+      userID = decoded.user_id
+      
+      if (!userID) {
+        console.log('🚫 [SESSIONS] user_id não encontrado no token')
+        return NextResponse.json({ error: 'Token inválido - user_id ausente' }, { status: 401 })
+      }
+      
+      console.log(`🔑 [SESSIONS] Token validado para userID: ${userID}`)
     } catch (error) {
+      console.error('🚫 [SESSIONS] Erro na validação JWT:', error)
+      console.error('🚫 [SESSIONS] JWT_SECRET usado:', JWT_SECRET)
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
     }
 
