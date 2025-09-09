@@ -18,41 +18,43 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
     
-    // Fazer proxy para o backend Go para obter sessão ativa
-    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
-    
-    // Primeiro obter a sessão ativa do usuário via backend
-    const sessionsResponse = await fetch(`${BACKEND_URL}/api/whatsapp/sessions`, {
+    // Fazer request diretamente para WAHA API para obter sessões ativas
+    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:3001'
+    const wahaToken = process.env.WAHA_API_KEY || 'your-api-key'
+
+    // Buscar sessões ativas na WAHA API
+    const sessionsResponse = await fetch(`${wahaUrl}/api/sessions`, {
+      method: 'GET',
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
+        'X-Api-Key': wahaToken
       }
     })
 
     if (!sessionsResponse.ok) {
-      console.error('❌ STARS - Erro ao obter sessões:', sessionsResponse.status)
+      console.error('❌ STARS - Erro ao obter sessões WAHA:', sessionsResponse.status)
       return NextResponse.json({ error: 'Erro ao obter sessão ativa' }, { status: 500 })
     }
 
-    const sessionsData = await sessionsResponse.json()
+    const sessions = await sessionsResponse.json()
     let activeSession = null
 
-    // Encontrar sessão ativa (WORKING)
-    if (sessionsData.sessions && Array.isArray(sessionsData.sessions)) {
-      activeSession = sessionsData.sessions.find((session: any) => session.status === 'WORKING')
+    // Encontrar sessão ativa (WORKING) - buscar por prefixo do token
+    const userPrefix = `user_${token.substring(0, 8)}`
+    
+    for (const session of sessions) {
+      if (session.name && session.name.startsWith(userPrefix) && session.status === 'WORKING') {
+        activeSession = session
+        break
+      }
     }
 
     if (!activeSession) {
-      console.error('❌ STARS - Nenhuma sessão ativa encontrada')
+      console.error('❌ STARS - Nenhuma sessão ativa encontrada para usuário')
       return NextResponse.json({ error: 'Nenhuma sessão ativa encontrada' }, { status: 404 })
     }
 
     console.log('⭐ STARS - Sessão ativa encontrada:', activeSession.name)
     console.log('⭐ STARS - Ação:', action, 'messageId:', messageId)
-
-    // Chamar WAHA API diretamente para star/unstar message
-    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:3001/'
-    const wahaToken = process.env.WAHA_API_KEY || 'your-api-key'
 
     const response = await fetch(`${wahaUrl}/api/${activeSession.name}/messages/${messageId}/star`, {
       method: 'POST',

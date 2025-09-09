@@ -3,21 +3,57 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const token = request.headers.get('authorization')
-
-    if (!token) {
-      return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
+    
+    // Validar JWT token
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+    // Fazer proxy para o backend Go para obter sessão ativa
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
     
-    const response = await fetch(`${backendUrl}/api/whatsapp/messages/forward`, {
+    // Primeiro obter a sessão ativa do usuário via backend
+    const sessionsResponse = await fetch(`${BACKEND_URL}/api/whatsapp/sessions`, {
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!sessionsResponse.ok) {
+      console.error('❌ FORWARD - Erro ao obter sessões:', sessionsResponse.status)
+      return NextResponse.json({ error: 'Erro ao obter sessão ativa' }, { status: 500 })
+    }
+
+    const sessionsData = await sessionsResponse.json()
+    let activeSession = null
+
+    // Encontrar sessão ativa (WORKING)
+    if (sessionsData.sessions && Array.isArray(sessionsData.sessions)) {
+      activeSession = sessionsData.sessions.find((session: any) => session.status === 'WORKING')
+    }
+
+    if (!activeSession) {
+      console.error('❌ FORWARD - Nenhuma sessão ativa encontrada')
+      return NextResponse.json({ error: 'Nenhuma sessão ativa encontrada' }, { status: 404 })
+    }
+
+    console.log('📤 FORWARD - Sessão ativa encontrada:', activeSession.name)
+
+    // Adicionar sessão ao body
+    const bodyWithSession = {
+      ...body,
+      session: activeSession.name
+    }
+    
+    const response = await fetch(`${BACKEND_URL}/api/whatsapp/messages/forward`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token,
+        'Authorization': authHeader,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(bodyWithSession),
     })
 
     const data = await response.json()

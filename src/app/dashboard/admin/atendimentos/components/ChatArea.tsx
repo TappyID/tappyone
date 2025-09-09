@@ -1322,29 +1322,29 @@ export default function ChatArea({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white">
+      <div className="flex-1 flex items-center justify-center bg-background">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-gray-200">
-            <User className="w-12 h-12 text-slate-200" />
+          <div className="w-24 h-24 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-6 border border-border">
+            <User className="w-12 h-12 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Selecione uma conversa</h3>
-          <p className="text-slate-400">Escolha uma conversa da lista para começar a atender</p>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Selecione uma conversa</h3>
+          <p className="text-muted-foreground">Escolha uma conversa da lista para começar a atender</p>
         </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white relative">
+    <div className="flex-1 flex flex-col bg-background relative">
 
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="h-16 bg-white dark:bg-slate-800/50 backdrop-blur-sm border-b border-gray-200 dark:border-slate-700/50 px-6 flex items-center justify-between shadow-lg"
+        className="h-16 bg-background border-b border-border px-6 flex items-center justify-between shadow-lg"
       >
         {/* Contact Info */}
         <div className="flex items-center gap-4">
@@ -1353,7 +1353,7 @@ export default function ChatArea({
             className="relative"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200">
+            <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center overflow-hidden border border-border">
               {conversation.profilePictureUrl ? (
                 <img 
                   src={conversation.profilePictureUrl} 
@@ -1649,7 +1649,7 @@ export default function ChatArea({
       )}
 
       {/* Messages Area */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-white scrollbar-chat">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-background scrollbar-chat">
         <AnimatePresence>
           {displayMessages.map((msg, index) => (
             <motion.div
@@ -1666,10 +1666,10 @@ export default function ChatArea({
                 className={`relative max-w-xs lg:max-w-md xl:max-w-lg ${msg.sender === 'agent' ? 'ml-auto' : ''}`}
               >
                 <div 
-                  className={`p-3 rounded-lg ${
+                  className={`p-3 rounded-xl ${
                     msg.sender === 'agent' 
-                      ? 'bg-blue-600 text-white shadow-sm border border-blue-500/20' 
-                      : 'bg-gray-50 border border-gray-200 text-gray-900 shadow-sm'
+                      ? 'backdrop-blur-md bg-gradient-to-br from-slate-800/80 via-slate-900/90 to-black/95 dark:from-slate-900/90 dark:via-black/95 dark:to-slate-950/98 text-white shadow-2xl shadow-black/40 border border-slate-600/30 dark:border-slate-700/40' 
+                      : 'bg-white dark:bg-slate-50 border border-gray-200 dark:border-gray-300 text-gray-900 dark:text-gray-900 shadow-sm'
                   } max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl`}
                   onDoubleClick={() => {
                     if (msg.sender === 'agent' && msg.type === 'text') {
@@ -1684,30 +1684,30 @@ export default function ChatArea({
                   {msg.type === 'location' || (msg as any).location ? (
                     <div className="mb-2">
                       <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                        msg.sender === 'agent' ? 'bg-white/10' : 'bg-gray-100/90 dark:bg-slate-700/60 backdrop-blur-sm'
+                        msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-gray-100 dark:bg-gray-200 border border-gray-300'
                       }`}>
                         <div className={`p-2 rounded-full ${
-                          msg.sender === 'agent' ? 'bg-white/20' : 'bg-gray-200/80 dark:bg-slate-600/60'
+                          msg.sender === 'agent' ? 'bg-white/20 dark:bg-slate-700/60 backdrop-blur-sm' : 'bg-gray-200 dark:bg-gray-300'
                         }`}>
                           <MapPin className={`w-4 h-4 ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-gray-700 dark:text-slate-200'
+                            msg.sender === 'agent' ? 'text-white' : 'text-gray-800 dark:text-gray-800'
                           }`} />
                         </div>
                         <div className="flex-1">
                           <div className={`font-medium text-sm ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-gray-800 dark:text-slate-100'
+                            msg.sender === 'agent' ? 'text-white' : 'text-gray-800 dark:text-gray-800'
                           }`}>
                             {(msg as any).location?.title || msg.content || 'Localização'}
                           </div>
                           {(msg as any).location?.address && (
                             <div className={`text-xs mt-1 ${
-                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-600 dark:text-slate-300'
+                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-600 dark:text-gray-600'
                             }`}>
                               {(msg as any).location.address}
                             </div>
                           )}
                           <div className={`text-xs mt-1 ${
-                            msg.sender === 'agent' ? 'text-white/70' : 'text-gray-600 dark:text-slate-300'
+                            msg.sender === 'agent' ? 'text-white/70' : 'text-gray-600 dark:text-gray-600'
                           }`}>
                             Lat: {(msg as any).location?.latitude || (msg as any).latitude}, 
                             Lng: {(msg as any).location?.longitude || (msg as any).longitude}
@@ -1720,11 +1720,11 @@ export default function ChatArea({
                             window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank')
                           }}
                           className={`p-2 rounded-full hover:bg-opacity-80 transition-colors ${
-                            msg.sender === 'agent' ? 'bg-white/20 hover:bg-white/30' : 'bg-slate-600/50 hover:bg-slate-500/50'
+                            msg.sender === 'agent' ? 'bg-white/20 hover:bg-white/30' : 'bg-muted hover:bg-muted/80'
                           }`}
                         >
                           <ExternalLink className={`w-3 h-3 ${
-                            msg.sender === 'agent' ? 'text-white' : 'text-slate-200'
+                            msg.sender === 'agent' ? 'text-white' : 'text-gray-600 dark:text-gray-600'
                           }`} />
                         </button>
                       </div>
@@ -1793,7 +1793,7 @@ export default function ChatArea({
                       {(msg as any).media?.data ? (
                         <div className="mb-2">
                           <div className={`p-4 rounded-lg ${
-                            msg.sender === 'agent' ? 'bg-white/10' : 'bg-blue-50'
+                            msg.sender === 'agent' ? 'bg-white/10' : 'bg-blue-50 dark:bg-blue-950/30'
                           }`}>
                             <div className="mb-3">
                               <p className={`text-sm font-medium ${
@@ -1827,10 +1827,10 @@ export default function ChatArea({
                         />
                       ) : (
                         <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
-                          msg.sender === 'agent' ? 'bg-orange-50/10 border-orange-300/50' : 'bg-orange-50 border-orange-200'
+                          msg.sender === 'agent' ? 'bg-orange-50/10 dark:bg-orange-900/20 border-orange-300/50 dark:border-orange-600/40 backdrop-blur-sm' : 'bg-orange-50 dark:bg-orange-100 border-orange-200 dark:border-orange-300'
                         }`}>
                           <div className={`p-2 rounded-full ${
-                            msg.sender === 'agent' ? 'bg-orange-200/20' : 'bg-orange-100'
+                            msg.sender === 'agent' ? 'bg-orange-200/20 dark:bg-orange-800/40' : 'bg-orange-100 dark:bg-orange-200'
                           }`}>
                             <AudioLines className={`w-4 h-4 ${
                               msg.sender === 'agent' ? 'text-orange-300' : 'text-orange-600'
@@ -1838,12 +1838,12 @@ export default function ChatArea({
                           </div>
                           <div className="flex-1">
                             <p className={`text-sm font-medium ${
-                              msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700'
+                              msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700 dark:text-orange-800'
                             }`}>
                               🎤 Mensagem de Áudio
                             </p>
                             <p className={`text-xs ${
-                              msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600'
+                              msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600 dark:text-orange-700'
                             }`}>
                               Arquivo não disponível
                             </p>
@@ -1876,7 +1876,7 @@ export default function ChatArea({
                   })() ? (
                     <div className="mb-2">
                       <div className={`p-3 rounded-lg ${
-                        msg.sender === 'agent' ? 'bg-white/5' : 'bg-gray-50'
+                        msg.sender === 'agent' ? 'bg-white/5 dark:bg-black/40 backdrop-blur-md border border-white/10 dark:border-slate-600/30 shadow-lg dark:shadow-black/50' : 'bg-muted/50 dark:bg-slate-800/50 dark:backdrop-blur-sm dark:border dark:border-slate-600/30'
                       }`}>
                         <div className={`flex items-center gap-2 mb-3 ${
                           msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'
@@ -1922,15 +1922,15 @@ export default function ChatArea({
                     return false
                   })() ? (
                     <div className="mb-2">
-                      <div className={`p-4 rounded-lg border ${
-                        msg.sender === 'agent' ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+                      <div className={`p-4 rounded-xl backdrop-blur-md border ${
+                        msg.sender === 'agent' ? 'bg-white/5 dark:bg-black/40 backdrop-blur-md border border-white/10 dark:border-slate-600/30 shadow-lg dark:shadow-black/50' : 'bg-gray-100 dark:bg-gray-200 border border-gray-300'
                       }`}>
                         {/* Header com ícone e tipo */}
                         <div className={`flex items-center gap-3 mb-3 ${
-                          msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'
+                          msg.sender === 'agent' ? 'text-white/90' : 'text-gray-800 dark:text-gray-800'
                         }`}>
                           <div className={`p-2 rounded-lg ${
-                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-blue-100'
+                            msg.sender === 'agent' ? 'bg-white/20 dark:bg-slate-700/60 backdrop-blur-sm' : 'bg-blue-100 dark:bg-blue-200'
                           }`}>
                             {(() => {
                               const filename = (msg as any).fileName || (msg as any).filename || 'documento'
@@ -1944,7 +1944,7 @@ export default function ChatArea({
                           </div>
                           <div className="flex-1">
                             <p className={`text-sm font-semibold ${
-                              msg.sender === 'agent' ? 'text-white' : 'text-gray-900'
+                              msg.sender === 'agent' ? 'text-white' : 'text-gray-900 dark:text-gray-900'
                             }`}>
                               📄 {(() => {
                                 const filename = (msg as any).fileName || (msg as any).filename || 'documento'
@@ -1957,7 +1957,7 @@ export default function ChatArea({
                               })()}
                             </p>
                             <p className={`text-xs ${
-                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500'
+                              msg.sender === 'agent' ? 'text-white/70' : 'text-gray-500 dark:text-gray-600'
                             }`}>
                               {(msg as any).fileName || (msg as any).filename || 'arquivo.pdf'}
                             </p>
@@ -1966,11 +1966,11 @@ export default function ChatArea({
 
                         {/* Preview/Thumbnail area */}
                         <div className={`mb-4 p-4 rounded-lg border-2 border-dashed ${
-                          msg.sender === 'agent' ? 'border-white/20 bg-white/5' : 'border-gray-300 bg-gray-100'
+                          msg.sender === 'agent' ? 'border-white/20 bg-white/5 dark:bg-black/30 dark:border-slate-600/30 backdrop-blur-sm' : 'border-gray-300 bg-gray-50 dark:bg-gray-100 dark:border-gray-400'
                         }`}>
                           <div className="text-center">
                             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-lg mb-3 ${
-                              msg.sender === 'agent' ? 'bg-white/20' : 'bg-gray-200'
+                              msg.sender === 'agent' ? 'bg-white/20 dark:bg-slate-700/60 backdrop-blur-sm' : 'bg-gray-200 dark:bg-gray-300'
                             }`}>
                               {(() => {
                                 const filename = (msg as any).fileName || (msg as any).filename || 'documento'
@@ -1983,12 +1983,12 @@ export default function ChatArea({
                               })()}
                             </div>
                             <p className={`text-sm font-medium ${
-                              msg.sender === 'agent' ? 'text-white/80' : 'text-gray-700'
+                              msg.sender === 'agent' ? 'text-white/80' : 'text-gray-700 dark:text-gray-800'
                             }`}>
                               Preview não disponível
                             </p>
                             <p className={`text-xs ${
-                              msg.sender === 'agent' ? 'text-white/60' : 'text-gray-500'
+                              msg.sender === 'agent' ? 'text-white/60' : 'text-gray-500 dark:text-gray-600'
                             }`}>
                               Clique para fazer download
                             </p>
@@ -2000,10 +2000,10 @@ export default function ChatArea({
                           href={(msg as any).mediaUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 hover:scale-[1.02] ${
+                          className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                             msg.sender === 'agent' 
-                              ? 'bg-white/10 hover:bg-white/20 text-white' 
-                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+                              ? 'bg-white/10 hover:bg-white/20 text-white dark:bg-slate-700/40 dark:hover:bg-slate-600/50 dark:border dark:border-slate-600/30' 
+                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800 dark:backdrop-blur-sm'
                           }`}
                         >
                           <Download className="w-4 h-4" />
@@ -2037,7 +2037,7 @@ export default function ChatArea({
                   ) : (
                     <MessageContent 
                       content={msg.content} 
-                      className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}
+                      className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-900 dark:text-gray-900'}
                     />
                   )}
                   
@@ -2173,7 +2173,7 @@ export default function ChatArea({
               exit={{ opacity: 0, y: -10 }}
               className="flex justify-start"
             >
-              <div className="bg-gray-100 px-4 py-3 rounded-2xl">
+              <div className="bg-gray-100 dark:bg-gradient-to-r dark:from-slate-700/60 dark:via-slate-800/70 dark:to-slate-900/80 dark:backdrop-blur-md dark:border dark:border-slate-600/30 dark:shadow-lg dark:shadow-black/40 px-4 py-3 rounded-2xl">
                 <div className="flex space-x-1">
                   {[0, 1, 2].map((i) => (
                     <motion.div
@@ -2233,7 +2233,7 @@ export default function ChatArea({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="bg-white/98 dark:bg-gray-900/98 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 z-50 shadow-sm"
+            className="bg-background/98 backdrop-blur-sm border-t border-border z-50 shadow-sm"
           >
             <div className="px-4 py-2">
               <div className="flex items-center gap-2">
@@ -2552,7 +2552,7 @@ export default function ChatArea({
                         className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-purple-400 hover:bg-purple-500/10 transition-all duration-300 group"
                       >
                         <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Users className="w-6 h-6 text-white" />
+                          <User className="w-6 h-6 text-muted-foreground" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Enquete</span>
                         <span className="text-xs text-muted-foreground">Criar votação</span>
