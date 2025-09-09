@@ -118,8 +118,14 @@ export function ActiveConnectionsTable({
       setLoading(true)
       setError(null)
 
-      // Buscar sessões do WAHA
-      const wahaResponse = await fetch('/api/whatsapp/sessions')
+      // Buscar sessões do WAHA com token de autorização
+      const token = localStorage.getItem('token')
+      const wahaResponse = await fetch('/api/whatsapp/sessions', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       let wahaSessions: WhatsAppSession[] = []
       
       if (wahaResponse.ok) {
@@ -127,7 +133,6 @@ export function ActiveConnectionsTable({
       }
 
       // Buscar conexões do backend
-      const token = localStorage.getItem('token')
       const backendResponse = await fetch('/api/connections', {
         headers: {
           'Authorization': `Bearer ${token}`,

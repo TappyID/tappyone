@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
 
 // Forçar rota dinâmica
 export const dynamic = 'force-dynamic'
 
 const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
 const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function GET(request: NextRequest) {
   try {
+    // Validar token JWT
+    const authorization = request.headers.get('authorization')
+    if (!authorization || !authorization.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token de autorização necessário' }, { status: 401 })
+    }
+
+    const token = authorization.split(' ')[1]
+    let userID: string
+    
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any
+      userID = decoded.userID
+    } catch (error) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    }
+
     const wahaUrl = `${WAHA_URL}/api/sessions`
     
     const response = await fetch(wahaUrl, {
@@ -26,8 +44,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    const allSessions = await response.json()
+    
+    // Filtrar sessões pelo usuário logado
+    // Remove hífens do userID para comparar com o formato da sessão WAHA
+    const userIDClean = userID.replace(/-/g, '')
+    const userPrefix = `user_${userIDClean.substring(0, 8)}`
+    
+    const userSessions = allSessions.filter((session: any) => 
+      session.name && session.name.startsWith(userPrefix)
+    )
+    
+    console.log(`📊 [SESSIONS] UserID: ${userID}, UserPrefix: ${userPrefix}, Total sessions: ${allSessions.length}, User sessions: ${userSessions.length}`)
+    
+    return NextResponse.json(userSessions)
   } catch (error) {
     console.error('❌ [SESSIONS] Erro interno:', error)
     return NextResponse.json(
