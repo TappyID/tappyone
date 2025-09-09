@@ -42,6 +42,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanban } from '@/hooks/useKanban'
+import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import { useWhatsAppData, WhatsAppChat } from '@/hooks/useWhatsAppData'
 import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
@@ -235,8 +236,8 @@ function DroppableArea({
   coluna: any, 
   theme: string,
   notesCount: Record<string, number>,
-  orcamentosCount: Record<string, number>,
-  agendamentosCount: Record<string, number>,
+  orcamentosCount: Record<string, number> | number,
+  agendamentosCount: Record<string, number> | number,
   assinaturasCount: Record<string, number>,
   contactStatus: Record<string, 'synced' | 'error'>,
   orcamentosData: Record<string, any[]>,
@@ -660,8 +661,8 @@ function DroppableArea({
             theme={theme}
             columnColor={coluna.cor}
             notesCount={notesCount}
-            orcamentosCount={orcamentosCount}
-            agendamentosCount={agendamentosCount}
+            orcamentosCount={typeof orcamentosCount === 'number' ? {} : orcamentosCount}
+            agendamentosCount={typeof agendamentosCount === 'number' ? {} : agendamentosCount}
             assinaturasCount={assinaturasCount}
             contactStatus={contactStatus}
             onOpenAgendamento={onOpenAgendamento}
@@ -1708,17 +1709,41 @@ export default function QuadroPage() {
   const router = useRouter()
   const { getQuadro } = useKanban()
   const id = params.id as string
+  
+  // Hook otimizado para Kanban com batch fetching e cache
+  const {
+    cards: optimizedCards,
+    loading: optimizedLoading,
+    error: optimizedError,
+    columnStats,
+    prefetching,
+    forceRefresh,
+    getCardData,
+    getColumnStats
+  } = useKanbanOptimized(id)
+  
   // Hook customizado para Kanban - sem polling automático
   const [chats, setChats] = useState<WhatsAppChat[]>([])
+  const [loading, setLoading] = useState(true)
   const [whatsappLoading, setWhatsappLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [quadro, setQuadro] = useState<any>(null)
+  const [cardMetadata, setCardMetadata] = useState<Record<string, any>>({})
+  const [hasManualChanges, setHasManualChanges] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   
-  // Estados para cores
-  const [showColorModal, setShowColorModal] = useState(false)
-  const [selectedColumn, setSelectedColumn] = useState<any>(null)
-
-
+  // Estados para dados não otimizados ainda (assinaturas, anotações)
+  const [assinaturasCount, setAssinaturasCount] = useState<Record<string, number>>({})
+  const [anotacoesCount, setAnotacoesCount] = useState<Record<string, number>>({})
+  const [assinaturasData, setAssinaturasData] = useState<Record<string, any[]>>({})
+  const [anotacoesData, setAnotacoesData] = useState<Record<string, any[]>>({})
   
   // Estados para modais
+  const [selectedCard, setSelectedCard] = useState<any>(null)
+  const [showCreateCardModal, setShowCreateCardModal] = useState(false)
+  const [selectedColunaId, setSelectedColunaId] = useState<string | null>(null)
+  const [showColorModal, setShowColorModal] = useState(false)
+  const [selectedColumn, setSelectedColumn] = useState<any>(null)
   const [showAgendamentoModal, setShowAgendamentoModal] = useState(false)
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false)
   const [showAssinaturaModal, setShowAssinaturaModal] = useState(false)
@@ -1726,8 +1751,6 @@ export default function QuadroPage() {
   const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
   const [showLigacaoModal, setShowLigacaoModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
-  
-  // Estados para edição do quadro
   const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
   const [editingQuadroName, setEditingQuadroName] = useState('')
   const [editingQuadroDescription, setEditingQuadroDescription] = useState(false)
@@ -1959,21 +1982,10 @@ export default function QuadroPage() {
         const result = await response.json()
         setShowAgendamentoModal(false)
         
-        // Refrescar contagem e dados detalhados de agendamentos após salvar
+        // Refrescar dados otimizados após salvar
         if (selectedCard?.id) {
-          setTimeout(async () => {
-            const count = await fetchAgendamentosCount(selectedCard.id)
-            const detalhes = await fetchAgendamentosDetails(selectedCard.id)
-            
-            setAgendamentosCount(prev => ({
-              ...prev,
-              [selectedCard.id]: count
-            }))
-            
-            setAgendamentosData(prev => ({
-              ...prev,
-              [selectedCard.id]: detalhes
-            }))
+          setTimeout(() => {
+            forceRefresh() // Usar o refresh otimizado em vez de fetch individual
           }, 500)
         }
       } else {
@@ -2033,22 +2045,10 @@ export default function QuadroPage() {
         console.log('✅ Orçamento criado com sucesso')
         setShowOrcamentoModal(false)
         
-        // Refrescar dados de orçamentos após salvar
+        // Refrescar dados otimizados após salvar
         if (selectedCard?.id) {
-          setTimeout(async () => {
-            // Atualizar contagem
-            const count = await fetchOrcamentosCount(selectedCard.id)
-            setOrcamentosCount(prev => ({
-              ...prev,
-              [selectedCard.id]: count
-            }))
-            
-            // Atualizar dados detalhados para exibição nos cards
-            const detalhes = await fetchOrcamentosDetalhes(selectedCard.id)
-            setOrcamentosData(prev => ({
-              ...prev,
-              [selectedCard.id]: detalhes
-            }))
+          setTimeout(() => {
+            forceRefresh() // Usar o refresh otimizado em vez de fetch individual
           }, 500)
         }
       } else {
@@ -2375,29 +2375,13 @@ export default function QuadroPage() {
     }
   }
 
-  const [quadro, setQuadro] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  // Estados para dados não otimizados e UI
   const [colunas, setColunas] = useState<any[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
   const [activeCard, setActiveCard] = useState<any>(null)
   const [activeColumn, setActiveColumn] = useState<any>(null)
-  const [selectedCard, setSelectedCard] = useState<any>(null)  // Estados para contadores de badges
   const [notesCount, setNotesCount] = useState<Record<string, number>>({}) // Contador real de anotações
-  const [orcamentosCount, setOrcamentosCount] = useState<Record<string, number>>({}) // Contador real de orçamentos
-  const [agendamentosCount, setAgendamentosCount] = useState<Record<string, number>>({}) // Contador real de agendamentos
-  const [assinaturasCount, setAssinaturasCount] = useState<Record<string, number>>({}) // Contador real de assinaturas
   const [contactStatus, setContactStatus] = useState<Record<string, 'synced' | 'error'>>({}) // Status dos contatos
-  
-  // Estados para dados detalhados
-  const [orcamentosData, setOrcamentosData] = useState<Record<string, any[]>>({}) // Dados completos de orçamentos
-  const [agendamentosData, setAgendamentosData] = useState<Record<string, any[]>>({}) // Dados completos de agendamentos
-  const [assinaturasData, setAssinaturasData] = useState<Record<string, any[]>>({}) // Dados completos de assinaturas
-  const [anotacoesData, setAnotacoesData] = useState<Record<string, any[]>>({}) // Dados completos de anotações
-  const [showCreateCardModal, setShowCreateCardModal] = useState(false)
-  const [selectedColunaId, setSelectedColunaId] = useState<string>('')
   const [showShortcuts, setShowShortcuts] = useState(false)
-  const [hasManualChanges, setHasManualChanges] = useState(false)
-  const [cardMetadata, setCardMetadata] = useState<Record<string, any>>({})
   
   // Estados para edição de colunas
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
@@ -2419,15 +2403,14 @@ export default function QuadroPage() {
       })
       
       const notesCounts: Record<string, number> = {}
-      const orcamentosCounts: Record<string, number> = {}
-      const agendamentosCounts: Record<string, number> = {}
       const assinaturasCounts: Record<string, number> = {}
-      
-      // Estados para dados detalhados
-      const orcamentosDetalhes: Record<string, any[]> = {}
-      const agendamentosDetalhes: Record<string, any[]> = {}
-      const assinaturasDetalhes: Record<string, any[]> = {}
-      const anotacoesDetalhes: Record<string, any[]> = {}
+            // Os dados otimizados já são carregados pelo hook useKanbanOptimized
+        // Este useEffect agora apenas carrega dados não otimizados (assinaturas, anotações)
+        console.log(' Dados otimizados disponíveis via hook:', Object.keys(optimizedCards).length, 'cards')
+        
+        // Declarar objetos para dados detalhados não otimizados
+        const assinaturasDetalhes: Record<string, any[]> = {}
+        const anotacoesDetalhes: Record<string, any[]> = {}
       
       const allCards = mapearConversasParaColunas().flatMap(col => col.cards || [])
       const uniqueCardIds = allCards.map(card => card.id).filter((id, index, arr) => arr.indexOf(id) === index && id)
@@ -2446,28 +2429,21 @@ export default function QuadroPage() {
       
       for (const cardId of uniqueCardIds) {
         try {
-          // Buscar contagens e detalhes de todos os fluxos em paralelo
-          const [notesCount, orcamentosCount, agendamentosCount, assinaturasCount, contactStatusResult, orcamentosDetalhesData, agendamentosDetalhesData, assinaturasDetalhesData, anotacoesDetalhesData] = await Promise.all([
+          // Buscar apenas dados não otimizados (assinaturas, anotações)
+          const [notesCount, assinaturasCount, contactStatusResult, assinaturasDetalhesData, anotacoesDetalhesData] = await Promise.all([
             fetchNotesCount(cardId),
-            fetchOrcamentosCount(cardId),
-            fetchAgendamentosCount(cardId),
             fetchAssinaturasCount(cardId),
             checkContactStatus(cardId),
-            fetchOrcamentosDetails(cardId),
-            fetchAgendamentosDetails(cardId),
             fetchAssinaturasDetails(cardId),
             fetchAnotacoesDetails(cardId)
           ])
           
-          // Armazenar contagens
+          // Armazenar contagens não otimizadas
           notesCounts[cardId] = notesCount
-          orcamentosCounts[cardId] = orcamentosCount
-          agendamentosCounts[cardId] = agendamentosCount
           assinaturasCounts[cardId] = assinaturasCount
           
-          // Armazenar dados detalhados
-          orcamentosDetalhes[cardId] = orcamentosDetalhesData
-          agendamentosDetalhes[cardId] = agendamentosDetalhesData
+          // Dados otimizados já disponíveis via hook useKanbanOptimized
+          // Mantendo apenas dados não otimizados (assinaturas, anotações)
           assinaturasDetalhes[cardId] = assinaturasDetalhesData
           anotacoesDetalhes[cardId] = anotacoesDetalhesData
           
@@ -2477,11 +2453,7 @@ export default function QuadroPage() {
             data: { 
               cardId,
               notesCount,
-              orcamentosCount,
-              agendamentosCount,
               assinaturasCount,
-              orcamentosDetalhesCount: orcamentosDetalhesData?.length || 0,
-              orcamentosDetalhesData: orcamentosDetalhesData,
               contactStatus: contactStatusResult
             },
             userId: user?.id
@@ -2506,11 +2478,7 @@ export default function QuadroPage() {
           })
           
           notesCounts[cardId] = 0
-          orcamentosCounts[cardId] = 0
-          agendamentosCounts[cardId] = 0
           assinaturasCounts[cardId] = 0
-          orcamentosDetalhes[cardId] = []
-          agendamentosDetalhes[cardId] = []
           assinaturasDetalhes[cardId] = []
         }
       }
@@ -2520,25 +2488,21 @@ export default function QuadroPage() {
         action: 'loadAllCounts_final_data',
         data: { 
           notesCounts,
-          orcamentosCounts,
-          orcamentosDetalhes,
-          totalOrcamentosCards: Object.keys(orcamentosDetalhes).length,
-          cardsWithOrcamentos: Object.entries(orcamentosDetalhes)
-            .filter(([_, data]) => data && data.length > 0)
-            .map(([cardId, data]) => ({ cardId, count: data.length }))
+          orcamentosCounts: 'usando dados otimizados do hook',
+          agendamentosCounts: 'usando dados otimizados do hook',
+          assinaturasCounts,
+          totalOptimizedCards: Object.keys(optimizedCards).length
         },
         userId: user?.id
       })
       
-      // Atualizar todos os states
+      // Atualizar estados não otimizados
       setNotesCount(notesCounts)
-      setOrcamentosCount(orcamentosCounts)
-      setAgendamentosCount(agendamentosCounts)
       setAssinaturasCount(assinaturasCounts)
-      setOrcamentosData(orcamentosDetalhes)
-      setAgendamentosData(agendamentosDetalhes)
       setAssinaturasData(assinaturasDetalhes)
       setAnotacoesData(anotacoesDetalhes)
+      
+      // Os dados de orçamentos e agendamentos agora vêm do hook otimizado
     }
     
     loadAllCounts()
@@ -2811,10 +2775,11 @@ export default function QuadroPage() {
         hasAvatar: !!avatar
       })
 
-      // Buscar contagens dos fluxos para este chat usando os estados existentes
+      // Buscar contagens dos fluxos para este chat
+      const cardData = getCardData(chatId)
       const cardCounts = {
-        orcamentosCount: orcamentosCount[chatId] || 0,
-        agendamentosCount: agendamentosCount[chatId] || 0,
+        orcamentosCount: cardData?.orcamentos?.length || 0,
+        agendamentosCount: cardData?.agendamentos?.length || 0,
         assinaturasCount: assinaturasCount[chatId] || 0,
         notesCount: notesCount[chatId] || 0
       }
@@ -2843,10 +2808,10 @@ export default function QuadroPage() {
         isOnline: chat.lastMessage ? new Date(chat.timestamp).getTime() > Date.now() - 300000 : false,
         // Badges de contagem para exibição
         badges: {
-          orcamentos: cardCounts.orcamentosCount || 0,
-          agendamentos: cardCounts.agendamentosCount || 0,
-          assinaturas: cardCounts.assinaturasCount || 0,
-          anotacoes: cardCounts.notesCount || 0
+          orcamentos: getCardData(chatId)?.orcamentos?.length || 0,
+          agendamentos: getCardData(chatId)?.agendamentos?.length || 0,
+          assinaturas: assinaturasCount[chatId] || 0,
+          anotacoes: notesCount[chatId] || 0
         }
       }
     })
@@ -3170,8 +3135,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
     })
   )
 
-  // Estado para controlar hidratação
-  const [isClient, setIsClient] = useState(false)
+  // Estado para hidratação já declarado acima
 
   // Aguardar hidratação do cliente
   useEffect(() => {
@@ -3181,7 +3145,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
   useEffect(() => {
     const loadQuadro = async () => {
       try {
-        if (params.id && !quadro && isClient) { // Só carrega se cliente estiver hidratado
+        if (params.id && !quadro) { // Só carrega se cliente estiver hidratado
           const quadroData = await getQuadro(params.id as string)
           setQuadro(quadroData)
           
@@ -3900,12 +3864,12 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     coluna={coluna} 
                     theme={theme}
                     notesCount={notesCount}
-                    orcamentosCount={orcamentosCount}
-                    agendamentosCount={agendamentosCount}
+                    orcamentosCount={{}}
+                    agendamentosCount={{}}
                     assinaturasCount={assinaturasCount}
                     contactStatus={contactStatus}
-                    orcamentosData={orcamentosData}
-                    agendamentosData={agendamentosData}
+                    orcamentosData={{}}
+                    agendamentosData={{}}
                     assinaturasData={assinaturasData}
                     anotacoesData={anotacoesData}
                     onDoubleClick={handleDoubleClickColumn}

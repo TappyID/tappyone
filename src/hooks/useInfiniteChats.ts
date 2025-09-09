@@ -30,6 +30,7 @@ export function useInfiniteChats() {
   const [token, setToken] = useState<string | null>(null)
   
   const loadingRef = useRef(false)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
   // Verificar token no localStorage
   useEffect(() => {
@@ -217,12 +218,45 @@ export function useInfiniteChats() {
     }
   }, [token])
 
+  // Função para configurar Intersection Observer (mais confiável que scroll)
+  const setupIntersectionObserver = useCallback((element: HTMLElement) => {
+    if (!element || observerRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry.isIntersecting && !loading && hasMore) {
+          console.log('🎯 Intersection Observer: Carregando mais itens!')
+          loadMore()
+        }
+      },
+      {
+        root: element,
+        rootMargin: '100px', // Disparar 100px antes do final
+        threshold: 0.1
+      }
+    )
+
+    observerRef.current = observer
+  }, [loading, hasMore, loadMore])
+
+  // Cleanup do observer
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+    }
+  }, [])
+
   return {
     chats,
     loading,
     hasMore,
     loadMore,
     refresh,
-    handleScroll
+    handleScroll,
+    setupIntersectionObserver
   }
 }

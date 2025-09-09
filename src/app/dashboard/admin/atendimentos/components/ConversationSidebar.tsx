@@ -582,7 +582,8 @@ export default function ConversationSidebar({
     loading, 
     loadMore, 
     hasMore,
-    handleScroll: infiniteScrollHandler
+    handleScroll: infiniteScrollHandler,
+    setupIntersectionObserver
   } = useInfiniteChats()
   
   // Usar dados do infinite scroll se ativado, senão usar props
@@ -1593,6 +1594,39 @@ export default function ConversationSidebar({
           </div>
         )}
         
+        {/* Sentinel Element - Invisível, usado para detectar scroll */}
+        {useInfiniteScroll && hasMore && (
+          <div 
+            ref={(el) => {
+              if (el && setupIntersectionObserver) {
+                // Configurar Intersection Observer no elemento container
+                const container = el.closest('.scrollbar-custom')
+                if (container) {
+                  setupIntersectionObserver(container as HTMLElement)
+                }
+                
+                // Observer para este elemento sentinel
+                const observer = new IntersectionObserver(
+                  (entries) => {
+                    const [entry] = entries
+                    if (entry.isIntersecting && !loading && hasMore) {
+                      console.log('🎯 Sentinel detectado! Carregando mais...')
+                      loadMore()
+                    }
+                  },
+                  { rootMargin: '50px' }
+                )
+                observer.observe(el)
+                
+                // Cleanup
+                return () => observer.disconnect()
+              }
+            }}
+            className="h-2 w-full"
+            style={{ minHeight: '1px' }}
+          />
+        )}
+
         {/* Load More Button - Fallback se não for infinite scroll */}
         {useInfiniteScroll && !loading && hasMore && (
           <div className="p-4">
