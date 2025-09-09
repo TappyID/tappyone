@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { globalCache, cacheKeys, fetchWithCache } from '@/utils/globalCache'
 
-const ITEMS_PER_PAGE = 14
+// Declarar tipo para cache global
+declare global {
+  interface Window {
+    __allChatsCache?: any[]
+  }
+}
+
+const ITEMS_PER_PAGE = 8
 
 export interface ChatItem {
   id: string
@@ -30,7 +37,7 @@ export function useInfiniteChats() {
     setToken(savedToken)
   }, [])
 
-  // Função para buscar chats da API COM CACHE
+  // Função para buscar chats da API COM CACHE E PAGINAÇÃO
   const fetchChats = useCallback(async (pageNum: number = 0, reset: boolean = false) => {
     if (loadingRef.current || !token) return
     
@@ -38,43 +45,55 @@ export function useInfiniteChats() {
       loadingRef.current = true
       setLoading(true)
 
-      // Buscar chats e grupos com cache (evita requisições duplicadas)
-      const [chatsData, groupsData] = await Promise.all([
-        fetchWithCache(
-          cacheKeys.whatsappChats(token),
-          '/api/whatsapp/chats',
-          { headers: { 'Authorization': `Bearer ${token}` } },
-          30 * 1000 // Cache de 30 segundos para chats (dados mais dinâmicos)
-        ),
-        fetchWithCache(
-          cacheKeys.whatsappGroups(token),
-          '/api/whatsapp/groups', 
-          { headers: { 'Authorization': `Bearer ${token}` } },
-          60 * 1000 // Cache de 1 minuto para grupos (menos dinâmicos)
-        )
-      ])
+      // APENAS na primeira página, buscar dados da API
+      if (pageNum === 0 || reset) {
+        console.log(`🔄 Buscando dados da API (página ${pageNum}, reset: ${reset})`)
+        
+        // Buscar chats e grupos com cache (evita requisições duplicadas)
+        const [chatsData, groupsData] = await Promise.all([
+          fetchWithCache(
+            cacheKeys.whatsappChats(token),
+            '/api/whatsapp/chats',
+            { headers: { 'Authorization': `Bearer ${token}` } },
+            30 * 1000 // Cache de 30 segundos para chats (dados mais dinâmicos)
+          ),
+          fetchWithCache(
+            cacheKeys.whatsappGroups(token),
+            '/api/whatsapp/groups', 
+            { headers: { 'Authorization': `Bearer ${token}` } },
+            60 * 1000 // Cache de 1 minuto para grupos (menos dinâmicos)
+          )
+        ])
 
-      // Combinar chats individuais e grupos
-      const allChats = [...(Array.isArray(chatsData) ? chatsData : []), ...(Array.isArray(groupsData) ? groupsData : [])]
-      
-      console.log(`📊 useInfiniteChats Debug:`, {
-        chatsCount: Array.isArray(chatsData) ? chatsData.length : 0,
-        groupsCount: Array.isArray(groupsData) ? groupsData.length : 0,
-        totalChats: allChats.length,
-        hasGroups: allChats.some(chat => chat.isGroup || chat.id?.includes('@g.us'))
-      })
-      
-      // Ordenar por timestamp (mais recente primeiro)
-      const sortedChats = allChats.sort((a, b) => {
-        const timestampA = a.conversationTimestamp || a.timestamp || 0
-        const timestampB = b.conversationTimestamp || b.timestamp || 0
-        return timestampB - timestampA
-      })
+        // Combinar chats individuais e grupos
+        const allChats = [...(Array.isArray(chatsData) ? chatsData : []), ...(Array.isArray(groupsData) ? groupsData : [])]
+        
+        console.log(`📊 useInfiniteChats Debug:`, {
+          chatsCount: Array.isArray(chatsData) ? chatsData.length : 0,
+          groupsCount: Array.isArray(groupsData) ? groupsData.length : 0,
+          totalChats: allChats.length,
+          pageNum,
+          itemsPerPage: ITEMS_PER_PAGE
+        })
+        
+        // Ordenar por timestamp (mais recente primeiro)
+        const sortedChats = allChats.sort((a, b) => {
+          const timestampA = a.conversationTimestamp || a.timestamp || 0
+          const timestampB = b.conversationTimestamp || b.timestamp || 0
+          return timestampB - timestampA
+        })
 
-      // Paginação local (simular paginação)
+        // Salvar todos os chats ordenados para paginação local
+        window.__allChatsCache = sortedChats
+      }
+
+      // Paginação local nos dados em cache
+      const allChats = window.__allChatsCache || []
       const startIndex = pageNum * ITEMS_PER_PAGE
       const endIndex = startIndex + ITEMS_PER_PAGE
-      const pageChats = sortedChats.slice(startIndex, endIndex)
+      const pageChats = allChats.slice(startIndex, endIndex)
+      
+      console.log(`📄 Paginação: página ${pageNum}, ${startIndex}-${endIndex} de ${allChats.length} total (${pageChats.length} nesta página)`)
 
       // Mapear para formato padrão e buscar fotos de perfil
       const mappedChats: ChatItem[] = await Promise.all(
@@ -136,7 +155,8 @@ export function useInfiniteChats() {
       }
 
       // Verificar se tem mais páginas
-      setHasMore(endIndex < sortedChats.length)
+      const allChatsForCheck = window.__allChatsCache || []
+      setHasMore(endIndex < allChatsForCheck.length)
       
     } catch (error) {
       console.error('Erro ao carregar chats:', error)
@@ -162,14 +182,30 @@ export function useInfiniteChats() {
     fetchChats(0, true)
   }, [fetchChats])
 
-  // Hook de scroll infinito
+  // Hook de scroll infinito com debug melhorado
   const handleScroll = useCallback((element: HTMLElement) => {
-    if (!element) return
+    if (!element) {
+      console.log('🚫 handleScroll: elemento não encontrado')
+      return
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = element
-    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100 // 100px antes do fim
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 200 // 200px antes do fim (mais sensível)
+    
+    // Debug detalhado do scroll
+    console.log('📊 Scroll Debug:', {
+      scrollTop: Math.round(scrollTop),
+      scrollHeight: scrollHeight,
+      clientHeight: clientHeight,
+      distanceFromBottom: scrollHeight - (scrollTop + clientHeight),
+      isNearBottom,
+      loading,
+      hasMore,
+      willLoadMore: isNearBottom && !loading && hasMore
+    })
 
     if (isNearBottom && !loading && hasMore) {
+      console.log('🔄 Disparando loadMore() - scroll chegou ao final!')
       loadMore()
     }
   }, [loading, hasMore, loadMore])

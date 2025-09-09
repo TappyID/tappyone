@@ -48,6 +48,7 @@ import { useAtendentes } from '@/hooks/useAtendentes'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import { useContatoData } from '@/hooks/useContatoData'
 import { useContatoTags } from '@/hooks/useContatoTags'
+import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
 import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
 import { useInfiniteChats } from '@/hooks/useInfiniteChats'
 
@@ -578,17 +579,16 @@ export default function ConversationSidebar({
   // Usar infinite scroll hook
   const { 
     chats: infiniteChats, 
-    loading: infiniteLoading, 
-    hasMore, 
+    loading, 
     loadMore, 
-    refresh, 
-    handleScroll: infiniteScrollHandler 
+    hasMore,
+    handleScroll: infiniteScrollHandler
   } = useInfiniteChats()
   
   // Usar dados do infinite scroll se ativado, senão usar props
   const activeChats = useInfiniteScroll ? infiniteChats : chats
   const activeContacts = contacts 
-  const activeLoading = useInfiniteScroll ? infiniteLoading : isLoading
+  const activeLoading = useInfiniteScroll ? loading : isLoading
   
   // Buscar dados reais dos contatos para fotos de perfil (sempre necessário)
   const activeChatIds = activeChats.map(chat => chat.id?._serialized || chat.id || '')
@@ -633,8 +633,15 @@ export default function ConversationSidebar({
   
   // Handler do scroll com infinite scroll ativo
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    console.log('🎯 [ConversationSidebar] handleScroll disparado!')
+    console.log('🎯 [ConversationSidebar] useInfiniteScroll:', useInfiniteScroll)
+    console.log('🎯 [ConversationSidebar] infiniteScrollHandler existe:', !!infiniteScrollHandler)
+    
     if (useInfiniteScroll && infiniteScrollHandler) {
+      console.log('🎯 [ConversationSidebar] Chamando infiniteScrollHandler...')
       infiniteScrollHandler(e.currentTarget)
+    } else {
+      console.log('❌ [ConversationSidebar] Condições não atendidas para scroll infinito')
     }
   }, [useInfiniteScroll, infiniteScrollHandler])
 
@@ -805,7 +812,9 @@ export default function ConversationSidebar({
 
   // Aplicação dos filtros - OTIMIZADA com early returns para melhor performance
   const filteredConversations = useMemo(() => {
-    return conversations.filter(conv => {
+    // Se usar infinite scroll, usar os chats do hook ao invés das props
+    const sourceConversations = useInfiniteScroll ? conversations : conversations
+    return sourceConversations.filter(conv => {
       // Early return: Filtro de busca - mais eficiente quando há searchQuery
       if (searchQuery.trim()) {
         const searchLower = searchQuery.toLowerCase()
@@ -1157,6 +1166,11 @@ export default function ConversationSidebar({
           className="flex-1 overflow-y-auto scrollbar-custom"
           onScroll={handleScroll}
         >
+        {/* Skeleton Loading para primeiros carregamentos */}
+        {activeLoading && filteredConversations.length === 0 && (
+          <ConversationListSkeleton count={8} />
+        )}
+        
         <AnimatePresence mode="popLayout">
           {filteredConversations.map((conversation, index) => (
             <motion.div
@@ -1571,9 +1585,30 @@ export default function ConversationSidebar({
             <span className="text-xs text-muted-foreground">Todas as conversas foram carregadas</span>
           </div>
         )}
+        
+        {/* Loading More Skeleton - Infinite Scroll */}
+        {useInfiniteScroll && loading && filteredConversations.length > 0 && (
+          <div className="px-4 pb-4">
+            <ConversationListSkeleton count={3} />
+          </div>
+        )}
+        
+        {/* Load More Button - Fallback se não for infinite scroll */}
+        {useInfiniteScroll && !loading && hasMore && (
+          <div className="p-4">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={loadMore}
+              className="w-full p-3 bg-accent/50 hover:bg-accent rounded-lg transition-colors text-sm font-medium text-muted-foreground"
+            >
+              Carregar mais conversas...
+            </motion.button>
+          </div>
+        )}
 
           {/* Empty State */}
-          {filteredConversations.length === 0 && (
+          {filteredConversations.length === 0 && !activeLoading && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
