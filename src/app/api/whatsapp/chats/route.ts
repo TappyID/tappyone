@@ -67,12 +67,12 @@ export async function GET(request: NextRequest) {
     console.log('✅ [WHATSAPP CHATS] Sessão ativa encontrada:', sessionName)
     console.log('📡 [WHATSAPP CHATS] Fazendo chamada para WAHA:', `${wahaUrl}/api/${sessionName}/chats`)
 
-    // Proxy direto para WAHA
-    const response = await fetch(`${wahaUrl}/api/${sessionName}/chats`, {
+    // Usar backend Go com Redis cache em vez de WAHA direto
+    const response = await fetch(`${backendUrl}/api/whatsapp/chats/cached?session=${sessionName}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'tappyone-waha-2024-secretkey'
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
       }
     })
 
