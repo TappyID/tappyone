@@ -35,14 +35,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   // Quando a gravação é finalizada, processar o arquivo
   useEffect(() => {
     if (audioBlob && audioUrl && !isRecording) {
-      console.log('AudioRecorder: Processando arquivo de áudio...')
+      // Processando arquivo de áudio
       const file = blobToFile(audioBlob, `audio-${Date.now()}.webm`)
-      console.log('AudioRecorder: Chamando onAudioReady...', { fileName: file.name, url: audioUrl })
+      // Chamando onAudioReady
       try {
         onAudioReady(file, audioUrl)
-        console.log('AudioRecorder: onAudioReady executado com sucesso')
+        // onAudioReady executado com sucesso
       } catch (error) {
-        console.error('AudioRecorder: Erro em onAudioReady:', error)
+        // Erro em onAudioReady
       }
     }
   }, [audioBlob, audioUrl, isRecording, onAudioReady])

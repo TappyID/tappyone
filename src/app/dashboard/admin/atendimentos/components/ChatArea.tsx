@@ -1822,7 +1822,7 @@ export default function ChatArea({
                             caption: (msg as any).caption
                           }}
                           onTranscribe={(text) => {
-                            console.log('🎤 Transcrição recebida:', text)
+                            // Transcrição recebida
                           }}
                         />
                       ) : (

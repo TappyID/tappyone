@@ -6,28 +6,24 @@ export async function POST(
   { params }: { params: { chatId: string } }
 ) {
   try {
-    console.log('🎵 SERVER: Recebendo requisição de áudio para chat:', params.chatId)
+    // Recebendo requisição de áudio
     
     const formData = await request.formData()
     const file = formData.get('voice') as File
 
     if (!file) {
-      console.log('❌ SERVER: Nenhum arquivo de áudio encontrado no FormData')
+      // Nenhum arquivo de áudio encontrado
       return NextResponse.json({ error: 'Nenhum áudio fornecido' }, { status: 400 })
     }
 
-    console.log('✅ SERVER: Arquivo de áudio encontrado:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    })
+    // Arquivo de áudio encontrado
 
     // Converter webm para ogg para melhor compatibilidade com WhatsApp
     let finalFile = file
     let finalExtension = 'ogg'
     
     if (file.type.includes('webm')) {
-      console.log('🔄 SERVER: Convertendo webm para ogg...')
+      // Convertendo webm para ogg
       const arrayBuffer = await file.arrayBuffer()
       finalFile = new File([arrayBuffer], file.name.replace('.webm', '.ogg'), {
         type: 'audio/ogg; codecs=opus'
@@ -39,22 +35,14 @@ export async function POST(
     const randomId = Math.random().toString(36).substring(2, 15)
     const fileName = `voice/${timestamp}_${randomId}.${finalExtension}`
 
-    console.log('☁️ SERVER: Fazendo upload para Vercel Blob Storage...', {
-      originalType: file.type,
-      finalType: finalFile.type,
-      fileName
-    })
+    // Fazendo upload para Vercel Blob Storage
     
     const blob = await put(fileName, finalFile, {
       access: 'public',
       token: process.env.BLOB_READ_WRITE_TOKEN,
     })
 
-    console.log('✅ SERVER: Upload concluído:', {
-      blobUrl: blob.url,
-      fileName: fileName,
-      size: file.size
-    })
+    // Upload concluído
 
     // Enviar URL pública para o backend Go
     const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
@@ -71,10 +59,7 @@ export async function POST(
       })
     })
 
-    console.log('🎵 SERVER: Resposta do backend Go:', {
-      status: response.status,
-      statusText: response.statusText
-    })
+    // Resposta do backend Go
 
     if (!response.ok) {
       const errorText = await response.text()
