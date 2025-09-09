@@ -77,6 +77,132 @@ import {
 import { useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 
+// Component para renderização otimizada de cards
+function LazyCardsList({
+  cards,
+  theme,
+  columnColor,
+  notesCount,
+  orcamentosCount,
+  agendamentosCount,
+  assinaturasCount,
+  contactStatus,
+  onOpenAgendamento,
+  onOpenOrcamento,
+  onOpenAssinatura,
+  onOpenAnotacoes,
+  onOpenVideoChamada,
+  onOpenLigacao,
+  onOpenCompartilharTela,
+  orcamentosData,
+  agendamentosData,
+  assinaturasData,
+  anotacoesData
+}: {
+  cards: any[]
+  theme: string
+  columnColor: string
+  notesCount: { [key: string]: number }
+  orcamentosCount: { [key: string]: number }
+  agendamentosCount: { [key: string]: number }
+  assinaturasCount: { [key: string]: number }
+  contactStatus: { [key: string]: string }
+  onOpenAgendamento: (card: any) => void
+  onOpenOrcamento: (card: any) => void
+  onOpenAssinatura: (card: any) => void
+  onOpenAnotacoes: (card: any) => void
+  onOpenVideoChamada: () => void
+  onOpenLigacao: () => void
+  onOpenCompartilharTela: () => void
+  orcamentosData: any
+  agendamentosData: any
+  assinaturasData: any
+  anotacoesData: any
+}) {
+  // Usar lazy loading apenas se há muitos cards (50+)
+  const shouldUseLazyLoading = cards.length > 50
+  const [visibleCount, setVisibleCount] = useState(shouldUseLazyLoading ? 25 : cards.length)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  // Resetar quando cards mudam
+  useEffect(() => {
+    if (shouldUseLazyLoading) {
+      setVisibleCount(25)
+    } else {
+      setVisibleCount(cards.length)
+    }
+  }, [cards.length, shouldUseLazyLoading])
+
+  const visibleCards = cards.slice(0, visibleCount)
+  const hasMore = visibleCount < cards.length
+
+  const loadMore = () => {
+    if (isLoadingMore || !hasMore) return
+    setIsLoadingMore(true)
+    
+    setTimeout(() => {
+      setVisibleCount(prev => Math.min(prev + 20, cards.length))
+      setIsLoadingMore(false)
+    }, 150)
+  }
+
+  return (
+    <div className="space-y-3">
+      {visibleCards.map((card: any) => (
+        <SortableCard
+          key={card.id}
+          card={card}
+          theme={theme}
+          columnColor={columnColor}
+          notesCount={notesCount[card.id] || 0}
+          orcamentosCount={orcamentosCount[card.id] || 0}
+          agendamentosCount={agendamentosCount[card.id] || 0}
+          assinaturasCount={assinaturasCount[card.id] || 0}
+          contactStatus={(contactStatus[card.id] || 'error') as 'error' | 'synced'}
+          onOpenAgendamento={onOpenAgendamento}
+          onOpenOrcamento={onOpenOrcamento}
+          onOpenAssinatura={onOpenAssinatura}
+          onOpenAnotacoes={onOpenAnotacoes}
+          onOpenVideoChamada={onOpenVideoChamada}
+          onOpenLigacao={onOpenLigacao}
+          onOpenCompartilharTela={onOpenCompartilharTela}
+          orcamentosData={orcamentosData}
+          agendamentosData={agendamentosData}
+          assinaturasData={assinaturasData}
+          anotacoesData={anotacoesData}
+        />
+      ))}
+      
+      {/* Botão "Carregar Mais" para otimização */}
+      {hasMore && (
+        <motion.button
+          onClick={loadMore}
+          disabled={isLoadingMore}
+          className={`w-full py-3 px-4 rounded-lg border-2 border-dashed transition-all duration-300 ${
+            theme === 'dark'
+              ? 'border-gray-600 hover:border-gray-500 text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+              : 'border-gray-300 hover:border-gray-400 text-gray-500 hover:text-gray-600 hover:bg-gray-50'
+          }`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {isLoadingMore ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              <span>Carregando...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <Plus className="w-4 h-4" />
+              <span>Carregar mais {Math.min(20, cards.length - visibleCount)} cards</span>
+            </div>
+          )}
+        </motion.button>
+      )}
+    </div>
+  )
+}
+
 // Componente de Área Droppable Ultra Sofisticado com Modal de Cores
 function DroppableArea({ 
   coluna, 
@@ -529,32 +655,27 @@ function DroppableArea({
           items={coluna.cards?.map((card: any) => card.id) || []}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-3">
-            {coluna.cards?.map((card: any) => (
-              <SortableCard
-                key={card.id}
-                card={card}
-                theme={theme}
-                columnColor={coluna.cor}
-                notesCount={notesCount[card.id] || 0}
-                orcamentosCount={orcamentosCount[card.id] || 0}
-                agendamentosCount={agendamentosCount[card.id] || 0}
-                assinaturasCount={assinaturasCount[card.id] || 0}
-                contactStatus={contactStatus[card.id] || 'error'}
-                onOpenAgendamento={onOpenAgendamento}
-                onOpenOrcamento={onOpenOrcamento}
-                onOpenAssinatura={onOpenAssinatura}
-                onOpenAnotacoes={onOpenAnotacoes}
-                onOpenVideoChamada={onOpenVideoChamada}
-                onOpenLigacao={onOpenLigacao}
-                onOpenCompartilharTela={onOpenCompartilharTela}
-                orcamentosData={orcamentosData}
-                agendamentosData={agendamentosData}
-                assinaturasData={assinaturasData}
-                anotacoesData={anotacoesData}
-              />
-            ))}
-          </div>
+          <LazyCardsList
+            cards={coluna.cards || []}
+            theme={theme}
+            columnColor={coluna.cor}
+            notesCount={notesCount}
+            orcamentosCount={orcamentosCount}
+            agendamentosCount={agendamentosCount}
+            assinaturasCount={assinaturasCount}
+            contactStatus={contactStatus}
+            onOpenAgendamento={onOpenAgendamento}
+            onOpenOrcamento={onOpenOrcamento}
+            onOpenAssinatura={onOpenAssinatura}
+            onOpenAnotacoes={onOpenAnotacoes}
+            onOpenVideoChamada={onOpenVideoChamada}
+            onOpenLigacao={onOpenLigacao}
+            onOpenCompartilharTela={onOpenCompartilharTela}
+            orcamentosData={orcamentosData}
+            agendamentosData={agendamentosData}
+            assinaturasData={assinaturasData}
+            anotacoesData={anotacoesData}
+          />
         </SortableContext>
         
         {/* Área vazia para drop */}
