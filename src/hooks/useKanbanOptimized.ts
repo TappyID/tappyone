@@ -161,10 +161,30 @@ export function useKanbanOptimized(quadroId: string) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ cardIds: allCardIds })
+        }),
+
+        // Buscar assinaturas em batch
+        fetch('/api/assinaturas/batch', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ cardIds: allCardIds })
+        }),
+
+        // Buscar anotações em batch
+        fetch('/api/anotacoes/batch', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ cardIds: allCardIds })
         })
       ]
 
-      const [orcamentosRes, agendamentosRes] = await Promise.all(batchPromises)
+      const [orcamentosRes, agendamentosRes, assinaturasRes, anotacoesRes] = await Promise.all(batchPromises)
       
       // Processar orçamentos
       let orcamentosData: { [cardId: string]: any[] } = {}
@@ -182,6 +202,22 @@ export function useKanbanOptimized(quadroId: string) {
         console.warn('⚠️ Erro ao buscar agendamentos em batch:', agendamentosRes.status)
       }
 
+      // Processar assinaturas
+      let assinaturasData: { [cardId: string]: any[] } = {}
+      if (assinaturasRes.ok) {
+        assinaturasData = await assinaturasRes.json()
+      } else {
+        console.warn('⚠️ Erro ao buscar assinaturas em batch:', assinaturasRes.status)
+      }
+
+      // Processar anotações
+      let anotacoesData: { [cardId: string]: any[] } = {}
+      if (anotacoesRes.ok) {
+        anotacoesData = await anotacoesRes.json()
+      } else {
+        console.warn('⚠️ Erro ao buscar anotações em batch:', anotacoesRes.status)
+      }
+
       // Construir dados otimizados
       const cards: { [cardId: string]: CardData } = {}
       const columnStats: ColumnStats = {}
@@ -192,8 +228,8 @@ export function useKanbanOptimized(quadroId: string) {
           id: cardId,
           orcamentos: orcamentosData[cardId] || [],
           agendamentos: agendamentosData[cardId] || [],
-          assinaturas: [], // TODO: Implementar quando necessário
-          anotacoes: []    // TODO: Implementar quando necessário
+          assinaturas: assinaturasData[cardId] || [],
+          anotacoes: anotacoesData[cardId] || []
         }
       })
 
@@ -216,6 +252,11 @@ export function useKanbanOptimized(quadroId: string) {
             // Somar valores dos orçamentos
             cardData.orcamentos.forEach((orc: any) => {
               totalValor += parseFloat(orc.valorTotal) || 0
+            })
+            
+            // Somar valores das assinaturas
+            cardData.assinaturas.forEach((ass: any) => {
+              totalValor += parseFloat(ass.valor) || 0
             })
           }
         })
@@ -273,17 +314,17 @@ export function useKanbanOptimized(quadroId: string) {
     setData(freshData)
   }, [quadroId, fetchOptimizedData])
 
-  // Prefetch em background após delay
-  useEffect(() => {
-    if (!data.loading && Object.keys(data.cards).length > 0) {
-      const prefetchTimer = setTimeout(() => {
-        console.log('🔄 Iniciando prefetch em background...')
-        fetchOptimizedData(true)
-      }, PREFETCH_DELAY)
+  // Prefetch em background após delay (DESABILITADO para evitar loop)
+  // useEffect(() => {
+  //   if (!data.loading && Object.keys(data.cards).length > 0) {
+  //     const prefetchTimer = setTimeout(() => {
+  //       console.log('🔄 Iniciando prefetch em background...')
+  //       fetchOptimizedData(true)
+  //     }, PREFETCH_DELAY)
 
-      return () => clearTimeout(prefetchTimer)
-    }
-  }, [data.loading, data.cards, fetchOptimizedData])
+  //     return () => clearTimeout(prefetchTimer)
+  //   }
+  // }, [data.loading, data.cards, fetchOptimizedData])
 
   // Carregar dados iniciais
   useEffect(() => {

@@ -231,7 +231,8 @@ function DroppableArea({
   onOpenAnotacoes,
   onOpenVideoChamada,
   onOpenLigacao,
-  onOpenCompartilharTela
+  onOpenCompartilharTela,
+  getColumnStats
 }: { 
   coluna: any, 
   theme: string,
@@ -258,7 +259,8 @@ function DroppableArea({
   onOpenAnotacoes: (card: any) => void,
   onOpenVideoChamada: () => void,
   onOpenLigacao: () => void,
-  onOpenCompartilharTela: () => void
+  onOpenCompartilharTela: () => void,
+  getColumnStats: (columnId: string) => any
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: coluna.id,
@@ -468,6 +470,70 @@ function DroppableArea({
           </div>
         </div>
         
+        {/* Estatísticas da Coluna */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {/* Total de Orçamentos */}
+          <motion.div 
+            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+              theme === 'dark' 
+                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                : 'bg-green-50 text-green-700 border border-green-200'
+            }`}
+            whileHover={{ scale: 1.05 }}
+          >
+            <DollarSign className="w-3 h-3" />
+            {getColumnStats(coluna.id)?.totalOrcamentos || 0} Orç.
+          </motion.div>
+          
+          {/* Total de Agendamentos */}
+          <motion.div 
+            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+              theme === 'dark' 
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                : 'bg-blue-50 text-blue-700 border border-blue-200'
+            }`}
+            whileHover={{ scale: 1.05 }}
+          >
+            <Calendar className="w-3 h-3" />
+            {getColumnStats(coluna.id)?.totalAgendamentos || 0} Agend.
+          </motion.div>
+          
+          {/* Total de Assinaturas */}
+          {getColumnStats(coluna.id)?.totalAssinaturas > 0 && (
+            <motion.div 
+              className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+                theme === 'dark' 
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                  : 'bg-purple-50 text-purple-700 border border-purple-200'
+              }`}
+              whileHover={{ scale: 1.05 }}
+            >
+              <FileSignature className="w-3 h-3" />
+              {getColumnStats(coluna.id)?.totalAssinaturas || 0} Ass.
+            </motion.div>
+          )}
+          
+          {/* Valor Total */}
+          {getColumnStats(coluna.id)?.totalValor > 0 && (
+            <motion.div 
+              className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
+                theme === 'dark' 
+                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' 
+                  : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+              }`}
+              whileHover={{ scale: 1.05 }}
+            >
+              <DollarSign className="w-3 h-3" />
+              {(getColumnStats(coluna.id)?.totalValor || 0).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              })}
+            </motion.div>
+          )}
+        </div>
+
         {/* Barra de Progresso Enhanced */}
         <div className={`relative h-2 rounded-full overflow-hidden ${
           theme === 'dark' ? 'bg-slate-800/50' : 'bg-gray-100/60'
@@ -575,9 +641,14 @@ function DroppableArea({
             }, 0)
             return total + cardTotal
           }, 0)
+          
+          const totalAssinaturas = coluna.cards.reduce((total: number, card: any) => {
+            const cardAssinaturas = assinaturasData?.[card.id] || []
+            return total + cardAssinaturas.length
+          }, 0)
 
-          // Só renderizar se houver orçamentos ou agendamentos
-          if (totalOrcamentos === 0 && totalAgendamentos === 0) return null
+          // Só renderizar se houver orçamentos, agendamentos ou assinaturas
+          if (totalOrcamentos === 0 && totalAgendamentos === 0 && totalAssinaturas === 0) return null
           
           return (
             <div className="mb-4 space-y-2">
@@ -648,6 +719,59 @@ function DroppableArea({
                   </div>
                 </motion.div>
               )}
+              
+              {/* Resumo de Assinaturas */}
+              {(() => {
+                const totalAssinaturas = coluna.cards.reduce((total: number, card: any) => {
+                  const cardAssinaturas = assinaturasData?.[card.id] || []
+                  return total + cardAssinaturas.length
+                }, 0)
+                
+                const totalValorAssinaturas = coluna.cards.reduce((total: number, card: any) => {
+                  const cardAssinaturas = assinaturasData?.[card.id] || []
+                  const cardTotal = cardAssinaturas.reduce((sum: number, ass: any) => {
+                    const valor = parseFloat(ass.valor) || 0
+                    return sum + valor
+                  }, 0)
+                  return total + cardTotal
+                }, 0)
+                
+                if (totalAssinaturas === 0) return null
+                
+                return (
+                  <motion.div
+                    className="px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
+                    style={{
+                      background: theme === 'dark'
+                        ? `linear-gradient(135deg, #F59E0B15 0%, rgba(0,0,0,0.3) 100%)`
+                        : `linear-gradient(135deg, #F59E0B10 0%, rgba(255,255,255,0.8) 100%)`,
+                      borderColor: theme === 'dark' ? '#334155' : '#e2e8f0'
+                    }}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileSignature 
+                          className="w-4 h-4 text-amber-500"
+                        />
+                        <span className={`text-xs font-medium ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-800'
+                        }`}>
+                          {totalAssinaturas} assinatura{totalAssinaturas !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="text-sm font-bold text-amber-500">
+                        {totalValorAssinaturas.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })()}
             </div>
           )
         })()}
@@ -3876,36 +4000,21 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     onDelete={handleDeleteColumn}
                     editingColumnId={editingColumnId}
                     editingColumnName={editingColumnName}
-                    onSaveColumnName={handleSaveColumnName}
                     onEditingNameChange={setEditingColumnName}
-                    onOpenColorModal={handleOpenColorModal}
+                    onSaveColumnName={handleSaveColumnName}
+                    onOpenColorModal={setColorPickerColumnId}
                     handleAddCard={handleAddCard}
-                    onOpenAgendamento={(card) => {
-                      setSelectedCard(card)
-                      setShowAgendamentoModal(true)
-                    }}
-                    onOpenOrcamento={(card) => {
-                      setSelectedCard(card)
-                      setShowOrcamentoModal(true)
-                    }}
-                    onOpenAssinatura={(card) => {
-                      setSelectedCard(card)
-                      setShowAssinaturaModal(true)
-                    }}
-                    onOpenAnotacoes={(card) => {
-                      setSelectedCard(card)
-                      setShowAnotacoesModal(true)
-                      // Marcar que este card foi acessado para anotações
-                      const accessed = JSON.parse(localStorage.getItem('notesAccessed') || '{}')
-                      accessed[card.id] = true
-                      localStorage.setItem('notesAccessed', JSON.stringify(accessed))
-                    }}
-                    onOpenVideoChamada={() => setShowVideoChamadaModal(true)}
-                    onOpenLigacao={() => setShowLigacaoModal(true)}
-                    onOpenCompartilharTela={() => setShowCompartilharTelaModal(true)}
-                  />
-                </div>
-              ))}
+                    onOpenAgendamento={() => {}}
+                    onOpenOrcamento={() => {}}
+                    onOpenAssinatura={() => {}}
+                    onOpenAnotacoes={() => {}}
+                    onOpenVideoChamada={() => {}}
+                    onOpenLigacao={() => {}}
+                    onOpenCompartilharTela={() => console.log('Compartilhar tela')}
+                    getColumnStats={getColumnStats}
+                    />
+                  </div>
+                ))}
               </SortableContext>
 
             {/* Botão Adicionar Coluna */}
@@ -3941,6 +4050,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
             </div>
           </div>
         </div>
+      </DndContext>
         
         {/* DragOverlay para mostrar o item sendo arrastado */}
         <DragOverlay>
@@ -3970,7 +4080,6 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
             </div>
           )}
         </DragOverlay>
-      </DndContext>
       
       {/* Modal de Criar Card */}
       <CriarCardModal
