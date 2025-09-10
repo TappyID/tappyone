@@ -1,18 +1,6 @@
 [
   {
-    "timestamp": "2025-09-09T14:55:46.578Z",
-    "component": "Kanban",
-    "action": "loadChatsManual_finished",
-    "data": {
-      "finalState": {
-        "chatsLength": 0,
-        "whatsappLoading": false
-      }
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-09T14:55:46.653Z",
+    "timestamp": "2025-09-09T16:54:29.908Z",
     "component": "Kanban",
     "action": "loadAllCounts_cards_mapped",
     "data": {
@@ -62,7 +50,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:48.124Z",
+    "timestamp": "2025-09-09T16:54:34.110Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -74,7 +62,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:49.332Z",
+    "timestamp": "2025-09-09T16:54:35.722Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -86,7 +74,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:52.289Z",
+    "timestamp": "2025-09-09T16:54:39.080Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -98,7 +86,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:53.667Z",
+    "timestamp": "2025-09-09T16:54:40.255Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -110,7 +98,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:56.458Z",
+    "timestamp": "2025-09-09T16:54:43.305Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -122,7 +110,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:57.421Z",
+    "timestamp": "2025-09-09T16:54:44.438Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -134,7 +122,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:55:59.234Z",
+    "timestamp": "2025-09-09T16:54:47.456Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -146,7 +134,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:01.633Z",
+    "timestamp": "2025-09-09T16:54:48.540Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -158,7 +146,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:02.601Z",
+    "timestamp": "2025-09-09T16:54:51.738Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -170,7 +158,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:05.899Z",
+    "timestamp": "2025-09-09T16:54:52.873Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -182,7 +170,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:06.914Z",
+    "timestamp": "2025-09-09T16:54:56.122Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -194,7 +182,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:07.876Z",
+    "timestamp": "2025-09-09T16:54:57.218Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -206,7 +194,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:11.039Z",
+    "timestamp": "2025-09-09T16:54:58.537Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -218,7 +206,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:15.408Z",
+    "timestamp": "2025-09-09T16:54:59.430Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -230,7 +218,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:17.529Z",
+    "timestamp": "2025-09-09T16:55:00.363Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -242,7 +230,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:18.487Z",
+    "timestamp": "2025-09-09T16:55:04.440Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -254,7 +242,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:19.444Z",
+    "timestamp": "2025-09-09T16:55:06.180Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -266,7 +254,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:20.398Z",
+    "timestamp": "2025-09-09T16:55:07.153Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -278,7 +266,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:21.381Z",
+    "timestamp": "2025-09-09T16:55:08.043Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -290,7 +278,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:22.342Z",
+    "timestamp": "2025-09-09T16:55:09.004Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -302,7 +290,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:23.297Z",
+    "timestamp": "2025-09-09T16:55:09.921Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -314,7 +302,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:24.255Z",
+    "timestamp": "2025-09-09T16:55:10.816Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -326,7 +314,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:25.225Z",
+    "timestamp": "2025-09-09T16:55:11.841Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -338,7 +326,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:26.243Z",
+    "timestamp": "2025-09-09T16:55:12.737Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -350,7 +338,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:27.213Z",
+    "timestamp": "2025-09-09T16:55:13.671Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -362,7 +350,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:29.021Z",
+    "timestamp": "2025-09-09T16:55:14.740Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -374,7 +362,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:31.435Z",
+    "timestamp": "2025-09-09T16:55:15.753Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -386,7 +374,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:32.326Z",
+    "timestamp": "2025-09-09T16:55:16.710Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -398,7 +386,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:33.212Z",
+    "timestamp": "2025-09-09T16:55:17.686Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -410,7 +398,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:34.137Z",
+    "timestamp": "2025-09-09T16:55:18.656Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -422,7 +410,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:35.029Z",
+    "timestamp": "2025-09-09T16:55:19.707Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -434,7 +422,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-09T14:56:35.113Z",
+    "timestamp": "2025-09-09T16:55:19.815Z",
     "component": "Kanban",
     "action": "loadAllCounts_final_data",
     "data": {

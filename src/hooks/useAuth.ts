@@ -142,9 +142,13 @@ export function useAuth() {
         }
       }
       
-      // Salvar o token
+      // Salvar o token no localStorage
       localStorage.setItem('token', token)
-      console.log('✅ Token salvo com sucesso no localStorage')
+      
+      // Salvar o token nos cookies para o middleware
+      document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`
+      
+      console.log('✅ Token salvo com sucesso no localStorage e cookies')
       
       setAuthState({
         user,
@@ -170,6 +174,10 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem('token')
+    
+    // Limpar cookie do token
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; secure; samesite=strict'
+    
     setAuthState({
       user: null,
       token: null,

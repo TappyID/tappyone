@@ -127,7 +127,7 @@ export function useKanbanOptimized(quadroId: string) {
         })
       })
 
-      console.log('📊 Total de cards para buscar dados:', allCardIds.length)
+      console.log('📊 Total de cards para buscar dados:', allCardIds.length, 'IDs:', allCardIds)
 
       // Se não há cards, retornar dados vazios
       if (allCardIds.length === 0) {
@@ -190,16 +190,18 @@ export function useKanbanOptimized(quadroId: string) {
       let orcamentosData: { [cardId: string]: any[] } = {}
       if (orcamentosRes.ok) {
         orcamentosData = await orcamentosRes.json()
+        console.log('💰 ORÇAMENTOS BATCH SUCCESS:', Object.keys(orcamentosData).length, 'cards', orcamentosData)
       } else {
-        console.warn('⚠️ Erro ao buscar orçamentos em batch:', orcamentosRes.status)
+        console.error('❌ ORÇAMENTOS BATCH ERRO:', orcamentosRes.status, await orcamentosRes.text())
       }
 
       // Processar agendamentos  
       let agendamentosData: { [cardId: string]: any[] } = {}
       if (agendamentosRes.ok) {
         agendamentosData = await agendamentosRes.json()
+        console.log('📅 AGENDAMENTOS BATCH SUCCESS:', Object.keys(agendamentosData).length, 'cards', agendamentosData)
       } else {
-        console.warn('⚠️ Erro ao buscar agendamentos em batch:', agendamentosRes.status)
+        console.error('❌ AGENDAMENTOS BATCH ERRO:', agendamentosRes.status, await agendamentosRes.text())
       }
 
       // Processar assinaturas

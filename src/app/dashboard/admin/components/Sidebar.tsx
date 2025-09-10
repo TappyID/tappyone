@@ -28,6 +28,7 @@ import {
   ChevronDown,
   ChevronRight,
   Workflow,
+  Ticket,
   TrendingUp,
   Heart,
   DollarSign,
@@ -120,6 +121,12 @@ const menuItems = [
     icon: List,
     href: '/dashboard/admin/filas',
     color: 'text-slate-600'
+  },
+  {
+    title: 'Tickets',
+    icon: Ticket,
+    href: '/dashboard/admin/tickets',
+    color: 'text-blue-600'
   },
   {
     title: 'Chat Interno',

@@ -52,6 +52,7 @@
     "date-fns": "^3.6.0",
     "express": "^5.1.0",
     "framer-motion": "^10.16.16",
+    "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.303.0",
     "next": "14.0.4",
