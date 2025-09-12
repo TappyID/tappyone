@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Pegar o backend URL
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'
     const token = request.headers.get('authorization')
 
     // Fazer proxy direto para o backend Go

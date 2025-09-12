@@ -9,6 +9,10 @@ export interface WSMessage {
   data: any
   user_id?: string
   timestamp: string
+  // Campos para eventos WAHA
+  event?: string
+  payload?: any
+  session?: string
 }
 
 // Tipos de mensagem
@@ -55,9 +59,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   } = options
 
   // Função para conectar WebSocket
-  const connect = useCallback(() => {
-    if (!isAuthenticated || !user) {
-      console.log('WebSocket: User not authenticated')
+  const connect = useCallback((sessionName?: string) => {
+    if (!sessionName) {
+      console.log('WebSocket: No session name provided')
       return
     }
 
@@ -68,16 +72,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     try {
       setConnectionStatus('connecting')
-      
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('No authentication token found')
-      }
 
-      // Construir URL WebSocket com token como query parameter
+      // Conectar diretamente na WAHA API WebSocket
+      const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+      const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
-      const wsUrl = backendUrl.replace(/^https?:/, wsProtocol) + `/ws?token=${encodeURIComponent(token)}`
+      const wsUrl = wahaUrl.replace(/^https?:/, wsProtocol) + `/ws?session=${sessionName}&apikey=${encodeURIComponent(wahaApiKey)}`
       
       console.log('WebSocket: Connecting to', wsUrl)
       
@@ -87,17 +87,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       // Como WebSocket não suporta headers customizados, vamos enviar o token na primeira mensagem
       
       ws.onopen = () => {
-        console.log('WebSocket: Connected')
+        console.log('WebSocket WAHA: Connected to session', sessionName)
         setIsConnected(true)
         setConnectionStatus('connected')
         reconnectAttemptsRef.current = 0
-        
-        // Enviar token de autenticação
-        ws.send(JSON.stringify({
-          type: 'auth',
-          data: { token },
-          timestamp: new Date().toISOString()
-        }))
         
         // Iniciar ping/pong
         startPingPong()
@@ -209,19 +202,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     }
   }, [])
 
-  // Conectar automaticamente quando autenticado
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      connect()
-    } else {
-      disconnect()
-    }
-
-    // Cleanup on unmount
-    return () => {
-      disconnect()
-    }
-  }, [isAuthenticated, user, connect, disconnect])
+  // Conectar automaticamente quando autenticado (removido - será chamado manualmente com sessionName)
+  // useEffect(() => {
+  //   if (isAuthenticated && user) {
+  //     connect()
+  //   } else {
+  //     disconnect()
+  //   }
+  // }, [isAuthenticated, user, connect, disconnect])
 
   // Cleanup on unmount
   useEffect(() => {

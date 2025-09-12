@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    console.log(`Fazendo requisição para: ${BACKEND_URL}/api/users?${params.toString()}`)
     
     const response = await fetch(`${BACKEND_URL}/api/users?${params.toString()}`, {
       method: 'GET',

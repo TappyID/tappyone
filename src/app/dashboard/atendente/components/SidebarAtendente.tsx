@@ -112,55 +112,101 @@ export function SidebarAtendente({ isCollapsed, onToggle }: SidebarAtendenteProp
 
   return (
     <motion.div
-      className={`relative flex flex-col h-screen bg-white dark:bg-gray-900 shadow-2xl transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'w-20' : 'w-72'
-      }`}
+      className="relative h-screen shadow-xl shadow-black/5"
       initial={false}
-      animate={{ width: isCollapsed ? 80 : 288 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      animate={{ 
+        width: isCollapsed ? 80 : 280,
+        backgroundColor: isCollapsed ? "#f9fafb" : "#273155"
+      }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        mass: 0.8
+      }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <SidebarLogo isCollapsed={isCollapsed} />
-        <SidebarToggle isCollapsed={isCollapsed} onToggle={onToggle} />
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23273155' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }} />
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto sidebar-scrollbar">
-        <nav className="p-4 space-y-2">
-          {menuItems.map((item) => (
-            <div key={item.title}>
+      {/* Toggle Button */}
+      <SidebarToggle isCollapsed={isCollapsed} onToggle={onToggle} />
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col">
+        {/* Logo */}
+        <motion.div 
+          className="border-b"
+          animate={{
+            borderColor: isCollapsed ? "rgb(229 231 235 / 0.5)" : "rgb(255 255 255 / 0.1)"
+          }}
+        >
+          <SidebarLogo isCollapsed={isCollapsed} />
+        </motion.div>
+
+        {/* Navigation */}
+        <motion.nav 
+          className="flex-1 p-4 space-y-2 overflow-y-auto sidebar-nav"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          {menuItems.map((item, index) => (
+            <motion.div
+              key={item.href || item.title}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ 
+                delay: 0.1 + (index * 0.02),
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              }}
+            >
               <SidebarItem
                 icon={item.icon}
                 title={item.title}
                 href={item.href}
-                isCollapsed={isCollapsed}
                 isActive={pathname === item.href}
+                isCollapsed={isCollapsed}
                 color={item.color}
               />
-            </div>
+            </motion.div>
           ))}
-        </nav>
+        </motion.nav>
+
+        {/* Footer */}
+        <motion.div 
+          className="p-4 border-t"
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: 1,
+            borderColor: isCollapsed ? "rgb(229 231 235 / 0.5)" : "rgb(255 255 255 / 0.1)"
+          }}
+          transition={{ delay: 0.3 }}
+        >
+          <motion.div
+            className="text-center"
+            animate={{ opacity: isCollapsed ? 0 : 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.p 
+              className="text-xs font-medium"
+              animate={{
+                color: isCollapsed ? "rgb(107 114 128)" : "rgb(255 255 255 / 0.7)"
+              }}
+            >
+              TappyOne Atendente v2.0
+            </motion.p>
+          </motion.div>
+        </motion.div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">A</span>
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                Atendente
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                Painel do Atendente
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/20 pointer-events-none" />
     </motion.div>
   )
 }

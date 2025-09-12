@@ -4,23 +4,19 @@ import { headers } from 'next/headers'
 // Forçar rota dinâmica para permitir uso de headers
 export const dynamic = 'force-dynamic'
 
-const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:8081'
 const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 [WHATSAPP CONTACTS] GET route chamado')
     
     const authHeader = request.headers.get('Authorization')
-    console.log('🔍 [WHATSAPP CONTACTS] AuthHeader:', authHeader ? `${authHeader.substring(0, 20)}...` : 'null')
     
     if (!authHeader) {
-      console.log('❌ [WHATSAPP CONTACTS] Token não fornecido')
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
     // Buscar sessões ativas diretamente no WAHA (mesmo que chats/groups)
-    console.log('🔍 [WHATSAPP CONTACTS] Buscando sessões ativas no WAHA...')
     const sessionsResponse = await fetch(`${WAHA_URL}/api/sessions`, {
       headers: {
         'X-API-Key': WAHA_API_KEY,
@@ -29,23 +25,19 @@ export async function GET(request: NextRequest) {
     })
 
     if (!sessionsResponse.ok) {
-      console.log('❌ [WHATSAPP CONTACTS] Erro ao buscar sessões WAHA:', sessionsResponse.status)
       return NextResponse.json({ error: 'Erro ao conectar com WAHA' }, { status: 500 })
     }
 
     const sessions = await sessionsResponse.json()
-    console.log('📡 [WHATSAPP CONTACTS] Sessões WAHA encontradas:', sessions.length)
     
     // Buscar primeira sessão ativa (WORKING)
     const activeSession = sessions.find((session: any) => session.status === 'WORKING')
     
     if (!activeSession) {
-      console.log('❌ [WHATSAPP CONTACTS] Nenhuma sessão ativa encontrada no WAHA')
       return NextResponse.json([], { status: 200 })
     }
 
     const sessionName = activeSession.name
-    console.log('✅ [WHATSAPP CONTACTS] Sessão ativa encontrada:', sessionName)
 
     // Try different WAHA API endpoints for contacts
     const possibleEndpoints = [
@@ -59,7 +51,6 @@ export async function GET(request: NextRequest) {
     let successUrl = ''
 
     for (const url of possibleEndpoints) {
-      console.log('🔍 [WHATSAPP CONTACTS] Tentando endpoint:', url)
       
       try {
         response = await fetch(url, {
@@ -70,22 +61,16 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        console.log('📡 [WHATSAPP CONTACTS] Status:', response.status)
         
         if (response.ok) {
           successUrl = url
-          console.log('✅ [WHATSAPP CONTACTS] Endpoint funcionando:', url)
           break
-        } else {
-          console.log('❌ [WHATSAPP CONTACTS] Falhou:', url, response.status)
         }
       } catch (err) {
-        console.log('❌ [WHATSAPP CONTACTS] Erro de rede:', url, err)
       }
     }
 
     if (!response || !response.ok) {
-      console.error('❌ [WHATSAPP CONTACTS] Todos os endpoints falharam')
       return NextResponse.json(
         { error: 'Nenhum endpoint de contatos WAHA funcionou' },
         { status: 404 }
@@ -93,10 +78,8 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('📋 [WHATSAPP CONTACTS] Dados brutos da WAHA:', JSON.stringify(data.slice(0, 2), null, 2))
     
     if (!Array.isArray(data)) {
-      console.log('❌ [WHATSAPP CONTACTS] Dados não são um array:', data)
       return NextResponse.json([])
     }
     
@@ -109,11 +92,9 @@ export async function GET(request: NextRequest) {
       return !isGroup && !isInvalidNumber && hasValidPhone
     })
     
-    console.log('📋 [WHATSAPP CONTACTS] Contatos individuais filtrados:', individualChats.length)
     
     // Se não temos contatos individuais, buscar do banco de dados como fallback
     if (individualChats.length === 0) {
-      console.log('🔄 [WHATSAPP CONTACTS] Nenhum contato individual encontrado, buscando do banco...')
       
       try {
         const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
@@ -127,7 +108,6 @@ export async function GET(request: NextRequest) {
         if (backendResponse.ok) {
           const backendData = await backendResponse.json()
           const contatos = Array.isArray(backendData.data) ? backendData.data : []
-          console.log('✅ [WHATSAPP CONTACTS] Contatos do banco encontrados:', contatos.length)
           
           const mappedBackendContacts = contatos.map((contato: any) => ({
             id: `${contato.telefone}@c.us`,
@@ -143,7 +123,6 @@ export async function GET(request: NextRequest) {
           return NextResponse.json(mappedBackendContacts)
         }
       } catch (error) {
-        console.error('❌ [WHATSAPP CONTACTS] Erro ao buscar contatos do banco:', error)
       }
       
       return NextResponse.json([])
@@ -202,7 +181,6 @@ export async function GET(request: NextRequest) {
       }
     }))
     
-    console.log('📋 Dados mapeados:', JSON.stringify(mappedData.slice(0, 2), null, 2)) // Log primeiros 2 mapeados
     return NextResponse.json(mappedData)
   } catch (error) {
     console.error('❌ Erro no proxy WAHA contacts:', error)

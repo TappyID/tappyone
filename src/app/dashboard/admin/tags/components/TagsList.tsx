@@ -87,7 +87,6 @@ export default function TagsList({
       )
       
       if (hasTag) {
-        console.log(`🏷️ Contato "${contato.nome}" tem a tag ${tagId}:`, contato.tags)
       }
       
       return hasTag

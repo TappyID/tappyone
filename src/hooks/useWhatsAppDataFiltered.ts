@@ -128,5 +128,12 @@ export function useWhatsAppDataFiltered() {
     filas,
     filaContatos,
     refetchFilaContatos: fetchFilaContatos,
+    // Wrapper para loadChatMessages com debug
+    loadChatMessages: (chatId: string) => {
+      console.log('🔄 [useWhatsAppDataFiltered] Carregando mensagens para chatId:', chatId)
+      const result = whatsAppData.loadChatMessages(chatId)
+      console.log('📥 [useWhatsAppDataFiltered] Resultado do loadChatMessages:', result)
+      return result
+    }
   }
 }

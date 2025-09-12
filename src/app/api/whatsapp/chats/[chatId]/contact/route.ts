@@ -15,7 +15,7 @@ export async function POST(
     }
 
     // Enviar para o backend Go
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/';
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/';
     const token = request.headers.get('authorization');
 
     const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/contact`, {

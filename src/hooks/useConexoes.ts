@@ -45,7 +45,7 @@ export function useConexoes() {
       
       console.log(`🔗 [useConexoes] Buscando conexões ativas...`)
       console.log(`🔗 [useConexoes] URL: ${baseURL}`)
-      console.log(`🔗 [useConexoes] Token: ${token ? 'Presente' : 'Ausente'}`)
+      console.log(`🔗 [useConexoes] Token: ${token ? token.substring(0, 30) + '...' : 'Ausente'}`)
       
       const response = await fetch(baseURL, {
         headers: {

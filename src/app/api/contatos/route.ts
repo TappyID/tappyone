@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,15 +36,12 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('✅ Contatos encontrados:', data?.length || 0)
     
     // Log detalhado das tags nos contatos
     if (Array.isArray(data)) {
       data.forEach((contato, index) => {
         if (contato.tags && contato.tags.length > 0) {
-          console.log(`🏷️ Contato ${index + 1} (${contato.nome}) tem ${contato.tags.length} tags:`, 
-            contato.tags.map(tag => ({ tagId: tag.tagId || tag.tag_id || tag.id, name: tag.nome || tag.tag?.nome }))
-          )
+         
         }
       })
     }

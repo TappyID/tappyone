@@ -169,10 +169,18 @@ export default function AtendimentosPage() {
   useEffect(() => {
     if (selectedConversation) {
       const chatId = extractChatId(selectedConversation)
+      console.log('🔍 [DEBUG] Chat selecionado:', {
+        conversation: selectedConversation,
+        extractedChatId: chatId,
+        conversationId: selectedConversation.id
+      })
+      
       if (!chatId) {
+        console.error('❌ [DEBUG] Não foi possível extrair chatId da conversa')
         return
       }
       
+      console.log('📨 [DEBUG] Carregando mensagens para chatId:', chatId)
       loadChatMessages(chatId)
       
       // Buscar contagens dos badges
@@ -260,7 +268,14 @@ export default function AtendimentosPage() {
           conversation={selectedConversation}
           messages={selectedConversation ? (() => {
             const chatId = extractChatId(selectedConversation)
-            return chatId ? messages[chatId] || [] : []
+            const chatMessages = chatId ? messages[chatId] || [] : []
+            console.log('💬 [DEBUG] Mensagens sendo passadas para ChatArea:', {
+              chatId: chatId,
+              messageCount: chatMessages.length,
+              messages: chatMessages,
+              allMessages: messages
+            })
+            return chatMessages
           })() : []}
           onSendMessage={(message: string) => {
             if (selectedConversation) {

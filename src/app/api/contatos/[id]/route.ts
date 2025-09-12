@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {

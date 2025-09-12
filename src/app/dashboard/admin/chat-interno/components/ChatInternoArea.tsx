@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useChatInternoWS } from '@/hooks/useChatInternoWS'
 import { 
   Send, 
   Paperclip, 
@@ -118,7 +119,6 @@ const statusConfig = {
 }
 
 export default function ChatInternoArea({ atendente, currentUser, isDark = false }: ChatInternoAreaProps) {
-  const [mensagens, setMensagens] = useState<Mensagem[]>(mockMensagens)
   const [novaMensagem, setNovaMensagem] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -133,55 +133,64 @@ export default function ChatInternoArea({ atendente, currentUser, isDark = false
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
+  // WebSocket para chat em tempo real
+  const { 
+    messages: wsMessages, 
+    sendMessage, 
+    sendTyping, 
+    loadMessages,
+    isConnected,
+    connectionStatus 
+  } = useChatInternoWS({
+    userId: atendente.id,
+    onMessage: (message) => {
+      console.log('💬 [ChatArea] Nova mensagem recebida:', message)
+    },
+    onTyping: (userId, typing) => {
+      if (userId === atendente.id) {
+        setIsTyping(typing)
+      }
+    }
+  })
+
+  // Converter mensagens do WebSocket para formato local
+  const mensagens: Mensagem[] = wsMessages.map(msg => ({
+    id: msg.id,
+    texto: msg.texto,
+    remetente: msg.remetente_id.toString() === currentUser.id ? 'admin' : 'atendente',
+    timestamp: new Date(msg.timestamp),
+    status: msg.status,
+    tipo: msg.tipo
+  }))
+
+  // Carregar mensagens quando selecionar atendente
+  useEffect(() => {
+    if (atendente.id) {
+      loadMessages(atendente.id)
+    }
+  }, [atendente.id, loadMessages])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
-    // Só faz scroll se não é a primeira renderização
-    if (mensagens.length > mockMensagens.length) {
-      scrollToBottom()
-    }
+    // Scroll to bottom when new messages arrive
+    scrollToBottom()
   }, [mensagens])
 
   const enviarMensagem = () => {
     if (!novaMensagem.trim()) return
 
-    const novaMsgObj: Mensagem = {
-      id: Date.now().toString(),
-      texto: novaMensagem,
-      remetente: 'admin',
-      timestamp: new Date(),
-      status: 'enviando',
-      tipo: 'texto'
+    // Enviar via WebSocket
+    const success = sendMessage(atendente.id, novaMensagem)
+    
+    if (success) {
+      setNovaMensagem('')
+      console.log('✅ [ChatArea] Mensagem enviada via WebSocket')
+    } else {
+      console.error('❌ [ChatArea] Falha ao enviar mensagem')
     }
-
-    setMensagens(prev => [...prev, novaMsgObj])
-    setNovaMensagem('')
-
-    // Simular envio
-    setTimeout(() => {
-      setMensagens(prev => 
-        prev.map(msg => 
-          msg.id === novaMsgObj.id 
-            ? { ...msg, status: 'enviada' as const }
-            : msg
-        )
-      )
-    }, 1000)
-
-    // Simular resposta do atendente (opcional)
-    setTimeout(() => {
-      const respostaAtendente: Mensagem = {
-        id: (Date.now() + 1).toString(),
-        texto: 'Entendi! Obrigado pela orientação.',
-        remetente: 'atendente',
-        timestamp: new Date(),
-        status: 'lida',
-        tipo: 'texto'
-      }
-      setMensagens(prev => [...prev, respostaAtendente])
-    }, 3000)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

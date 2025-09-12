@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Forçar rota dinâmica
 export const dynamic = 'force-dynamic'
 
-const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:8081'
 const WAHA_API_KEY = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
 export async function GET(

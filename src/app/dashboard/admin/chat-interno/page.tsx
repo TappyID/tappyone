@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { useUsuariosChat } from '@/hooks/useUsuarios'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
 import { 
@@ -22,78 +23,26 @@ import {
   Clock,
   Shield,
   X,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle,
+  RefreshCcw
 } from 'lucide-react'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import AtendentesLista from './components/AtendentesLista'
 import ChatInternoArea from './components/ChatInternoArea'
 
-// Mock data para atendentes
-const mockAtendentes = [
-  {
-    id: '1',
-    nome: 'Maria Silva',
-    email: 'maria@tappyone.com',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
-    status: 'online' as 'online' | 'ocupado' | 'ausente' | 'offline',
-    cargo: 'Atendente Senior',
-    ultimaMsg: 'Preciso de ajuda com um cliente...',
-    ultimaAtividade: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
-    naoLidas: 2,
-    fila: 'Suporte Premium',
-    tag: 'VIP',
-    indiceNCS: 98.5,
-    prioridade: 'alta' as 'alta' | 'media' | 'baixa'
-  },
-  {
-    id: '2',
-    nome: 'João Santos',
-    email: 'joao@tappyone.com',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    status: 'ocupado' as 'online' | 'ocupado' | 'ausente' | 'offline',
-    cargo: 'Atendente',
-    ultimaMsg: 'Relatório enviado!',
-    ultimaAtividade: new Date(Date.now() - 15 * 60 * 1000), // 15 min ago
-    naoLidas: 0,
-    fila: 'Suporte Geral',
-    tag: 'Técnico',
-    indiceNCS: 87.2,
-    prioridade: 'media' as 'alta' | 'media' | 'baixa'
-  },
-  {
-    id: '3',
-    nome: 'Ana Costa',
-    email: 'ana@tappyone.com',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    status: 'ausente' as 'online' | 'ocupado' | 'ausente' | 'offline',
-    cargo: 'Supervisora',
-    ultimaMsg: 'Vou almoçar, volto em 1h',
-    ultimaAtividade: new Date(Date.now() - 45 * 60 * 1000), // 45 min ago
-    naoLidas: 1
-  },
-  {
-    id: '4',
-    nome: 'Carlos Oliveira',
-    email: 'carlos@tappyone.com',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    status: 'offline' as 'online' | 'ocupado' | 'ausente' | 'offline',
-    cargo: 'Atendente',
-    ultimaMsg: 'Até amanhã!',
-    ultimaAtividade: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    naoLidas: 0
-  }
-]
-
 export default function ChatInternoPage() {
-  const { user, isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const { usuarios: atendentes, loading: usuariosLoading, error, refetch } = useUsuariosChat()
   const router = useRouter()
   const { actualTheme } = useTheme()
   
   const [selectedAtendente, setSelectedAtendente] = useState<string | null>(null)
-  const [atendentes, setAtendentes] = useState(mockAtendentes)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('todos')
   const [showSearchFilter, setShowSearchFilter] = useState<boolean>(false)
+
+  const loading = authLoading || usuariosLoading
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -125,6 +74,34 @@ export default function ChatInternoPage() {
   })
 
   const selectedAtendenteData = atendentes.find(a => a.id === selectedAtendente)
+
+  // Se houver erro de API, mostrar estado de erro
+  if (error && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center max-w-md p-8">
+          <motion.div 
+            className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <AlertTriangle className="w-10 h-10 text-red-600" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Erro ao carregar usuários</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <motion.button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-4 py-2 bg-[#305e73] text-white rounded-lg font-semibold hover:bg-[#244a5a] transition-colors mx-auto"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <RefreshCcw className="w-4 h-4" />
+            Tentar novamente
+          </motion.button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`h-screen w-screen overflow-hidden ${actualTheme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50/30'}`}>

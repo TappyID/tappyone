@@ -12,9 +12,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token de autorização necessário' }, { status: 401 })
     }
     
-    console.log('📞 [CONNECTIONS] Fazendo requisição para backend:', `${backendUrl}/api/connections`)
+    console.log('📞 [CONNECTIONS] Fazendo requisição para backend:', `${backendUrl}/api/connections/`)
+    console.log('📞 [CONNECTIONS] Authorization header:', authorization ? `${authorization.substring(0, 20)}...` : 'null')
 
-    const response = await fetch(`${backendUrl}/api/connections`, {
+    const response = await fetch(`${backendUrl}/api/connections/`, {
       method: 'GET',
       headers: {
         'Authorization': authorization,

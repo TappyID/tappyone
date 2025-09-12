@@ -68,28 +68,36 @@ export function useWhatsAppData() {
   const [retryCount, setRetryCount] = useState(0)
   const MAX_RETRIES = 3
 
-  // WebSocket temporariamente desabilitado para debug
-  // const { isConnected: wsConnected, lastMessage } = useWebSocket({
-  const wsConnected = false
-  const lastMessage = null
-  /*
+  // WebSocket para mensagens real-time da WAHA
+  const { isConnected: wsConnected, lastMessage, connect: wsConnect } = useWebSocket({
     onMessage: (message: WSMessage) => {
-      debugLogger.log('WebSocket: Received message', message)
+      debugLogger.log('WebSocket WAHA: Received message', message)
       
-      if (message.type === MESSAGE_TYPES.NEW_MESSAGE) {
-        const messageData = message.data as WhatsAppMessage
-        debugLogger.log('WebSocket: New WhatsApp message', messageData)
-        debugLogger.log('WebSocket: Adding to chatId:', messageData.chatId)
+      // Processar eventos da WAHA API
+      if (message.event === 'message') {
+        const wahaMessage = message.payload
+        debugLogger.log('WebSocket WAHA: New WhatsApp message', wahaMessage)
+        
+        // Converter formato WAHA para nosso formato
+        const convertedMessage: WhatsAppMessage = {
+          id: wahaMessage.id,
+          chatId: wahaMessage.from,
+          fromMe: wahaMessage.fromMe || false,
+          body: wahaMessage.body || '',
+          type: 'text',
+          timestamp: new Date(wahaMessage.timestamp * 1000).toISOString(),
+          status: 'delivered'
+        }
         
         // Adicionar mensagem ao estado
         setMessages(prev => {
           const updated = {
             ...prev,
-            [messageData.chatId]: [...(prev[messageData.chatId] || []), messageData]
+            [convertedMessage.chatId]: [...(prev[convertedMessage.chatId] || []), convertedMessage]
           }
-          debugLogger.log('WebSocket: Updated messages state', {
-            chatId: messageData.chatId,
-            messageCount: updated[messageData.chatId]?.length,
+          debugLogger.log('WebSocket WAHA: Updated messages state', {
+            chatId: convertedMessage.chatId,
+            messageCount: updated[convertedMessage.chatId]?.length,
             totalChats: Object.keys(updated).length
           })
           return updated
@@ -97,26 +105,49 @@ export function useWhatsAppData() {
         
         // Atualizar último update para refletir nova mensagem
         setLastUpdate(Date.now())
-        debugLogger.log('WebSocket: Message processing complete')
+        debugLogger.log('WebSocket WAHA: Message processing complete')
       }
     },
     onConnect: () => {
-      debugLogger.log('WebSocket: Connected successfully')
+      debugLogger.log('WebSocket WAHA: Connected successfully')
     },
     onDisconnect: () => {
-      debugLogger.log('WebSocket: Disconnected')
+      debugLogger.log('WebSocket WAHA: Disconnected')
     },
     onError: (error) => {
-      debugLogger.error('WebSocket: Error', error)
+      debugLogger.error('WebSocket WAHA: Error', error)
     },
     autoReconnect: true,
     reconnectInterval: 3000,
     maxReconnectAttempts: 5
   })
-  */
   
   const isConnected = wsConnected
   
+  // Conectar WebSocket quando sessão WAHA for obtida
+  const connectWebSocketToWAHA = useCallback(async () => {
+    try {
+      // Buscar sessão ativa da WAHA para este usuário
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        const connections = result.connections || result.data || result
+        const whatsappConnection = Array.isArray(connections) ? connections.find((conn: any) => conn.platform === 'whatsapp') : null
+        
+        if (whatsappConnection?.session_name) {
+          debugLogger.log('WebSocket WAHA: Connecting with session', whatsappConnection.session_name)
+          wsConnect(whatsappConnection.session_name)
+        }
+      }
+    } catch (error) {
+      debugLogger.error('WebSocket WAHA: Error getting session', error)
+    }
+  }, [wsConnect])
+
   // Carregar dados iniciais
   const loadInitialData = useCallback(async () => {
     if (!user) {
@@ -540,10 +571,11 @@ export function useWhatsAppData() {
 
   // Carregar dados iniciais apenas uma vez quando user muda
   useEffect(() => {
-    if (user && chats.length === 0 && contacts.length === 0 && !loading) {
+    if (user) {
       loadInitialData()
+      connectWebSocketToWAHA() // Conectar WebSocket após carregar dados
     }
-  }, [user]) // Simplificado para evitar loops
+  }, [user, loadInitialData, connectWebSocketToWAHA])
 
   // Polling inteligente - atualiza dados a cada 5 segundos
   useEffect(() => {

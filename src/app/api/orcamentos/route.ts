@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
       url += `?${params.toString()}`
     }
 
-    console.log('Fazendo requisição para:', url)
 
     const response = await fetch(url, {
       method: 'GET',

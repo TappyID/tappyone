@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {

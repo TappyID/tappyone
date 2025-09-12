@@ -21,58 +21,58 @@ const attendantsData = [
     id: '1',
     name: 'Ana Silva',
     avatar: '',
-    ncsScore: 9.2,
-    totalChats: 147,
-    avgResponseTime: '2.3min',
-    satisfaction: 94,
-    resolutionRate: 89,
-    trend: '+0.3',
-    status: 'online'
+    ncsScore: 0,
+    totalChats: 0,
+    avgResponseTime: '0min',
+    satisfaction: 0,
+    resolutionRate: 0,
+    trend: '0',
+    status: 'offline'
   },
   {
     id: '2', 
     name: 'Carlos Santos',
     avatar: '',
-    ncsScore: 8.7,
-    totalChats: 132,
-    avgResponseTime: '3.1min',
-    satisfaction: 91,
-    resolutionRate: 85,
-    trend: '+0.1',
-    status: 'online'
+    ncsScore: 0,
+    totalChats: 0,
+    avgResponseTime: '0min',
+    satisfaction: 0,
+    resolutionRate: 0,
+    trend: '0',
+    status: 'offline'
   },
   {
     id: '3',
     name: 'Maria Costa',
     avatar: '',
-    ncsScore: 8.9,
-    totalChats: 156,
-    avgResponseTime: '2.8min',
-    satisfaction: 93,
-    resolutionRate: 87,
-    trend: '+0.5',
-    status: 'away'
+    ncsScore: 0,
+    totalChats: 0,
+    avgResponseTime: '0min',
+    satisfaction: 0,
+    resolutionRate: 0,
+    trend: '0',
+    status: 'offline'
   },
   {
     id: '4',
     name: 'João Oliveira',
     avatar: '',
-    ncsScore: 8.4,
-    totalChats: 98,
-    avgResponseTime: '4.2min',
-    satisfaction: 88,
-    resolutionRate: 82,
-    trend: '-0.2',
-    status: 'online'
+    ncsScore: 0,
+    totalChats: 0,
+    avgResponseTime: '0min',
+    satisfaction: 0,
+    resolutionRate: 0,
+    trend: '0',
+    status: 'offline'
   }
 ]
 
 const getQualityMetrics = (theme: string) => [
   { 
     label: 'NCS Médio Geral', 
-    value: '8.8', 
+    value: '0', 
     target: '9.0',
-    trend: '+0.2',
+    trend: '0%',
     icon: Star,
     color: theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600',
     bgColor: theme === 'dark' ? 'bg-yellow-900/20' : 'bg-yellow-50',
@@ -80,9 +80,9 @@ const getQualityMetrics = (theme: string) => [
   },
   { 
     label: 'Tempo Resposta Médio', 
-    value: '3.1min', 
+    value: '0min', 
     target: '< 3min',
-    trend: '-0.3min',
+    trend: '0min',
     icon: Clock,
     color: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
     bgColor: theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50',
@@ -90,9 +90,9 @@ const getQualityMetrics = (theme: string) => [
   },
   { 
     label: 'Taxa de Resolução', 
-    value: '86%', 
+    value: '0%', 
     target: '90%',
-    trend: '+2%',
+    trend: '0%',
     icon: CheckCircle2,
     color: theme === 'dark' ? 'text-green-400' : 'text-green-600',
     bgColor: theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50',
@@ -100,9 +100,9 @@ const getQualityMetrics = (theme: string) => [
   },
   { 
     label: 'Satisfação Cliente', 
-    value: '92%', 
+    value: '0%', 
     target: '95%',
-    trend: '+1%',
+    trend: '0%',
     icon: ThumbsUp,
     color: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
     bgColor: theme === 'dark' ? 'bg-purple-900/20' : 'bg-purple-50',
@@ -367,9 +367,9 @@ export default function NCSAnalytics() {
               <ul className={`space-y-2 text-sm ${
                 theme === 'dark' ? 'text-green-200' : 'text-green-800'
               }`}>
-                <li>• Ana Silva mantém excelente NCS (9.2)</li>
-                <li>• Tempo de resposta geral melhorou 15%</li>
-                <li>• Taxa de satisfação acima da meta</li>
+                <li>• Nenhum dado de performance disponível</li>
+                <li>• Sistema aguardando inicialização</li>
+                <li>• Métricas serão carregadas após primeiro atendimento</li>
               </ul>
             </div>
 
@@ -389,9 +389,9 @@ export default function NCSAnalytics() {
               <ul className={`space-y-2 text-sm ${
                 theme === 'dark' ? 'text-orange-200' : 'text-orange-800'
               }`}>
-                <li>• João precisa melhorar tempo de resposta</li>
-                <li>• Foco em aumentar taxa de resolução</li>
-                <li>• Treinamento em técnicas de atendimento</li>
+                <li>• Aguardando dados para análise</li>
+                <li>• Configure metas de performance</li>
+                <li>• Inicie atendimentos para gerar métricas</li>
               </ul>
             </div>
           </motion.div>

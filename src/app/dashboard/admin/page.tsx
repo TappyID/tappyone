@@ -33,33 +33,33 @@ import { useEffect } from 'react'
 
 // Chart Data
 const revenueData = [
-  { month: 'Jan', value: 40 },
-  { month: 'Fev', value: 68 },
-  { month: 'Mar', value: 85 },
-  { month: 'Abr', value: 73 },
-  { month: 'Mai', value: 56 },
-  { month: 'Jun', value: 67 },
-  { month: 'Jul', value: 87 }
+  { month: 'Jan', value: 0 },
+  { month: 'Fev', value: 0 },
+  { month: 'Mar', value: 0 },
+  { month: 'Abr', value: 0 },
+  { month: 'Mai', value: 0 },
+  { month: 'Jun', value: 0 },
+  { month: 'Jul', value: 0 }
 ]
 
 const usersData = [
-  { month: 'Jan', users: 850 },
-  { month: 'Fev', users: 920 },
-  { month: 'Mar', users: 1050 },
-  { month: 'Abr', users: 1180 },
-  { month: 'Mai', users: 1100 },
-  { month: 'Jun', users: 1200 },
-  { month: 'Jul', users: 1234 }
+  { month: 'Jan', users: 0 },
+  { month: 'Fev', users: 0 },
+  { month: 'Mar', users: 0 },
+  { month: 'Abr', users: 0 },
+  { month: 'Mai', users: 0 },
+  { month: 'Jun', users: 0 },
+  { month: 'Jul', users: 0 }
 ]
 
 const performanceData = [
-  { day: 'Seg', responseTime: 120, uptime: 99.2 },
-  { day: 'Ter', responseTime: 98, uptime: 99.8 },
-  { day: 'Qua', responseTime: 145, uptime: 98.5 },
-  { day: 'Qui', responseTime: 110, uptime: 99.1 },
-  { day: 'Sex', responseTime: 95, uptime: 99.9 },
-  { day: 'Sáb', responseTime: 88, uptime: 99.7 },
-  { day: 'Dom', responseTime: 102, uptime: 99.3 }
+  { day: 'Seg', responseTime: 0, uptime: 0 },
+  { day: 'Ter', responseTime: 0, uptime: 0 },
+  { day: 'Qua', responseTime: 0, uptime: 0 },
+  { day: 'Qui', responseTime: 0, uptime: 0 },
+  { day: 'Sex', responseTime: 0, uptime: 0 },
+  { day: 'Sáb', responseTime: 0, uptime: 0 },
+  { day: 'Dom', responseTime: 0, uptime: 0 }
 ]
 
 export default function AdminDashboard() {
@@ -87,32 +87,32 @@ export default function AdminDashboard() {
   const stats = [
     {
       title: 'Total Usuários',
-      value: '1,234',
-      change: '+20% desde o mês passado',
+      value: '0',
+      change: 'Nenhum usuário cadastrado',
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
       title: 'Mensagens',
-      value: '12,345',
-      change: '+180 desde ontem',
+      value: '0',
+      change: 'Nenhuma mensagem hoje',
       icon: MessageSquare,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
       title: 'Performance',
-      value: '98.5%',
-      change: '+2% desde semana passada',
+      value: '0%',
+      change: 'Sistema inicializando',
       icon: BarChart3,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     },
     {
       title: 'Sistema',
-      value: 'Online',
-      change: 'Todos os serviços funcionando',
+      value: 'Offline',
+      change: 'Aguardando inicialização',
       icon: Settings,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100'

@@ -19,32 +19,32 @@ import {
 
 // Dados mock para os charts
 const revenueData = [
-  { month: 'Jan', revenue: 45000, growth: 12 },
-  { month: 'Fev', revenue: 52000, growth: 15 },
-  { month: 'Mar', revenue: 48000, growth: -8 },
-  { month: 'Abr', revenue: 61000, growth: 27 },
-  { month: 'Mai', revenue: 55000, growth: -10 },
-  { month: 'Jun', revenue: 67000, growth: 22 }
+  { month: 'Jan', revenue: 0, growth: 0 },
+  { month: 'Fev', revenue: 0, growth: 0 },
+  { month: 'Mar', revenue: 0, growth: 0 },
+  { month: 'Abr', revenue: 0, growth: 0 },
+  { month: 'Mai', revenue: 0, growth: 0 },
+  { month: 'Jun', revenue: 0, growth: 0 }
 ]
 
 const channelData = [
-  { channel: 'WhatsApp', value: 45, color: '#25D366' },
-  { channel: 'Website', value: 30, color: '#305e73' },
-  { channel: 'Instagram', value: 15, color: '#E4405F' },
-  { channel: 'Outros', value: 10, color: '#6B7280' }
+  { channel: 'WhatsApp', value: 0, color: '#25D366' },
+  { channel: 'Website', value: 0, color: '#305e73' },
+  { channel: 'Instagram', value: 0, color: '#E4405F' },
+  { channel: 'Outros', value: 0, color: '#6B7280' }
 ]
 
 const deviceData = [
-  { device: 'Mobile', percentage: 68, icon: Smartphone },
-  { device: 'Desktop', percentage: 25, icon: Monitor },
-  { device: 'Tablet', percentage: 7, icon: Globe }
+  { device: 'Mobile', percentage: 0, icon: Smartphone },
+  { device: 'Desktop', percentage: 0, icon: Monitor },
+  { device: 'Tablet', percentage: 0, icon: Globe }
 ]
 
 const getKpiData = (theme: string) => [
   {
     label: 'Receita Total',
-    value: 'R$ 328K',
-    change: '+18%',
+    value: 'R$ 0',
+    change: '0%',
     trend: 'up',
     icon: DollarSign,
     color: theme === 'dark' ? 'text-green-400' : 'text-green-600',
@@ -53,8 +53,8 @@ const getKpiData = (theme: string) => [
   },
   {
     label: 'Novos Clientes',
-    value: '1,247',
-    change: '+12%',
+    value: '0',
+    change: '0%',
     trend: 'up',
     icon: Users,
     color: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
@@ -63,8 +63,8 @@ const getKpiData = (theme: string) => [
   },
   {
     label: 'Conversas Ativas',
-    value: '89',
-    change: '+5%',
+    value: '0',
+    change: '0%',
     trend: 'up',
     icon: MessageCircle,
     color: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
@@ -73,8 +73,8 @@ const getKpiData = (theme: string) => [
   },
   {
     label: 'Tempo Médio',
-    value: '3.2min',
-    change: '-8%',
+    value: '0min',
+    change: '0%',
     trend: 'down',
     icon: Clock,
     color: theme === 'dark' ? 'text-orange-400' : 'text-orange-600',
@@ -178,10 +178,10 @@ export default function OverviewAnalytics() {
               <div className="text-right">
                 <div className={`text-2xl font-bold ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>R$ 328K</div>
+                }`}>R$ 0</div>
                 <div className={`text-sm ${
                   theme === 'dark' ? 'text-green-400' : 'text-green-600'
-                }`}>+18% vs período anterior</div>
+                }`}>0% vs período anterior</div>
               </div>
             </div>
 
@@ -338,7 +338,7 @@ export default function OverviewAnalytics() {
             <p className={`text-sm ${
               theme === 'dark' ? 'text-green-200' : 'text-green-800'
             }`}>
-              Receita mensal superou a meta em 18%. Excelente performance!
+              Aguardando dados de receita. Sistema inicializando.
             </p>
           </div>
 
@@ -358,7 +358,7 @@ export default function OverviewAnalytics() {
             <p className={`text-sm ${
               theme === 'dark' ? 'text-blue-200' : 'text-blue-800'
             }`}>
-              WhatsApp representa 45% dos atendimentos. Potencial para automação.
+              Nenhum dado de atendimento disponível no momento.
             </p>
           </div>
 
@@ -378,7 +378,7 @@ export default function OverviewAnalytics() {
             <p className={`text-sm ${
               theme === 'dark' ? 'text-orange-200' : 'text-orange-800'
             }`}>
-              Crescimento consistente nos últimos 3 meses. Manter estratégia atual.
+              Aguardando histórico de dados para análise de tendências.
             </p>
           </div>
         </motion.div>

@@ -13,58 +13,69 @@ import {
   ArrowDown,
   Zap,
   RotateCcw,
-  LayoutGrid
+  LayoutGrid,
+  UserPlus,
+  Target,
+  Heart
 } from 'lucide-react'
 
 // Dados do funil para Nivo
+const conversionData = [
+  { month: 'Jan', visitors: 10200, leads: 3060, customers: 382 },
+  { month: 'Fev', visitors: 11800, leads: 3540, customers: 425 },
+  { month: 'Mar', visitors: 9500, leads: 2850, customers: 342 },
+  { month: 'Abr', visitors: 13200, leads: 3960, customers: 475 },
+  { month: 'Mai', visitors: 12450, leads: 3735, customers: 467 },
+  { month: 'Jun', visitors: 14800, leads: 4440, customers: 532 }
+]
+
+// Dados para o gráfico Nivo (apenas o que ele precisa)
 const funnelData = [
-  { id: 'visitantes', value: 10000, label: 'Visitantes' },
-  { id: 'leads', value: 2500, label: 'Leads' },
-  { id: 'qualificados', value: 750, label: 'Qualificados' },
-  { id: 'convertidos', value: 150, label: 'Convertidos' }
+  { id: 'visitantes', label: 'Visitantes', value: 12450 },
+  { id: 'leads', label: 'Leads', value: 3735 },
+  { id: 'qualificados', label: 'Qualificados', value: 1868 },
+  { id: 'oportunidades', label: 'Oportunidades', value: 934 },
+  { id: 'clientes', label: 'Clientes', value: 467 }
+]
+
+const sourceData = [
+  { source: 'WhatsApp', leads: 1682, conversion: 4.2, color: '#25D366' },
+  { source: 'Website', leads: 934, conversion: 3.8, color: '#305e73' },
+  { source: 'Instagram', leads: 623, conversion: 3.1, color: '#E4405F' },
+  { source: 'Google Ads', leads: 311, conversion: 2.8, color: '#4285F4' },
+  { source: 'Facebook', leads: 185, conversion: 2.3, color: '#1877F2' }
 ]
 
 // Dados detalhados para cards informativos
 const stageDetails = [
-  {
-    stage: 'Visitantes',
-    value: 10000,
-    percentage: 100,
-    color: '#305e73',
-    icon: Users,
-    description: 'Visitantes únicos no site'
-  },
-  {
-    stage: 'Leads',
-    value: 2500,
-    percentage: 25,
-    color: '#4a7c95',
-    icon: MessageCircle,
-    description: 'Iniciaram conversa no WhatsApp'
-  },
-  {
-    stage: 'Qualificados',
-    value: 750,
-    percentage: 7.5,
-    color: '#6b9ab8',
-    icon: CheckCircle,
-    description: 'Leads qualificados pelos atendentes'
-  },
-  {
-    stage: 'Convertidos',
-    value: 150,
-    percentage: 1.5,
-    color: '#8db8da',
-    icon: DollarSign,
-    description: 'Fecharam negócio'
-  }
+  { stage: 'Visitantes', value: 12450, percentage: 100, icon: Users, color: '#3B82F6', description: 'Total de visitantes únicos no período' },
+  { stage: 'Leads', value: 3735, percentage: 30, icon: UserPlus, color: '#10B981', description: 'Visitantes que demonstraram interesse' },
+  { stage: 'Qualificados', value: 1868, percentage: 15, icon: Target, color: '#F59E0B', description: 'Leads que atendem critérios de qualificação' },
+  { stage: 'Oportunidades', value: 934, percentage: 7.5, icon: TrendingUp, color: '#EF4444', description: 'Prospects em processo de negociação' },
+  { stage: 'Clientes', value: 467, percentage: 3.75, icon: Heart, color: '#8B5CF6', description: 'Conversões efetivadas com sucesso' }
 ]
 
-const conversionMetrics = [
-  { label: 'Taxa de Conversão Geral', value: '1.5%', trend: '+0.3%', positive: true },
-  { label: 'Ticket Médio', value: 'R$ 2.847', trend: '+12%', positive: true },
-  { label: 'Tempo Médio no Funil', value: '4.2 dias', trend: '-0.8d', positive: true },
-  { label: 'ROI', value: '340%', trend: '+45%', positive: true }
+const getConversionMetrics = (theme: string) => [
+  {
+    label: 'Taxa Conversão Geral',
+    value: '3.75%',
+    change: '+0.3%',
+    trend: 'up',
+    icon: TrendingUp,
+    color: theme === 'dark' ? 'text-green-400' : 'text-green-600',
+    bgColor: theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50',
+    borderColor: theme === 'dark' ? 'border-green-600/30' : 'border-green-200'
+  },
+  {
+    label: 'Custo por Lead',
+    value: 'R$ 24,50',
+    change: '-8%',
+    trend: 'down',
+    icon: DollarSign,
+    color: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
+    bgColor: theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50',
+    borderColor: theme === 'dark' ? 'border-blue-600/30' : 'border-blue-200'
+  }
 ]
 
 export default function FunnelAnalytics() {
@@ -126,7 +137,7 @@ export default function FunnelAnalytics() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
         >
-          {conversionMetrics.map((metric, index) => (
+          {getConversionMetrics(theme).map((metric, index) => (
             <motion.div
               key={metric.label}
               whileHover={{ y: -2, scale: 1.02 }}
@@ -141,12 +152,12 @@ export default function FunnelAnalytics() {
                   theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
                 }`}>{metric.label}</span>
                 <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
-                  metric.positive 
+                  metric.trend === 'up' 
                     ? (theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700')
                     : (theme === 'dark' ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700')
                 }`}>
-                  <TrendingUp className={`w-3 h-3 ${metric.positive ? '' : 'rotate-180'}`} />
-                  {metric.trend}
+                  <TrendingUp className={`w-3 h-3 ${metric.trend === 'down' ? 'rotate-180' : ''}`} />
+                  {metric.change}
                 </div>
               </div>
               <div className={`text-2xl font-bold ${

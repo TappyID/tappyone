@@ -147,9 +147,7 @@ export default function EditarTagModal({
           contatoTag.tagId === tag.id
         )
       ).map(contato => contato.id)
-      
-      console.log(`🏷️ Contatos associados à tag ${tag.id}:`, contatosComEstaTag)
-      console.log(`📋 Total de contatos carregados:`, contatos.length)
+    
       
       setFormData({
         ...tag,

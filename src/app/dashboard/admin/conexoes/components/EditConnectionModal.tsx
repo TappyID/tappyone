@@ -89,9 +89,9 @@ export function EditConnectionModal({
         const connections = data.connections || []
         
         // Encontrar a conexão atual
-        const currentConnection = connections.find((conn: any) => 
+        const currentConnection = Array.isArray(connections) ? connections.find((conn: any) => 
           conn.platform === 'whatsapp' && conn.user_id
-        )
+        ) : null
         
         if (currentConnection?.modulation) {
           const modulation = typeof currentConnection.modulation === 'string' 

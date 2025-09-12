@@ -8,7 +8,7 @@ export async function GET(
     const filePath = params.path.join('/')
     
     // Fazer request para o backend Go para obter o arquivo
-    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'}/api/whatsapp/media/download`
+    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'}/api/whatsapp/media/download`
     
     const response = await fetch(backendUrl, {
       method: 'POST',

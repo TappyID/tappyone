@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest, { params }: { params: { sessionN
 
 export async function DELETE(request: NextRequest, { params }: { params: { sessionName: string } }) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
     const authorization = request.headers.get('authorization')
     
     if (!authorization) {

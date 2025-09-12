@@ -14,7 +14,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
   const isDark = theme === 'dark'
   
   return (
-    <Link href="/dashboard/admin">
+    <Link href="/dashboard/atendente">
       <motion.div
         className="flex items-center gap-3 p-4 group cursor-pointer"
         whileHover={{ scale: 1.02 }}

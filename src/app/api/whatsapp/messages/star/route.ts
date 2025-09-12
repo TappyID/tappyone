@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7)
     
     // Fazer request diretamente para WAHA API para obter sessões ativas
-    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:3001'
+    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:8081'
     const wahaToken = process.env.WAHA_API_KEY || 'your-api-key'
 
     // Buscar sessões ativas na WAHA API

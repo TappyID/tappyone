@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import MediaSendModal from '@/components/ui/MediaSendModal'
 import SpecialMediaModal from '@/components/ui/SpecialMediaModal'
 import AudioMessageComponent from '@/components/AudioMessageComponent'
+import ChatBlurOverlay from '@/components/ui/ChatBlurOverlay'
 import EditTextModal from './EditTextModal'
 import {
   MessageCircle, 
@@ -106,6 +107,7 @@ import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import { useContatoTags } from '@/hooks/useContatoTags'
+import { useTickets } from '@/hooks/useTickets'
 
 interface ChatAreaProps {
   conversation: any
@@ -170,6 +172,148 @@ export default function ChatArea({
   const [kanbanInfo, setKanbanInfo] = useState<{quadro: string, coluna: string, color: string} | null>(null)
   const [showAgenteModal, setShowAgenteModal] = useState(false)
   
+  // Estados do sistema de tickets
+  const [showBlurOverlay, setShowBlurOverlay] = useState(false) // Desativar blur por padrão
+  const [showTicketSelectionModal, setShowTicketSelectionModal] = useState(false)
+  const [chatAccepted, setChatAccepted] = useState(true) // Chat aceito por padrão
+  const [currentTicket, setCurrentTicket] = useState<any>(null)
+  const [ticketTimeLeft, setTicketTimeLeft] = useState<number | null>(null)
+
+  // Função para aceitar conversa
+  const handleAcceptChat = async () => {
+    try {
+      // Marcar conversa como aceita
+      setChatAccepted(true)
+      setShowBlurOverlay(false)
+      
+      // Abrir modal de ticket
+      setShowTicketSelectionModal(true)
+      
+      console.log('💬 [TICKET] Conversa aceita, abrindo modal de tickets')
+    } catch (error) {
+      console.error('❌ [TICKET] Erro ao aceitar conversa:', error)
+    }
+  }
+
+  // Função para recusar conversa
+  const handleDeclineChat = async () => {
+    try {
+      // Lógica para transferir para próximo atendente
+      console.log('🚫 [TICKET] Conversa recusada, transferindo...')
+      
+      // Por agora, só ocultar o overlay
+      setShowBlurOverlay(false)
+      
+      // Implementar transferência automática aqui
+      await transferToNextAttendant()
+      
+    } catch (error) {
+      console.error('❌ [TICKET] Erro ao recusar conversa:', error)
+    }
+  }
+
+  // Função para criar ticket usando o hook
+  const handleCreateTicket = async (ticketData: any) => {
+    try {
+      const newTicket = await createTicketHook({
+        titulo: ticketData.titulo,
+        descricao: ticketData.descricao,
+        contato_id: chatId || '',
+        prioridade: ticketData.prioridade === 'baixa' ? 3 : 
+                   ticketData.prioridade === 'media' ? 2 : 
+                   ticketData.prioridade === 'alta' ? 1 : 1,
+        status: 'ABERTO'
+      })
+      
+      if (newTicket) {
+        setCurrentTicket(newTicket)
+        setTicketTimeLeft(ticketData.prazoResolucao) // em segundos
+        startTicketTimer(ticketData.prazoResolucao)
+        console.log('🎫 [TICKET] Ticket criado via hook:', newTicket)
+      }
+    } catch (error) {
+      console.error('❌ [TICKET] Erro ao criar ticket:', error)
+    }
+  }
+
+  // Função para selecionar ticket existente
+  const handleSelectTicket = async (ticket: any) => {
+    try {
+      setCurrentTicket(ticket)
+      
+      // Calcular tempo restante baseado no prazo original
+      const createdAt = new Date(ticket.criadoEm).getTime()
+      const now = Date.now()
+      const elapsedMinutes = Math.floor((now - createdAt) / (1000 * 60))
+      const remainingMinutes = Math.max(0, ticket.prazoResolucao - elapsedMinutes)
+      
+      setTicketTimeLeft(remainingMinutes * 60)
+      startTicketTimer(remainingMinutes * 60)
+      
+      console.log('🎫 [TICKET] Ticket selecionado:', ticket)
+    } catch (error) {
+      console.error('❌ [TICKET] Erro ao selecionar ticket:', error)
+    }
+  }
+
+  // Função para iniciar timer do ticket
+  const startTicketTimer = (seconds: number) => {
+    const interval = setInterval(() => {
+      setTicketTimeLeft(prev => {
+        if (prev === null || prev <= 0) {
+          clearInterval(interval)
+          handleTicketTimeout()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  // Função chamada quando ticket expira
+  const handleTicketTimeout = async () => {
+    console.log('⏰ [TICKET] Ticket expirou! Transferindo para próximo atendente...')
+    
+    try {
+      await transferToNextAttendant()
+      
+      // Reset estados
+      setCurrentTicket(null)
+      setTicketTimeLeft(null)
+      setShowBlurOverlay(true)
+      setChatAccepted(false)
+      
+    } catch (error) {
+      console.error('❌ [TICKET] Erro na transferência automática:', error)
+    }
+  }
+
+  // Função para transferir para próximo atendente
+  const transferToNextAttendant = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch('/api/tickets/transfer', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chatId: chatId,
+          ticketId: currentTicket?.id,
+          reason: 'timeout'
+        })
+      })
+      
+      if (response.ok) {
+        console.log('🔄 [TICKET] Transferência realizada com sucesso')
+      }
+    } catch (error) {
+      console.error('❌ [TICKET] Erro na transferência:', error)
+    }
+  }
+  
   // Função para extrair chatId
   const extractChatId = (conversation: any): string | null => {
     if (typeof conversation?.id === 'string') {
@@ -186,6 +330,14 @@ export default function ChatArea({
   const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
   const { tags: contatoTags, updateContatoTags, fetchContatoTags } = useContatoTags(chatId)
+  
+  // Hook para gerenciar tickets
+  const { 
+    tickets: existingTickets, 
+    createTicket: createTicketHook, 
+    fetchTicketsByContact, 
+    loading: ticketsLoading 
+  } = useTickets({ contactId: chatId, autoFetch: false })
   
   // Função para buscar informações do quadro e coluna
   const getKanbanInfo = async (chatId: string) => {
@@ -288,19 +440,15 @@ export default function ChatArea({
   // Escutar mudanças de idioma
   useEffect(() => {
     const handleLanguageChange = async (event: CustomEvent) => {
-      console.log('🎯 ChatArea recebeu evento languageChanged:', event.detail)
       const { languageCode } = event.detail
       setSelectedLanguage(languageCode)
       
       if (languageCode === 'pt' || languageCode === 'pt-BR') {
         // Voltar ao português original
-        console.log('🇧🇷 Voltando para português original')
         setTranslatedMessages([])
       } else {
         // Traduzir mensagens para o novo idioma
-        console.log('🌍 Iniciando tradução das mensagens para:', languageCode, 'Total mensagens:', transformedMessages.length)
         const translated = await translateMessages(transformedMessages, languageCode)
-        console.log('✅ Tradução concluída:', translated.length, 'mensagens')
         setTranslatedMessages(translated)
       }
     }
@@ -332,7 +480,6 @@ export default function ChatArea({
     )
     
     if (shouldTranslate) {
-      console.log('🌍 Traduzindo', transformedMessages.length, 'mensagens para:', selectedLanguage)
       
       translateMessages(transformedMessages, selectedLanguage).then(translated => {
         setTranslatedMessages(translated)
@@ -397,8 +544,7 @@ export default function ChatArea({
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
     
-    console.log('🔍 Buscando por:', searchQuery)
-    console.log('📝 Total de mensagens:', messages.length)
+   
     
     const filtered = messages.filter(message => {
       const body = message.body?.toLowerCase() || ''
@@ -409,7 +555,6 @@ export default function ChatArea({
       const matches = body.includes(searchTerm) || text.includes(searchTerm) || content.includes(searchTerm)
       
       if (matches) {
-        console.log('✅ Mensagem encontrada:', { body, text, content })
       }
       
       return matches
@@ -418,7 +563,6 @@ export default function ChatArea({
       matchText: message.body || message.text || message.content || ''
     }))
     
-    console.log('🎯 Resultados da busca:', filtered.length)
     return filtered
   }, [messages, searchQuery])
   
@@ -657,7 +801,6 @@ export default function ChatArea({
     const isCurrentlyStarred = starredMessages.has(messageId)
     const action = isCurrentlyStarred ? 'unstar' : 'star'
     
-    console.log(`⭐ FAVORITOS - ${action} mensagem:`, messageId)
     
     try {
       // Atualizar estado local imediatamente para feedback visual
@@ -704,7 +847,6 @@ export default function ChatArea({
           return revertStarred
         })
       } else {
-        console.log(`✅ FAVORITOS - ${action} realizado com sucesso`)
       }
       
     } catch (error) {
@@ -724,10 +866,8 @@ export default function ChatArea({
 
   // Handler para envio de mídia com legenda
   const handleMediaSend = async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
-    console.log('🚀 handleMediaSend chamado:', { file: file?.name, caption, mediaType, chatId })
     
     if (!file || !chatId) {
-      console.log('❌ Arquivo ou chatId não encontrado:', { file: !!file, chatId })
       return
     }
 
@@ -2914,13 +3054,6 @@ export default function ChatArea({
         selectedContact={conversation}
       />
 
-      {/* Ticket Modal */}
-      <TicketModal
-        isOpen={showTicketModal}
-        onClose={() => setShowTicketModal(false)}
-        contactId={conversation?.id || ''}
-        contactName={conversation?.name || conversation?.pushname}
-      />
 
       {/* Edit Text Modal */}
       <EditTextModal
@@ -2939,6 +3072,36 @@ export default function ChatArea({
         contactName={conversation?.name || conversation?.pushname}
         actionTitle={editingAction?.title}
       />
+
+      {/* Chat Blur Overlay para sistema de tickets */}
+      <ChatBlurOverlay
+        isVisible={showBlurOverlay && !chatAccepted}
+        chatName={conversation?.name || conversation?.pushname || 'Usuário'}
+        onAccept={handleAcceptChat}
+        onDecline={handleDeclineChat}
+      />
+
+      {/* Ticket Modal */}
+      <TicketModal
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        onCreateTicket={handleCreateTicket}
+        onSelectTicket={handleSelectTicket}
+        chatId={chatId || ''}
+        contactName={conversation?.name || 'Contato'}
+        existingTickets={existingTickets}
+      />
+
+      {/* Timer do Ticket Ativo */}
+      {currentTicket && ticketTimeLeft !== null && (
+        <div className="fixed top-4 right-4 z-40 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <Clock className="w-4 h-4" />
+          <span className="font-semibold">
+            {Math.floor(ticketTimeLeft / 60)}:{String(ticketTimeLeft % 60).padStart(2, '0')}
+          </span>
+          <span className="text-xs opacity-80">restante</span>
+        </div>
+      )}
     </div>
   )
 }
