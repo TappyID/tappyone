@@ -23,7 +23,6 @@ interface CreateContactModalProps {
   onSuccess?: () => void
   onContactCreated?: (contactData: any) => void
   preFilledChatId?: string
-  chatId?: string
   autoAddToKanban?: boolean
   editContact?: {
     id: string
@@ -62,15 +61,15 @@ interface ContactFormData {
   pais: string
 }
 
-export default function CreateContactModal({ 
+const CreateContactModal: React.FC<CreateContactModalProps> = ({ 
   isOpen, 
   onClose, 
-  onSuccess = () => {}, 
+  onSuccess,
   onContactCreated,
   preFilledChatId,
-  chatId,
+  autoAddToKanban = false,
   editContact
-}: CreateContactModalProps) {
+}) => {
   const { actualTheme } = useTheme()
   const isDark = actualTheme === 'dark'
   const [isLoading, setIsLoading] = useState(false)
@@ -81,8 +80,8 @@ export default function CreateContactModal({
   const [whatsappContacts, setWhatsappContacts] = useState<WhatsAppContact[]>([])
   const [selectedContact, setSelectedContact] = useState<WhatsAppContact | null>(null)
   
-  // ChatId efetivo: pode vir do ChatArea (chatId) ou legado (preFilledChatId)
-  const providedChatId = chatId || preFilledChatId
+  // ChatId efetivo: vem do preFilledChatId
+  const providedChatId = preFilledChatId
   
   const [formData, setFormData] = useState<ContactFormData>({
     whatsappContactId: '', nome: '', numeroTelefone: '', fotoPerfil: '',
@@ -137,7 +136,7 @@ export default function CreateContactModal({
         })
       }
     }
-  }, [isOpen, editContact, chatId, preFilledChatId])
+  }, [isOpen, editContact, preFilledChatId])
 
   const fetchContactByChatId = async (chatId: string) => {
     console.log('🔄 Buscando contato pelo chatId via lista de chats:', chatId)
@@ -980,3 +979,4 @@ export default function CreateContactModal({
   )
 }
 
+export default CreateContactModal

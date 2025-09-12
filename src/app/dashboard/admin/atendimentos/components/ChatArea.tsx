@@ -2929,6 +2929,7 @@ export default function ChatArea({
         isOpen={showCreateContactModal}
         onClose={() => setShowCreateContactModal(false)}
         preFilledChatId={chatId}
+        autoAddToKanban={true}
         onContactCreated={(contactData) => {
           console.log('✅ [ChatArea] Contato criado e vinculado ao kanban:', contactData)
           setShowCreateContactModal(false)
