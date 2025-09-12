@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
       url += `?${params.toString()}`
     }
 
-    console.log('Fazendo requisição para:', url)
 
     const response = await fetch(url, {
       method: 'GET',

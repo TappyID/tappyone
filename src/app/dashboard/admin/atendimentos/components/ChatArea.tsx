@@ -106,6 +106,7 @@ import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import { useContatoTags } from '@/hooks/useContatoTags'
+import CreateContactModal from '../../contatos/components/CreateContactModal'
 
 interface ChatAreaProps {
   conversation: any
@@ -375,6 +376,7 @@ export default function ChatArea({
   const [showTransferirModal, setShowTransferirModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
   const [showTicketModal, setShowTicketModal] = useState(false)
+  const [showCreateContactModal, setShowCreateContactModal] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   
   // Função para toggle fullscreen
@@ -2512,16 +2514,16 @@ export default function ChatArea({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
-                          setShowMediaModal('contact')
+                          setShowCreateContactModal(true)
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Contact className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Contato</span>
-                        <span className="text-xs text-muted-foreground">Enviar vCard</span>
+                        <span className="text-xs text-muted-foreground">Criar no Kanban</span>
                       </motion.button>
                       
                       {/* Localização */}
@@ -2920,6 +2922,17 @@ export default function ChatArea({
         onClose={() => setShowTicketModal(false)}
         contactId={conversation?.id || ''}
         contactName={conversation?.name || conversation?.pushname}
+      />
+
+      {/* Create Contact Modal */}
+      <CreateContactModal
+        isOpen={showCreateContactModal}
+        onClose={() => setShowCreateContactModal(false)}
+        preFilledChatId={chatId}
+        onContactCreated={(contactData) => {
+          console.log('✅ [ChatArea] Contato criado e vinculado ao kanban:', contactData)
+          setShowCreateContactModal(false)
+        }}
       />
 
       {/* Edit Text Modal */}

@@ -20,7 +20,11 @@ interface WhatsAppContact {
 interface CreateContactModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess: () => void
+  onSuccess?: () => void
+  onContactCreated?: (contactData: any) => void
+  preFilledChatId?: string
+  chatId?: string
+  autoAddToKanban?: boolean
   editContact?: {
     id: string
     nome: string
@@ -58,12 +62,15 @@ interface ContactFormData {
   pais: string
 }
 
-const CreateContactModal: React.FC<CreateContactModalProps> = ({ 
+export default function CreateContactModal({ 
   isOpen, 
   onClose, 
-  onSuccess,
+  onSuccess = () => {}, 
+  onContactCreated,
+  preFilledChatId,
+  chatId,
   editContact
-}) => {
+}: CreateContactModalProps) {
   const { actualTheme } = useTheme()
   const isDark = actualTheme === 'dark'
   const [isLoading, setIsLoading] = useState(false)
@@ -74,6 +81,9 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
   const [whatsappContacts, setWhatsappContacts] = useState<WhatsAppContact[]>([])
   const [selectedContact, setSelectedContact] = useState<WhatsAppContact | null>(null)
   
+  // ChatId efetivo: pode vir do ChatArea (chatId) ou legado (preFilledChatId)
+  const providedChatId = chatId || preFilledChatId
+  
   const [formData, setFormData] = useState<ContactFormData>({
     whatsappContactId: '', nome: '', numeroTelefone: '', fotoPerfil: '',
     email: '', empresa: '', cpf: '', cnpj: '', cep: '', rua: '',
@@ -82,8 +92,8 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      console.log('🔄 Modal aberto')
       if (editContact) {
-        // Modo edição - pular busca e ir direto pro formulário
         console.log('🔄 Modo edição ativado com dados:', editContact)
         setStep('form')
         setFormData({
@@ -104,6 +114,14 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
           pais: editContact.pais || 'Brasil'
         })
         console.log('✅ FormData configurado para edição')
+      } else if (providedChatId) {
+        // Modo criação com chatId direto (vem do ChatArea)
+        console.log('🔄 Modo criação com chatId direto:', providedChatId)
+        setStep('form')
+        setSelectedContact(null)
+        setSearchQuery('')
+        // Buscar dados do contato pelo chatId
+        fetchContactByChatId(providedChatId)
       } else {
         // Modo criação - buscar contatos do WhatsApp
         if (!editContact) {
@@ -119,7 +137,53 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
         })
       }
     }
-  }, [isOpen, editContact])
+  }, [isOpen, editContact, chatId, preFilledChatId])
+
+  const fetchContactByChatId = async (chatId: string) => {
+    console.log('🔄 Buscando contato pelo chatId via lista de chats:', chatId)
+    setIsLoadingContacts(true)
+    setError(null)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+
+      // Buscar lista de chats e localizar o chat específico
+      const response = await fetch('/api/whatsapp/chats', {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+      if (!response.ok) throw new Error('Erro ao buscar lista de chats')
+
+      const chats = await response.json()
+      const chat = Array.isArray(chats) ? chats.find((c: any) => c?.id === chatId || c?._id === chatId) : null
+
+      const phoneFromId = chatId.replace('@c.us', '')
+
+      setFormData({
+        whatsappContactId: chatId,
+        nome: chat?.name || chat?.title || phoneFromId || '',
+        numeroTelefone: chat?.id?.replace('@c.us', '') || phoneFromId || '',
+        fotoPerfil: chat?.profilePicUrl || '',
+        email: '', empresa: '', cpf: '', cnpj: '', cep: '', rua: '',
+        numero: '', bairro: '', cidade: '', estado: '', pais: 'Brasil'
+      })
+
+      console.log('✅ FormData preenchido com dados do chat/lista')
+    } catch (error) {
+      console.error('Erro ao buscar dados do chat:', error)
+      setError(error instanceof Error ? error.message : 'Erro ao buscar dados do chat')
+      // Em caso de erro, inicializar com chatId ao menos para o telefone
+      const phoneFromId = chatId.replace('@c.us', '')
+      setFormData({
+        whatsappContactId: chatId,
+        nome: phoneFromId,
+        numeroTelefone: phoneFromId,
+        fotoPerfil: '', email: '', empresa: '', cpf: '', cnpj: '', cep: '', rua: '',
+        numero: '', bairro: '', cidade: '', estado: '', pais: 'Brasil'
+      })
+    } finally {
+      setIsLoadingContacts(false)
+    }
+  }
 
   const fetchWhatsAppContacts = async () => {
     setIsLoadingContacts(true)
@@ -192,11 +256,20 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
     console.log(`🔄 handleSubmit iniciado - Modo: ${editContact ? 'Edição' : 'Criação'}`)
     console.log('📝 formData:', formData)
     
-    // Validação diferente para criação vs edição
-    if (!editContact && (!selectedContact || !formData.nome.trim())) {
-      console.log('❌ Validação falhou - contato ou nome não preenchido')
-      setError('Selecione um contato e preencha o nome')
-      return
+    // Validação para criação vs edição
+    if (!editContact) {
+      // No fluxo via ChatArea (providedChatId), não exigimos selectedContact
+      const creatingViaChatId = Boolean(providedChatId)
+      if (!creatingViaChatId && (!selectedContact || !formData.nome.trim())) {
+        console.log('❌ Validação falhou - contato ou nome não preenchido')
+        setError('Selecione um contato e preencha o nome')
+        return
+      }
+      // Garantir que temos telefone no fluxo via chatId
+      if (creatingViaChatId && !formData.numeroTelefone.trim()) {
+        setError('Não foi possível identificar o telefone do chat')
+        return
+      }
     }
     
     if (editContact && !formData.nome.trim()) {
@@ -342,6 +415,24 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
       const successData = await response.json()
       console.log('✅ Contato criado com sucesso:', successData)
 
+      // Notificar parent opcionalmente
+      try {
+        onContactCreated?.(successData)
+      } catch (e) {
+        console.warn('onContactCreated callback lançou exceção, ignorando.', e)
+      }
+
+      // Se foi criado via chatId (modo ChatArea), adicionar automaticamente ao kanban
+      if (!editContact && providedChatId && successData?.id) {
+        console.log('🔄 Adicionando contato ao kanban automaticamente...')
+        try {
+          await addContactToKanban(successData.id, providedChatId)
+        } catch (kanbanError) {
+          console.error('❌ Erro ao adicionar ao kanban:', kanbanError)
+          // Não falhar a criação do contato por erro no kanban
+        }
+      }
+
       onSuccess()
       onClose()
     } catch (error) {
@@ -383,6 +474,58 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
   const formatCEP = (cep: string) => {
     const cleaned = cep.replace(/\D/g, '')
     return cleaned.replace(/(\d{5})(\d{0,3})/, '$1-$2')
+  }
+
+  const addContactToKanban = async (contactId: string, chatId: string) => {
+    console.log('🔄 Adicionando contato ao kanban (via MoveCard):', { contactId, chatId })
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+
+      // 1) Buscar quadros do usuário
+      const quadrosRes = await fetch('/api/kanban/quadros', {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+      if (!quadrosRes.ok) throw new Error('Falha ao buscar quadros do Kanban')
+      const quadros = await quadrosRes.json()
+      const quadro = Array.isArray(quadros) && quadros.length > 0 ? quadros[0] : null
+      if (!quadro?.id) throw new Error('Nenhum quadro Kanban disponível')
+
+      // 2) Buscar colunas do quadro e escolher a de "Novo" (ou primeira)
+      const quadroRes = await fetch(`/api/kanban/quadros/${quadro.id}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+      if (!quadroRes.ok) throw new Error('Falha ao buscar colunas do quadro')
+      const quadroData = await quadroRes.json()
+      const colunas = Array.isArray(quadroData?.colunas) ? quadroData.colunas : []
+      if (colunas.length === 0) throw new Error('Quadro sem colunas ativas')
+      const targetCol = colunas.find((c: any) => (c.nome || '').toLowerCase() === 'novo') || colunas.sort((a: any, b: any) => (a.posicao||0)-(b.posicao||0))[0]
+      if (!targetCol?.id) throw new Error('Coluna alvo não encontrada')
+
+      // 3) Chamar endpoint de movimentação (que cria se não existir)
+      const moveRes = await fetch('/api/kanban/card-movement', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quadroId: quadro.id,
+          cardId: chatId,
+          sourceColumnId: targetCol.id,
+          targetColumnId: targetCol.id,
+          posicao: 0
+        })
+      })
+      if (!moveRes.ok) {
+        const errText = await moveRes.text()
+        throw new Error(`Falha ao mover/criar card: ${errText}`)
+      }
+
+      const result = await moveRes.json()
+      console.log('✅ Card criado/movido no kanban:', result)
+      return result
+    } catch (error) {
+      console.error('❌ Erro ao adicionar ao kanban:', error)
+      throw error
+    }
   }
 
   return (
@@ -837,4 +980,3 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({
   )
 }
 
-export default CreateContactModal
