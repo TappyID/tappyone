@@ -49,7 +49,6 @@
     import { useContatoData } from '@/hooks/useContatoData'
     import { useContatoTags } from '@/hooks/useContatoTags'
     import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
-    import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
     import { useInfiniteChats } from '@/hooks/useInfiniteChats'
 
     interface ConversationSidebarProps {
@@ -301,8 +300,6 @@
         dateRange: null as { start: Date; end: Date } | null,
         messageCount: null as number | null
       })
-      const [showTransferirModal, setShowTransferirModal] = useState(false)
-      const [selectedConversationForTransfer, setSelectedConversationForTransfer] = useState<any>(null)
 
       // Buscar modulation da conexão quando uma fila for selecionada
       const fetchConnectionModulation = async () => {
@@ -1407,20 +1404,6 @@
                             <Archive className="w-3 h-3 text-muted-foreground hover:text-foreground" />
                           </motion.button>
                           
-                          {/* Botão de Transferir */}
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedConversationForTransfer(conversation)
-                              setShowTransferirModal(true)
-                            }}
-                            className="p-1 hover:bg-blue-100 hover:text-blue-600 rounded transition-colors"
-                            title="Transferir atendimento"
-                          >
-                            <ArrowRightLeft className="w-3 h-3 text-muted-foreground hover:text-blue-600" />
-                          </motion.button>
                           
                           {/* Botão de Excluir */}
                           <motion.button
@@ -2197,126 +2180,6 @@
             document.body
           )}
 
-          {/* Modal de Transferir Atendimento */}
-          <TransferirAtendimentoModal
-            isOpen={showTransferirModal}
-            onClose={() => {
-              setShowTransferirModal(false)
-              setSelectedConversationForTransfer(null)
-            }}
-            onConfirm={async (transferData) => {
-              console.log('🔄 [ConversationSidebar] Transferindo chat via modulation:', {
-                chatId: selectedConversationForTransfer?.id,
-                ...transferData
-              })
-              
-              if (!selectedConversationForTransfer?.id) {
-                console.error('❌ [ConversationSidebar] Chat ID não encontrado')
-                throw new Error('Chat ID não encontrado')
-              }
-
-              if (!transferData.filaId) {
-                console.error('❌ [ConversationSidebar] Fila não selecionada')
-                throw new Error('Fila não selecionada')
-              }
-              
-              try {
-                const token = localStorage.getItem('token')
-                if (!token) {
-                  console.error('❌ [ConversationSidebar] Token não encontrado')
-                  throw new Error('Token não encontrado')
-                }
-
-                // 1. Buscar modulation atual da conexão
-                console.log('📡 [ConversationSidebar] Buscando modulation atual...')
-                const connectionsResponse = await fetch('/api/connections/', {
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                  }
-                })
-
-                if (!connectionsResponse.ok) {
-                  throw new Error('Erro ao buscar conexões')
-                }
-
-                const connectionsData = await connectionsResponse.json()
-                const connections = connectionsData.connections || []
-                
-                // Encontrar a conexão WhatsApp atual
-                const currentConnection = Array.isArray(connections) ? connections.find((conn: any) => 
-                  conn.platform === 'whatsapp' && conn.user_id
-                ) : null
-
-                if (!currentConnection) {
-                  throw new Error('Conexão WhatsApp não encontrada')
-                }
-
-                // 2. Obter modulation atual
-                let modulation = { selectedChats: [], selectedFilas: [], selectedGrupos: [] }
-                if (currentConnection.modulation) {
-                  modulation = typeof currentConnection.modulation === 'string' 
-                    ? JSON.parse(currentConnection.modulation) 
-                    : currentConnection.modulation
-                }
-
-                console.log('📋 [ConversationSidebar] Modulation atual:', modulation)
-
-                // 3. Atualizar modulation - adicionar chat na nova fila
-                if (!Array.isArray(modulation.selectedFilas)) {
-                  modulation.selectedFilas = []
-                }
-                
-                // Adicionar nova fila se não existir
-                if (!modulation.selectedFilas.includes(transferData.filaId)) {
-                  modulation.selectedFilas.push(transferData.filaId)
-                }
-
-                // Garantir que o chat está na lista de chats selecionados
-                if (!Array.isArray(modulation.selectedChats)) {
-                  modulation.selectedChats = []
-                }
-                
-                if (!modulation.selectedChats.includes(selectedConversationForTransfer.id)) {
-                  modulation.selectedChats.push(selectedConversationForTransfer.id)
-                }
-
-                console.log('📋 [ConversationSidebar] Modulation atualizada:', modulation)
-
-                // 4. Salvar modulation atualizada
-                console.log('📡 [ConversationSidebar] Atualizando conexão...')
-                const updateResponse = await fetch(`/api/connections/whatsapp/${currentConnection.session_name}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify(modulation)
-                })
-
-                console.log('📡 [ConversationSidebar] Update response status:', updateResponse.status)
-
-                if (updateResponse.ok) {
-                  const result = await updateResponse.json()
-                  console.log('✅ [ConversationSidebar] Chat transferido com sucesso via modulation:', result)
-                  console.log('✅ [ConversationSidebar] Chat', selectedConversationForTransfer.id, 'movido para fila', transferData.filaId)
-                  setShowTransferirModal(false)
-                  setSelectedConversationForTransfer(null)
-                } else {
-                  const errorText = await updateResponse.text()
-                  console.error('❌ [ConversationSidebar] Erro ao atualizar conexão:', updateResponse.statusText, errorText)
-                  throw new Error(`Erro ${updateResponse.status}: ${updateResponse.statusText}`)
-                }
-              } catch (error) {
-                throw error // Re-throw para o modal não fechar
-              }
-            }}
-            chatId={selectedConversationForTransfer?.id}
-            contactData={{
-              nome: selectedConversationForTransfer?.name || '',
-              telefone: selectedConversationForTransfer?.id?.replace('@c.us', '') || ''
-            }}
-          />
         </motion.div>
       )
     }

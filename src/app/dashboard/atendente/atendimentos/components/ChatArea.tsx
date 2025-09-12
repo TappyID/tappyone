@@ -172,24 +172,115 @@ export default function ChatArea({
   const [kanbanInfo, setKanbanInfo] = useState<{quadro: string, coluna: string, color: string} | null>(null)
   const [showAgenteModal, setShowAgenteModal] = useState(false)
   
-  // Estados do sistema de tickets
-  const [showBlurOverlay, setShowBlurOverlay] = useState(false) // Desativar blur por padrão
+  // Estados do sistema de tickets - controle individual por atendente
+  const [showBlurOverlay, setShowBlurOverlay] = useState(false)
   const [showTicketSelectionModal, setShowTicketSelectionModal] = useState(false)
-  const [chatAccepted, setChatAccepted] = useState(true) // Chat aceito por padrão
+  const [chatAccepted, setChatAccepted] = useState(false)
   const [currentTicket, setCurrentTicket] = useState<any>(null)
   const [ticketTimeLeft, setTicketTimeLeft] = useState<number | null>(null)
 
+  // Verificar status do chat para este atendente específico
+  useEffect(() => {
+    const checkChatStatus = async () => {
+      if (!conversation) return
+
+      const currentChatId = extractChatId(conversation)
+      if (!currentChatId) return
+
+      try {
+        const token = localStorage.getItem('token')
+        const userDataStr = localStorage.getItem('user')
+        
+        if (!token || !userDataStr) return
+        
+        const userData = JSON.parse(userDataStr)
+        const atendenteId = userData.id
+
+        // Chave única para este atendente + chat
+        const localKey = `chat_${currentChatId}_attendant_${atendenteId}`
+        const localDecision = localStorage.getItem(localKey)
+        
+        // Se já rejeitou, não mostrar mais
+        if (localDecision === 'rejected') {
+          setChatAccepted(false)
+          setShowBlurOverlay(false)
+          return
+        }
+
+        // Verificar se já tem ticket ativo no backend
+        const response = await fetch(`/api/tickets?contato_id=${currentChatId.replace('@c.us', '')}&status=ANDAMENTO`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const tickets = await response.json()
+          const activeTicket = tickets.find((t: any) => t.status === 'ANDAMENTO')
+          
+          if (activeTicket && activeTicket.atendenteId === atendenteId) {
+            // Este atendente já tem ticket ativo - chat aceito
+            setChatAccepted(true)
+            setCurrentTicket(activeTicket)
+            setShowBlurOverlay(false)
+            localStorage.setItem(localKey, 'accepted')
+          } else if (activeTicket && activeTicket.atendenteId !== atendenteId) {
+            // Outro atendente já aceitou - não mostrar
+            setChatAccepted(false)  
+            setShowBlurOverlay(false)
+          } else if (localDecision === 'accepted') {
+            // Havia aceitado localmente mas sem ticket - mostrar para recriar
+            setChatAccepted(true)
+            setShowBlurOverlay(false)
+          } else {
+            // Chat novo - mostrar blur para aceitar
+            setChatAccepted(false)
+            setShowBlurOverlay(true)
+          }
+        } else {
+          // Erro na API - mostrar blur por segurança
+          setChatAccepted(false)
+          setShowBlurOverlay(true)
+        }
+
+      } catch (error) {
+        console.error('❌ [ChatArea] Erro ao verificar status:', error)
+        setChatAccepted(false)
+        setShowBlurOverlay(true)
+      }
+    }
+
+    checkChatStatus()
+  }, [conversation])
+
   // Função para aceitar conversa
   const handleAcceptChat = async () => {
+    if (!conversation) return
+
+    const currentChatId = extractChatId(conversation)
+    if (!currentChatId) return
+
     try {
-      // Marcar conversa como aceita
+      const token = localStorage.getItem('token')
+      const userDataStr = localStorage.getItem('user')
+      
+      if (!token || !userDataStr) return
+      
+      const userData = JSON.parse(userDataStr)
+      const atendenteId = userData.id
+
+      // Marcar como aceito no localStorage
+      const localKey = `chat_${currentChatId}_attendant_${atendenteId}`
+      localStorage.setItem(localKey, 'accepted')
+      
       setChatAccepted(true)
       setShowBlurOverlay(false)
       
-      // Abrir modal de ticket
+      // Abrir modal de ticket para vincular atendente
       setShowTicketSelectionModal(true)
       
-      console.log('💬 [TICKET] Conversa aceita, abrindo modal de tickets')
+      console.log('✅ [TICKET] Conversa aceita pelo atendente', atendenteId, 'para chat', currentChatId)
     } catch (error) {
       console.error('❌ [TICKET] Erro ao aceitar conversa:', error)
     }
@@ -197,15 +288,46 @@ export default function ChatArea({
 
   // Função para recusar conversa
   const handleDeclineChat = async () => {
+    if (!conversation) return
+
+    const currentChatId = extractChatId(conversation)
+    if (!currentChatId) return
+
     try {
-      // Lógica para transferir para próximo atendente
-      console.log('🚫 [TICKET] Conversa recusada, transferindo...')
+      const token = localStorage.getItem('token')
+      const userDataStr = localStorage.getItem('user')
       
-      // Por agora, só ocultar o overlay
+      if (!token || !userDataStr) return
+      
+      const userData = JSON.parse(userDataStr)
+      const atendenteId = userData.id
+
+      // Marcar como rejeitado no localStorage para este atendente
+      const localKey = `chat_${currentChatId}_attendant_${atendenteId}`
+      localStorage.setItem(localKey, 'rejected')
+      
       setShowBlurOverlay(false)
+      setChatAccepted(false)
       
-      // Implementar transferência automática aqui
-      await transferToNextAttendant()
+      console.log('🚫 [TICKET] Conversa recusada pelo atendente', atendenteId, 'para chat', currentChatId)
+      
+      // Notificar backend sobre a rejeição (opcional - para analytics)
+      try {
+        await fetch('/api/chat-rejections', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chatId: currentChatId,
+            atendenteId: atendenteId,
+            timestamp: new Date().toISOString()
+          })
+        })
+      } catch (apiError) {
+        console.log('ℹ️ [TICKET] Falha ao registrar rejeição no backend (não crítico):', apiError)
+      }
       
     } catch (error) {
       console.error('❌ [TICKET] Erro ao recusar conversa:', error)
@@ -215,21 +337,39 @@ export default function ChatArea({
   // Função para criar ticket usando o hook
   const handleCreateTicket = async (ticketData: any) => {
     try {
+      const token = localStorage.getItem('token')
+      const userDataStr = localStorage.getItem('user')
+      
+      if (!token || !userDataStr) return
+      
+      const userData = JSON.parse(userDataStr)
+      const atendenteId = userData.id
+
       const newTicket = await createTicketHook({
         titulo: ticketData.titulo,
         descricao: ticketData.descricao,
-        contato_id: chatId || '',
+        contato_id: chatId?.replace('@c.us', '') || '',
         prioridade: ticketData.prioridade === 'baixa' ? 3 : 
                    ticketData.prioridade === 'media' ? 2 : 
                    ticketData.prioridade === 'alta' ? 1 : 1,
-        status: 'ABERTO'
+        status: 'ANDAMENTO'  // Status em andamento quando atendente aceita
       })
       
       if (newTicket) {
         setCurrentTicket(newTicket)
-        setTicketTimeLeft(ticketData.prazoResolucao) // em segundos
-        startTicketTimer(ticketData.prazoResolucao)
-        console.log('🎫 [TICKET] Ticket criado via hook:', newTicket)
+        setShowTicketSelectionModal(false) // Fechar modal após criar
+        
+        // Iniciar timer se fornecido
+        if (ticketData.prazoResolucao) {
+          setTicketTimeLeft(ticketData.prazoResolucao * 60) // converter para segundos
+          startTicketTimer(ticketData.prazoResolucao * 60)
+        }
+        
+        console.log('✅ [TICKET] Ticket criado e vinculado ao atendente:', {
+          ticketId: newTicket.id,
+          atendenteId: atendenteId,
+          chatId: chatId
+        })
       }
     } catch (error) {
       console.error('❌ [TICKET] Erro ao criar ticket:', error)
@@ -3081,13 +3221,22 @@ export default function ChatArea({
         onDecline={handleDeclineChat}
       />
 
-      {/* Ticket Modal */}
+      {/* Ticket Selection Modal (opens when accepting chat) */}
+      <TicketModal
+        isOpen={showTicketSelectionModal}
+        onClose={() => setShowTicketSelectionModal(false)}
+        onCreateTicket={handleCreateTicket}
+        onSelectTicket={handleSelectTicket}
+        contactId={chatId || ''}
+        contactName={conversation?.name || 'Contato'}
+        existingTickets={existingTickets}
+      />
+
+      {/* Ticket Management Modal (opens from button) */}
       <TicketModal
         isOpen={showTicketModal}
         onClose={() => setShowTicketModal(false)}
-        onCreateTicket={handleCreateTicket}
-        onSelectTicket={handleSelectTicket}
-        chatId={chatId || ''}
+        contactId={chatId || ''}
         contactName={conversation?.name || 'Contato'}
         existingTickets={existingTickets}
       />

@@ -35,6 +35,9 @@ interface TicketModalProps {
   onClose: () => void
   contactId: string
   contactName?: string
+  onCreateTicket?: (ticketData: any) => Promise<void>
+  onSelectTicket?: (ticket: any) => Promise<void>
+  existingTickets?: any[]
 }
 
 const statusColors = {
@@ -61,7 +64,15 @@ const prioridadeLabels = {
   3: 'Baixa'
 }
 
-export default function TicketModal({ isOpen, onClose, contactId, contactName }: TicketModalProps) {
+export default function TicketModal({ 
+  isOpen, 
+  onClose, 
+  contactId, 
+  contactName,
+  onCreateTicket,
+  onSelectTicket,
+  existingTickets = []
+}: TicketModalProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -141,6 +152,13 @@ export default function TicketModal({ isOpen, onClose, contactId, contactName }:
       }
 
       if (response.ok) {
+        const ticketData = await response.json()
+        
+        // Se tem callback para criar ticket, usar
+        if (onCreateTicket && !editingTicket) {
+          await onCreateTicket(ticketData)
+        }
+        
         resetForm()
         fetchTickets() // Recarregar lista
       } else {
