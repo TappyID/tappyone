@@ -1,35 +1,6 @@
 [
   {
-    "timestamp": "2025-09-12T23:03:50.317Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "demo-1",
-      "notesCount": 0,
-      "assinaturasCount": 0,
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-12T23:03:50.332Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_final_data",
-    "data": {
-      "notesCounts": {
-        "demo-1": 0
-      },
-      "orcamentosCounts": "usando dados otimizados do hook",
-      "agendamentosCounts": "usando dados otimizados do hook",
-      "assinaturasCounts": {
-        "demo-1": 0
-      },
-      "totalOptimizedCards": 0
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-12T23:04:07.425Z",
+    "timestamp": "2025-09-12T23:17:55.802Z",
     "component": "Kanban",
     "action": "loadChatsManual_response",
     "data": {
@@ -39,16 +10,15 @@
       "headers": {
         "connection": "keep-alive",
         "content-type": "application/json",
-        "date": "Fri, 12 Sep 2025 23:04:07 GMT",
+        "date": "Fri, 12 Sep 2025 23:17:55 GMT",
         "keep-alive": "timeout=5",
         "transfer-encoding": "chunked",
         "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url"
       }
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+    }
   },
   {
-    "timestamp": "2025-09-12T23:04:08.083Z",
+    "timestamp": "2025-09-12T23:17:56.223Z",
     "component": "Kanban",
     "action": "loadChatsManual_data_received",
     "data": {
@@ -244,11 +214,37 @@
           "name": ""
         }
       ]
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+    }
   },
   {
-    "timestamp": "2025-09-12T23:04:16.607Z",
+    "timestamp": "2025-09-12T23:17:57.071Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    }
+  },
+  {
+    "timestamp": "2025-09-12T23:17:59.703Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "demo-1": 0
+      },
+      "totalOptimizedCards": 0
+    }
+  },
+  {
+    "timestamp": "2025-09-12T23:17:59.947Z",
     "component": "Kanban",
     "action": "loadChatsManual_chats_transformed",
     "data": {
@@ -295,21 +291,19 @@
         "",
         ""
       ]
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+    }
   },
   {
-    "timestamp": "2025-09-12T23:04:21.719Z",
+    "timestamp": "2025-09-12T23:17:59.967Z",
     "component": "Kanban",
     "action": "loadChatsManual_success",
     "data": {
       "finalChatCount": 34,
       "success": true
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+    }
   },
   {
-    "timestamp": "2025-09-12T23:04:21.747Z",
+    "timestamp": "2025-09-12T23:17:59.990Z",
     "component": "Kanban",
     "action": "loadAllCounts_started",
     "data": {
@@ -319,19 +313,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-12T23:04:25.439Z",
-    "component": "Kanban",
-    "action": "loadChatsManual_finished",
-    "data": {
-      "finalState": {
-        "chatsLength": 0,
-        "whatsappLoading": false
-      }
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-12T23:04:25.719Z",
+    "timestamp": "2025-09-12T23:18:00.042Z",
     "component": "Kanban",
     "action": "loadAllCounts_cards_mapped",
     "data": {
@@ -384,23 +366,59 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-12T23:04:29.656Z",
+    "timestamp": "2025-09-12T23:18:00.745Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "0@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-12T23:18:06.621Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
       "cardId": "120363401035050552@g.us",
       "notesCount": 0,
       "assinaturasCount": 0,
-      "contactStatus": "error"
+      "contactStatus": "synced"
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-12T23:04:59.331Z",
+    "timestamp": "2025-09-12T23:18:43.922Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
-      "cardId": "120363419442598806@g.us",
+      "cardId": "554396159222@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-12T23:18:53.788Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "554396532909@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-12T23:19:27.763Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "68268672970970@c.us",
       "notesCount": 0,
       "assinaturasCount": 0,
       "contactStatus": "error"

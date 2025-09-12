@@ -43,7 +43,6 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanban } from '@/hooks/useKanban'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
-import { useWhatsAppData, WhatsAppChat } from '@/hooks/useWhatsAppData'
 import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
 import AgendamentoModal from '../../atendimentos/components/modals/AgendamentoModal'
@@ -1879,8 +1878,8 @@ export default function QuadroPage() {
     getColumnStats
   } = useKanbanOptimized(id)
   
-  // Hook customizado para Kanban - sem polling automático
-  const [chats, setChats] = useState<WhatsAppChat[]>([])
+  // Hook customizado para Kanban - contatos do CRM
+  const [chats, setChats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [whatsappLoading, setWhatsappLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1975,7 +1974,7 @@ export default function QuadroPage() {
         userId: user?.id
       })
       
-      const response = await fetch(`/api/whatsapp/chats`, {
+      const response = await fetch(`/api/contatos`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2000,7 +1999,7 @@ export default function QuadroPage() {
         
         await fileLogger.log({
           component: 'Kanban',
-          action: 'loadChatsManual_data_received',
+          action: 'loadContactsManual_data_received',
           data: { 
             type: typeof data, 
             isArray: Array.isArray(data), 
@@ -2011,57 +2010,57 @@ export default function QuadroPage() {
           userId: user?.id
         })
         
-        // Aplicar a mesma lógica do useWhatsAppData para buscar fotos de perfil
-        const transformedChats = await Promise.all(data.map(async (chat: any) => {
-          let profilePictureUrl = null
-          
-          // Extrair o ID correto do chat (pode estar em chat.id.id ou chat.id._serialized)
-          let chatId = chat.id
-          if (typeof chat.id === 'object') {
-            chatId = chat.id.id || chat.id._serialized || chat.id.user || JSON.stringify(chat.id)
-          }
-          
-          // Buscar foto de perfil usando API route do Next.js
-          try {
-            const pictureResponse = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}/picture`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            })
-            
-            if (pictureResponse.ok) {
-              const pictureData = await pictureResponse.json()
-              profilePictureUrl = pictureData.url
-            }
-          } catch (pictureError) {
-            // Silenciar erros de foto
-          }
+        // Transformar contatos para formato compatível com o kanban
+        const transformedContacts = data.map((contact: any) => {
+          // Criar chatId a partir do número de telefone do contato
+          const chatId = contact.numeroTelefone ? `${contact.numeroTelefone}@c.us` : `contact_${contact.id}@c.us`
           
           return {
-            ...chat,
-            profilePictureUrl
+            id: chatId, // Usar chatId como ID para compatibilidade
+            name: contact.nome || 'Sem nome',
+            title: contact.nome || 'Sem nome',
+            pushname: contact.nome,
+            numeroTelefone: contact.numeroTelefone,
+            email: contact.email,
+            empresa: contact.empresa,
+            profilePictureUrl: contact.fotoPerfil || null,
+            isGroup: false,
+            lastMessage: null,
+            timestamp: contact.createdAt || Date.now(),
+            contactId: contact.id, // Manter o ID original do contato
+            // Dados adicionais do contato
+            cpf: contact.cpf,
+            cnpj: contact.cnpj,
+            endereco: {
+              cep: contact.cep,
+              rua: contact.rua,
+              numero: contact.numero,
+              bairro: contact.bairro,
+              cidade: contact.cidade,
+              estado: contact.estado,
+              pais: contact.pais
+            }
           }
-        }))
+        })
         
         await fileLogger.log({
           component: 'Kanban',
-          action: 'loadChatsManual_chats_transformed',
+          action: 'loadContactsManual_contacts_transformed',
           data: { 
-            count: transformedChats?.length || 0,
-            firstChat: transformedChats?.[0] || null,
-            allChatNames: transformedChats?.map(c => c.name) || []
+            count: transformedContacts?.length || 0,
+            firstContact: transformedContacts?.[0] || null,
+            allContactNames: transformedContacts?.map(c => c.name) || []
           },
           userId: user?.id
         })
         
-        setChats(transformedChats || [])
+        setChats(transformedContacts || [])
         
         await fileLogger.log({
           component: 'Kanban',
-          action: 'loadChatsManual_success',
+          action: 'loadContactsManual_success',
           data: { 
-            finalChatCount: transformedChats?.length || 0,
+            finalContactCount: transformedContacts?.length || 0,
             success: true
           },
           userId: user?.id
@@ -3464,7 +3463,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
   }
 
   // Filtrar conversas baseado na busca
-  const filtrarConversas = (conversas: WhatsAppChat[]) => {
+  const filtrarConversas = (conversas: any[]) => {
     if (!searchQuery.trim()) return conversas
     
     const query = searchQuery.toLowerCase()
