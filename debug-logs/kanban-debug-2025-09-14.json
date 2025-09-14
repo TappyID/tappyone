@@ -1,18 +1,62 @@
 [
   {
-    "timestamp": "2025-09-14T01:31:57.219Z",
+    "timestamp": "2025-09-14T03:03:51.371Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 8,
+      "uniqueCardIds": 8,
+      "sampleCardIds": [
+        "5518991222983@c.us",
+        "5518997974883@c.us",
+        "593993695740@c.us",
+        "5518981248008@c.us",
+        "558004940140@c.us"
+      ],
+      "allCardIds": [
+        "5518991222983@c.us",
+        "5518997974883@c.us",
+        "593993695740@c.us",
+        "5518981248008@c.us",
+        "558004940140@c.us",
+        "5518997200106@c.us",
+        "2349162389789@c.us",
+        "0@c.us"
+      ]
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-14T03:03:51.695Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
-      "cardId": "5518981248008@c.us",
+      "cardId": "demo-1",
       "notesCount": 0,
-      "assinaturasCount": 1,
+      "assinaturasCount": 0,
       "contactStatus": "synced"
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-14T01:31:58.310Z",
+    "timestamp": "2025-09-14T03:03:51.716Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "demo-1": 0
+      },
+      "totalOptimizedCards": 0
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-14T03:03:51.843Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -24,19 +68,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-14T01:31:59.061Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_card_processed",
-    "data": {
-      "cardId": "5518991222983@c.us",
-      "notesCount": 0,
-      "assinaturasCount": 0,
-      "contactStatus": "synced"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-14T01:31:59.590Z",
+    "timestamp": "2025-09-14T03:03:52.263Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -48,7 +80,31 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-14T01:32:03.964Z",
+    "timestamp": "2025-09-14T03:03:52.550Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "593993695740@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 2,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-14T03:03:53.378Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518981248008@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-14T03:04:00.774Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -60,12 +116,24 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-14T01:32:04.568Z",
+    "timestamp": "2025-09-14T03:04:06.730Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
-      "cardId": "593993695740@c.us",
-      "notesCount": 0,
+      "cardId": "5518997200106@c.us",
+      "notesCount": 2,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-14T03:04:14.969Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "2349162389789@c.us",
+      "notesCount": 2,
       "assinaturasCount": 2,
       "contactStatus": "synced"
     },
