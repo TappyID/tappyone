@@ -42,7 +42,6 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanban } from '@/hooks/useKanban'
-import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import { useWhatsAppData, WhatsAppChat } from '@/hooks/useWhatsAppData'
 import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
@@ -1039,9 +1038,6 @@ function SortableCard({
 }: SortableCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
-  
-  // Debug do estado
-  console.log('Card render - expandedSection:', expandedSection, 'cardId:', card.id)
   
   const {
     attributes,
@@ -2422,23 +2418,10 @@ export default function QuadroPage() {
     return 0
   }
 
-  // Função para buscar notas/anotações count
-  const fetchNotesCount = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data.length : 0
-      }
-    } catch (error) {
-      console.error('Erro ao buscar anotações:', error)
-    }
-    return 0
+  // Função para buscar contagem de anotações do batch otimizado
+  const getAnotacoesCountFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    return cardData?.anotacoes?.length || 0
   }
 
   // Função para buscar contagem de assinaturas
@@ -2480,24 +2463,13 @@ export default function QuadroPage() {
     return []
   }
 
-  // Função para buscar detalhes completos de anotações
-  const fetchAnotacoesDetails = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data : []
-      }
-    } catch (error) {
-      console.error('Erro ao buscar detalhes de anotações:', error)
-    }
-    return []
+  // Função para buscar detalhes completos de anotações do batch otimizado
+  const getAnotacoesDetailsFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    const anotacoes = cardData?.anotacoes || []
+    console.log('🔍 DEBUG Anotações do batch para', chatId, ':', anotacoes)
+    console.log('🔍 DEBUG Quantidade de anotações:', anotacoes.length)
+    return anotacoes
   }
 
   // Função para buscar detalhes completos de orçamentos
@@ -2625,29 +2597,27 @@ export default function QuadroPage() {
       for (const cardId of uniqueCardIds) {
         try {
           // Buscar apenas dados não otimizados (assinaturas, anotações)
-          const [notesCount, assinaturasCount, contactStatusResult, assinaturasDetalhesData, anotacoesDetalhesData] = await Promise.all([
-            fetchNotesCount(cardId),
+          const [assinaturasCount, contactStatusResult, assinaturasDetalhesData] = await Promise.all([
             fetchAssinaturasCount(cardId),
             checkContactStatus(cardId),
-            fetchAssinaturasDetails(cardId),
-            fetchAnotacoesDetails(cardId)
+            fetchAssinaturasDetails(cardId)
           ])
           
-          // Armazenar contagens não otimizadas
-          notesCounts[cardId] = notesCount
+          // Armazenar contagens do batch otimizado
+          notesCounts[cardId] = getAnotacoesCountFromBatch(cardId)
           assinaturasCounts[cardId] = assinaturasCount
           
           // Dados otimizados já disponíveis via hook useKanbanOptimized
           // Mantendo apenas dados não otimizados (assinaturas, anotações)
           assinaturasDetalhes[cardId] = assinaturasDetalhesData
-          anotacoesDetalhes[cardId] = anotacoesDetalhesData
+          anotacoesDetalhes[cardId] = getAnotacoesDetailsFromBatch(cardId)
           
           await fileLogger.log({
             component: 'Kanban',
             action: 'loadAllCounts_card_processed',
             data: { 
               cardId,
-              notesCount,
+              notesCount: getAnotacoesCountFromBatch(cardId),
               assinaturasCount,
               contactStatus: contactStatusResult
             },
@@ -2946,14 +2916,9 @@ export default function QuadroPage() {
     })
   }
 
-  // Função para mapear conversas do WhatsApp para colunas do Kanban
+  // Função para mapear contatos do BD para colunas do Kanban
   const mapearConversasParaColunas = () => {
-    console.log('🗂️ mapearConversasParaColunas chamada:', {
-      chats: chats?.length || 0,
-      temChats: !!chats,
-      loading,
-      colunas: colunas?.length || 0
-    })
+    
     
     // Se está carregando, retornar colunas vazias
     if (loading) {
@@ -2964,15 +2929,30 @@ export default function QuadroPage() {
       }))
     }
     
-    // Se não há conversas, usar colunas vazias
-    if (!chats || chats.length === 0) {
-      console.log('⚠️ Retornando cards demo porque não há conversas')
+    // USAR CONTATOS DO BD via useKanbanOptimized em vez de chats WhatsApp
+    const cardsFromDB = Object.values(optimizedCards || {})
+    console.log('📊 Contatos do BD disponíveis:', cardsFromDB.length)
+    
+    // 🚨 DEBUG INTENSIVO - DADOS ORIGINAIS
+    console.log('🔍 [MEGA DEBUG] ESTADO COMPLETO DOS DADOS:', {
+      optimizedCards,
+      cardsFromDB,
+      totalCards: cardsFromDB.length,
+      firstCard: cardsFromDB[0],
+      optimizedLoading,
+      optimizedError,
+      columnStats
+    })
+    
+   
+    if (!cardsFromDB || cardsFromDB.length === 0) {
+      console.log('⚠️ Retornando colunas vazias - sem contatos no BD')
       return colunas.map((coluna, index) => ({
         ...coluna,
         cards: index === 0 ? [{
           id: 'demo-1',
-          nome: 'Aguardando Conversas do WhatsApp',
-          descricao: 'Conecte seu WhatsApp para ver as conversas aqui',
+          nome: 'Aguardando Contatos do BD',
+          descricao: 'Cadastre contatos no CRM para ver aqui',
           posicao: 1,
           tags: ['Demo'],
           prazo: new Date().toISOString(),
@@ -2983,37 +2963,16 @@ export default function QuadroPage() {
       }))
     }
 
-    // Filtrar conversas baseado na busca
-    const conversasFiltradas = searchQuery.trim() 
-      ? chats.filter(chat => {
-          const chatId = extractChatId(chat)
-          return chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 chat.lastMessage?.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 chatId.includes(searchQuery)
-        })
-      : chats
-
-    // Mapear conversas para cards com badges e metadados
-    let cards = conversasFiltradas.map((chat, index) => {
-      const avatar = chat.profilePictureUrl || null
-      const chatId = extractChatId(chat)
-      
-      // Debug: verificar se o avatar está sendo definido
-      console.log(`🖼️ Card ${chat.name}:`, {
-        chatId,
-        profilePictureUrl: chat.profilePictureUrl,
-        avatar,
-        hasAvatar: !!avatar
-      })
-
-      // Buscar contagens dos fluxos para este chat
-      const cardData = getCardData(chatId)
+    // USAR APENAS CONTATOS DO BD - REMOVENDO IMPLEMENTAÇÃO WHATSAPP DUPLICADA
+    const cardsFromDBMapped = cardsFromDB.map((cardData, index) => {
+      const chatId = cardData.id // CardData já tem id
       const cardCounts = {
-        orcamentosCount: cardData?.orcamentos?.length || 0,
-        agendamentosCount: cardData?.agendamentos?.length || 0,
+        orcamentosCount: cardData.orcamentos?.length || 0,
+        agendamentosCount: cardData.agendamentos?.length || 0,
         assinaturasCount: assinaturasCount[chatId] || 0,
         notesCount: notesCount[chatId] || 0
       }
+      
       
       // Criar tags baseadas nas contagens e status
       const tags = []
@@ -3021,34 +2980,41 @@ export default function QuadroPage() {
       if (cardCounts.agendamentosCount > 0) tags.push(`${cardCounts.agendamentosCount} Agendamento${cardCounts.agendamentosCount > 1 ? 's' : ''}`)
       if (cardCounts.assinaturasCount > 0) tags.push(`${cardCounts.assinaturasCount} Assinatura${cardCounts.assinaturasCount > 1 ? 's' : ''}`)
       if (cardCounts.notesCount > 0) tags.push(`${cardCounts.notesCount} Anotaç${cardCounts.notesCount > 1 ? 'ões' : 'ão'}`)
-      if (chat.lastMessage) tags.push('WhatsApp')
       if (tags.length === 0) tags.push('Novo Contato')
       
-      return {
+      // Extrair número do telefone do ID (formato: "5518999999999@c.us")
+      const phoneNumber = chatId.includes('@') ? chatId.split('@')[0] : chatId
+      
+      const finalCard = {
         id: chatId,
-        nome: chat.name || 'Contato sem nome',
-        descricao: chat.lastMessage?.body || 'Aguardando primeira mensagem',
+        nome: `Contato ${phoneNumber.slice(-4)}`, // Usar últimos 4 dígitos do telefone
+        descricao: `Contato WhatsApp ${phoneNumber}`,
         posicao: index + 1,
         tags: tags,
-        prazo: chat.timestamp || new Date().toISOString(),
+        prazo: new Date().toISOString(),
         comentarios: cardCounts.notesCount || 0,
         anexos: 0,
-        responsavel: chat.name || 'Contato',
-        avatar: avatar,
-        phone: chatId ? chatId.split('@')[0] : 'N/A',
-        isOnline: chat.lastMessage ? new Date(chat.timestamp).getTime() > Date.now() - 300000 : false,
+        responsavel: `Contato ${phoneNumber.slice(-4)}`,
+        avatar: null,
+        phone: phoneNumber,
+        isOnline: false,
         // Badges de contagem para exibição
         badges: {
-          orcamentos: getCardData(chatId)?.orcamentos?.length || 0,
-          agendamentos: getCardData(chatId)?.agendamentos?.length || 0,
-          assinaturas: assinaturasCount[chatId] || 0,
-          anotacoes: notesCount[chatId] || 0
+          orcamentos: cardCounts.orcamentosCount,
+          agendamentos: cardCounts.agendamentosCount,
+          assinaturas: cardCounts.assinaturasCount,
+          anotacoes: cardCounts.notesCount
         }
       }
+      
+     
+      
+      return finalCard
     })
     
-    // Ordenar cards baseado nos metadados salvos
-    cards = cards.sort((a, b) => {
+    // Usar apenas cards do BD (removendo duplicação) - CORRIGIDO PARA USAR cardsFromDBMapped
+    const allCards = cardsFromDBMapped
+    allCards.sort((a, b) => {
       const metaA = cardMetadata[a.id]
       const metaB = cardMetadata[b.id]
       
@@ -3071,33 +3037,23 @@ export default function QuadroPage() {
       const temMetadados = Object.keys(cardMetadata).length > 0
       
       // Filtrar cards que pertencem a esta coluna baseado nos metadados
-      const cardsComMetadados = cards.filter(card => {
+      const cardsComMetadados = cardsFromDBMapped.filter(card => {
         const meta = cardMetadata[card.id]
         return meta?.colunaId === coluna.id
       })
       
-      console.log(`📋 Coluna ${coluna.nome}:`, {
-        colunaId: coluna.id,
-        cardsComMetadados: cardsComMetadados.length,
-        temMetadados,
-        hasManualChanges,
-        totalMetadata: Object.keys(cardMetadata).length,
-        totalCards: cards.length,
-        columnStats: getColumnStats(coluna.id)
-      })
+     
       
       // Se não há metadados OU não há mudanças manuais, colocar todos os cards na PRIMEIRA coluna apenas
       if (!temMetadados || !hasManualChanges) {
         // APENAS a primeira coluna recebe todos os cards novos
         if (colunaIndex === 0) {
-          console.log(`📥 Todos cards novos vão para a primeira coluna "${coluna.nome}":`, cards.map(c => c.nome))
           return {
             ...coluna,
-            cards: cards // Todos os cards ficam na primeira coluna
+            cards: cardsFromDBMapped // Todos os cards ficam na primeira coluna
           }
         } else {
           // Outras colunas ficam vazias até o usuário arrastar manualmente
-          console.log(`📭 Coluna "${coluna.nome}" fica vazia (aguardando drag manual)`)
           return {
             ...coluna,
             cards: [] // Colunas 2+ ficam vazias
@@ -3106,7 +3062,7 @@ export default function QuadroPage() {
       }
       
       // Se há metadados E mudanças manuais, combinar cards com e sem metadados
-      const cardsSemMetadados = cards.filter(card => !cardMetadata[card.id])
+      const cardsSemMetadados = cardsFromDBMapped.filter(card => !cardMetadata[card.id])
       
       // Cards novos sem metadados vão APENAS para a primeira coluna
       const cardsSemMetadadosParaEstaColuna = colunaIndex === 0 ? cardsSemMetadados : []

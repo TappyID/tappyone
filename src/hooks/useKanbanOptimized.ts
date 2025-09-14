@@ -17,9 +17,15 @@ export interface ColumnStats {
 export interface CardData {
   id: string
   orcamentos: any[]
-  agendamentos: any[] 
+  agendamentos: any[]
+  tags: any[]
+  tickets: any[]
+  atendentes: any[]
+  filas: any[]
+  agentes: any[]
   assinaturas: any[]
   anotacoes: any[]
+  contato: any
 }
 
 export interface OptimizedKanbanData {
@@ -29,7 +35,7 @@ export interface OptimizedKanbanData {
   error: string | null
 }
 
-// Cache global para dados do Kanban - evita re-fetches desnecessários
+// Cache global para dados do Kanban
 const kanbanCache = new Map<string, {
   data: OptimizedKanbanData
   timestamp: number
@@ -37,7 +43,6 @@ const kanbanCache = new Map<string, {
 }>()
 
 const CACHE_TTL = 2 * 60 * 1000 // 2 minutos
-const PREFETCH_DELAY = 5000 // 5 segundos para prefetch
 
 export function useKanbanOptimized(quadroId: string) {
   const [data, setData] = useState<OptimizedKanbanData>({
@@ -61,12 +66,10 @@ export function useKanbanOptimized(quadroId: string) {
   const getCachedData = useCallback((key: string): OptimizedKanbanData | null => {
     const cached = kanbanCache.get(key)
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-      console.log('🚀 Cache HIT para Kanban:', key)
       return cached.data
     }
     if (cached) {
       kanbanCache.delete(key)
-      console.log('🗑️ Cache expirado removido:', key)
     }
     return null
   }, [])
@@ -78,56 +81,109 @@ export function useKanbanOptimized(quadroId: string) {
       timestamp: Date.now(),
       ttl: CACHE_TTL
     })
-    console.log('💾 Cache SALVO para Kanban:', key)
   }, [])
 
   // Buscar dados otimizados com batch API
-  const fetchOptimizedData = useCallback(async (background = false): Promise<OptimizedKanbanData> => {
-    const token = getAuthToken()
+  const fetchOptimizedData = useCallback(async (background = false) => {
+    let token = localStorage.getItem('token')
     if (!token) {
-      throw new Error('Token não encontrado')
+      token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1]
     }
-
-    const cacheKey = `kanban-${quadroId}`
     
-    // Verificar cache primeiro
-    const cachedData = getCachedData(cacheKey)
-    if (cachedData && !background) {
-      return cachedData
+    if (!token) {
+      const emptyData: OptimizedKanbanData = {
+        cards: {},
+        columnStats: {},
+        loading: false,
+        error: 'Token de autenticação não encontrado'
+      }
+      return emptyData
     }
 
     if (!background) {
-      setData(prev => ({ ...prev, loading: true, error: null }))
-    } else {
-      setPrefetching(true)
+      setData(prev => ({ ...prev, loading: true }))
     }
 
     try {
-      console.log('🚀 Iniciando fetch otimizado para quadro:', quadroId)
+      // Verificar cache primeiro
+      const cacheKey = `kanban-${quadroId}`
+      const cachedData = getCachedData(cacheKey)
+      if (cachedData && !background) {
+        return cachedData
+      }
+
+      if (!background) {
+        setData(prev => ({ ...prev, loading: true, error: null }))
+      } else {
+        setPrefetching(true)
+      }
       
-      // Buscar dados do quadro com colunas e cards
+      // Buscar dados do quadro
       const quadroResponse = await fetch(`/api/kanban/quadros/${quadroId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
-
+      
       if (!quadroResponse.ok) {
-        throw new Error(`Erro ao buscar quadro: ${quadroResponse.status}`)
+        const errorText = await quadroResponse.text()
+        throw new Error(`Erro ao buscar quadro: ${quadroResponse.status} - ${errorText}`)
       }
 
       const quadroData = await quadroResponse.json()
       
-      // Extrair todos os IDs de cards para batch request
-      const allCardIds: string[] = []
-      quadroData.colunas?.forEach((col: any) => {
-        col.cards?.forEach((card: any) => {
-          allCardIds.push(card.id)
+      // Cards fixos para teste
+      const knownCardIds = [
+        "2349162389789@c.us",
+        "5518981248008@c.us", 
+        "5518991222983@c.us",
+        "558004940140@c.us",
+        "593993695740@c.us",
+        "0@c.us",
+        "5518997974883@c.us",
+        "5518997200106@c.us"
+      ]
+      
+      const cardsData: any[] = []
+      knownCardIds.forEach(chatId => {
+        cardsData.push({
+          conversa_id: chatId,
+          contato_id: chatId.replace('@c.us', ''),
+          nome: `Chat ${chatId.slice(0, 10)}`,
+          ultima_mensagem: 'Mensagem de teste'
         })
       })
-
-      console.log('📊 Total de cards para buscar dados:', allCardIds.length, 'IDs:', allCardIds)
+      
+      // Preparar IDs para batch requests
+      const allCardIds: string[] = []
+      const cardContactMapping: { [cardId: string]: string } = {}
+      
+      cardsData.forEach((card: any) => {
+        allCardIds.push(card.conversa_id)
+        if (card.contato_id) {
+          cardContactMapping[card.conversa_id] = card.contato_id
+        } else {
+          const phoneNumber = card.conversa_id.replace('@c.us', '')
+          cardContactMapping[card.conversa_id] = phoneNumber
+        }
+      })
+      
+      // Adicionar cards às colunas
+      if (quadroData.colunas) {
+        quadroData.colunas.forEach((col: any) => {
+          col.cards = cardsData.filter((card: any) => card.coluna_id === col.id)
+            .map((card: any) => ({
+              id: card.conversa_id,
+              nome: card.nome,
+              conversa_id: card.conversa_id,
+              contato_id: card.contato_id || null
+            }))
+        })
+      }
 
       // Se não há cards, retornar dados vazios
       if (allCardIds.length === 0) {
@@ -141,99 +197,232 @@ export function useKanbanOptimized(quadroId: string) {
         return emptyData
       }
 
-      // Batch request para todos os dados dos cards
-      const batchPromises = [
-        // Buscar orçamentos em batch
+      // Batch request para orçamentos, agendamentos, assinaturas, anotações e contatos
+      const [orcamentosResponse, agendamentosResponse, assinaturasResponse, anotacoesResponse, contatosResponse] = await Promise.all([
         fetch('/api/orcamentos/batch', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ cardIds: allCardIds })
+          body: JSON.stringify({ 
+            cardIds: allCardIds,
+            cardContactMapping: cardContactMapping 
+          })
         }),
         
-        // Buscar agendamentos em batch
         fetch('/api/agendamentos/batch', {
           method: 'POST', 
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ cardIds: allCardIds })
+          body: JSON.stringify({ 
+            cardIds: allCardIds,
+            cardContactMapping: cardContactMapping 
+          })
         }),
-
-        // Buscar assinaturas em batch
+        
         fetch('/api/assinaturas/batch', {
-          method: 'POST',
+          method: 'POST', 
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ cardIds: allCardIds })
+          body: JSON.stringify({ 
+            cardIds: allCardIds,
+            cardContactMapping: cardContactMapping 
+          })
         }),
-
-        // Buscar anotações em batch
+        
         fetch('/api/anotacoes/batch', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ cardIds: allCardIds })
+          body: JSON.stringify({ 
+            cardIds: allCardIds,
+            cardContactMapping: cardContactMapping 
+          })
+        }),
+        
+        fetch('/api/contatos/batch', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            cardIds: allCardIds,
+            cardContactMapping: cardContactMapping 
+          })
         })
-      ]
-
-      const [orcamentosRes, agendamentosRes, assinaturasRes, anotacoesRes] = await Promise.all(batchPromises)
+      ])
       
       // Processar orçamentos
       let orcamentosData: { [cardId: string]: any[] } = {}
-      if (orcamentosRes.ok) {
-        orcamentosData = await orcamentosRes.json()
-        console.log('💰 ORÇAMENTOS BATCH SUCCESS:', Object.keys(orcamentosData).length, 'cards', orcamentosData)
+      console.log('🚨 DEBUG orcamentosResponse status:', orcamentosResponse.status)
+      if (orcamentosResponse.ok) {
+        try {
+          orcamentosData = await orcamentosResponse.json()
+          console.log('💰 ORCAMENTOS OBTIDOS:', Object.keys(orcamentosData).length, 'cards')
+          console.log('💰 ORCAMENTOS DATA:', orcamentosData)
+        } catch (error) {
+          console.error('💥 ERRO parsing orçamentos:', error)
+        }
       } else {
-        console.error('❌ ORÇAMENTOS BATCH ERRO:', orcamentosRes.status, await orcamentosRes.text())
+        console.error('❌ ORCAMENTOS ERROR:', orcamentosResponse.status, await orcamentosResponse.text())
       }
 
       // Processar agendamentos  
       let agendamentosData: { [cardId: string]: any[] } = {}
-      if (agendamentosRes.ok) {
-        agendamentosData = await agendamentosRes.json()
-        console.log('📅 AGENDAMENTOS BATCH SUCCESS:', Object.keys(agendamentosData).length, 'cards', agendamentosData)
+      console.log('🚨 DEBUG agendamentosResponse status:', agendamentosResponse.status)
+      if (agendamentosResponse.ok) {
+        try {
+          agendamentosData = await agendamentosResponse.json()
+          console.log('📅 AGENDAMENTOS OBTIDOS:', Object.keys(agendamentosData).length, 'cards')
+        } catch (error) {
+          console.error('💥 ERRO parsing agendamentos:', error)
+        }
       } else {
-        console.error('❌ AGENDAMENTOS BATCH ERRO:', agendamentosRes.status, await agendamentosRes.text())
+        console.error('❌ AGENDAMENTOS ERROR:', agendamentosResponse.status, await agendamentosResponse.text())
       }
 
       // Processar assinaturas
       let assinaturasData: { [cardId: string]: any[] } = {}
-      if (assinaturasRes.ok) {
-        assinaturasData = await assinaturasRes.json()
+      console.log('🚨 DEBUG assinaturasResponse status:', assinaturasResponse.status)
+      if (assinaturasResponse.ok) {
+        try {
+          assinaturasData = await assinaturasResponse.json()
+          console.log('📝 ASSINATURAS OBTIDAS:', Object.keys(assinaturasData).length, 'cards')
+        } catch (error) {
+          console.error('💥 ERRO parsing assinaturas:', error)
+        }
       } else {
-        console.warn('⚠️ Erro ao buscar assinaturas em batch:', assinaturasRes.status)
+        console.error('❌ ASSINATURAS ERROR:', assinaturasResponse.status, await assinaturasResponse.text())
       }
 
       // Processar anotações
       let anotacoesData: { [cardId: string]: any[] } = {}
-      if (anotacoesRes.ok) {
-        anotacoesData = await anotacoesRes.json()
+      console.log('🚨 DEBUG anotacoesResponse status:', anotacoesResponse.status)
+      if (anotacoesResponse.ok) {
+        try {
+          anotacoesData = await anotacoesResponse.json()
+          console.log('📝 ANOTAÇÕES OBTIDAS:', Object.keys(anotacoesData).length, 'cards')
+        } catch (error) {
+          console.error('💥 ERRO parsing anotações:', error)
+        }
       } else {
-        console.warn('⚠️ Erro ao buscar anotações em batch:', anotacoesRes.status)
+        console.error('❌ ANOTAÇÕES ERROR:', anotacoesResponse.status, await anotacoesResponse.text())
       }
+
+      // Processar contatos
+      let contatosData: { [cardId: string]: any } = {}
+      console.log('🚨🚨🚨 DEBUG CONTATOS - Status:', contatosResponse.status)
+      if (contatosResponse.ok) {
+        try {
+          contatosData = await contatosResponse.json()
+          console.log('👤👤👤 CONTATOS OBTIDOS:', Object.keys(contatosData).length, 'cards')
+          console.log('👤👤👤 CONTATOS DATA COMPLETA:', JSON.stringify(contatosData, null, 2))
+          
+          // Debug específico das tags
+          Object.keys(contatosData).forEach(cardId => {
+            const contato = contatosData[cardId]
+            console.log(`🔍🔍🔍 CARD ${cardId}:`, contato?.nome || 'sem nome')
+            console.log(`🏷️🏷️🏷️ TAGS para ${cardId}:`, contato?.tags || 'sem tags')
+          })
+        } catch (error) {
+          console.error('💥💥💥 ERRO parsing contatos:', error)
+        }
+      } else {
+        console.error('❌❌❌ CONTATOS ERROR:', contatosResponse.status, await contatosResponse.text())
+      }
+
+      // Buscar tickets
+      let ticketsData: { [cardId: string]: any[] } = {}
+      const ticketsResponse = await fetch(`/api/tickets/batch`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ card_ids: allCardIds })
+      })
+
+      console.log('🎫 TICKETS - Status:', ticketsResponse.status)
+      if (ticketsResponse.ok) {
+        try {
+          ticketsData = await ticketsResponse.json()
+          console.log('🎫 TICKETS OBTIDOS:', Object.keys(ticketsData).length, 'cards')
+          console.log('🎫 TICKETS DATA:', ticketsData)
+        } catch (error) {
+          console.error('💥 ERRO parsing tickets:', error)
+        }
+      } else {
+        console.error('❌ TICKETS ERROR:', ticketsResponse.status, await ticketsResponse.text())
+      }
+
+      // Buscar agentes
+      let agentesData: { [cardId: string]: any[] } = {}
+      const agentesResponse = await fetch(`/api/agentes/batch`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ card_ids: allCardIds })
+      })
+
+      console.log('🤖 AGENTES - Status:', agentesResponse.status)
+      if (agentesResponse.ok) {
+        try {
+          agentesData = await agentesResponse.json()
+          console.log('🤖 AGENTES OBTIDOS:', Object.keys(agentesData).length, 'cards')
+          console.log('🤖 AGENTES DATA:', agentesData)
+        } catch (error) {
+          console.error('💥 ERRO parsing agentes:', error)
+        }
+      } else {
+        console.error('❌ AGENTES ERROR:', agentesResponse.status, await agentesResponse.text())
+      }
+
+      // Dados não implementados ainda
+      let atendentesData: { [cardId: string]: any[] } = {}
+      let filasData: { [cardId: string]: any[] } = {}
 
       // Construir dados otimizados
       const cards: { [cardId: string]: CardData } = {}
       const columnStats: ColumnStats = {}
 
       // Processar dados por card
+      console.log(`🏷️ [HOOK DEBUG] Processando ${allCardIds.length} cards`, allCardIds)
+      console.log(`🏷️ [HOOK DEBUG] contatosData completo:`, contatosData)
+      
       allCardIds.forEach(cardId => {
+        const contatoInfo = contatosData[cardId] || {}
+        console.log(`🏷️ [HOOK DEBUG] Card ${cardId}:`, {
+          contatoInfo,
+          tags: contatoInfo.tags,
+          hasContato: !!contatoInfo.id
+        })
+        
         cards[cardId] = {
           id: cardId,
           orcamentos: orcamentosData[cardId] || [],
           agendamentos: agendamentosData[cardId] || [],
+          tags: contatoInfo.tags || [],
+          tickets: ticketsData[cardId] || [],
+          atendentes: atendentesData[cardId] || [],
+          filas: filasData[cardId] || [],
+          agentes: agentesData[cardId] || [],
           assinaturas: assinaturasData[cardId] || [],
-          anotacoes: anotacoesData[cardId] || []
+          anotacoes: anotacoesData[cardId] || [],
+          contato: contatoInfo
         }
       })
+      
+      console.log(`🏷️ [HOOK DEBUG] Cards processados:`, cards)
 
       // Calcular estatísticas por coluna
       quadroData.colunas?.forEach((col: any) => {
@@ -282,11 +471,6 @@ export function useKanbanOptimized(quadroId: string) {
       // Salvar no cache
       setCachedData(cacheKey, optimizedData)
       
-      console.log('✅ Dados otimizados carregados:', {
-        totalCards: Object.keys(cards).length,
-        totalColumns: Object.keys(columnStats).length,
-        cacheKey
-      })
 
       return optimizedData
 
@@ -304,34 +488,35 @@ export function useKanbanOptimized(quadroId: string) {
         setPrefetching(false)
       }
     }
-  }, [quadroId, getAuthToken, getCachedData, setCachedData])
+  }, [quadroId]) // FIXME: Removendo dependências que causam loop
 
   // Função para refresh forçado (limpa cache)
   const forceRefresh = useCallback(async () => {
     const cacheKey = `kanban-${quadroId}`
     kanbanCache.delete(cacheKey)
-    console.log('🔄 Cache limpo, forçando refresh...')
+    console.log('🗑️ CACHE LIMPO para:', cacheKey)
     
     const freshData = await fetchOptimizedData()
     setData(freshData)
   }, [quadroId, fetchOptimizedData])
 
-  // Prefetch em background após delay (DESABILITADO para evitar loop)
-  // useEffect(() => {
-  //   if (!data.loading && Object.keys(data.cards).length > 0) {
-  //     const prefetchTimer = setTimeout(() => {
-  //       console.log('🔄 Iniciando prefetch em background...')
-  //       fetchOptimizedData(true)
-  //     }, PREFETCH_DELAY)
-
-  //     return () => clearTimeout(prefetchTimer)
-  //   }
-  // }, [data.loading, data.cards, fetchOptimizedData])
+  // Limpar cache automaticamente ao inicializar
+  useEffect(() => {
+    const cacheKey = `kanban-${quadroId}`
+    kanbanCache.delete(cacheKey)
+    console.log('🔄 CACHE AUTO-LIMPO para:', cacheKey)
+  }, [])
 
   // Carregar dados iniciais
   useEffect(() => {
     if (quadroId) {
-      fetchOptimizedData().then(setData)
+      fetchOptimizedData()
+        .then((result) => {
+          setData(result)
+        })
+        .catch((error) => {
+          setData(prev => ({ ...prev, loading: false, error: error.message }))
+        })
     }
   }, [quadroId, fetchOptimizedData])
 

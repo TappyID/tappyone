@@ -35,8 +35,9 @@ import { useAuth } from '@/hooks/useAuth'
 import ReactCountryFlag from 'react-country-flag'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAtendentes } from '@/hooks/useAtendentes'
+import { useTickets } from '@/hooks/useTickets'
 import { useWhatsAppData } from '@/hooks/useWhatsAppData'
-import { useAtendimentoStats } from '@/hooks/useAtendimentoStats'
 import { useContatoData } from '@/hooks/useContatoData'
 
 interface AtendimentosTopBarProps {
@@ -48,13 +49,15 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const { atendentes, loading: atendentesLoading } = useAtendentes({ tipo: 'atendente', status: 'ativo' })
+  const { tickets, loading: ticketsLoading } = useTickets()
   const { chats } = useWhatsAppData()
-  const { stats, loading, error } = useAtendimentoStats()
   const chatIds = chats?.map(chat => {
-    if (!chat.id) return ''
-    return (typeof chat.id === 'object' && chat.id?._serialized) || chat.id || ''
+    if (!chat?.id) return ''
+    const chatId = chat.id as string | { _serialized?: string }
+    return (typeof chatId === 'object' ? chatId._serialized : chatId) || ''
   }).filter(id => id) || []
-  const { contatos } = useContatoData(chatIds)
+  const { contatos, loading: contatosLoading } = useContatoData(chatIds)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showTranslation, setShowTranslation] = useState(false)
@@ -104,16 +107,15 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
   // Detectar se está na página do Kanban
   const isKanbanPage = pathname?.includes('/kanban')
   
-  // Contar conversas ativas do WhatsApp
-  const activeChatsCount = chats?.length || 0
-  
-  // Contar conversas "Em aberto" (sem tags)
-  const emAbertoCount = chats?.filter(chat => {
-    if (!chat.id) return false
-    const chatId = (typeof chat.id === 'object' && chat.id._serialized) || chat.id || ''
+  // Contadores baseados no banco de dados
+  const totalTickets = tickets?.length || 0
+  const totalLeads = chatIds?.filter(chatId => {
     const contatoData = contatos[chatId]
     return !contatoData?.tags || contatoData.tags.length === 0
   }).length || 0
+  const atendentesAtivos = atendentes?.filter(a => a.ativo)?.length || 0
+  
+  const loading = atendentesLoading || ticketsLoading || contatosLoading
   
   // Função para toggle fullscreen
   const toggleFullscreen = () => {
@@ -183,33 +185,33 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
             <motion.div 
               className="flex items-center gap-2 px-3.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              title={`Chats ativos da API WAHA: ${activeChatsCount}`}
-            >
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-sm text-white font-medium">
-                {activeChatsCount} Ativos
-              </span>
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              title={`Atendentes online: ${stats?.atendentes_online || 0}`}
-            >
-              <Users className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-sm text-white font-medium">
-                {loading ? '...' : `${stats?.atendentes_online || 0} Online`}
-              </span>
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              title={`Conversas em aberto (sem tags): ${emAbertoCount}`}
+              title={`Total de tickets no sistema: ${totalTickets}`}
             >
               <FileText className="w-3.5 h-3.5 text-white/80" />
               <span className="text-sm text-white font-medium">
-                {emAbertoCount} Em aberto
+                {loading ? '...' : `${totalTickets} Tickets`}
+              </span>
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
+              title={`Leads sem tags: ${totalLeads}`}
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-sm text-white font-medium">
+                {loading ? '...' : `${totalLeads} Leads`}
+              </span>
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
+              title={`Atendentes ativos: ${atendentesAtivos}`}
+            >
+              <Users className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-sm text-white font-medium">
+                {loading ? '...' : `${atendentesAtivos} Ativos`}
               </span>
             </motion.div>
             
@@ -278,11 +280,11 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               
               {/* Badge Dinâmica */}
               {isKanbanPage ? (
-                /* Badge de Conversas Ativas - Verde */
-                activeChatsCount > 0 && (
+                /* Badge de Leads - Verde */
+                totalLeads > 0 && (
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30">
                     <span className="text-[10px] font-bold text-white drop-shadow-sm">
-                      {activeChatsCount > 99 ? '99+' : activeChatsCount}
+                      {totalLeads > 99 ? '99+' : totalLeads}
                     </span>
                   </div>
                 )

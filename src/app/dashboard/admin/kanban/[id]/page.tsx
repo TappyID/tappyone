@@ -37,17 +37,22 @@ import {
   FileSignature,
   DollarSign,
   StickyNote,
-  UserCheck
+  UserCheck,
+  Ticket,
+  Bot
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanban } from '@/hooks/useKanban'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
+import TicketModal from '../../atendimentos/components/modals/TicketModal'
+import AgenteSelectionModal from '../../atendimentos/components/modals/AgenteSelectionModal'
+import TransferirAtendimentoModal from '../../atendimentos/components/modals/TransferirAtendimentoModal'
+import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
 import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
 import AgendamentoModal from '../../atendimentos/components/modals/AgendamentoModal'
 import CriarOrcamentoModal from '../../orcamentos/components/CriarOrcamentoModal'
-import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
 import { fileLogger } from '@/utils/fileLogger'
 import CriarCardModal from '../components/CriarCardModal'
 import AssinaturaModal from '../../atendimentos/components/modals/AssinaturaModal'
@@ -71,7 +76,6 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
-  horizontalListSortingStrategy,
   sortableKeyboardCoordinates
 } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
@@ -91,13 +95,21 @@ function LazyCardsList({
   onOpenOrcamento,
   onOpenAssinatura,
   onOpenAnotacoes,
+  onOpenTicket,
+  onOpenAgente,
+  onOpenTransferencia,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
   orcamentosData,
   agendamentosData,
   assinaturasData,
-  anotacoesData
+  anotacoesData,
+  anotacoesCount,
+  tagsCount,
+  ticketsCount,
+  tagsData,
+  ticketsData
 }: {
   cards: any[]
   theme: string
@@ -106,11 +118,17 @@ function LazyCardsList({
   orcamentosCount: { [key: string]: number }
   agendamentosCount: { [key: string]: number }
   assinaturasCount: { [key: string]: number }
+  anotacoesCount: { [key: string]: number }
+  tagsCount: { [key: string]: number }
+  ticketsCount: { [key: string]: number }
   contactStatus: { [key: string]: string }
   onOpenAgendamento: (card: any) => void
   onOpenOrcamento: (card: any) => void
   onOpenAssinatura: (card: any) => void
   onOpenAnotacoes: (card: any) => void
+  onOpenTicket: (card: any) => void
+  onOpenAgente: (card: any) => void
+  onOpenTransferencia: (card: any) => void
   onOpenVideoChamada: () => void
   onOpenLigacao: () => void
   onOpenCompartilharTela: () => void
@@ -118,6 +136,8 @@ function LazyCardsList({
   agendamentosData: any
   assinaturasData: any
   anotacoesData: any
+  tagsData: any
+  ticketsData: any
 }) {
   // Usar lazy loading apenas se há muitos cards (50+)
   const shouldUseLazyLoading = cards.length > 50
@@ -158,18 +178,26 @@ function LazyCardsList({
           orcamentosCount={orcamentosCount[card.id] || 0}
           agendamentosCount={agendamentosCount[card.id] || 0}
           assinaturasCount={assinaturasCount[card.id] || 0}
-          contactStatus={(contactStatus[card.id] || 'error') as 'error' | 'synced'}
+          anotacoesCount={anotacoesCount[card.id] || 0}
+          tagsCount={tagsCount[card.id] || 0}
+          ticketsCount={ticketsCount[card.id] || 0}
+          contactStatus="synced"
           onOpenAgendamento={onOpenAgendamento}
           onOpenOrcamento={onOpenOrcamento}
           onOpenAssinatura={onOpenAssinatura}
           onOpenAnotacoes={onOpenAnotacoes}
+          onOpenTicket={onOpenTicket}
+          onOpenAgente={onOpenAgente}
+          onOpenTransferencia={onOpenTransferencia}
           onOpenVideoChamada={onOpenVideoChamada}
           onOpenLigacao={onOpenLigacao}
           onOpenCompartilharTela={onOpenCompartilharTela}
-          orcamentosData={orcamentosData}
-          agendamentosData={agendamentosData}
-          assinaturasData={assinaturasData}
-          anotacoesData={anotacoesData}
+          orcamentosData={orcamentosData[card.id] || []}
+          agendamentosData={agendamentosData[card.id] || []}
+          assinaturasData={assinaturasData[card.id] || []}
+          anotacoesData={anotacoesData[card.id] || []}
+          tagsData={tagsData[card.id] || []}
+          ticketsData={ticketsData[card.id] || []}
         />
       ))}
       
@@ -181,22 +209,28 @@ function LazyCardsList({
           className={`w-full py-3 px-4 rounded-lg border-2 border-dashed transition-all duration-300 ${
             theme === 'dark'
               ? 'border-gray-600 hover:border-gray-500 text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
-              : 'border-gray-300 hover:border-gray-400 text-gray-500 hover:text-gray-600 hover:bg-gray-50'
+              : 'border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-700 hover:bg-gray-50/50'
           }`}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          {isLoadingMore ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <span>Carregando...</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <Plus className="w-4 h-4" />
-              <span>Carregar mais {Math.min(20, cards.length - visibleCount)} cards</span>
-            </div>
-          )}
+          <div className="flex items-center justify-center gap-2">
+            {isLoadingMore ? (
+              <>
+                <motion.div
+                  className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                <span>Carregando...</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Carregar mais {Math.min(20, cards.length - visibleCount)} cards</span>
+              </>
+            )}
+          </div>
         </motion.button>
       )}
     </div>
@@ -211,11 +245,16 @@ function DroppableArea({
   orcamentosCount,
   agendamentosCount,
   assinaturasCount,
+  anotacoesCount,
+  tagsCount,
+  ticketsCount,
   contactStatus,
   orcamentosData,
   agendamentosData,
   assinaturasData,
   anotacoesData,
+  tagsData,
+  ticketsData,
   onDoubleClick, 
   onDelete, 
   editingColumnId, 
@@ -228,6 +267,9 @@ function DroppableArea({
   onOpenOrcamento,
   onOpenAssinatura,
   onOpenAnotacoes,
+  onOpenTicket,
+  onOpenAgente,
+  onOpenTransferencia,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
@@ -236,26 +278,34 @@ function DroppableArea({
   coluna: any, 
   theme: string,
   notesCount: Record<string, number>,
-  orcamentosCount: Record<string, number> | number,
-  agendamentosCount: Record<string, number> | number,
+  orcamentosCount: number | Record<string, number>,
+  agendamentosCount: Record<string, number>,
   assinaturasCount: Record<string, number>,
-  contactStatus: Record<string, 'synced' | 'error'>,
-  orcamentosData: Record<string, any[]>,
-  agendamentosData: Record<string, any[]>,
-  assinaturasData: Record<string, any[]>,
-  anotacoesData: Record<string, any[]>,
+  anotacoesCount: Record<string, number>,
+  tagsCount: Record<string, number>,
+  ticketsCount: Record<string, number>,
+  contactStatus: Record<string, string>,
+  orcamentosData: any,
+  agendamentosData: any,
+  assinaturasData: any,
+  anotacoesData: any,
+  tagsData: any,
+  ticketsData: any,
   onDoubleClick: (coluna: any) => void,
-  onDelete: (colunaId: string) => void,
+  onDelete: (columnId: string) => void,
   editingColumnId: string | null,
   editingColumnName: string,
-  onSaveColumnName: (colunaId: string) => void,
   onEditingNameChange: (name: string) => void,
+  onSaveColumnName: (columnId: string) => void,
   onOpenColorModal: (coluna: any) => void,
-  handleAddCard: (colunaId: string) => void,
+  handleAddCard: (columnId: string) => void,
   onOpenAgendamento: (card: any) => void,
   onOpenOrcamento: (card: any) => void,
   onOpenAssinatura: (card: any) => void,
   onOpenAnotacoes: (card: any) => void,
+  onOpenTicket: (card: any) => void,
+  onOpenAgente: (card: any) => void,
+  onOpenTransferencia: (card: any) => void,
   onOpenVideoChamada: () => void,
   onOpenLigacao: () => void,
   onOpenCompartilharTela: () => void,
@@ -469,70 +519,7 @@ function DroppableArea({
           </div>
         </div>
         
-        {/* Estatísticas da Coluna */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {/* Total de Orçamentos */}
-          <motion.div 
-            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
-              theme === 'dark' 
-                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
-                : 'bg-green-50 text-green-700 border border-green-200'
-            }`}
-            whileHover={{ scale: 1.05 }}
-          >
-            <DollarSign className="w-3 h-3" />
-            {getColumnStats(coluna.id)?.totalOrcamentos || 0} Orç.
-          </motion.div>
-          
-          {/* Total de Agendamentos - SEMPRE MOSTRA */}
-          <motion.div 
-            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
-              theme === 'dark' 
-                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
-                : 'bg-blue-50 text-blue-700 border border-blue-200'
-            }`}
-            whileHover={{ scale: 1.05 }}
-          >
-            <Calendar className="w-3 h-3" />
-            {getColumnStats(coluna.id)?.totalAgendamentos || 0} Agend.
-          </motion.div>
-          
-          {/* Total de Assinaturas - SÓ MOSTRA SE HOUVER */}
-          {(getColumnStats(coluna.id)?.totalAssinaturas || 0) > 0 && (
-            <motion.div 
-              className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
-                theme === 'dark' 
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
-                  : 'bg-purple-50 text-purple-700 border border-purple-200'
-              }`}
-              whileHover={{ scale: 1.05 }}
-            >
-              <FileSignature className="w-3 h-3" />
-              {getColumnStats(coluna.id)?.totalAssinaturas || 0} Ass.
-            </motion.div>
-          )}
-          
-          {/* Valor Total - SÓ MOSTRA SE HOUVER */}
-          {(getColumnStats(coluna.id)?.totalValor || 0) > 0 && (
-            <motion.div 
-              className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
-                theme === 'dark' 
-                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' 
-                  : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-              }`}
-              whileHover={{ scale: 1.05 }}
-            >
-              <DollarSign className="w-3 h-3" />
-              {(getColumnStats(coluna.id)?.totalValor || 0).toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-              })}
-            </motion.div>
-          )}
-        </div>
-
+      
         {/* Barra de Progresso Enhanced */}
         <div className={`relative h-2 rounded-full overflow-hidden ${
           theme === 'dark' ? 'bg-slate-800/50' : 'bg-gray-100/60'
@@ -787,11 +774,17 @@ function DroppableArea({
             orcamentosCount={typeof orcamentosCount === 'number' ? {} : orcamentosCount}
             agendamentosCount={typeof agendamentosCount === 'number' ? {} : agendamentosCount}
             assinaturasCount={assinaturasCount}
+            anotacoesCount={notesCount}
+            tagsCount={tagsCount}
+            ticketsCount={ticketsCount}
             contactStatus={contactStatus}
             onOpenAgendamento={onOpenAgendamento}
             onOpenOrcamento={onOpenOrcamento}
             onOpenAssinatura={onOpenAssinatura}
             onOpenAnotacoes={onOpenAnotacoes}
+            onOpenTicket={onOpenTicket}
+            onOpenAgente={onOpenAgente}
+            onOpenTransferencia={onOpenTransferencia}
             onOpenVideoChamada={onOpenVideoChamada}
             onOpenLigacao={onOpenLigacao}
             onOpenCompartilharTela={onOpenCompartilharTela}
@@ -799,6 +792,8 @@ function DroppableArea({
             agendamentosData={agendamentosData}
             assinaturasData={assinaturasData}
             anotacoesData={anotacoesData}
+            tagsData={tagsData}
+            ticketsData={ticketsData}
           />
         </SortableContext>
         
@@ -842,11 +837,17 @@ interface SortableCardProps {
   orcamentosCount: number;
   agendamentosCount: number;
   assinaturasCount: number;
+  anotacoesCount: number;
+  tagsCount: number;
+  ticketsCount: number;
   contactStatus: 'synced' | 'error';
   onOpenAgendamento: (card: any) => void;
   onOpenOrcamento: (card: any) => void;
   onOpenAssinatura: (card: any) => void;
   onOpenAnotacoes: (card: any) => void;
+  onOpenTicket: (card: any) => void;
+  onOpenAgente: (card: any) => void;
+  onOpenTransferencia: (card: any) => void;
   onOpenVideoChamada: () => void;
   onOpenLigacao: () => void;
   onOpenCompartilharTela: () => void;
@@ -854,6 +855,8 @@ interface SortableCardProps {
   agendamentosData: any;
   assinaturasData: any;
   anotacoesData: any;
+  tagsData: any;
+  ticketsData: any;
 }
 
 // Componente Sortable para Orçamentos dentro dos cards
@@ -1023,24 +1026,41 @@ function SortableCard({
   orcamentosCount,
   agendamentosCount,
   assinaturasCount,
+  anotacoesCount,
+  tagsCount,
+  ticketsCount,
   contactStatus,
   onOpenAgendamento, 
   onOpenOrcamento,
   onOpenAssinatura,
   onOpenAnotacoes,
+  onOpenTicket,
+  onOpenAgente,
+  onOpenTransferencia,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
   orcamentosData,
   agendamentosData,
   assinaturasData,
-  anotacoesData
+  anotacoesData,
+  tagsData,
+  ticketsData
 }: SortableCardProps) {
+  // DEBUG: Verificar props chegando no SortableCard
+  console.log(`🔍 [SORTABLE CARD] Card ${card.id}:`)
+  console.log(`  📊 ticketsCount prop:`, ticketsCount)
+  console.log(`  📊 ticketsData prop:`, ticketsData)
+  console.log(`  📊 ticketsData length:`, ticketsData?.length)
+  console.log(`  📊 ticketsCount > 0?`, (ticketsCount || 0) > 0)
+  console.log(`  📊 Vai mostrar badge?`, (ticketsCount || 0) > 0)
+  
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isExpandedView, setIsExpandedView] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   
   // Debug do estado
-  console.log('Card render - expandedSection:', expandedSection, 'cardId:', card.id)
   
   const {
     attributes,
@@ -1101,7 +1121,7 @@ function SortableCard({
             {card.avatar ? (
               <img 
                 src={card.avatar} 
-                alt={card.name || card.nome}
+                alt={card.contato?.nome || card.name || card.nome || 'Contato'}
                 className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shadow-sm"
 onError={(e) => {
                   // Fallback se a imagem não carregar
@@ -1133,11 +1153,30 @@ onError={(e) => {
             <h4 className={`font-semibold text-sm leading-tight truncate ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}>
-              {card.name || card.nome}
+              {card.contato?.nome || card.name || card.nome || card.id.replace('@c.us', '')}
             </h4>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex flex-col gap-1 mt-0.5">
               <span className={`text-xs ${
                 theme === 'dark' ? 'text-white/50' : 'text-gray-500'
+              }`}>
+                {card.contato?.telefone || card.id.replace('@c.us', '')}
+              </span>
+              {card.contato?.email && (
+                <span className={`text-xs ${
+                  theme === 'dark' ? 'text-white/40' : 'text-gray-400'
+                }`}>
+                  {card.contato.email}
+                </span>
+              )}
+              {card.contato?.empresa && (
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-blue-300' : 'text-blue-600'
+                }`}>
+                  {card.contato.empresa}
+                </span>
+              )}
+              <span className={`text-xs ${
+                theme === 'dark' ? 'text-white/30' : 'text-gray-400'
               }`}>
                 {card.lastSeen ? `Visto ${card.lastSeen}` : 'Offline'}
               </span>
@@ -1147,18 +1186,133 @@ onError={(e) => {
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1 mb-3">
-          {card.tags?.map((tag: string) => (
-            <span
-              key={tag}
-              className={`px-2 py-1 rounded-full text-xs ${
-                theme === 'dark'
-                  ? 'bg-blue-500/20 text-blue-300'
-                  : 'bg-blue-100 text-blue-700'
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
+          {(() => {
+            // DEBUG: verificar que dados estão disponíveis
+            console.log(`🏷️ [CARD TAGS] ${card.id}:`)
+            console.log('  📦 card:', JSON.stringify(card, null, 2))
+            console.log('  👤 card.contato:', JSON.stringify(card.contato, null, 2))
+            console.log('  🏷️ card.contato?.tags:', JSON.stringify(card.contato?.tags, null, 2))
+            console.log('  📋 card.tags:', JSON.stringify(card.tags, null, 2))
+            console.log('  📊 tagsData:', JSON.stringify(tagsData, null, 2))
+            
+            // Tentar diferentes fontes de tags
+            const cardTags = card.contato?.tags || card.tags || tagsData || []
+            
+            if (!Array.isArray(cardTags) || cardTags.length === 0) {
+              return null
+            }
+            
+            return cardTags.map((tag: any, index: number) => (
+              <span
+                key={tag.id || tag || index}
+                className="px-2 py-1 rounded-full text-xs font-medium border"
+                style={{
+                  backgroundColor: tag.cor ? `${tag.cor}20` : (theme === 'dark' ? '#1e293b20' : '#f1f5f920'),
+                  borderColor: tag.cor || (theme === 'dark' ? '#475569' : '#cbd5e1'),
+                  color: tag.cor || (theme === 'dark' ? '#cbd5e1' : '#475569')
+                }}
+                title={tag.nome || tag}
+              >
+                {tag.nome || tag}
+              </span>
+            ))
+          })()}
+
+          {/* Badge Tickets */}
+          {(() => {
+            const ticketCount = ticketsCount || 0
+            const openTickets = ticketsData?.filter((t: any) => t.status === 'ABERTO').length || 0
+            
+            // DEBUG: logs para verificar tickets
+            console.log(`🎫 [BADGE DEBUG] Card ${card.id}:`)
+            console.log(`  📊 ticketsData (prop):`, ticketsData)
+            console.log(`  📊 ticketsCount (prop):`, ticketsCount)
+            console.log(`  🔢 Total tickets: ${ticketCount}`)
+            console.log(`  🔴 Tickets abertos: ${openTickets}`)
+            
+            return ticketCount > 0 && (
+              <div
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border cursor-pointer hover:scale-105 transition-all"
+                style={{
+                  backgroundColor: '#ef444420',
+                  borderColor: '#ef444440',
+                  color: '#ef4444'
+                }}
+                title={`${ticketCount} ticket(s) - ${openTickets} aberto(s)`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenTicket(card)
+                }}
+              >
+                <Ticket className="w-3 h-3" />
+                <span>{ticketCount}</span>
+              </div>
+            )
+          })()}
+
+          {/* Badge Agentes Ativos */}
+          {(() => {
+            const agentesAtivos = card.agentes?.filter((a: any) => a.ativo)?.length || 0
+            
+            return agentesAtivos > 0 && (
+              <div
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border cursor-pointer hover:scale-105 transition-all"
+                style={{
+                  backgroundColor: '#10b98120',
+                  borderColor: '#10b98140',
+                  color: '#10b981'
+                }}
+                title={`${agentesAtivos} agente(s) ativo(s)`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenAgente(card)
+                }}
+              >
+                <Bot className="w-3 h-3" />
+                <span>{agentesAtivos}</span>
+              </div>
+            )
+          })()}
+
+          {/* Badge Filas */}
+          {(() => {
+            const filasCount = card.filas?.length || 0
+            
+            return filasCount > 0 && (
+              <div
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
+                style={{
+                  backgroundColor: '#3b82f620',
+                  borderColor: '#3b82f640',
+                  color: '#3b82f6'
+                }}
+                title={`${filasCount} fila(s) atribuída(s)`}
+              >
+                <Layers className="w-3 h-3" />
+                <span>{filasCount}</span>
+              </div>
+            )
+          })()}
+
+          {/* Badge Atendentes */}
+          {(() => {
+            const atendentesCount = card.atendentes?.length || 0
+            
+            return atendentesCount > 0 && (
+              <div
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
+                style={{
+                  backgroundColor: '#8b5cf620',
+                  borderColor: '#8b5cf640',
+                  color: '#8b5cf6'
+                }}
+                title={`${atendentesCount} atendente(s) responsável(eis)`}
+              >
+                <UserCheck className="w-3 h-3" />
+                <span>{atendentesCount}</span>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Badges que aparecem apenas no hover */}
@@ -1173,6 +1327,11 @@ onError={(e) => {
           style={{ overflow: 'hidden' }}
         >
           {/* Badge Orçamentos - Clicável */}
+          {(() => {
+            console.log('🔍 DEBUG Card:', card.id, 'orcamentosCount:', orcamentosCount)
+            console.log('🔍 DEBUG orcamentosData para card:', orcamentosData?.[card.id])
+            return null
+          })()}
           {orcamentosCount > 0 && (
             <div
               className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
@@ -1261,11 +1420,18 @@ onError={(e) => {
                   {assinaturasCount} Assinatura{assinaturasCount > 1 ? 's' : ''}
                 </span>
               </div>
+              {assinaturasData && assinaturasData[card.id] && (
+                <div className="text-xs font-bold" style={{ color: columnColor }}>
+                  R$ {assinaturasData[card.id].reduce((sum: number, ass: any) => 
+                    sum + (parseFloat(ass.valor) || 0), 0
+                  ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+              )}
             </div>
           )}
 
           {/* Badge Anotações - Clicável */}
-          {notesCount > 0 && (
+          {anotacoesCount > 0 && (
             <div
               className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
               style={{
@@ -1286,7 +1452,35 @@ onError={(e) => {
                 <span className={`text-xs font-medium ${
                   theme === 'dark' ? 'text-white' : 'text-gray-800'
                 }`}>
-                  {notesCount} Anotaç{notesCount > 1 ? 'ões' : 'ão'}
+                  {anotacoesCount} Anotaç{anotacoesCount > 1 ? 'ões' : 'ão'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Badge Tickets - Clicável */}
+          {ticketsCount > 0 && (
+            <div
+              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
+              style={{
+                background: theme === 'dark' 
+                  ? `${columnColor}15`
+                  : `${columnColor}10`,
+                border: `1px solid ${columnColor}30`
+              }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Clicou tickets, expandedSection atual:', expandedSection)
+                setExpandedSection(expandedSection === 'tickets' ? null : 'tickets')
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Ticket className="w-3.5 h-3.5" style={{ color: columnColor }} />
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-800'
+                }`}>
+                  {ticketsCount} Ticket{ticketsCount > 1 ? 's' : ''}
                 </span>
               </div>
             </div>
@@ -1527,6 +1721,81 @@ onError={(e) => {
               )}
             </motion.div>
           )}
+
+          {/* Detalhes Tickets Expandidos */}
+          {expandedSection === 'tickets' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-3 space-y-2"
+              style={{ overflow: 'hidden' }}
+            >
+              {ticketsData && Array.isArray(ticketsData) && ticketsData.length > 0 ? (
+                ticketsData.map((ticket: any, index: number) => (
+                  <motion.div
+                    key={ticket.id}
+                    onClick={() => onOpenTicket(card)}
+                    className={`p-2 rounded-lg cursor-pointer hover:scale-[1.02] transition-transform ${
+                      theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
+                    }`}
+                    style={{
+                      borderLeft: `3px solid ${columnColor}`,
+                      background: theme === 'dark' 
+                        ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
+                        : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className={`font-medium text-xs ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {ticket.titulo || ticket.title || 'Ticket'}
+                      </h4>
+                      <span className="text-xs opacity-60">
+                        {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('pt-BR') : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs opacity-80">
+                      {ticket.descricao || ticket.description || ticket.conteudo || 'Sem descrição'}
+                    </p>
+                    {ticket.status && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          ticket.status === 'open' ? 'bg-green-500/20 text-green-400' :
+                          ticket.status === 'closed' ? 'bg-gray-500/20 text-gray-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {ticket.status === 'open' ? 'Aberto' : 
+                           ticket.status === 'closed' ? 'Fechado' : 
+                           ticket.status === 'pending' ? 'Pendente' : ticket.status}
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`p-4 rounded-lg text-center ${
+                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                  }`}
+                >
+                  <Ticket className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Nenhum ticket encontrado</p>
+                  <button
+                    onClick={() => onOpenTicket(card)}
+                    className="mt-2 text-xs underline hover:opacity-80"
+                    style={{ color: columnColor }}
+                  >
+                    Criar primeiro ticket
+                  </button>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
 
       </div>
@@ -1542,12 +1811,13 @@ onError={(e) => {
         style={{
           boxShadow: `0 4px 12px ${columnColor || '#64748b'}15`
         }}>
-          {/* Ligar */}
+      
+          {/* Atendente */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              onOpenLigacao()
+              onOpenAgente(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
@@ -1556,17 +1826,17 @@ onError={(e) => {
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            title="Ligar"
+            title="Gerenciar Atendente"
           >
-            <Phone className="w-3 h-3" />
+            <Bot className="w-3 h-3" />
           </motion.button>
-            
-          {/* Vídeo Chamada */}
+
+          {/* Agente */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              onOpenVideoChamada()
+              onOpenAgente(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
@@ -1575,17 +1845,17 @@ onError={(e) => {
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            title="Vídeo Chamada"
+            title="Gerenciar Agente IA"
           >
-            <Video className="w-3 h-3" />
+            <Bot className="w-3 h-3" />
           </motion.button>
-            
-          {/* Compartilhar Tela */}
+
+          {/* Transferir Atendimento */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              onOpenCompartilharTela()
+              onOpenTransferencia(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
@@ -1594,9 +1864,9 @@ onError={(e) => {
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            title="Compartilhar Tela"
+            title="Transferir Atendimento"
           >
-            <Monitor className="w-3 h-3" />
+            <UserCheck className="w-3 h-3" />
           </motion.button>
             
           {/* Agendar */}
@@ -1674,29 +1944,6 @@ onError={(e) => {
               )}
             </motion.button>
             
-          {/* Contato */}
-          <motion.button 
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              // Navegar para página de contatos com filtro
-              window.open(`/dashboard/admin/contatos?search=${encodeURIComponent(card.id)}`, '_blank')
-            }}
-            className={`relative p-1.5 rounded-lg transition-all duration-200 ${
-              theme === 'dark' 
-                ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
-                : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
-            }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            title="Contato"
-          >
-              <UserCheck className="w-3 h-3" />
-              {/* Badge de status do contato */}
-              <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ${
-                contactStatus === 'synced' ? 'bg-green-500' : 'bg-red-500'
-              }`}></div>
-            </motion.button>
             
           {/* Anotações */}
           <motion.button 
@@ -1722,6 +1969,31 @@ onError={(e) => {
                 </span>
               )}
           </motion.button>
+            
+          {/* Tickets */}
+          <motion.button 
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onOpenTicket(card)
+            }}
+            className={`relative p-1.5 rounded-lg transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
+                : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
+            }`}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Tickets"
+          >
+              <Ticket className="w-3 h-3" />
+              {/* Badge com número de tickets - SEMPRE MOSTRA SE > 0 */}
+              {(ticketsCount || 0) > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                  {ticketsCount > 99 ? '99+' : ticketsCount}
+                </span>
+              )}
+            </motion.button>
         </div>
         
         {/* Informações do Card */}
@@ -1881,58 +2153,83 @@ export default function QuadroPage() {
   // Hook customizado para Kanban - contatos do CRM
   const [chats, setChats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [whatsappLoading, setWhatsappLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [quadro, setQuadro] = useState<any>(null)
   // Estados para armazenar metadados de cards
   const [cardMetadata, setCardMetadata] = useState<Record<string, any>>({})
   
-  // Criar contagens baseadas nos dados otimizados
+  // Estados para dados individuais (orçamentos, agendamentos, assinaturas, anotações, tags, tickets)
+  const [orcamentosDataState, setOrcamentosDataState] = useState<Record<string, any[]>>({})
+  const [agendamentosDataState, setAgendamentosDataState] = useState<Record<string, any[]>>({})
+  const [assinaturasCount, setAssinaturasCount] = useState<Record<string, number>>({})
+  const [anotacoesDataState, setAnotacoesDataState] = useState<Record<string, any[]>>({})
+  const [tagsDataState, setTagsDataState] = useState<Record<string, any[]>>({})
+  const [ticketsDataState, setTicketsDataState] = useState<Record<string, any[]>>({})
+  
+  // Criar contagens baseadas nos dados individuais
   const orcamentosCount = useMemo(() => {
     const counts: Record<string, number> = {}
-    Object.keys(optimizedCards).forEach(cardId => {
-      const cardData = optimizedCards[cardId]
-      counts[cardId] = cardData?.orcamentos?.length || 0
+    Object.keys(orcamentosDataState).forEach(cardId => {
+      counts[cardId] = orcamentosDataState[cardId]?.length || 0
     })
+    console.log('🔍 DEBUG orcamentosCount:', counts)
+    console.log('🔍 DEBUG orcamentosDataState:', orcamentosDataState)
     return counts
-  }, [optimizedCards])
+  }, [orcamentosDataState])
   
   const agendamentosCount = useMemo(() => {
     const counts: Record<string, number> = {}
-    Object.keys(optimizedCards).forEach(cardId => {
-      const cardData = optimizedCards[cardId]
-      counts[cardId] = cardData?.agendamentos?.length || 0
+    Object.keys(agendamentosDataState).forEach(cardId => {
+      counts[cardId] = agendamentosDataState[cardId]?.length || 0
     })
     return counts
-  }, [optimizedCards])
-  
-  // Criar dados detalhados baseados nos dados otimizados
-  const orcamentosData = useMemo(() => {
-    const data: Record<string, any[]> = {}
-    Object.keys(optimizedCards).forEach(cardId => {
-      const cardData = optimizedCards[cardId]
-      data[cardId] = cardData?.orcamentos || []
+  }, [agendamentosDataState])
+
+  const anotacoesCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(anotacoesDataState).forEach(cardId => {
+      counts[cardId] = anotacoesDataState[cardId]?.length || 0
     })
-    return data
-  }, [optimizedCards])
-  
-  const agendamentosData = useMemo(() => {
-    const data: Record<string, any[]> = {}
-    Object.keys(optimizedCards).forEach(cardId => {
-      const cardData = optimizedCards[cardId]
-      data[cardId] = cardData?.agendamentos || []
+    return counts
+  }, [anotacoesDataState])
+
+  const tagsCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(tagsDataState).forEach(cardId => {
+      counts[cardId] = tagsDataState[cardId]?.length || 0
     })
-    return data
-  }, [optimizedCards])
+    return counts
+  }, [tagsDataState])
+
+  const ticketsCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(ticketsDataState).forEach(cardId => {
+      counts[cardId] = ticketsDataState[cardId]?.length || 0
+    })
+    console.log('🎫 [TICKETS COUNT] counts calculadas:', counts)
+    console.log('🎫 [TICKETS COUNT] ticketsDataState atual:', ticketsDataState)
+    console.log('🎫 [TICKETS COUNT] Total de cards com dados:', Object.keys(ticketsDataState).length)
+    
+    // Debug específico para cards com tickets
+    Object.keys(ticketsDataState).forEach(cardId => {
+      if (ticketsDataState[cardId]?.length > 0) {
+        console.log(`🎫 [TICKETS COUNT] Card ${cardId} tem ${ticketsDataState[cardId].length} tickets:`, ticketsDataState[cardId])
+      }
+    })
+    
+    return counts
+  }, [ticketsDataState])
   
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [isClient, setIsClient] = useState(false)
   
-  // Estados para dados não otimizados ainda (assinaturas, anotações)
-  const [assinaturasCount, setAssinaturasCount] = useState<Record<string, number>>({})
-  const [anotacoesCount, setAnotacoesCount] = useState<Record<string, number>>({})
-  const [assinaturasData, setAssinaturasData] = useState<Record<string, any[]>>({})
-  const [anotacoesData, setAnotacoesData] = useState<Record<string, any[]>>({})
+  // Usar dados individuais ao invés dos dados otimizados vazios
+  const orcamentosData = orcamentosDataState
+  const agendamentosData = agendamentosDataState
+  const assinaturasData = {} // Estado não implementado ainda
+  const anotacoesData = anotacoesDataState
+  const tagsData = tagsDataState
+  const ticketsData = ticketsDataState
   
   // Estados para modais
   const [selectedCard, setSelectedCard] = useState<any>(null)
@@ -1944,18 +2241,31 @@ export default function QuadroPage() {
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false)
   const [showAssinaturaModal, setShowAssinaturaModal] = useState(false)
   const [showAnotacoesModal, setShowAnotacoesModal] = useState(false)
-  const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
+  const [showCriarCardModal, setShowCriarCardModal] = useState(false)
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [selectedTicketCard, setSelectedTicketCard] = useState<any>(null)
+  const [showAgenteModal, setShowAgenteModal] = useState(false)
+  const [selectedAgenteCard, setSelectedAgenteCard] = useState<any>(null)
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [selectedTransferCard, setSelectedTransferCard] = useState<any>(null)
+  const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
+  const [selectedVideoChamadaCard, setSelectedVideoChamadaCard] = useState<any>(null)
+  const [showLigacaoModal, setShowLigacaoModal] = useState(false)
+  const [selectedLigacaoCard, setSelectedLigacaoCard] = useState<any>(null)
+  const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
+  const [selectedCompartilharTelaCard, setSelectedCompartilharTelaCard] = useState<any>(null)
   const [editingQuadroName, setEditingQuadroName] = useState('')
+  const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
   const [editingQuadroDescription, setEditingQuadroDescription] = useState(false)
   const [editingQuadroDescricao, setEditingQuadroDescricao] = useState('')
   
-  // Função para carregar conversas manualmente
+  // Função para carregar contatos do CRM
   const loadChatsManual = async () => {
-    setWhatsappLoading(true)
+    setLoading(true)
     
     await fileLogger.log({
       component: 'Kanban',
-      action: 'loadChatsManual_started',
+      action: 'loadContatos_started',
       data: { timestamp: new Date().toISOString() },
       userId: user?.id
     })
@@ -1965,11 +2275,24 @@ export default function QuadroPage() {
       
       await fileLogger.log({
         component: 'Kanban',
-        action: 'loadChatsManual_config',
+        action: 'loadContatos_config',
         data: { 
           hasToken: !!token, 
           userId: user?.id,
-          tokenLength: token?.length || 0
+          timestamp: new Date().toISOString()
+        },
+        userId: user?.id
+      })
+      
+      if (!token) {
+        console.error('Token não encontrado')
+        return
+      }
+
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadChatsManual_response',
+        data: { 
         },
         userId: user?.id
       })
@@ -1980,6 +2303,17 @@ export default function QuadroPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
+      })
+
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadContatos_response',
+        data: { 
+          status: response.status, 
+          ok: response.ok,
+          timestamp: new Date().toISOString(),
+        },
+        userId: user?.id
       })
 
       await fileLogger.log({
@@ -2071,12 +2405,12 @@ export default function QuadroPage() {
         
         await fileLogger.log({
           component: 'Kanban',
-          action: 'loadChatsManual_api_error',
+          action: 'loadContatos_api_error',
           data: { 
             status: response.status, 
             statusText: response.statusText,
             error: errorText,
-            url: `/api/whatsapp/chats`
+            url: `/api/contatos`
           },
           userId: user?.id
         })
@@ -2092,7 +2426,7 @@ export default function QuadroPage() {
         userId: user?.id
       })
     } finally {
-      setWhatsappLoading(false)
+      setLoading(false)
       
       await fileLogger.log({
         component: 'Kanban',
@@ -2100,7 +2434,7 @@ export default function QuadroPage() {
         data: { 
           finalState: {
             chatsLength: chats.length,
-            whatsappLoading: false
+            loading: false
           }
         },
         userId: user?.id
@@ -2260,7 +2594,7 @@ export default function QuadroPage() {
     // Atualizar contagens após salvar
     if (selectedCard?.id) {
       setTimeout(async () => {
-        const count = await fetchAssinaturasCount(selectedCard.id)
+        const count = getAssinaturasCountFromBatch(selectedCard.id)
         setAssinaturasCount(prev => ({
           ...prev,
           [selectedCard.id]: count
@@ -2324,7 +2658,9 @@ export default function QuadroPage() {
   const fetchOrcamentosDetalhes = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
+      // Extrair número do JID para buscar corretamente
+      const numeroTelefone = chatId.replace('@c.us', '')
+      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(numeroTelefone)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -2345,7 +2681,9 @@ export default function QuadroPage() {
   const fetchAgendamentosDetalhes = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(chatId)}`, {
+      // Extrair número do JID para buscar corretamente
+      const numeroTelefone = chatId.replace('@c.us', '')
+      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(numeroTelefone)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -2362,32 +2700,22 @@ export default function QuadroPage() {
     }
   }
 
-  // Função para buscar dados completos de assinaturas
-  const fetchAssinaturasDetalhes = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data.slice(0, 3) : [] // Limitamos às 3 mais recentes
-      }
-      return []
-    } catch (error) {
-      console.error('Erro ao buscar assinaturas:', error)
-      return []
-    }
+  // Função para buscar dados de assinaturas do batch otimizado
+  const getAssinaturasFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    return cardData?.assinaturas || []
   }
 
   // Função para buscar contagem de orçamentos
   const fetchOrcamentosCount = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
+      // Buscar pelo UUID do contato
+      const card = chats?.find(c => c.id === chatId)
+      const contactId = card?.contactId
+      if (!contactId) return 0
+      
+      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(contactId)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -2406,7 +2734,12 @@ export default function QuadroPage() {
   const fetchAgendamentosCount = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(chatId)}`, {
+      // Buscar pelo UUID do contato
+      const card = chats?.find(c => c.id === chatId)
+      const contactId = card?.contactId
+      if (!contactId) return 0
+      
+      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(contactId)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -2421,88 +2754,41 @@ export default function QuadroPage() {
     return 0
   }
 
-  // Função para buscar notas/anotações count
-  const fetchNotesCount = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data.length : 0
-      }
-    } catch (error) {
-      console.error('Erro ao buscar anotações:', error)
-    }
-    return 0
+  // Função para buscar contagem de anotações do batch otimizado
+  const getAnotacoesCountFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    return cardData?.anotacoes?.length || 0
   }
 
-  // Função para buscar contagem de assinaturas
-  const fetchAssinaturasCount = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data.length : 0
-      }
-    } catch (error) {
-      console.error('Erro ao buscar assinaturas:', error)
-    }
-    return 0
+  // Função para buscar contagem de assinaturas do batch otimizado
+  const getAssinaturasCountFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    return cardData?.assinaturas?.length || 0
   }
 
-  // Função para buscar detalhes completos de assinaturas
-  const fetchAssinaturasDetails = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/assinaturas?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data : []
-      }
-    } catch (error) {
-      console.error('Erro ao buscar detalhes de assinaturas:', error)
-    }
-    return []
+  // Função para buscar detalhes completos de assinaturas do batch otimizado
+  const getAssinaturasDetailsFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    const assinaturas = cardData?.assinaturas || []
+    console.log('🔍 DEBUG Assinaturas do batch para', chatId, ':', assinaturas)
+    console.log('🔍 DEBUG Quantidade de assinaturas:', assinaturas.length)
+    return assinaturas
   }
 
-  // Função para buscar detalhes completos de anotações
-  const fetchAnotacoesDetails = async (chatId: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/anotacoes?contato_id=${encodeURIComponent(chatId)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        return Array.isArray(data) ? data : []
-      }
-    } catch (error) {
-      console.error('Erro ao buscar detalhes de anotações:', error)
-    }
-    return []
+  // Função para buscar detalhes completos de anotações do batch otimizado
+  const getAnotacoesDetailsFromBatch = (chatId: string) => {
+    const cardData = getCardData(chatId)
+    const anotacoes = cardData?.anotacoes || []
+    console.log('🔍 DEBUG Anotações do batch para', chatId, ':', anotacoes)
+    console.log('🔍 DEBUG Quantidade de anotações:', anotacoes.length)
+    return anotacoes
   }
 
   // Função para buscar detalhes completos de orçamentos
   const fetchOrcamentosDetails = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
+      console.log('🔍 DEBUG fetchOrcamentosDetails para card:', chatId)
       const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(chatId)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -2511,12 +2797,14 @@ export default function QuadroPage() {
       
       if (response.ok) {
         const data = await response.json()
-        return Array.isArray(data) ? data : []
+        console.log('🔍 DEBUG orcamentos data recebida:', data)
+        return data || []
       }
+      return []
     } catch (error) {
-      console.error('Erro ao buscar detalhes de orçamentos:', error)
+      console.error('Erro ao buscar orçamentos:', error)
+      return []
     }
-    return []
   }
 
   // Função para buscar detalhes completos de agendamentos
@@ -2537,6 +2825,56 @@ export default function QuadroPage() {
       console.error('Erro ao buscar detalhes de agendamentos:', error)
     }
     return []
+  }
+
+  // Função para buscar detalhes completos de tags
+  const fetchTagsDetails = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/tags?contato_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes de tags:', error)
+    }
+    return []
+  }
+
+  // Função para buscar detalhes completos de tickets
+  const fetchTicketsDetails = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const numeroTelefone = chatId.replace('@c.us', '')
+      console.log('🎫 [FETCH TICKETS] Para card:', chatId, 'numeroTelefone:', numeroTelefone)
+      
+      const response = await fetch(`/api/tickets?contato_id=${numeroTelefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🎫 [FETCH TICKETS] Data recebida para', chatId, ':', data)
+        console.log('🎫 [FETCH TICKETS] É array?', Array.isArray(data))
+        console.log('🎫 [FETCH TICKETS] Tamanho:', data?.length)
+        return Array.isArray(data) ? data : []
+      } else {
+        console.log('🎫 [FETCH TICKETS] Response não OK:', response.status, response.statusText)
+      }
+      return []
+    } catch (error) {
+      console.error('🎫 [FETCH TICKETS] Erro:', error)
+      return []
+    }
   }
 
   // Função para verificar status do contato
@@ -2602,9 +2940,13 @@ export default function QuadroPage() {
         // Este useEffect agora apenas carrega dados não otimizados (assinaturas, anotações)
         console.log(' Dados otimizados disponíveis via hook:', Object.keys(optimizedCards).length, 'cards')
         
-        // Declarar objetos para dados detalhados não otimizados
+        // Declarar objetos para dados detalhados individuais
+        const orcamentosDetalhes: Record<string, any[]> = {}
+        const agendamentosDetalhes: Record<string, any[]> = {}
         const assinaturasDetalhes: Record<string, any[]> = {}
         const anotacoesDetalhes: Record<string, any[]> = {}
+        const tagsDetalhes: Record<string, any[]> = {}
+        const ticketsDetalhes: Record<string, any[]> = {}
       
       const allCards = mapearConversasParaColunas().flatMap(col => col.cards || [])
       const uniqueCardIds = allCards.map(card => card.id).filter((id, index, arr) => arr.indexOf(id) === index && id)
@@ -2623,31 +2965,62 @@ export default function QuadroPage() {
       
       for (const cardId of uniqueCardIds) {
         try {
-          // Buscar apenas dados não otimizados (assinaturas, anotações)
-          const [notesCount, assinaturasCount, contactStatusResult, assinaturasDetalhesData, anotacoesDetalhesData] = await Promise.all([
-            fetchNotesCount(cardId),
-            fetchAssinaturasCount(cardId),
-            checkContactStatus(cardId),
-            fetchAssinaturasDetails(cardId),
-            fetchAnotacoesDetails(cardId)
+          // Buscar dados individuais - mantendo orçamentos individual e usando batch para agendamentos
+          const [orcamentosDetalhesData, tagsDetalhesData, ticketsDetalhesData] = await Promise.all([
+            fetchOrcamentosDetails(cardId),
+            fetchTagsDetails(cardId),
+            fetchTicketsDetails(cardId)
           ])
           
-          // Armazenar contagens não otimizadas
-          notesCounts[cardId] = notesCount
-          assinaturasCounts[cardId] = assinaturasCount
+          // Obter agendamentos do batch otimizado (fallback para individual se não houver)
+          const cardData = getCardData(cardId)
+          let agendamentosDetalhesData = cardData?.agendamentos || []
           
-          // Dados otimizados já disponíveis via hook useKanbanOptimized
-          // Mantendo apenas dados não otimizados (assinaturas, anotações)
-          assinaturasDetalhes[cardId] = assinaturasDetalhesData
-          anotacoesDetalhes[cardId] = anotacoesDetalhesData
+          // Fallback: se batch não retornou dados, usar individual
+          if (agendamentosDetalhesData.length === 0) {
+            try {
+              agendamentosDetalhesData = await fetchAgendamentosDetails(cardId)
+              console.log(`🔄 [FALLBACK] Usando dados individuais para agendamentos do card ${cardId}`)
+            } catch (error) {
+              console.warn(`⚠️ [FALLBACK] Erro ao buscar agendamentos individuais:`, error)
+              agendamentosDetalhesData = []
+            }
+          }
+          
+          // Debug: verificar se dados estão funcionando
+          console.log(`📊 [DEBUG] Card ${cardId}:`, {
+            cardData: cardData ? 'existe' : 'null',
+            agendamentosBatch: cardData?.agendamentos?.length || 0,
+            agendamentosFinal: agendamentosDetalhesData.length,
+            orcamentos: orcamentosDetalhesData.length
+          })
+          
+          const contactStatusResult = 'synced' // Todos os contatos do banco têm status synced
+          
+          // Armazenar contagens do batch otimizado
+          notesCounts[cardId] = getAnotacoesCountFromBatch(cardId)
+          assinaturasCounts[cardId] = getAssinaturasCountFromBatch(cardId)
+          
+          // Salvar todos os dados individuais
+          orcamentosDetalhes[cardId] = orcamentosDetalhesData
+          agendamentosDetalhes[cardId] = agendamentosDetalhesData
+          assinaturasDetalhes[cardId] = getAssinaturasDetailsFromBatch(cardId)
+          anotacoesDetalhes[cardId] = getAnotacoesDetailsFromBatch(cardId)
+          tagsDetalhes[cardId] = tagsDetalhesData
+          ticketsDetalhes[cardId] = ticketsDetalhesData
+          
+          // Debug específico para tickets
+          console.log('🎫 [DEBUG TICKETS] Card:', cardId)
+          console.log('🎫 [DEBUG TICKETS] ticketsDetalhesData:', ticketsDetalhesData)
+          console.log('🎫 [DEBUG TICKETS] ticketsDetalhes[cardId]:', ticketsDetalhes[cardId])
           
           await fileLogger.log({
             component: 'Kanban',
             action: 'loadAllCounts_card_processed',
             data: { 
               cardId,
-              notesCount,
-              assinaturasCount,
+              notesCount: getAnotacoesCountFromBatch(cardId),
+              assinaturasCount: getAssinaturasCountFromBatch(cardId),
               contactStatus: contactStatusResult
             },
             userId: user?.id
@@ -2673,6 +3046,7 @@ export default function QuadroPage() {
           
           notesCounts[cardId] = 0
           assinaturasCounts[cardId] = 0
+          orcamentosDetalhes[cardId] = []
           assinaturasDetalhes[cardId] = []
         }
       }
@@ -2690,13 +3064,29 @@ export default function QuadroPage() {
         userId: user?.id
       })
       
+      // Debug: verificar dados antes de atualizar estados
+      console.log('🔍 [DEBUG STATES] Dados a serem salvos nos estados:', {
+        orcamentosDetalhes: Object.keys(orcamentosDetalhes).length,
+        agendamentosDetalhes: Object.keys(agendamentosDetalhes).length,
+        primeiroAgendamento: Object.keys(agendamentosDetalhes)[0] ? {
+          cardId: Object.keys(agendamentosDetalhes)[0],
+          quantidade: agendamentosDetalhes[Object.keys(agendamentosDetalhes)[0]]?.length || 0
+        } : 'nenhum'
+      })
+      
       // Atualizar estados não otimizados
       setNotesCount(notesCounts)
       setAssinaturasCount(assinaturasCounts)
-      setAssinaturasData(assinaturasDetalhes)
-      setAnotacoesData(anotacoesDetalhes)
+      setOrcamentosDataState(orcamentosDetalhes)
+      setAgendamentosDataState(agendamentosDetalhes)
+      // setAssinaturasData não implementado ainda
+      setAnotacoesDataState(anotacoesDetalhes)
+      setTagsDataState(tagsDetalhes)
+      setTicketsDataState(ticketsDetalhes)
       
-      // Os dados de orçamentos e agendamentos agora vêm do hook otimizado
+      // Debug final dos tickets
+      console.log('🎫 [FINAL DEBUG] ticketsDetalhes antes de setar:', ticketsDetalhes)
+      console.log('🎫 [FINAL DEBUG] Quantidade de cards com tickets:', Object.keys(ticketsDetalhes).length)
     }
     
     loadAllCounts()
@@ -2754,19 +3144,22 @@ export default function QuadroPage() {
     setShowAnotacoesModal(true)
   }
   
-  const handleOpenVideoChamada = () => {
+  const handleOpenVideoChamada = (card?: any) => {
     console.log('Abrir vídeo chamada')
-    // Implementação futura
+    setSelectedVideoChamadaCard(card || selectedCard)
+    setShowVideoChamadaModal(true)
   }
   
-  const handleOpenLigacao = () => {
+  const handleOpenLigacao = (card?: any) => {
     console.log('Fazer ligação') 
-    // Implementação futura
+    setSelectedLigacaoCard(card || selectedCard)
+    setShowLigacaoModal(true)
   }
   
-  const handleOpenCompartilharTela = () => {
+  const handleOpenCompartilharTela = (card?: any) => {
     console.log('Compartilhar tela')
-    // Implementação futura
+    setSelectedCompartilharTelaCard(card || selectedCard)
+    setShowCompartilharTelaModal(true)
   }
   
   // Função para atualizar cor da coluna
@@ -2921,7 +3314,7 @@ export default function QuadroPage() {
     }
   }
 
-  // Função para extrair chat ID (compatibilidade com diferentes formatos da WAHA API)
+  // Função para extrair chat ID (compatibilidade com contatos do CRM)
   const extractChatId = (chat: any): string => {
     if (typeof chat.id === 'string') {
       return chat.id
@@ -2945,14 +3338,8 @@ export default function QuadroPage() {
     })
   }
 
-  // Função para mapear conversas do WhatsApp para colunas do Kanban
+  // Função para mapear contatos do BD para colunas do Kanban
   const mapearConversasParaColunas = () => {
-    console.log('🗂️ mapearConversasParaColunas chamada:', {
-      chats: chats?.length || 0,
-      temChats: !!chats,
-      loading,
-      colunas: colunas?.length || 0
-    })
     
     // Se está carregando, retornar colunas vazias
     if (loading) {
@@ -2963,15 +3350,31 @@ export default function QuadroPage() {
       }))
     }
     
-    // Se não há conversas, usar colunas vazias
-    if (!chats || chats.length === 0) {
-      console.log('⚠️ Retornando cards demo porque não há conversas')
+    // USAR CONTATOS DO BD via useKanbanOptimized em vez de chats WhatsApp
+    const cardsFromDB = Object.values(optimizedCards || {})
+    console.log('📊 Contatos do BD disponíveis:', cardsFromDB.length)
+    
+    // 🚨 DEBUG INTENSIVO - DADOS ORIGINAIS
+    console.log('🔍 [MEGA DEBUG] ESTADO COMPLETO DOS DADOS:', {
+      optimizedCards,
+      cardsFromDB,
+      totalCards: cardsFromDB.length,
+      firstCard: cardsFromDB[0],
+      optimizedLoading,
+      optimizedError,
+      columnStats
+    })
+    
+    
+    
+    if (!cardsFromDB || cardsFromDB.length === 0) {
+      console.log('⚠️ Retornando colunas vazias - sem contatos no BD')
       return colunas.map((coluna, index) => ({
         ...coluna,
         cards: index === 0 ? [{
           id: 'demo-1',
-          nome: 'Aguardando Conversas do WhatsApp',
-          descricao: 'Conecte seu WhatsApp para ver as conversas aqui',
+          nome: 'Aguardando Contatos do CRM',
+          descricao: 'Cadastre contatos para vê-los no kanban',
           posicao: 1,
           tags: ['Demo'],
           prazo: new Date().toISOString(),
@@ -2992,27 +3395,21 @@ export default function QuadroPage() {
         })
       : chats
 
-    // Mapear conversas para cards com badges e metadados
-    let cards = conversasFiltradas.map((chat, index) => {
-      const avatar = chat.profilePictureUrl || null
-      const chatId = extractChatId(chat)
+    // MAPEAR CONTATOS DO BD EM VEZ DE CHATS WHATSAPP
+    let cards = cardsFromDB.map((cardData, index) => {
+      const chatId = cardData.id // CardData já tem id
       
-      // Debug: verificar se o avatar está sendo definido
-      console.log(`🖼️ Card ${chat.name}:`, {
-        chatId,
-        profilePictureUrl: chat.profilePictureUrl,
-        avatar,
-        hasAvatar: !!avatar
-      })
+      // 🔍 DEBUG PESADO - DESCOBRIR POR QUE ORÇAMENTOS NÃO APARECEM
+     
 
       // Buscar contagens dos fluxos para este chat
-      const cardData = getCardData(chatId)
       const cardCounts = {
-        orcamentosCount: cardData?.orcamentos?.length || 0,
-        agendamentosCount: cardData?.agendamentos?.length || 0,
+        orcamentosCount: cardData.orcamentos?.length || 0,
+        agendamentosCount: cardData.agendamentos?.length || 0,
         assinaturasCount: assinaturasCount[chatId] || 0,
         notesCount: notesCount[chatId] || 0
       }
+      
       
       // Criar tags baseadas nas contagens e status
       const tags = []
@@ -3020,30 +3417,38 @@ export default function QuadroPage() {
       if (cardCounts.agendamentosCount > 0) tags.push(`${cardCounts.agendamentosCount} Agendamento${cardCounts.agendamentosCount > 1 ? 's' : ''}`)
       if (cardCounts.assinaturasCount > 0) tags.push(`${cardCounts.assinaturasCount} Assinatura${cardCounts.assinaturasCount > 1 ? 's' : ''}`)
       if (cardCounts.notesCount > 0) tags.push(`${cardCounts.notesCount} Anotaç${cardCounts.notesCount > 1 ? 'ões' : 'ão'}`)
-      if (chat.lastMessage) tags.push('WhatsApp')
-      if (tags.length === 0) tags.push('Novo Contato')
+      if (tags.length === 0) tags.push('Orçamentos')
       
-      return {
+      // Extrair número do telefone do ID (formato: "5518999999999@c.us")
+      const phoneNumber = chatId.includes('@') ? chatId.split('@')[0] : chatId
+      
+      const finalCard = {
         id: chatId,
-        nome: chat.name || 'Contato sem nome',
-        descricao: chat.lastMessage?.body || 'Aguardando primeira mensagem',
+        nome: `Lead# ${phoneNumber.slice(-4)}`, // Usar últimos 4 dígitos do telefone
+        descricao: `Contato WhatsApp ${phoneNumber}`,
         posicao: index + 1,
-        tags: tags,
-        prazo: chat.timestamp || new Date().toISOString(),
+        tags: tags, // Tags sintéticas de contagem
+        prazo: new Date().toISOString(),
         comentarios: cardCounts.notesCount || 0,
         anexos: 0,
-        responsavel: chat.name || 'Contato',
-        avatar: avatar,
-        phone: chatId ? chatId.split('@')[0] : 'N/A',
-        isOnline: chat.lastMessage ? new Date(chat.timestamp).getTime() > Date.now() - 300000 : false,
+        responsavel: `Contato ${phoneNumber.slice(-4)}`,
+        avatar: null,
+        phone: phoneNumber,
+        isOnline: false,
+        // PRESERVAR DADOS DO CONTATO COM TAGS REAIS
+        contato: (cardData as any).contato,
         // Badges de contagem para exibição
         badges: {
-          orcamentos: getCardData(chatId)?.orcamentos?.length || 0,
-          agendamentos: getCardData(chatId)?.agendamentos?.length || 0,
-          assinaturas: assinaturasCount[chatId] || 0,
-          anotacoes: notesCount[chatId] || 0
+          orcamentos: cardCounts.orcamentosCount,
+          agendamentos: cardCounts.agendamentosCount,
+          assinaturas: cardCounts.assinaturasCount,
+          anotacoes: cardCounts.notesCount
         }
       }
+      
+    
+      
+      return finalCard
     })
     
     // Ordenar cards baseado nos metadados salvos
@@ -3075,28 +3480,18 @@ export default function QuadroPage() {
         return meta?.colunaId === coluna.id
       })
       
-      console.log(`📋 Coluna ${coluna.nome}:`, {
-        colunaId: coluna.id,
-        cardsComMetadados: cardsComMetadados.length,
-        temMetadados,
-        hasManualChanges,
-        totalMetadata: Object.keys(cardMetadata).length,
-        totalCards: cards.length,
-        columnStats: getColumnStats(coluna.id)
-      })
+   
       
       // Se não há metadados OU não há mudanças manuais, colocar todos os cards na PRIMEIRA coluna apenas
       if (!temMetadados || !hasManualChanges) {
         // APENAS a primeira coluna recebe todos os cards novos
         if (colunaIndex === 0) {
-          console.log(`📥 Todos cards novos vão para a primeira coluna "${coluna.nome}":`, cards.map(c => c.nome))
           return {
             ...coluna,
             cards: cards // Todos os cards ficam na primeira coluna
           }
         } else {
           // Outras colunas ficam vazias até o usuário arrastar manualmente
-          console.log(`📭 Coluna "${coluna.nome}" fica vazia (aguardando drag manual)`)
           return {
             ...coluna,
             cards: [] // Colunas 2+ ficam vazias
@@ -3413,10 +3808,10 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
     }
   }, [quadro]) // Executa quando o quadro é carregado
   
-  // Carregar conversas do WhatsApp apenas uma vez
+  // Carregar contatos do CRM apenas uma vez
   useEffect(() => {
-    if (quadro && chats.length === 0 && !whatsappLoading) {
-      console.log('🚀 Carregando conversas do WhatsApp para o Kanban...')
+    if (quadro && chats.length === 0 && !loading) {
+      console.log('🚀 Carregando contatos do CRM para o Kanban...')
       loadChatsManual()
     }
   }, [quadro]) // Só executa quando o quadro é carregado
@@ -3690,7 +4085,9 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
         ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
         : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
     }`}>
-      {/* TopBar */}
+    
+      
+      {/* AtendimentosTopBar */}
       <AtendimentosTopBar 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -3925,22 +4322,22 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={whatsappLoading}
+                disabled={loading}
               >
                 <motion.div
-                  animate={whatsappLoading ? { rotate: 360 } : {}}
+                  animate={loading ? { rotate: 360 } : {}}
                   transition={{ 
                     duration: 1, 
-                    repeat: whatsappLoading ? Infinity : 0,
+                    repeat: loading ? Infinity : 0,
                     ease: 'linear'
                   }}
                 >
                   <Settings className={`w-4 h-4 ${
-                    whatsappLoading ? 'text-blue-500' : ''
+                    loading ? 'text-blue-500' : ''
                   }`} />
                 </motion.div>
                 <span className="text-sm">
-                  {whatsappLoading ? 'Sincronizando...' : `Atualizar (${chats.length})`}
+                  {loading ? 'Carregando...' : `Atualizar (${chats.length})`}
                 </span>
                 <span className={`text-xs opacity-60 ${
                   theme === 'dark' ? 'text-white/40' : 'text-gray-400'
@@ -4087,7 +4484,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
               {/* Colunas */}
               <SortableContext
                 items={mapearConversasParaColunas().map(col => col.id)}
-                strategy={horizontalListSortingStrategy}
+                strategy={verticalListSortingStrategy}
               >
                 {mapearConversasParaColunas().map((coluna) => (
                   <div key={coluna.id} className="flex-shrink-0 w-80">
@@ -4098,11 +4495,16 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     orcamentosCount={orcamentosCount}
                     agendamentosCount={agendamentosCount}
                     assinaturasCount={assinaturasCount}
+                    anotacoesCount={anotacoesCount}
+                    tagsCount={tagsCount}
+                    ticketsCount={ticketsCount}
                     contactStatus={contactStatus}
                     orcamentosData={orcamentosData}
                     agendamentosData={agendamentosData}
                     assinaturasData={assinaturasData}
                     anotacoesData={anotacoesData}
+                    tagsData={tagsData}
+                    ticketsData={ticketsData}
                     onDoubleClick={handleDoubleClickColumn}
                     onDelete={handleDeleteColumn}
                     editingColumnId={editingColumnId}
@@ -4115,6 +4517,18 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     onOpenOrcamento={handleOpenOrcamento}
                     onOpenAssinatura={handleOpenAssinatura}
                     onOpenAnotacoes={handleOpenAnotacoes}
+                    onOpenTicket={(card) => {
+                      setSelectedTicketCard(card)
+                      setShowTicketModal(true)
+                    }}
+                    onOpenAgente={(card) => {
+                      setSelectedAgenteCard(card)
+                      setShowAgenteModal(true)
+                    }}
+                    onOpenTransferencia={(card) => {
+                      setSelectedTransferCard(card)
+                      setShowTransferModal(true)
+                    }}
                     onOpenVideoChamada={handleOpenVideoChamada}
                     onOpenLigacao={handleOpenLigacao}
                     onOpenCompartilharTela={handleOpenCompartilharTela}
@@ -4171,11 +4585,17 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 orcamentosCount={0}
                 agendamentosCount={0}
                 assinaturasCount={0}
+                anotacoesCount={0}
+                tagsCount={0}
+                ticketsCount={0}
                 contactStatus="error"
                 onOpenAgendamento={() => {}}
                 onOpenOrcamento={() => {}}
                 onOpenAssinatura={() => {}}
                 onOpenAnotacoes={() => {}}
+                onOpenTicket={() => {}}
+                onOpenAgente={() => {}}
+                onOpenTransferencia={() => {}}
                 onOpenVideoChamada={() => {}}
                 onOpenLigacao={() => {}}
                 onOpenCompartilharTela={() => {}}
@@ -4183,6 +4603,8 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 agendamentosData={[]}
                 assinaturasData={[]}
                 anotacoesData={[]}
+                tagsData={[]}
+                ticketsData={[]}
               />
             </div>
           )}
@@ -4237,8 +4659,108 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
         contactData={getContactData()}
         chatId={selectedCard?.id}
       />
-      
-      {/* Modais para vídeo chamada, ligação e compartilhar tela serão implementados futuramente */}
+
+      {/* Modal de Tickets */}
+      <TicketModal 
+        isOpen={showTicketModal}
+        onClose={() => {
+          setShowTicketModal(false)
+          setSelectedTicketCard(null)
+        }}
+        contactId={selectedTicketCard?.chatId || selectedTicketCard?.id || ''}
+        contactName={selectedTicketCard?.nome || selectedTicketCard?.name || ''}
+        onSuccess={() => {
+          // Fazer refresh dos dados otimizados após criar ticket
+          setTimeout(() => {
+            forceRefresh()
+          }, 500)
+        }}
+      />
+
+      {/* Modal de Agente IA */}
+      <AgenteSelectionModal 
+        isOpen={showAgenteModal}
+        onClose={() => {
+          setShowAgenteModal(false)
+          setSelectedAgenteCard(null)
+        }}
+        chatId={selectedAgenteCard?.chatId || selectedAgenteCard?.id || ''}
+        onAgentActivated={() => {
+          // Atualizar dados do kanban após ativar/desativar agente
+          // TODO: Implementar reload dos dados de agentes
+        }}
+      />
+
+      {/* Modal de Transferir Atendimento */}
+      <TransferirAtendimentoModal 
+        isOpen={showTransferModal}
+        onClose={() => {
+          setShowTransferModal(false)
+          setSelectedTransferCard(null)
+        }}
+        chatId={selectedTransferCard?.chatId || selectedTransferCard?.id || ''}
+        contactData={{
+          id: selectedTransferCard?.chatId || selectedTransferCard?.id || '',
+          nome: selectedTransferCard?.nome || selectedTransferCard?.name || '',
+          telefone: selectedTransferCard?.telefone || selectedTransferCard?.id || ''
+        }}
+        onConfirm={async (dados) => {
+          // Implementar lógica de transferência de atendimento
+          console.log('🔄 [Kanban] Transferindo atendimento:', dados)
+          // TODO: Implementar API de transferência
+        }}
+      />
+
+      {/* Modal de Vídeo Chamada */}
+      <VideoChamadaModal 
+        isOpen={showVideoChamadaModal}
+        onClose={() => {
+          setShowVideoChamadaModal(false)
+          setSelectedVideoChamadaCard(null)
+        }}
+        contactData={{
+          nome: selectedVideoChamadaCard?.nome || selectedVideoChamadaCard?.name || '',
+          telefone: selectedVideoChamadaCard?.telefone || selectedVideoChamadaCard?.id || ''
+        }}
+        onStartCall={() => {
+          console.log('🎥 [Kanban] Iniciando vídeo chamada')
+          // TODO: Implementar lógica de vídeo chamada
+        }}
+      />
+
+      {/* Modal de Ligação */}
+      <LigacaoModal 
+        isOpen={showLigacaoModal}
+        onClose={() => {
+          setShowLigacaoModal(false)
+          setSelectedLigacaoCard(null)
+        }}
+        contactData={{
+          nome: selectedLigacaoCard?.nome || selectedLigacaoCard?.name || '',
+          telefone: selectedLigacaoCard?.telefone || selectedLigacaoCard?.id || ''
+        }}
+        onStartCall={() => {
+          console.log('📞 [Kanban] Iniciando ligação')
+          // TODO: Implementar lógica de ligação
+        }}
+      />
+
+      {/* Modal de Compartilhar Tela */}
+      <CompartilharTelaModal 
+        isOpen={showCompartilharTelaModal}
+        onClose={() => {
+          setShowCompartilharTelaModal(false)
+          setSelectedCompartilharTelaCard(null)
+        }}
+        contactData={{
+          nome: selectedCompartilharTelaCard?.nome || selectedCompartilharTelaCard?.name || '',
+          telefone: selectedCompartilharTelaCard?.telefone || selectedCompartilharTelaCard?.id || ''
+        }}
+        onStartShare={() => {
+          console.log('🖥️ [Kanban] Iniciando compartilhamento de tela')
+          // TODO: Implementar lógica de compartilhamento de tela
+        }}
+      />
     </div>
   )
 }

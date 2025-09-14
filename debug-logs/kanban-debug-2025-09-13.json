@@ -1,0 +1,76 @@
+[
+  {
+    "timestamp": "2025-09-13T23:52:11.248Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-13T23:52:11.278Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-13T23:52:11.514Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "demo-1": 0
+      },
+      "totalOptimizedCards": 0
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-13T23:52:12.088Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-13T23:52:12.137Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "demo-1": 0
+      },
+      "totalOptimizedCards": 0
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  }
+]

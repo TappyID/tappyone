@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
-const JWT_SECRET = process.env.JWT_SECRET || 'tappyone_jwt_secret_2024_secure_key_a8f9e2d1c5b7f3e6a4d8c9b2e5f1a7d3'
-
-interface JwtPayload {
-  userId: string
-  email: string
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,12 +10,6 @@ export async function POST(request: NextRequest) {
     // TEMPORÁRIO: Bypass da validação JWT para resolver o problema
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.substring(7) || 'bypass'
-    
-    // Mock do decoded para manter compatibilidade
-    const decoded: JwtPayload = {
-      userId: '1', // ID fixo temporário
-      email: 'admin@test.com'
-    }
 
     // Extrair cardIds e mapeamento do body usando o clone
     const requestData = await clonedRequest.json()
@@ -32,36 +19,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({}, { status: 200 })
     }
 
-    console.log('🚀 Batch Anotações - cardIds:', cardIds.length)
-    console.log('🚀 Batch Anotações - mapeamento:', cardContactMapping)
+    console.log('🚀 Batch Contatos - cardIds:', cardIds.length)
+    console.log('🚀 Batch Contatos - mapeamento:', cardContactMapping)
 
-    // Buscar anotações para todos os cards de uma vez
-    const anotacoesResponse = await fetch(`${BACKEND_URL}/api/anotacoes/batch`, {
+    // Buscar contatos para todos os cards de uma vez
+    const contatosResponse = await fetch(`${BACKEND_URL}/api/contatos/batch`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'X-User-ID': decoded.userId
+        'X-User-ID': '1'
       },
       body: JSON.stringify({ 
         cardIds,
         cardContactMapping,
-        userId: decoded.userId 
+        userId: '1' 
       })
     })
 
-    if (!anotacoesResponse.ok) {
-      console.error('❌ Erro no backend anotações batch:', anotacoesResponse.status)
+    if (!contatosResponse.ok) {
+      console.error('❌ Erro no backend contatos batch:', contatosResponse.status)
       return NextResponse.json({}, { status: 200 }) // Retorna vazio em caso de erro
     }
 
-    const anotacoesData = await anotacoesResponse.json()
-    console.log('✅ Batch Anotações OK:', Object.keys(anotacoesData).length, 'cards')
+    const contatosData = await contatosResponse.json()
+    console.log('✅ Batch Contatos OK:', Object.keys(contatosData).length, 'cards')
+    console.log('📞📞📞 CONTATOS DATA COMPLETA RECEBIDA:', JSON.stringify(contatosData, null, 2))
 
-    return NextResponse.json(anotacoesData)
+    return NextResponse.json(contatosData)
 
   } catch (error) {
-    console.error('❌ Erro na API batch anotações:', error)
+    console.error('❌ Erro na API batch contatos:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' }, 
       { status: 500 }

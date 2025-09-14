@@ -9,9 +9,9 @@ export async function GET(
   console.log(' [KANBAN QUADRO ID] GET route foi chamado para ID:', params.id)
   
   try {
-    const authHeader = request.headers.get('authorization')
+    const authHeader = request.headers.get('Authorization')
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader) {
       console.log(' [KANBAN QUADRO ID] Token não encontrado no header')
       return NextResponse.json(
         { error: 'Token de autorização não encontrado' },
@@ -19,8 +19,7 @@ export async function GET(
       )
     }
 
-    const token = authHeader.substring(7)
-    console.log(' [KANBAN QUADRO ID] Token extraído do header')
+    console.log(' [KANBAN QUADRO ID] Usando authHeader direto (mesmo padrão orçamentos)')
 
     const backendUrl = `${BACKEND_URL}/api/kanban/quadros/${params.id}`
     console.log(' [KANBAN QUADRO ID] Enviando para backend:', backendUrl)
@@ -28,7 +27,7 @@ export async function GET(
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
     })
