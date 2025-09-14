@@ -37,8 +37,9 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAtendentes } from '@/hooks/useAtendentes'
 import { useTickets } from '@/hooks/useTickets'
-import { useWhatsAppData } from '@/hooks/useWhatsAppData'
-import { useContatoData } from '@/hooks/useContatoData'
+// Removidos hooks do WhatsApp para evitar ERR_INSUFFICIENT_RESOURCES
+// import { useWhatsAppData } from '@/hooks/useWhatsAppData'
+// import { useContatoData } from '@/hooks/useContatoData'
 
 interface AtendimentosTopBarProps {
   searchQuery: string
@@ -51,13 +52,15 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
   const pathname = usePathname()
   const { atendentes, loading: atendentesLoading } = useAtendentes({ tipo: 'atendente', status: 'ativo' })
   const { tickets, loading: ticketsLoading } = useTickets()
-  const { chats } = useWhatsAppData()
-  const chatIds = chats?.map(chat => {
-    if (!chat?.id) return ''
-    const chatId = chat.id as string | { _serialized?: string }
-    return (typeof chatId === 'object' ? chatId._serialized : chatId) || ''
-  }).filter(id => id) || []
-  const { contatos, loading: contatosLoading } = useContatoData(chatIds)
+  // Hooks do WhatsApp removidos - usando apenas dados do banco
+  // const { chats } = useWhatsAppData()
+  // const chatIds = chats?.map(chat => {
+  //   if (!chat?.id) return ''
+  //   const chatId = chat.id as string | { _serialized?: string }
+  //   return (typeof chatId === 'object' ? chatId._serialized : chatId) || ''
+  // }).filter(id => id) || []
+  // const { contatos, loading: contatosLoading } = useContatoData(chatIds)
+  const contatosLoading = false // Placeholder
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showTranslation, setShowTranslation] = useState(false)
@@ -109,13 +112,10 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
   
   // Contadores baseados no banco de dados
   const totalTickets = tickets?.length || 0
-  const totalLeads = chatIds?.filter(chatId => {
-    const contatoData = contatos[chatId]
-    return !contatoData?.tags || contatoData.tags.length === 0
-  }).length || 0
+  const totalLeads = 0 // Placeholder - dados vêm do Kanban otimizado agora
   const atendentesAtivos = atendentes?.filter(a => a.ativo)?.length || 0
   
-  const loading = atendentesLoading || ticketsLoading || contatosLoading
+  const loading = atendentesLoading || ticketsLoading
   
   // Função para toggle fullscreen
   const toggleFullscreen = () => {

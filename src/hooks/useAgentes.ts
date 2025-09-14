@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://server.tappy.id';
+
 export interface AgenteIa {
   id: string;
   usuarioId: string;
@@ -54,7 +56,11 @@ export function useAgentes(options: UseAgentesOptions = {}) {
       if (search) params.append('search', search);
       if (categoria) params.append('categoria', categoria);
 
-      const response = await fetch(`/api/agentes?${params}`);
+      const response = await fetch(`${API_BASE_URL}/api/agentes?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Erro ao buscar agentes');
@@ -75,10 +81,11 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const createAgente = async (agente: Omit<AgenteIa, 'id' | 'usuarioId' | 'tokensUsados' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const response = await fetch('/api/agentes', {
+      const response = await fetch(`${API_BASE_URL}/api/agentes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(agente),
       });
@@ -97,10 +104,11 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const updateAgente = async (id: string, updates: Partial<AgenteIa>) => {
     try {
-      const response = await fetch(`/api/agentes/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/agentes/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(updates),
       });
@@ -119,8 +127,11 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const deleteAgente = async (id: string) => {
     try {
-      const response = await fetch(`/api/agentes/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/agentes/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -135,8 +146,11 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const toggleAgente = async (id: string) => {
     try {
-      const response = await fetch(`/api/agentes/${id}/toggle`, {
+      const response = await fetch(`${API_BASE_URL}/api/agentes/${id}/toggle`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -179,7 +193,11 @@ export function useAgentesAtivos() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/agentes/ativos');
+      const response = await fetch(`${API_BASE_URL}/api/agentes/ativos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Erro ao buscar agentes ativos');

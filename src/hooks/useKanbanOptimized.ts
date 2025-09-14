@@ -494,9 +494,15 @@ export function useKanbanOptimized(quadroId: string) {
   const forceRefresh = useCallback(async () => {
     const cacheKey = `kanban-${quadroId}`
     kanbanCache.delete(cacheKey)
-    console.log('🗑️ CACHE LIMPO para:', cacheKey)
+    console.log('🗑️ [FORCE REFRESH] CACHE LIMPO para:', cacheKey)
+    console.log('🔄 [FORCE REFRESH] Iniciando busca de dados frescos...')
     
     const freshData = await fetchOptimizedData()
+    console.log('✅ [FORCE REFRESH] Dados frescos obtidos:', {
+      cardsCount: Object.keys(freshData.cards).length,
+      hasError: !!freshData.error,
+      loading: freshData.loading
+    })
     setData(freshData)
   }, [quadroId, fetchOptimizedData])
 

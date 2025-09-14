@@ -48,7 +48,6 @@ export async function GET(
     })
 
     if (!response.ok) {
-      console.log(`❌ [PICTURE] Erro ${response.status} para chat ${chatId} com sessionId ${sessionId}`)
       
       // Se não achou foto, retornar imagem padrão ou status específico
       if (response.status === 404) {
@@ -68,7 +67,6 @@ export async function GET(
     
     return NextResponse.json(data)
   } catch (error) {
-    console.error('❌ [PICTURE] Erro interno:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
