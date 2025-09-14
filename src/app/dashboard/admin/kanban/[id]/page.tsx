@@ -90,10 +90,6 @@ function LazyCardsList({
   orcamentosCount,
   agendamentosCount,
   assinaturasCount,
-  anotacoesCount,
-  tagsCount,
-  ticketsCount,
-  agentesCount,
   contactStatus,
   onOpenAgendamento,
   onOpenOrcamento,
@@ -109,9 +105,11 @@ function LazyCardsList({
   agendamentosData,
   assinaturasData,
   anotacoesData,
+  anotacoesCount,
+  tagsCount,
+  ticketsCount,
   tagsData,
-  ticketsData,
-  agentesData
+  ticketsData
 }: {
   cards: any[]
   theme: string
@@ -123,7 +121,6 @@ function LazyCardsList({
   anotacoesCount: { [key: string]: number }
   tagsCount: { [key: string]: number }
   ticketsCount: { [key: string]: number }
-  agentesCount: { [key: string]: number }
   contactStatus: { [key: string]: string }
   onOpenAgendamento: (card: any) => void
   onOpenOrcamento: (card: any) => void
@@ -141,7 +138,6 @@ function LazyCardsList({
   anotacoesData: any
   tagsData: any
   ticketsData: any
-  agentesData: any
 }) {
   // Usar lazy loading apenas se há muitos cards (50+)
   const shouldUseLazyLoading = cards.length > 50
@@ -185,7 +181,6 @@ function LazyCardsList({
           anotacoesCount={anotacoesCount[card.id] || 0}
           tagsCount={tagsCount[card.id] || 0}
           ticketsCount={ticketsCount[card.id] || 0}
-          agentesCount={agentesCount[card.id] || 0}
           contactStatus="synced"
           onOpenAgendamento={onOpenAgendamento}
           onOpenOrcamento={onOpenOrcamento}
@@ -203,7 +198,6 @@ function LazyCardsList({
           anotacoesData={anotacoesData[card.id] || []}
           tagsData={tagsData[card.id] || []}
           ticketsData={ticketsData[card.id] || []}
-          agentesData={agentesData[card.id] || []}
         />
       ))}
       
@@ -254,7 +248,6 @@ function DroppableArea({
   anotacoesCount,
   tagsCount,
   ticketsCount,
-  agentesCount,
   contactStatus,
   orcamentosData,
   agendamentosData,
@@ -262,7 +255,6 @@ function DroppableArea({
   anotacoesData,
   tagsData,
   ticketsData,
-  agentesData,
   onDoubleClick, 
   onDelete, 
   editingColumnId, 
@@ -292,7 +284,6 @@ function DroppableArea({
   anotacoesCount: Record<string, number>,
   tagsCount: Record<string, number>,
   ticketsCount: Record<string, number>,
-  agentesCount: Record<string, number>,
   contactStatus: Record<string, string>,
   orcamentosData: any,
   agendamentosData: any,
@@ -300,7 +291,6 @@ function DroppableArea({
   anotacoesData: any,
   tagsData: any,
   ticketsData: any,
-  agentesData: any,
   onDoubleClick: (coluna: any) => void,
   onDelete: (columnId: string) => void,
   editingColumnId: string | null,
@@ -504,7 +494,7 @@ function DroppableArea({
                     ? 'hover:bg-green-500/20 text-green-400 hover:text-green-300 border border-transparent hover:border-green-500/30'
                     : 'hover:bg-green-50 text-green-600 hover:text-green-700 border border-transparent hover:border-green-300/50'
                 } backdrop-blur-sm shadow-lg hover:shadow-xl`}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 title="Adicionar card"
               >
@@ -642,14 +632,9 @@ function DroppableArea({
             const cardAssinaturas = assinaturasData?.[card.id] || []
             return total + cardAssinaturas.length
           }, 0)
-          
-          const totalAgentes = coluna.cards.reduce((total: number, card: any) => {
-            const cardAgentes = agentesData?.[card.id] || []
-            return total + cardAgentes.length
-          }, 0)
 
-          // Só renderizar se houver orçamentos, agendamentos, assinaturas ou agentes
-          if (totalOrcamentos === 0 && totalAgendamentos === 0 && totalAssinaturas === 0 && totalAgentes === 0) return null
+          // Só renderizar se houver orçamentos, agendamentos ou assinaturas
+          if (totalOrcamentos === 0 && totalAgendamentos === 0 && totalAssinaturas === 0) return null
           
           return (
             <div className="mb-4 space-y-2">
@@ -743,7 +728,7 @@ function DroppableArea({
                   <motion.div
                     className="px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
                     style={{
-                      background: theme === 'dark' 
+                      background: theme === 'dark'
                         ? `linear-gradient(135deg, #F59E0B15 0%, rgba(0,0,0,0.3) 100%)`
                         : `linear-gradient(135deg, #F59E0B10 0%, rgba(255,255,255,0.8) 100%)`,
                       borderColor: theme === 'dark' ? '#334155' : '#e2e8f0'
@@ -773,38 +758,6 @@ function DroppableArea({
                   </motion.div>
                 )
               })()}
-              
-              {/* Resumo de Agentes */}
-              {totalAgentes > 0 && (
-                <motion.div
-                  className="px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
-                  style={{
-                    background: theme === 'dark' 
-                      ? `linear-gradient(135deg, #3B82F615 0%, rgba(0,0,0,0.3) 100%)`
-                      : `linear-gradient(135deg, #3B82F610 0%, rgba(255,255,255,0.8) 100%)`,
-                    borderColor: theme === 'dark' ? '#334155' : '#e2e8f0'
-                  }}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Bot 
-                        className="w-4 h-4 text-blue-500"
-                      />
-                      <span className={`text-xs font-medium ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-800'
-                      }`}>
-                        {totalAgentes} agente{totalAgentes !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="text-sm font-bold text-blue-500">
-                      {totalAgentes} ativo{totalAgentes !== 1 ? 's' : ''}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
             </div>
           )
         })()}
@@ -824,7 +777,6 @@ function DroppableArea({
             anotacoesCount={notesCount}
             tagsCount={tagsCount}
             ticketsCount={ticketsCount}
-            agentesCount={agentesCount}
             contactStatus={contactStatus}
             onOpenAgendamento={onOpenAgendamento}
             onOpenOrcamento={onOpenOrcamento}
@@ -842,7 +794,6 @@ function DroppableArea({
             anotacoesData={anotacoesData}
             tagsData={tagsData}
             ticketsData={ticketsData}
-            agentesData={agentesData}
           />
         </SortableContext>
         
@@ -874,6 +825,38 @@ function DroppableArea({
       </div>
     </motion.div>
   )
+}
+
+
+
+interface SortableCardProps {
+  card: any;
+  theme: string;
+  columnColor: string;
+  notesCount: number;
+  orcamentosCount: number;
+  agendamentosCount: number;
+  assinaturasCount: number;
+  anotacoesCount: number;
+  tagsCount: number;
+  ticketsCount: number;
+  contactStatus: 'synced' | 'error';
+  onOpenAgendamento: (card: any) => void;
+  onOpenOrcamento: (card: any) => void;
+  onOpenAssinatura: (card: any) => void;
+  onOpenAnotacoes: (card: any) => void;
+  onOpenTicket: (card: any) => void;
+  onOpenAgente: (card: any) => void;
+  onOpenTransferencia: (card: any) => void;
+  onOpenVideoChamada: () => void;
+  onOpenLigacao: () => void;
+  onOpenCompartilharTela: () => void;
+  orcamentosData: any;
+  agendamentosData: any;
+  assinaturasData: any;
+  anotacoesData: any;
+  tagsData: any;
+  ticketsData: any;
 }
 
 // Componente Sortable para Orçamentos dentro dos cards
@@ -1046,7 +1029,6 @@ function SortableCard({
   anotacoesCount,
   tagsCount,
   ticketsCount,
-  agentesCount,
   contactStatus,
   onOpenAgendamento, 
   onOpenOrcamento,
@@ -1063,39 +1045,8 @@ function SortableCard({
   assinaturasData,
   anotacoesData,
   tagsData,
-  ticketsData,
-  agentesData
-}: {
-  card: any;
-  theme: string;
-  columnColor: string;
-  notesCount: number;
-  orcamentosCount: number;
-  agendamentosCount: number;
-  assinaturasCount: number;
-  anotacoesCount: number;
-  tagsCount: number;
-  ticketsCount: number;
-  agentesCount: number;
-  contactStatus: 'synced' | 'error';
-  onOpenAgendamento: (card: any) => void;
-  onOpenOrcamento: (card: any) => void;
-  onOpenAssinatura: (card: any) => void;
-  onOpenAnotacoes: (card: any) => void;
-  onOpenTicket: (card: any) => void;
-  onOpenAgente: (card: any) => void;
-  onOpenTransferencia: (card: any) => void;
-  onOpenVideoChamada: () => void;
-  onOpenLigacao: () => void;
-  onOpenCompartilharTela: () => void;
-  orcamentosData: any;
-  agendamentosData: any;
-  assinaturasData: any;
-  anotacoesData: any;
-  tagsData: any;
-  ticketsData: any;
-  agentesData: any;
-}) {
+  ticketsData
+}: SortableCardProps) {
   // DEBUG: Verificar props chegando no SortableCard
   console.log(`🔍 [SORTABLE CARD] Card ${card.id}:`)
   console.log(`  📊 ticketsCount prop:`, ticketsCount)
@@ -1299,20 +1250,11 @@ onError={(e) => {
             )
           })()}
 
-          {/* Badge Agentes */}
+          {/* Badge Agentes Ativos */}
           {(() => {
-            const agentCount = agentesCount || 0
-            const agentesDoCard = agentesData || []
-            const agentesAtivos = agentesDoCard.filter((a: any) => a.ativo !== false).length || 0
+            const agentesAtivos = card.agentes?.filter((a: any) => a.ativo)?.length || 0
             
-            // DEBUG: logs para verificar agentes
-            console.log(`🤖 [BADGE DEBUG] Card ${card.id}:`)
-            console.log(`  📊 agentesData (prop):`, agentesData)
-            console.log(`  📊 agentesCount (prop):`, agentesCount)
-            console.log(`  🔢 Total agentes: ${agentCount}`)
-            console.log(`  ✅ Agentes ativos: ${agentesAtivos}`)
-            
-            return agentCount > 0 && (
+            return agentesAtivos > 0 && (
               <div
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border cursor-pointer hover:scale-105 transition-all"
                 style={{
@@ -1320,14 +1262,14 @@ onError={(e) => {
                   borderColor: '#10b98140',
                   color: '#10b981'
                 }}
-                title={`${agentCount} agente(s) - ${agentesAtivos} ativo(s)`}
+                title={`${agentesAtivos} agente(s) ativo(s)`}
                 onClick={(e) => {
                   e.stopPropagation()
                   onOpenAgente(card)
                 }}
               >
                 <Bot className="w-3 h-3" />
-                <span>{agentCount}</span>
+                <span>{agentesAtivos}</span>
               </div>
             )
           })()}
@@ -1541,39 +1483,6 @@ onError={(e) => {
                   {ticketsCount} Ticket{ticketsCount > 1 ? 's' : ''}
                 </span>
               </div>
-            </div>
-          )}
-
-          {/* Badge Agentes - Clicável */}
-          {agentesCount > 0 && (
-            <div
-              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
-              style={{
-                background: theme === 'dark' 
-                  ? `${columnColor}15`
-                  : `${columnColor}10`,
-                border: `1px solid ${columnColor}30`
-              }}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                console.log('Clicou agentes, expandedSection atual:', expandedSection)
-                setExpandedSection(expandedSection === 'agentes' ? null : 'agentes')
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Bot className="w-3.5 h-3.5" style={{ color: columnColor }} />
-                <span className={`text-xs font-medium ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-800'
-                }`}>
-                  {agentesCount} Agente{agentesCount > 1 ? 's' : ''}
-                </span>
-              </div>
-              {agentesData && agentesData.length > 0 && (
-                <div className="text-xs font-bold" style={{ color: columnColor }}>
-                  {agentesData.filter((a: any) => a.ativo !== false).length} ativo{agentesData.filter((a: any) => a.ativo !== false).length !== 1 ? 's' : ''}
-                </div>
-              )}
             </div>
           )}
         </motion.div>
@@ -1882,85 +1791,6 @@ onError={(e) => {
                     style={{ color: columnColor }}
                   >
                     Criar primeiro ticket
-                  </button>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Detalhes Agentes Expandidos */}
-          {expandedSection === 'agentes' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="mt-3 space-y-2"
-              style={{ overflow: 'hidden' }}
-            >
-              {agentesData && Array.isArray(agentesData) && agentesData.length > 0 ? (
-                agentesData.map((agente: any, index: number) => (
-                  <motion.div
-                    key={agente.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    onClick={() => onOpenAgente(card)}
-                    className={`p-2 rounded-lg cursor-pointer hover:scale-[1.02] transition-transform ${
-                      theme === 'dark' ? 'bg-black/30' : 'bg-white/50'
-                    }`}
-                    style={{
-                      borderLeft: `3px solid ${columnColor}`,
-                      background: theme === 'dark' 
-                        ? `linear-gradient(135deg, ${columnColor}10 0%, transparent 100%)`
-                        : `linear-gradient(135deg, ${columnColor}08 0%, transparent 100%)`
-                    }}
-                  >
-                    <div className="flex justify-between items-center">
-                      <h4 className={`font-medium text-xs ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-800'
-                      }`}>
-                        {agente.nome || 'Agente IA'}
-                      </h4>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        agente.ativo !== false ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {agente.ativo !== false ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs opacity-60">
-                        {agente.modelo || 'ChatGPT'}
-                      </span>
-                      <span className="text-xs opacity-60">
-                        {agente.tokensUsados || 0} tokens
-                      </span>
-                    </div>
-                    {agente.descricao && (
-                      <div className="mt-1">
-                        <p className="text-xs opacity-80 truncate">
-                          {agente.descricao}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className={`p-4 rounded-lg text-center ${
-                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
-                  }`}
-                >
-                  <Bot className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                  <p className="text-xs">Nenhum agente encontrado</p>
-                  <button
-                    onClick={() => onOpenAgente(card)}
-                    className="mt-2 text-xs underline hover:opacity-80"
-                    style={{ color: columnColor }}
-                  >
-                    Criar primeiro agente
                   </button>
                 </motion.div>
               )}
@@ -2335,7 +2165,6 @@ export default function QuadroPage() {
   const [anotacoesDataState, setAnotacoesDataState] = useState<Record<string, any[]>>({})
   const [tagsDataState, setTagsDataState] = useState<Record<string, any[]>>({})
   const [ticketsDataState, setTicketsDataState] = useState<Record<string, any[]>>({})
-  const [agentesDataState, setAgentesDataState] = useState<Record<string, any[]>>({})
   
   // Criar contagens baseadas nos dados individuais
   const orcamentosCount = useMemo(() => {
@@ -2390,14 +2219,6 @@ export default function QuadroPage() {
     
     return counts
   }, [ticketsDataState])
-
-  const agentesCount = useMemo(() => {
-    const counts: Record<string, number> = {}
-    Object.keys(agentesDataState).forEach(cardId => {
-      counts[cardId] = agentesDataState[cardId]?.length || 0
-    })
-    return counts
-  }, [agentesDataState])
   
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [isClient, setIsClient] = useState(false)
@@ -2408,7 +2229,6 @@ export default function QuadroPage() {
   const anotacoesData = anotacoesDataState
   const tagsData = tagsDataState
   const ticketsData = ticketsDataState
-  const agentesData = agentesDataState
   
   // Buscar dados de assinaturas do hook otimizado
   const assinaturasData: { [cardId: string]: any[] } = {}
@@ -2446,22 +2266,6 @@ export default function QuadroPage() {
   const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
   const [editingQuadroDescription, setEditingQuadroDescription] = useState(false)
   const [editingQuadroDescricao, setEditingQuadroDescricao] = useState('')
-  
-  // Estados para colunas e edição
-  const [colunas, setColunas] = useState<any[]>([])
-  const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
-  const [editingColumnName, setEditingColumnName] = useState('')
-  const [activeCard, setActiveCard] = useState<any>(null)
-  const [activeColumn, setActiveColumn] = useState<any>(null)
-  const [notesCount, setNotesCount] = useState<Record<string, number>>({})
-  const [showShortcuts, setShowShortcuts] = useState(false)
-  const [contactStatus, setContactStatus] = useState<Record<string, string>>({})
-  
-  // Função para carregar todos os counts
-  const loadAllCounts = async () => {
-    // Implementação para carregar contadores
-    console.log('Loading all counts...')
-  }
   
   // Função para carregar contatos do CRM
   const loadChatsManual = async () => {
@@ -3063,14 +2867,14 @@ export default function QuadroPage() {
     return []
   }
 
-  // Função para buscar detalhes completos de agentes
-  const fetchAgentesDetails = async (chatId: string) => {
+  // Função para buscar detalhes completos de tickets
+  const fetchTicketsDetails = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
       const numeroTelefone = chatId.replace('@c.us', '')
-      console.log('🤖 [FETCH AGENTES] Para card:', chatId, 'numeroTelefone:', numeroTelefone)
+      console.log('🎫 [FETCH TICKETS] Para card:', chatId, 'numeroTelefone:', numeroTelefone)
       
-      const response = await fetch(`/api/agentes?contato_id=${numeroTelefone}`, {
+      const response = await fetch(`/api/tickets?contato_id=${numeroTelefone}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -3079,25 +2883,233 @@ export default function QuadroPage() {
       
       if (response.ok) {
         const data = await response.json()
-        console.log('🤖 [FETCH AGENTES] Data recebida para', chatId, ':', data)
-        console.log('🤖 [FETCH AGENTES] É array?', Array.isArray(data))
-        console.log('🤖 [FETCH AGENTES] Tamanho:', data?.length)
+        console.log('🎫 [FETCH TICKETS] Data recebida para', chatId, ':', data)
+        console.log('🎫 [FETCH TICKETS] É array?', Array.isArray(data))
+        console.log('🎫 [FETCH TICKETS] Tamanho:', data?.length)
         return Array.isArray(data) ? data : []
       } else {
-        console.log('🤖 [FETCH AGENTES] Response não OK:', response.status, response.statusText)
+        console.log('🎫 [FETCH TICKETS] Response não OK:', response.status, response.statusText)
       }
       return []
     } catch (error) {
-      console.error('🤖 [FETCH AGENTES] Erro:', error)
+      console.error('🎫 [FETCH TICKETS] Erro:', error)
       return []
     }
   }
 
-  // useEffect para carregar dados quando chats mudarem
-  useEffect(() => {
-    if (!loading && chats.length > 0) {
-      loadAllCounts()
+  // Função para verificar status do contato
+  const checkContactStatus = async (chatId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      // Extrair número do JID
+      const numeroTelefone = chatId.replace('@c.us', '')
+      
+      const response = await fetch(`/api/contatos?numero_telefone=${numeroTelefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (Array.isArray(data) && data.length > 0) {
+          const contato = data[0]
+          // Verifica se tem nome ou dados básicos
+          if (contato.nome || contato.numero_telefone) {
+            return 'synced'
+          }
+        }
+      }
+      return 'error'
+    } catch (error) {
+      console.error('Erro ao verificar status do contato:', error)
+      return 'error'
     }
+  }
+
+  // Estados para dados não otimizados e UI
+  const [colunas, setColunas] = useState<any[]>([])
+  const [activeCard, setActiveCard] = useState<any>(null)
+  const [activeColumn, setActiveColumn] = useState<any>(null)
+  const [notesCount, setNotesCount] = useState<Record<string, number>>({}) // Contador real de anotações
+  const [contactStatus, setContactStatus] = useState<Record<string, 'synced' | 'error'>>({}) // Status dos contatos
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  
+  // Estados para edição de colunas
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
+  const [editingColumnName, setEditingColumnName] = useState('')
+
+  // Buscar contagens reais de todos os fluxos após todas as declarações
+  useEffect(() => {
+    const loadAllCounts = async () => {
+      if (loading) return
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadAllCounts_started',
+        data: { 
+          loading,
+          chatsLength: chats.length
+        },
+        userId: user?.id
+      })
+      
+      const notesCounts: Record<string, number> = {}
+      const assinaturasCounts: Record<string, number> = {}
+            // Os dados otimizados já são carregados pelo hook useKanbanOptimized
+        // Este useEffect agora apenas carrega dados não otimizados (assinaturas, anotações)
+        console.log(' Dados otimizados disponíveis via hook:', Object.keys(optimizedCards).length, 'cards')
+        
+        // Declarar objetos para dados detalhados individuais
+        const orcamentosDetalhes: Record<string, any[]> = {}
+        const agendamentosDetalhes: Record<string, any[]> = {}
+        const assinaturasDetalhes: Record<string, any[]> = {}
+        const anotacoesDetalhes: Record<string, any[]> = {}
+        const tagsDetalhes: Record<string, any[]> = {}
+        const ticketsDetalhes: Record<string, any[]> = {}
+      
+      const allCards = mapearConversasParaColunas().flatMap(col => col.cards || [])
+      const uniqueCardIds = allCards.map(card => card.id).filter((id, index, arr) => arr.indexOf(id) === index && id)
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadAllCounts_cards_mapped',
+        data: { 
+          totalCards: allCards.length,
+          uniqueCardIds: uniqueCardIds.length,
+          sampleCardIds: uniqueCardIds.slice(0, 5),
+          allCardIds: uniqueCardIds
+        },
+        userId: user?.id
+      })
+      
+      for (const cardId of uniqueCardIds) {
+        try {
+          // Buscar dados individuais - mantendo orçamentos individual e usando batch para agendamentos
+          const [orcamentosDetalhesData, tagsDetalhesData, ticketsDetalhesData] = await Promise.all([
+            fetchOrcamentosDetails(cardId),
+            fetchTagsDetails(cardId),
+            fetchTicketsDetails(cardId)
+          ])
+          
+          // Obter agendamentos do batch otimizado (fallback para individual se não houver)
+          const cardData = getCardData(cardId)
+          let agendamentosDetalhesData = cardData?.agendamentos || []
+          
+          // Fallback: se batch não retornou dados, usar individual
+          if (agendamentosDetalhesData.length === 0) {
+            try {
+              agendamentosDetalhesData = await fetchAgendamentosDetails(cardId)
+              console.log(`🔄 [FALLBACK] Usando dados individuais para agendamentos do card ${cardId}`)
+            } catch (error) {
+              console.warn(`⚠️ [FALLBACK] Erro ao buscar agendamentos individuais:`, error)
+              agendamentosDetalhesData = []
+            }
+          }
+          
+          // Debug: verificar se dados estão funcionando
+          console.log(`📊 [DEBUG] Card ${cardId}:`, {
+            cardData: cardData ? 'existe' : 'null',
+            agendamentosBatch: cardData?.agendamentos?.length || 0,
+            agendamentosFinal: agendamentosDetalhesData.length,
+            orcamentos: orcamentosDetalhesData.length
+          })
+          
+          const contactStatusResult = 'synced' // Todos os contatos do banco têm status synced
+          
+          // Armazenar contagens do batch otimizado
+          notesCounts[cardId] = getAnotacoesCountFromBatch(cardId)
+          assinaturasCounts[cardId] = getAssinaturasCountFromBatch(cardId)
+          
+          // Salvar todos os dados individuais
+          orcamentosDetalhes[cardId] = orcamentosDetalhesData
+          agendamentosDetalhes[cardId] = agendamentosDetalhesData
+          assinaturasDetalhes[cardId] = getAssinaturasDetailsFromBatch(cardId)
+          anotacoesDetalhes[cardId] = getAnotacoesDetailsFromBatch(cardId)
+          tagsDetalhes[cardId] = tagsDetalhesData
+          ticketsDetalhes[cardId] = ticketsDetalhesData
+          
+          // Debug específico para tickets
+          console.log('🎫 [DEBUG TICKETS] Card:', cardId)
+          console.log('🎫 [DEBUG TICKETS] ticketsDetalhesData:', ticketsDetalhesData)
+          console.log('🎫 [DEBUG TICKETS] ticketsDetalhes[cardId]:', ticketsDetalhes[cardId])
+          
+          await fileLogger.log({
+            component: 'Kanban',
+            action: 'loadAllCounts_card_processed',
+            data: { 
+              cardId,
+              notesCount: getAnotacoesCountFromBatch(cardId),
+              assinaturasCount: getAssinaturasCountFromBatch(cardId),
+              contactStatus: contactStatusResult
+            },
+            userId: user?.id
+          })
+          
+          // Atualizar status do contato
+          setContactStatus(prev => ({
+            ...prev,
+            [cardId]: contactStatusResult
+          }))
+          
+        } catch (error) {
+          await fileLogger.log({
+            component: 'Kanban',
+            action: 'loadAllCounts_card_error',
+            data: { 
+              cardId,
+              error: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : null
+            },
+            userId: user?.id
+          })
+          
+          notesCounts[cardId] = 0
+          assinaturasCounts[cardId] = 0
+          orcamentosDetalhes[cardId] = []
+          assinaturasDetalhes[cardId] = []
+        }
+      }
+      
+      await fileLogger.log({
+        component: 'Kanban',
+        action: 'loadAllCounts_final_data',
+        data: { 
+          notesCounts,
+          orcamentosCounts: 'usando dados otimizados do hook',
+          agendamentosCounts: 'usando dados otimizados do hook',
+          assinaturasCounts,
+          totalOptimizedCards: Object.keys(optimizedCards).length
+        },
+        userId: user?.id
+      })
+      
+      // Debug: verificar dados antes de atualizar estados
+      console.log('🔍 [DEBUG STATES] Dados a serem salvos nos estados:', {
+        orcamentosDetalhes: Object.keys(orcamentosDetalhes).length,
+        agendamentosDetalhes: Object.keys(agendamentosDetalhes).length,
+        primeiroAgendamento: Object.keys(agendamentosDetalhes)[0] ? {
+          cardId: Object.keys(agendamentosDetalhes)[0],
+          quantidade: agendamentosDetalhes[Object.keys(agendamentosDetalhes)[0]]?.length || 0
+        } : 'nenhum'
+      })
+      
+      // Atualizar estados não otimizados
+      setNotesCount(notesCounts)
+      setAssinaturasCount(assinaturasCounts)
+      setOrcamentosDataState(orcamentosDetalhes)
+      setAgendamentosDataState(agendamentosDetalhes)
+      // setAssinaturasData não implementado ainda
+      setAnotacoesDataState(anotacoesDetalhes)
+      setTagsDataState(tagsDetalhes)
+      setTicketsDataState(ticketsDetalhes)
+      
+      // Debug final dos tickets
+      console.log('🎫 [FINAL DEBUG] ticketsDetalhes antes de setar:', ticketsDetalhes)
+      console.log('🎫 [FINAL DEBUG] Quantidade de cards com tickets:', Object.keys(ticketsDetalhes).length)
+    }
+    
+    loadAllCounts()
   }, [loading, chats.length])
   
   // Estados para color picker
@@ -3145,16 +3157,6 @@ export default function QuadroPage() {
   const handleOpenAssinatura = (card: any) => {
     setSelectedCard(card)
     setShowAssinaturaModal(true)
-  }
-  
-  const handleOpenTicket = (card: any) => {
-    setSelectedCard(card)
-    setShowTicketModal(true)
-  }
-  
-  const handleOpenAgente = (card: any) => {
-    setSelectedCard(card)
-    setShowAgenteModal(true)
   }
   
   const handleOpenAnotacoes = (card: any) => {
@@ -4516,7 +4518,6 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     anotacoesCount={anotacoesCount}
                     tagsCount={tagsCount}
                     ticketsCount={ticketsCount}
-                    agentesCount={agentesCount}
                     contactStatus={contactStatus}
                     orcamentosData={orcamentosData}
                     agendamentosData={agendamentosData}
@@ -4524,7 +4525,6 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     anotacoesData={anotacoesData}
                     tagsData={tagsData}
                     ticketsData={ticketsData}
-                    agentesData={agentesData}
                     onDoubleClick={handleDoubleClickColumn}
                     onDelete={handleDeleteColumn}
                     editingColumnId={editingColumnId}
@@ -4608,7 +4608,6 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 anotacoesCount={0}
                 tagsCount={0}
                 ticketsCount={0}
-                agentesCount={0}
                 contactStatus="error"
                 onOpenAgendamento={() => {}}
                 onOpenOrcamento={() => {}}
@@ -4626,7 +4625,6 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 anotacoesData={[]}
                 tagsData={[]}
                 ticketsData={[]}
-                agentesData={[]}
               />
             </div>
           )}
