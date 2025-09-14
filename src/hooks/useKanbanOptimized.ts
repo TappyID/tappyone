@@ -371,7 +371,10 @@ export function useKanbanOptimized(quadroId: string) {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ card_ids: allCardIds })
+        body: JSON.stringify({ 
+          cardIds: allCardIds,
+          cardContactMapping: cardContactMapping 
+        })
       })
 
       console.log('🤖 AGENTES - Status:', agentesResponse.status)

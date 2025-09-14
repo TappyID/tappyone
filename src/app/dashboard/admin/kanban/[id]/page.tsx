@@ -98,6 +98,8 @@ function LazyCardsList({
   onOpenTicket,
   onOpenAgente,
   onOpenTransferencia,
+  onOpenEditContato,
+  onOpenDeleteCard,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
@@ -108,8 +110,10 @@ function LazyCardsList({
   anotacoesCount,
   tagsCount,
   ticketsCount,
+  agentesCount,
   tagsData,
-  ticketsData
+  ticketsData,
+  agentesData
 }: {
   cards: any[]
   theme: string
@@ -121,6 +125,7 @@ function LazyCardsList({
   anotacoesCount: { [key: string]: number }
   tagsCount: { [key: string]: number }
   ticketsCount: { [key: string]: number }
+  agentesCount: { [key: string]: number }
   contactStatus: { [key: string]: string }
   onOpenAgendamento: (card: any) => void
   onOpenOrcamento: (card: any) => void
@@ -129,6 +134,8 @@ function LazyCardsList({
   onOpenTicket: (card: any) => void
   onOpenAgente: (card: any) => void
   onOpenTransferencia: (card: any) => void
+  onOpenEditContato: (card: any) => void
+  onOpenDeleteCard: (card: any) => void
   onOpenVideoChamada: () => void
   onOpenLigacao: () => void
   onOpenCompartilharTela: () => void
@@ -138,6 +145,7 @@ function LazyCardsList({
   anotacoesData: any
   tagsData: any
   ticketsData: any
+  agentesData: any
 }) {
   // Usar lazy loading apenas se há muitos cards (50+)
   const shouldUseLazyLoading = cards.length > 50
@@ -181,6 +189,7 @@ function LazyCardsList({
           anotacoesCount={anotacoesCount[card.id] || 0}
           tagsCount={tagsCount[card.id] || 0}
           ticketsCount={ticketsCount[card.id] || 0}
+          agentesCount={(agentesCount || {})[card.id] || 0}
           contactStatus="synced"
           onOpenAgendamento={onOpenAgendamento}
           onOpenOrcamento={onOpenOrcamento}
@@ -189,6 +198,8 @@ function LazyCardsList({
           onOpenTicket={onOpenTicket}
           onOpenAgente={onOpenAgente}
           onOpenTransferencia={onOpenTransferencia}
+          onOpenEditContato={onOpenEditContato}
+          onOpenDeleteCard={onOpenDeleteCard}
           onOpenVideoChamada={onOpenVideoChamada}
           onOpenLigacao={onOpenLigacao}
           onOpenCompartilharTela={onOpenCompartilharTela}
@@ -198,6 +209,7 @@ function LazyCardsList({
           anotacoesData={anotacoesData[card.id] || []}
           tagsData={tagsData[card.id] || []}
           ticketsData={ticketsData[card.id] || []}
+          agentesData={(agentesData || {})[card.id] || []}
         />
       ))}
       
@@ -248,6 +260,7 @@ function DroppableArea({
   anotacoesCount,
   tagsCount,
   ticketsCount,
+  agentesCount,
   contactStatus,
   orcamentosData,
   agendamentosData,
@@ -255,6 +268,7 @@ function DroppableArea({
   anotacoesData,
   tagsData,
   ticketsData,
+  agentesData,
   onDoubleClick, 
   onDelete, 
   editingColumnId, 
@@ -270,6 +284,8 @@ function DroppableArea({
   onOpenTicket,
   onOpenAgente,
   onOpenTransferencia,
+  onOpenEditContato,
+  onOpenDeleteCard,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
@@ -284,6 +300,7 @@ function DroppableArea({
   anotacoesCount: Record<string, number>,
   tagsCount: Record<string, number>,
   ticketsCount: Record<string, number>,
+  agentesCount: Record<string, number>,
   contactStatus: Record<string, string>,
   orcamentosData: any,
   agendamentosData: any,
@@ -291,6 +308,7 @@ function DroppableArea({
   anotacoesData: any,
   tagsData: any,
   ticketsData: any,
+  agentesData: any,
   onDoubleClick: (coluna: any) => void,
   onDelete: (columnId: string) => void,
   editingColumnId: string | null,
@@ -306,6 +324,8 @@ function DroppableArea({
   onOpenTicket: (card: any) => void,
   onOpenAgente: (card: any) => void,
   onOpenTransferencia: (card: any) => void,
+  onOpenEditContato: (card: any) => void,
+  onOpenDeleteCard: (card: any) => void,
   onOpenVideoChamada: () => void,
   onOpenLigacao: () => void,
   onOpenCompartilharTela: () => void,
@@ -777,6 +797,7 @@ function DroppableArea({
             anotacoesCount={notesCount}
             tagsCount={tagsCount}
             ticketsCount={ticketsCount}
+            agentesCount={agentesCount || {}}
             contactStatus={contactStatus}
             onOpenAgendamento={onOpenAgendamento}
             onOpenOrcamento={onOpenOrcamento}
@@ -785,6 +806,8 @@ function DroppableArea({
             onOpenTicket={onOpenTicket}
             onOpenAgente={onOpenAgente}
             onOpenTransferencia={onOpenTransferencia}
+            onOpenEditContato={onOpenEditContato}
+            onOpenDeleteCard={onOpenDeleteCard}
             onOpenVideoChamada={onOpenVideoChamada}
             onOpenLigacao={onOpenLigacao}
             onOpenCompartilharTela={onOpenCompartilharTela}
@@ -794,6 +817,7 @@ function DroppableArea({
             anotacoesData={anotacoesData}
             tagsData={tagsData}
             ticketsData={ticketsData}
+            agentesData={agentesData || {}}
           />
         </SortableContext>
         
@@ -840,6 +864,7 @@ interface SortableCardProps {
   anotacoesCount: number;
   tagsCount: number;
   ticketsCount: number;
+  agentesCount: number;
   contactStatus: 'synced' | 'error';
   onOpenAgendamento: (card: any) => void;
   onOpenOrcamento: (card: any) => void;
@@ -848,6 +873,8 @@ interface SortableCardProps {
   onOpenTicket: (card: any) => void;
   onOpenAgente: (card: any) => void;
   onOpenTransferencia: (card: any) => void;
+  onOpenEditContato: (card: any) => void;
+  onOpenDeleteCard: (card: any) => void;
   onOpenVideoChamada: () => void;
   onOpenLigacao: () => void;
   onOpenCompartilharTela: () => void;
@@ -857,6 +884,7 @@ interface SortableCardProps {
   anotacoesData: any;
   tagsData: any;
   ticketsData: any;
+  agentesData: any;
 }
 
 // Componente Sortable para Orçamentos dentro dos cards
@@ -1029,6 +1057,7 @@ function SortableCard({
   anotacoesCount,
   tagsCount,
   ticketsCount,
+  agentesCount,
   contactStatus,
   onOpenAgendamento, 
   onOpenOrcamento,
@@ -1037,6 +1066,8 @@ function SortableCard({
   onOpenTicket,
   onOpenAgente,
   onOpenTransferencia,
+  onOpenEditContato,
+  onOpenDeleteCard,
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
@@ -1045,12 +1076,22 @@ function SortableCard({
   assinaturasData,
   anotacoesData,
   tagsData,
-  ticketsData
+  ticketsData,
+  agentesData
 }: SortableCardProps) {
   // DEBUG: Verificar props chegando no SortableCard
-  console.log(`🔍 [SORTABLE CARD] Card ${card.id}:`)
-  console.log(`  📊 ticketsCount prop:`, ticketsCount)
-  console.log(`  📊 ticketsData prop:`, ticketsData)
+  console.log('🃏 [SORTABLE CARD] Props recebidas:', {
+    cardId: card.id,
+    agentesCount,
+    orcamentosCount,
+    agendamentosCount,
+    ticketsCount,
+    anotacoesCount
+  })
+  
+  // DEBUG ESPECÍFICO AGENTES
+  console.log('🤖 [SORTABLE CARD AGENTES] agentesCount para', card.id, ':', agentesCount)
+  console.log(`📊 ticketsData prop:`, ticketsData)
   console.log(`  📊 ticketsData length:`, ticketsData?.length)
   console.log(`  📊 ticketsCount > 0?`, (ticketsCount || 0) > 0)
   console.log(`  📊 Vai mostrar badge?`, (ticketsCount || 0) > 0)
@@ -1218,6 +1259,30 @@ onError={(e) => {
             ))
           })()}
 
+          {/* Agentes IA */}
+          {(() => {
+            const cardAgentes = agentesData || []
+            
+            if (!Array.isArray(cardAgentes) || cardAgentes.length === 0) {
+              return null
+            }
+            
+            return cardAgentes.map((agente: any, index: number) => (
+              <span
+                key={agente.id || index}
+                className="px-2 py-1 rounded-full text-xs font-medium border"
+                style={{
+                  backgroundColor: theme === 'dark' ? '#7c3aed20' : '#e9d5ff',
+                  borderColor: theme === 'dark' ? '#7c3aed' : '#c084fc',
+                  color: theme === 'dark' ? '#c4b5fd' : '#7c2d12'
+                }}
+                title={`Agente IA: ${agente.nome || agente.id}`}
+              >
+                🤖 {agente.nome || 'Agente IA'}
+              </span>
+            ))
+          })()}
+
           {/* Badge Tickets */}
           {(() => {
             const ticketCount = ticketsCount || 0
@@ -1252,15 +1317,22 @@ onError={(e) => {
 
           {/* Badge Agentes Ativos */}
           {(() => {
-            const agentesAtivos = card.agentes?.filter((a: any) => a.ativo)?.length || 0
+            const agentesAtivos = (agentesCount || {})[card.id] || 0
             
-            return agentesAtivos > 0 && (
+            console.log('🤖 [BADGE DEBUG] Card:', card.id, 'agentesAtivos:', agentesAtivos, 'agentesCount:', agentesCount)
+            
+            // Mostrar badge apenas quando há agentes ativos
+            if (agentesAtivos === 0) return null
+            
+            return (
               <div
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border cursor-pointer hover:scale-105 transition-all"
+                className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:scale-105 transition-transform"
                 style={{
-                  backgroundColor: '#10b98120',
-                  borderColor: '#10b98140',
-                  color: '#10b981'
+                  backgroundColor: agentesAtivos > 0 ? '#10b98110' : '#6b728010',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: agentesAtivos > 0 ? '#10b98140' : '#6b728040',
+                  color: agentesAtivos > 0 ? '#10b981' : '#6b7280'
                 }}
                 title={`${agentesAtivos} agente(s) ativo(s)`}
                 onClick={(e) => {
@@ -1481,6 +1553,34 @@ onError={(e) => {
                   theme === 'dark' ? 'text-white' : 'text-gray-800'
                 }`}>
                   {ticketsCount} Ticket{ticketsCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Agentes - Clicável */}
+          {agentesCount > 0 && (
+            <div
+              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
+              style={{
+                background: theme === 'dark' 
+                  ? `${columnColor}15`
+                  : `${columnColor}10`,
+                border: `1px solid ${columnColor}30`
+              }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Clicou agentes, expandedSection atual:', expandedSection)
+                setExpandedSection(expandedSection === 'agentes' ? null : 'agentes')
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Bot className="w-3.5 h-3.5" style={{ color: columnColor }} />
+                <span className={`text-xs font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-800'
+                }`}>
+                  {agentesCount} Agente{agentesCount > 1 ? 's' : ''} IA
                 </span>
               </div>
             </div>
@@ -1722,6 +1822,80 @@ onError={(e) => {
             </motion.div>
           )}
 
+          {/* Detalhes Agentes Expandidos */}
+          {expandedSection === 'agentes' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="mt-3 space-y-2"
+              style={{ overflow: 'hidden' }}
+            >
+              {agentesData && Array.isArray(agentesData) && agentesData.length > 0 ? (
+                agentesData.map((agente: any, index: number) => (
+                  <motion.div
+                    key={agente.id || index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`p-3 rounded-lg border ${
+                      theme === 'dark' 
+                        ? 'bg-gray-800/50 border-gray-700/50 text-gray-200' 
+                        : 'bg-white/80 border-gray-200/50 text-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <Bot className="w-4 h-4 text-purple-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-sm font-medium truncate">
+                            {agente.nome || 'Agente IA'}
+                          </h4>
+                          <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                            {agente.categoria || 'Geral'}
+                          </span>
+                        </div>
+                        {agente.funcao && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            Função: {agente.funcao}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-green-600 font-medium">
+                            ● Ativo
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenAgente(card)
+                            }}
+                            className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                          >
+                            Gerenciar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`p-3 rounded-lg text-center ${
+                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                  }`}
+                >
+                  <Bot className="w-5 h-5 mx-auto mb-1 opacity-50" />
+                  <p className="text-xs">Nenhum agente ativo</p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
           {/* Detalhes Tickets Expandidos */}
           {expandedSection === 'tickets' && (
             <motion.div
@@ -1831,14 +2005,14 @@ onError={(e) => {
             <Bot className="w-3 h-3" />
           </motion.button>
 
-          {/* Agente */}
+          {/* Gerenciar Agente IA */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               onOpenAgente(card)
             }}
-            className={`p-1.5 rounded-lg transition-all duration-200 ${
+            className={`relative p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
                 ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
                 : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
@@ -1848,25 +2022,60 @@ onError={(e) => {
             title="Gerenciar Agente IA"
           >
             <Bot className="w-3 h-3" />
+            
+            {/* Badge de quantidade de agentes */}
+            {(() => {
+              const agentesAtivos = agentesCount || 0
+              
+              console.log('🤖 [BOT BADGE] Card:', card.id, 'agentesCount:', agentesCount, 'agentesAtivos:', agentesAtivos)
+              
+              if (agentesAtivos > 0) {
+                return (
+                  <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-md">
+                    {agentesAtivos}
+                  </div>
+                )
+              }
+              return null
+            })()}
           </motion.button>
 
-          {/* Transferir Atendimento */}
+          {/* Editar Contato */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              onOpenTransferencia(card)
+              onOpenEditContato(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
-                ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
-                : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
+                ? 'hover:bg-blue-600/50 text-blue-300 hover:text-blue-200' 
+                : 'hover:bg-blue-200/50 text-blue-600 hover:text-blue-800'
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            title="Transferir Atendimento"
+            title="Editar Contato"
           >
             <UserCheck className="w-3 h-3" />
+          </motion.button>
+
+          {/* Excluir Card */}
+          <motion.button 
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onOpenDeleteCard(card)
+            }}
+            className={`p-1.5 rounded-lg transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'hover:bg-red-600/50 text-red-300 hover:text-red-200' 
+                : 'hover:bg-red-200/50 text-red-600 hover:text-red-800'
+            }`}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Excluir Card"
+          >
+            <Trash2 className="w-3 h-3" />
           </motion.button>
             
           {/* Agendar */}
@@ -2158,13 +2367,14 @@ export default function QuadroPage() {
   // Estados para armazenar metadados de cards
   const [cardMetadata, setCardMetadata] = useState<Record<string, any>>({})
   
-  // Estados para dados individuais (orçamentos, agendamentos, assinaturas, anotações, tags, tickets)
+  // Estados para dados individuais (orçamentos, agendamentos, assinaturas, anotações, tags, tickets, agentes)
   const [orcamentosDataState, setOrcamentosDataState] = useState<Record<string, any[]>>({})
   const [agendamentosDataState, setAgendamentosDataState] = useState<Record<string, any[]>>({})
   const [assinaturasCount, setAssinaturasCount] = useState<Record<string, number>>({})
   const [anotacoesDataState, setAnotacoesDataState] = useState<Record<string, any[]>>({})
   const [tagsDataState, setTagsDataState] = useState<Record<string, any[]>>({})
   const [ticketsDataState, setTicketsDataState] = useState<Record<string, any[]>>({})
+  const [agentesDataState, setAgentesDataState] = useState<Record<string, any[]>>({})
   
   // Criar contagens baseadas nos dados individuais
   const orcamentosCount = useMemo(() => {
@@ -2219,6 +2429,14 @@ export default function QuadroPage() {
     
     return counts
   }, [ticketsDataState])
+
+  const agentesCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(agentesDataState).forEach(cardId => {
+      counts[cardId] = agentesDataState[cardId]?.length || 0
+    })
+    return counts
+  }, [agentesDataState])
   
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [isClient, setIsClient] = useState(false)
@@ -2229,6 +2447,7 @@ export default function QuadroPage() {
   const anotacoesData = anotacoesDataState
   const tagsData = tagsDataState
   const ticketsData = ticketsDataState
+  const agentesData = agentesDataState
   
   // Buscar dados de assinaturas do hook otimizado
   const assinaturasData: { [cardId: string]: any[] } = {}
@@ -2256,6 +2475,10 @@ export default function QuadroPage() {
   const [selectedAgenteCard, setSelectedAgenteCard] = useState<any>(null)
   const [showTransferModal, setShowTransferModal] = useState(false)
   const [selectedTransferCard, setSelectedTransferCard] = useState<any>(null)
+  const [showEditContactModal, setShowEditContactModal] = useState(false)
+  const [selectedEditCard, setSelectedEditCard] = useState<any>(null)
+  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false)
+  const [selectedDeleteCard, setSelectedDeleteCard] = useState<any>(null)
   const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
   const [selectedVideoChamadaCard, setSelectedVideoChamadaCard] = useState<any>(null)
   const [showLigacaoModal, setShowLigacaoModal] = useState(false)
@@ -2605,7 +2828,7 @@ export default function QuadroPage() {
       }
     } catch (error) {
       console.error('❌ Erro ao criar orçamento:', error)
-      showNotification('Erro ao criar orçamento. Verifique sua conexão.', 'error')
+      showNotification('Erro ao criar orçamento. Tente novamente.', 'error')
     }
   }
 
@@ -2622,12 +2845,21 @@ export default function QuadroPage() {
       loadChatsManual()
     }, 500)
   }
-  
-  // Implementações futuras para vídeo chamada, ligação e compartilhar tela
-  const handleVideoChamadaStart = (data: any) => {
-    console.log('Vídeo chamada iniciada:', data)
+
+  const handleAgenteSave = async (data?: any) => {
+    // O AgenteSelectionModal já salva no backend, aqui fechamos e atualizamos
+    console.log('🤖 [AGENTE SAVE] Agente ativado/desativado:', data)
+    setShowAgenteModal(false)
+    
+    // Fazer refresh dos dados otimizados após salvar agente
+    setTimeout(async () => {
+      console.log('🔄 [DEBUG] Forçando reload completo dos dados após agente')
+      await forceRefresh()
+      await carregarMetadados()
+      loadChatsManual()
+    }, 500)
   }
-  
+
   const handleLigacaoStart = (data: any) => {
     console.log('Ligação iniciada:', data)
   }
@@ -2897,6 +3129,51 @@ export default function QuadroPage() {
     }
   }
 
+  // Função para buscar detalhes completos de agentes
+  const fetchAgentesDetails = async (cardId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      
+      // Extrair número de telefone real do card usando os dados otimizados
+      const cardData = getCardData(cardId)
+      let numeroTelefone = ''
+      
+      if (cardData?.contato?.telefone) {
+        // Se tem telefone no contato
+        numeroTelefone = cardData.contato.telefone.replace(/[@c.us]/g, '')
+      } else if (cardData?.contato?.numero_telefone) {
+        // Se tem numero_telefone no contato
+        numeroTelefone = cardData.contato.numero_telefone.replace(/[@c.us]/g, '')
+      } else {
+        // Fallback: tentar usar cardId diretamente se parece com telefone
+        numeroTelefone = cardId.includes('@') ? cardId.replace('@c.us', '') : cardId
+      }
+      
+      console.log('🤖 [FETCH AGENTES] Para card:', cardId, 'numeroTelefone:', numeroTelefone, 'cardData:', cardData)
+      
+      const response = await fetch(`/api/agentes-chat?contato_id=${numeroTelefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🤖 [FETCH AGENTES] Data recebida para', cardId, ':', data)
+        console.log('🤖 [FETCH AGENTES] É array?', Array.isArray(data))
+        console.log('🤖 [FETCH AGENTES] Tamanho:', data?.length)
+        return Array.isArray(data) ? data : []
+      } else {
+        console.log('🤖 [FETCH AGENTES] Response não OK:', response.status, response.statusText)
+      }
+      return []
+    } catch (error) {
+      console.error('🤖 [FETCH AGENTES] Erro:', error)
+      return []
+    }
+  }
+
   // Função para verificar status do contato
   const checkContactStatus = async (chatId: string) => {
     try {
@@ -2967,6 +3244,7 @@ export default function QuadroPage() {
         const anotacoesDetalhes: Record<string, any[]> = {}
         const tagsDetalhes: Record<string, any[]> = {}
         const ticketsDetalhes: Record<string, any[]> = {}
+        const agentesDetalhes: Record<string, any[]> = {}
       
       const allCards = mapearConversasParaColunas().flatMap(col => col.cards || [])
       const uniqueCardIds = allCards.map(card => card.id).filter((id, index, arr) => arr.indexOf(id) === index && id)
@@ -2986,10 +3264,11 @@ export default function QuadroPage() {
       for (const cardId of uniqueCardIds) {
         try {
           // Buscar dados individuais - mantendo orçamentos individual e usando batch para agendamentos
-          const [orcamentosDetalhesData, tagsDetalhesData, ticketsDetalhesData] = await Promise.all([
+          const [orcamentosDetalhesData, tagsDetalhesData, ticketsDetalhesData, agentesDetalhesData] = await Promise.all([
             fetchOrcamentosDetails(cardId),
             fetchTagsDetails(cardId),
-            fetchTicketsDetails(cardId)
+            fetchTicketsDetails(cardId),
+            fetchAgentesDetails(cardId)
           ])
           
           // Obter agendamentos do batch otimizado (fallback para individual se não houver)
@@ -3028,6 +3307,7 @@ export default function QuadroPage() {
           anotacoesDetalhes[cardId] = getAnotacoesDetailsFromBatch(cardId)
           tagsDetalhes[cardId] = tagsDetalhesData
           ticketsDetalhes[cardId] = ticketsDetalhesData
+          agentesDetalhes[cardId] = agentesDetalhesData
           
           // Debug específico para tickets
           console.log('🎫 [DEBUG TICKETS] Card:', cardId)
@@ -3103,6 +3383,7 @@ export default function QuadroPage() {
       setAnotacoesDataState(anotacoesDetalhes)
       setTagsDataState(tagsDetalhes)
       setTicketsDataState(ticketsDetalhes)
+      setAgentesDataState(agentesDetalhes)
       
       // Debug final dos tickets
       console.log('🎫 [FINAL DEBUG] ticketsDetalhes antes de setar:', ticketsDetalhes)
@@ -4518,6 +4799,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     anotacoesCount={anotacoesCount}
                     tagsCount={tagsCount}
                     ticketsCount={ticketsCount}
+                    agentesCount={agentesCount}
                     contactStatus={contactStatus}
                     orcamentosData={orcamentosData}
                     agendamentosData={agendamentosData}
@@ -4525,6 +4807,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     anotacoesData={anotacoesData}
                     tagsData={tagsData}
                     ticketsData={ticketsData}
+                    agentesData={agentesData}
                     onDoubleClick={handleDoubleClickColumn}
                     onDelete={handleDeleteColumn}
                     editingColumnId={editingColumnId}
@@ -4548,6 +4831,14 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     onOpenTransferencia={(card) => {
                       setSelectedTransferCard(card)
                       setShowTransferModal(true)
+                    }}
+                    onOpenEditContato={(card) => {
+                      setSelectedEditCard(card)
+                      setShowEditContactModal(true)
+                    }}
+                    onOpenDeleteCard={(card) => {
+                      setSelectedDeleteCard(card)
+                      setShowDeleteCardModal(true)
                     }}
                     onOpenVideoChamada={handleOpenVideoChamada}
                     onOpenLigacao={handleOpenLigacao}
@@ -4608,6 +4899,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 anotacoesCount={0}
                 tagsCount={0}
                 ticketsCount={0}
+                agentesCount={0}
                 contactStatus="error"
                 onOpenAgendamento={() => {}}
                 onOpenOrcamento={() => {}}
@@ -4616,6 +4908,8 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 onOpenTicket={() => {}}
                 onOpenAgente={() => {}}
                 onOpenTransferencia={() => {}}
+                onOpenEditContato={() => {}}
+                onOpenDeleteCard={() => {}}
                 onOpenVideoChamada={() => {}}
                 onOpenLigacao={() => {}}
                 onOpenCompartilharTela={() => {}}
@@ -4625,6 +4919,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 anotacoesData={[]}
                 tagsData={[]}
                 ticketsData={[]}
+                agentesData={[]}
               />
             </div>
           )}
@@ -4710,11 +5005,8 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
           setShowAgenteModal(false)
           setSelectedAgenteCard(null)
         }}
-        chatId={selectedAgenteCard?.chatId || selectedAgenteCard?.id || ''}
-        onAgentActivated={() => {
-          // Atualizar dados do kanban após ativar/desativar agente
-          // TODO: Implementar reload dos dados de agentes
-        }}
+        chatId={selectedAgenteCard?.id || selectedAgenteCard?.chatId || null}
+        onAgentActivated={handleAgenteSave}
       />
 
       {/* Modal de Transferir Atendimento */}

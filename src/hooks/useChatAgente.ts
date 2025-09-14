@@ -32,7 +32,11 @@ export function useChatAgente(chatId: string | null) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/chat-agentes/${chatId}`);
+      const response = await fetch(`/api/chat-agentes/${chatId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Erro ao buscar agente do chat');
@@ -57,12 +61,14 @@ export function useChatAgente(chatId: string | null) {
 
   const activateAgent = async (agenteId: string) => {
     if (!chatId) throw new Error('Chat ID é obrigatório');
+    if (!token) throw new Error('Token de autorização é obrigatório');
     
     try {
       const response = await fetch(`/api/chat-agentes/${chatId}/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ agenteId }),
       });
@@ -81,10 +87,14 @@ export function useChatAgente(chatId: string | null) {
 
   const deactivateAgent = async () => {
     if (!chatId) throw new Error('Chat ID é obrigatório');
+    if (!token) throw new Error('Token de autorização é obrigatório');
     
     try {
       const response = await fetch(`/api/chat-agentes/${chatId}/deactivate`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
