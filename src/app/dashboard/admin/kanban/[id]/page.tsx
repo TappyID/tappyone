@@ -48,6 +48,8 @@ import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import TicketModal from '../../atendimentos/components/modals/TicketModal'
 import AgenteSelectionModal from '../../atendimentos/components/modals/AgenteSelectionModal'
 import TransferirAtendimentoModal from '../../atendimentos/components/modals/TransferirAtendimentoModal'
+import EditContactModalSteps from '@/components/shared/EditContactModalSteps'
+import DeleteCardModal from '@/components/shared/DeleteCardModal'
 import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
 import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
@@ -806,8 +808,18 @@ function DroppableArea({
             onOpenTicket={onOpenTicket}
             onOpenAgente={onOpenAgente}
             onOpenTransferencia={onOpenTransferencia}
-            onOpenEditContato={onOpenEditContato}
-            onOpenDeleteCard={onOpenDeleteCard}
+            onOpenEditContato={(card) => {
+              console.log('🚀 Disparando evento openEditContactModal:', card);
+              const event = new CustomEvent('openEditContactModal', { detail: card });
+              window.dispatchEvent(event);
+              console.log('✅ Evento openEditContactModal disparado');
+            }}
+            onOpenDeleteCard={(card) => {
+              console.log('🚀 Disparando evento openDeleteCardModal:', card);
+              const event = new CustomEvent('openDeleteCardModal', { detail: card });
+              window.dispatchEvent(event);
+              console.log('✅ Evento openDeleteCardModal disparado');
+            }}
             onOpenVideoChamada={onOpenVideoChamada}
             onOpenLigacao={onOpenLigacao}
             onOpenCompartilharTela={onOpenCompartilharTela}
@@ -2045,6 +2057,7 @@ onError={(e) => {
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
+              console.log('🔧 Clicou em Editar Contato:', card)
               onOpenEditContato(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
@@ -2064,6 +2077,7 @@ onError={(e) => {
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
+              console.log('🗑️ Clicou em Excluir Card:', card)
               onOpenDeleteCard(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
@@ -3444,6 +3458,16 @@ export default function QuadroPage() {
     setSelectedCard(card)
     setShowAnotacoesModal(true)
   }
+
+  const handleOpenEditContato = (card: any) => {
+    setSelectedEditCard(card)
+    setShowEditContactModal(true)
+  }
+
+  const handleOpenDeleteCard = (card: any) => {
+    setSelectedDeleteCard(card)
+    setShowDeleteCardModal(true)
+  }
   
   const handleOpenVideoChamada = (card?: any) => {
     console.log('Abrir vídeo chamada')
@@ -4067,6 +4091,31 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
   // Aguardar hidratação do cliente
   useEffect(() => {
     setIsClient(true)
+    
+    // Event listeners para os modais
+    const handleOpenEditContact = (event: CustomEvent) => {
+      console.log('🎯 Event listener para openEditContactModal executado:', event.detail);
+      const card = event.detail;
+      setSelectedEditCard(card);
+      setShowEditContactModal(true);
+      console.log('✅ Modal de editar contato deve abrir agora');
+    };
+    
+    const handleOpenDeleteCard = (event: CustomEvent) => {
+      console.log('🎯 Event listener para openDeleteCardModal executado:', event.detail);
+      const card = event.detail;
+      setSelectedDeleteCard(card);
+      setShowDeleteCardModal(true);
+      console.log('✅ Modal de excluir card deve abrir agora');
+    };
+    
+    window.addEventListener('openEditContactModal', handleOpenEditContact as EventListener);
+    window.addEventListener('openDeleteCardModal', handleOpenDeleteCard as EventListener);
+    
+    return () => {
+      window.removeEventListener('openEditContactModal', handleOpenEditContact as EventListener);
+      window.removeEventListener('openDeleteCardModal', handleOpenDeleteCard as EventListener);
+    };
   }, [])
 
   useEffect(() => {
@@ -4832,14 +4881,8 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                       setSelectedTransferCard(card)
                       setShowTransferModal(true)
                     }}
-                    onOpenEditContato={(card) => {
-                      setSelectedEditCard(card)
-                      setShowEditContactModal(true)
-                    }}
-                    onOpenDeleteCard={(card) => {
-                      setSelectedDeleteCard(card)
-                      setShowDeleteCardModal(true)
-                    }}
+                    onOpenEditContato={handleOpenEditContato}
+                    onOpenDeleteCard={handleOpenDeleteCard}
                     onOpenVideoChamada={handleOpenVideoChamada}
                     onOpenLigacao={handleOpenLigacao}
                     onOpenCompartilharTela={handleOpenCompartilharTela}
@@ -4908,8 +4951,14 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 onOpenTicket={() => {}}
                 onOpenAgente={() => {}}
                 onOpenTransferencia={() => {}}
-                onOpenEditContato={() => {}}
-                onOpenDeleteCard={() => {}}
+                onOpenEditContato={(card) => {
+                  setSelectedEditCard(card)
+                  setShowEditContactModal(true)
+                }}
+                onOpenDeleteCard={(card) => {
+                  setSelectedDeleteCard(card)
+                  setShowDeleteCardModal(true)
+                }}
                 onOpenVideoChamada={() => {}}
                 onOpenLigacao={() => {}}
                 onOpenCompartilharTela={() => {}}
@@ -5077,6 +5126,102 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
         onStartShare={() => {
           console.log('🖥️ [Kanban] Iniciando compartilhamento de tela')
           // TODO: Implementar lógica de compartilhamento de tela
+        }}
+      />
+
+      {/* Modal de Editar Contato */}
+      <EditContactModalSteps 
+        isOpen={showEditContactModal}
+        onClose={() => {
+          setShowEditContactModal(false)
+          setSelectedEditCard(null)
+        }}
+        contactData={{
+          id: selectedEditCard?.chatId || selectedEditCard?.id || '',
+          nome: selectedEditCard?.nome || selectedEditCard?.name || '',
+          numeroTelefone: selectedEditCard?.numeroTelefone || selectedEditCard?.telefone || selectedEditCard?.id || '',
+          email: selectedEditCard?.email || '',
+          empresa: selectedEditCard?.empresa || '',
+          cpf: selectedEditCard?.cpf || '',
+          cnpj: selectedEditCard?.cnpj || '',
+          cep: selectedEditCard?.cep || '',
+          rua: selectedEditCard?.rua || '',
+          numero: selectedEditCard?.numero || '',
+          bairro: selectedEditCard?.bairro || '',
+          cidade: selectedEditCard?.cidade || '',
+          estado: selectedEditCard?.estado || '',
+          pais: selectedEditCard?.pais || 'Brasil',
+          fotoPerfil: selectedEditCard?.fotoPerfil || '',
+          tags: selectedEditCard?.tags || []
+        }}
+        onSave={async (data) => {
+          try {
+            const token = localStorage.getItem('token')
+            const response = await fetch(`/api/contatos/${data.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(data)
+            })
+
+            if (response.ok) {
+              console.log('✅ Contato atualizado com sucesso')
+              // Recarregar dados do kanban
+              loadChatsManual()
+            } else {
+              console.error('❌ Erro ao atualizar contato')
+            }
+          } catch (error) {
+            console.error('❌ Erro ao atualizar contato:', error)
+          }
+        }}
+      />
+
+      {/* Modal de Excluir Card */}
+      <DeleteCardModal 
+        isOpen={showDeleteCardModal}
+        onClose={() => {
+          setShowDeleteCardModal(false)
+          setSelectedDeleteCard(null)
+        }}
+        cardData={{
+          id: selectedDeleteCard?.chatId || selectedDeleteCard?.id || '',
+          nome: selectedDeleteCard?.nome || selectedDeleteCard?.name || ''
+        }}
+        onConfirm={async (cardId) => {
+          try {
+            console.log('🔍 [DEBUG] Tentando excluir card ID:', cardId)
+            console.log('🔍 [DEBUG] selectedDeleteCard:', selectedDeleteCard)
+            
+            const token = localStorage.getItem('token')
+            const response = await fetch(`/api/kanban/cards/${cardId}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
+
+            console.log('🔍 [DEBUG] Response status:', response.status)
+            console.log('🔍 [DEBUG] Response ok:', response.ok)
+
+            if (response.ok) {
+              console.log('✅ Card excluído com sucesso')
+              // Invalidar cache e recarregar dados do kanban
+              setTimeout(async () => {
+                console.log('🔄 [DEBUG] Forçando reload completo dos dados após exclusão de card')
+                await forceRefresh()
+                await carregarMetadados()
+                loadChatsManual()
+              }, 500)
+            } else {
+              const errorData = await response.text()
+              console.error('❌ Erro ao excluir card - Status:', response.status, 'Error:', errorData)
+            }
+          } catch (error) {
+            console.error('❌ Erro ao excluir card:', error)
+          }
         }}
       />
     </div>
