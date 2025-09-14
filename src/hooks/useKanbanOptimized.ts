@@ -108,12 +108,11 @@ export function useKanbanOptimized(quadroId: string) {
     }
 
     try {
-      // Verificar cache primeiro
+      // Limpar cache para forçar reload dos dados reais
       const cacheKey = `kanban-${quadroId}`
-      const cachedData = getCachedData(cacheKey)
-      if (cachedData && !background) {
-        return cachedData
-      }
+      kanbanCache.delete(cacheKey) // Força reload
+      console.log('🗑️ CACHE LIMPO para:', cacheKey)
+      console.log('🚀 [DEBUG] useKanbanOptimized INICIANDO fetchData para quadro:', quadroId)
 
       if (!background) {
         setData(prev => ({ ...prev, loading: true, error: null }))
@@ -136,27 +135,58 @@ export function useKanbanOptimized(quadroId: string) {
 
       const quadroData = await quadroResponse.json()
       
-      // Cards fixos para teste
-      const knownCardIds = [
-        "2349162389789@c.us",
-        "5518981248008@c.us", 
-        "5518991222983@c.us",
-        "558004940140@c.us",
-        "593993695740@c.us",
-        "0@c.us",
-        "5518997974883@c.us",
-        "5518997200106@c.us"
-      ]
-      
-      const cardsData: any[] = []
-      knownCardIds.forEach(chatId => {
-        cardsData.push({
-          conversa_id: chatId,
-          contato_id: chatId.replace('@c.us', ''),
-          nome: `Chat ${chatId.slice(0, 10)}`,
-          ultima_mensagem: 'Mensagem de teste'
-        })
+      // Buscar contatos reais da API
+      const contatosResponse = await fetch('/api/contatos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
+      
+      if (!contatosResponse.ok) {
+        throw new Error(`Erro ao buscar contatos: ${contatosResponse.status}`)
+      }
+      
+      const contatosData = await contatosResponse.json()
+      console.log('📞 CONTATOS OBTIDOS:', contatosData.length)
+      console.log('📞 CONTATOS RAW DATA:', JSON.stringify(contatosData, null, 2))
+      
+      // Converter contatos em cards - filtrar contatos inválidos
+      const cardsData: any[] = contatosData
+        .filter((contato: any) => {
+          const numero = contato.numeroTelefone
+          const isValid = numero && 
+                         numero !== 'undefined' && 
+                         numero !== '0' && 
+                         numero.length >= 10 && 
+                         /^\d+$/.test(numero)
+          
+          if (!isValid) {
+            console.log('❌ CONTATO INVÁLIDO FILTRADO:', {
+              id: contato.id,
+              numeroTelefone: numero,
+              nome: contato.nome
+            })
+          }
+          
+          return isValid
+        })
+        .map((contato: any) => {
+          const numeroTelefone = contato.numeroTelefone
+          console.log('✅ CONTATO VÁLIDO:', {
+            id: contato.id,
+            numeroTelefone: numeroTelefone,
+            nome: contato.nome
+          })
+          
+          return {
+            conversa_id: `${numeroTelefone}@c.us`,
+            contato_id: numeroTelefone,
+            nome: contato.nome || `Contato ${numeroTelefone}`,
+            ultima_mensagem: 'Conversa WhatsApp',
+            contato: contato
+          }
+        })
       
       // Preparar IDs para batch requests
       const allCardIds: string[] = []
@@ -172,21 +202,33 @@ export function useKanbanOptimized(quadroId: string) {
         }
       })
       
-      // Adicionar cards às colunas
-      if (quadroData.colunas) {
-        quadroData.colunas.forEach((col: any) => {
-          col.cards = cardsData.filter((card: any) => card.coluna_id === col.id)
-            .map((card: any) => ({
-              id: card.conversa_id,
-              nome: card.nome,
-              conversa_id: card.conversa_id,
-              contato_id: card.contato_id || null
-            }))
-        })
+      // Adicionar cards às colunas - distribuir contatos na primeira coluna
+      if (quadroData.colunas && quadroData.colunas.length > 0) {
+        // Colocar todos os contatos na primeira coluna por padrão
+        quadroData.colunas[0].cards = cardsData.map((card: any) => ({
+          id: card.conversa_id,
+          nome: card.nome,
+          conversa_id: card.conversa_id,
+          contato_id: card.contato_id || null
+        }))
+        
+        // Limpar outras colunas (podem ter cards antigos)
+        for (let i = 1; i < quadroData.colunas.length; i++) {
+          quadroData.colunas[i].cards = []
+        }
+        
+        console.log('📋 CARDS DISTRIBUÍDOS:', quadroData.colunas[0].cards.length, 'cards na primeira coluna')
       }
+
+      console.log('🔍 [DEBUG] allCardIds após processamento:', allCardIds.length)
+      console.log('🔍 [DEBUG] allCardIds completo:', allCardIds)
+      console.log('🔍 [DEBUG] cardContactMapping:', cardContactMapping)
 
       // Se não há cards, retornar dados vazios
       if (allCardIds.length === 0) {
+        console.log('❌ [DEBUG] Retornando early - nenhum cardId encontrado')
+        console.log('❌ [DEBUG] cardsData length:', cardsData.length)
+        console.log('❌ [DEBUG] quadroData.colunas:', quadroData.colunas?.length)
         const emptyData: OptimizedKanbanData = {
           cards: {},
           columnStats: {},
@@ -197,8 +239,9 @@ export function useKanbanOptimized(quadroId: string) {
         return emptyData
       }
 
-      // Batch request para orçamentos, agendamentos, assinaturas, anotações e contatos
-      const [orcamentosResponse, agendamentosResponse, assinaturasResponse, anotacoesResponse, contatosResponse] = await Promise.all([
+      // Batch request para orçamentos, agendamentos, assinaturas, anotações, contatos e agentes
+      console.log('🚀 [DEBUG] Iniciando Promise.all com 6 requests incluindo agentes')
+      const [orcamentosResponse, agendamentosResponse, assinaturasResponse, anotacoesResponse, contatosBatchResponse, agentesResponse] = await Promise.all([
         fetch('/api/orcamentos/batch', {
           method: 'POST',
           headers: {
@@ -248,6 +291,18 @@ export function useKanbanOptimized(quadroId: string) {
         }),
         
         fetch('/api/contatos/batch', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            cardIds: allCardIds,
+            cardContactMapping: cardContactMapping 
+          })
+        }),
+
+        fetch('/api/agentes/batch', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -317,26 +372,26 @@ export function useKanbanOptimized(quadroId: string) {
         console.error('❌ ANOTAÇÕES ERROR:', anotacoesResponse.status, await anotacoesResponse.text())
       }
 
-      // Processar contatos
-      let contatosData: { [cardId: string]: any } = {}
-      console.log('🚨🚨🚨 DEBUG CONTATOS - Status:', contatosResponse.status)
-      if (contatosResponse.ok) {
+      // Processar contatos batch
+      let contatosBatchData: { [cardId: string]: any } = {}
+      console.log('🚨🚨🚨 DEBUG CONTATOS BATCH - Status:', contatosBatchResponse.status)
+      if (contatosBatchResponse.ok) {
         try {
-          contatosData = await contatosResponse.json()
-          console.log('👤👤👤 CONTATOS OBTIDOS:', Object.keys(contatosData).length, 'cards')
-          console.log('👤👤👤 CONTATOS DATA COMPLETA:', JSON.stringify(contatosData, null, 2))
+          contatosBatchData = await contatosBatchResponse.json()
+          console.log('👤👤👤 CONTATOS BATCH OBTIDOS:', Object.keys(contatosBatchData).length, 'cards')
+          console.log('👤👤👤 CONTATOS BATCH DATA COMPLETA:', JSON.stringify(contatosBatchData, null, 2))
           
           // Debug específico das tags
-          Object.keys(contatosData).forEach(cardId => {
-            const contato = contatosData[cardId]
+          Object.keys(contatosBatchData).forEach(cardId => {
+            const contato = contatosBatchData[cardId]
             console.log(`🔍🔍🔍 CARD ${cardId}:`, contato?.nome || 'sem nome')
             console.log(`🏷️🏷️🏷️ TAGS para ${cardId}:`, contato?.tags || 'sem tags')
           })
         } catch (error) {
-          console.error('💥💥💥 ERRO parsing contatos:', error)
+          console.error('💥💥💥 ERRO parsing contatos batch:', error)
         }
       } else {
-        console.error('❌❌❌ CONTATOS ERROR:', contatosResponse.status, await contatosResponse.text())
+        console.error('❌❌❌ CONTATOS BATCH ERROR:', contatosBatchResponse.status, await contatosBatchResponse.text())
       }
 
       // Buscar tickets
@@ -363,21 +418,12 @@ export function useKanbanOptimized(quadroId: string) {
         console.error('❌ TICKETS ERROR:', ticketsResponse.status, await ticketsResponse.text())
       }
 
-      // Buscar agentes
+      // Processar agentes
       let agentesData: { [cardId: string]: any[] } = {}
-      const agentesResponse = await fetch(`/api/agentes/batch`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          cardIds: allCardIds,
-          cardContactMapping: cardContactMapping 
-        })
-      })
-
       console.log('🤖 AGENTES - Status:', agentesResponse.status)
+      console.log('🤖 AGENTES - Response URL:', agentesResponse.url)
+      console.log('🤖 AGENTES - Response OK:', agentesResponse.ok)
+      
       if (agentesResponse.ok) {
         try {
           agentesData = await agentesResponse.json()
@@ -387,7 +433,10 @@ export function useKanbanOptimized(quadroId: string) {
           console.error('💥 ERRO parsing agentes:', error)
         }
       } else {
-        console.error('❌ AGENTES ERROR:', agentesResponse.status, await agentesResponse.text())
+        const errorText = await agentesResponse.text()
+        console.error('❌ AGENTES ERROR:', agentesResponse.status, errorText)
+        console.error('❌ AGENTES ERROR Headers:', agentesResponse.headers)
+        console.error('❌ AGENTES ERROR URL:', agentesResponse.url)
       }
 
       // Dados não implementados ainda
@@ -400,10 +449,10 @@ export function useKanbanOptimized(quadroId: string) {
 
       // Processar dados por card
       console.log(`🏷️ [HOOK DEBUG] Processando ${allCardIds.length} cards`, allCardIds)
-      console.log(`🏷️ [HOOK DEBUG] contatosData completo:`, contatosData)
+      console.log(`🏷️ [HOOK DEBUG] contatosBatchData completo:`, contatosBatchData)
       
       allCardIds.forEach(cardId => {
-        const contatoInfo = contatosData[cardId] || {}
+        const contatoInfo = contatosBatchData[cardId] || {}
         console.log(`🏷️ [HOOK DEBUG] Card ${cardId}:`, {
           contatoInfo,
           tags: contatoInfo.tags,

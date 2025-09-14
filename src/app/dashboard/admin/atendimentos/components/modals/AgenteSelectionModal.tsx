@@ -22,7 +22,7 @@ interface AgenteSelectionModalProps {
   isOpen: boolean
   onClose: () => void
   chatId: string | null
-  onAgentActivated?: () => void
+  onAgentActivated?: (agente?: any) => void
 }
 
 export default function AgenteSelectionModal({ 
@@ -59,7 +59,12 @@ export default function AgenteSelectionModal({
     try {
       setIsActivating(true)
       await activateAgent(agenteId)
-      onAgentActivated?.()
+      
+      // Buscar dados do agente ativado
+      const agenteAtivado = agentes.find(agente => agente.id === agenteId)
+      
+      console.log('🤖 [MODAL ADMIN] Agente ativado:', agenteAtivado)
+      onAgentActivated?.(agenteAtivado)
       onClose()
     } catch (error) {
       console.error('Erro ao ativar agente:', error)
@@ -75,7 +80,9 @@ export default function AgenteSelectionModal({
     try {
       setIsActivating(true)
       await deactivateAgent()
-      onAgentActivated?.()
+      
+      console.log('🤖 [MODAL ADMIN] Agente desativado para chat:', chatId)
+      onAgentActivated?.(null) // Passar null para indicar desativação
       onClose()
     } catch (error) {
       console.error('Erro ao desativar agente:', error)

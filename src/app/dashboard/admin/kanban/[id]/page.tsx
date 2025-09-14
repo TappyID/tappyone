@@ -39,12 +39,16 @@ import {
   StickyNote,
   UserCheck,
   Ticket,
-  Bot
+  Bot,
+  Network
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanban } from '@/hooks/useKanban'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
+import { WhatsAppChat } from '@/hooks/useWhatsAppData'
+import { useAgentes } from '@/hooks/useAgentes'
+import { useConexaoFila } from '@/hooks/useConexaoFila'
 import TicketModal from '../../atendimentos/components/modals/TicketModal'
 import AgenteSelectionModal from '../../atendimentos/components/modals/AgenteSelectionModal'
 import TransferirAtendimentoModal from '../../atendimentos/components/modals/TransferirAtendimentoModal'
@@ -55,6 +59,8 @@ import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamento
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
 import AgendamentoModal from '../../atendimentos/components/modals/AgendamentoModal'
 import CriarOrcamentoModal from '../../orcamentos/components/CriarOrcamentoModal'
+import ConexaoFilaBadges from './components/ConexaoFilaBadges'
+import ConexaoFilaModal from './components/ConexaoFilaModal'
 import { fileLogger } from '@/utils/fileLogger'
 import CriarCardModal from '../components/CriarCardModal'
 import AssinaturaModal from '../../atendimentos/components/modals/AssinaturaModal'
@@ -105,6 +111,7 @@ function LazyCardsList({
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
+  onOpenConexaoFila,
   orcamentosData,
   agendamentosData,
   assinaturasData,
@@ -141,6 +148,7 @@ function LazyCardsList({
   onOpenVideoChamada: () => void
   onOpenLigacao: () => void
   onOpenCompartilharTela: () => void
+  onOpenConexaoFila: (card: any) => void
   orcamentosData: any
   agendamentosData: any
   assinaturasData: any
@@ -202,6 +210,7 @@ function LazyCardsList({
           onOpenTransferencia={onOpenTransferencia}
           onOpenEditContato={onOpenEditContato}
           onOpenDeleteCard={onOpenDeleteCard}
+          onOpenConexaoFila={onOpenConexaoFila}
           onOpenVideoChamada={onOpenVideoChamada}
           onOpenLigacao={onOpenLigacao}
           onOpenCompartilharTela={onOpenCompartilharTela}
@@ -240,7 +249,7 @@ function LazyCardsList({
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4" />
+                <Plus className="w-[15px] h-[15px]" />
                 <span>Carregar mais {Math.min(20, cards.length - visibleCount)} cards</span>
               </>
             )}
@@ -520,7 +529,7 @@ function DroppableArea({
                 whileTap={{ scale: 0.9 }}
                 title="Adicionar card"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-[15px] h-[15px]" />
               </motion.button>
               
               {/* Botão Deletar */}
@@ -535,7 +544,7 @@ function DroppableArea({
                 whileTap={{ scale: 0.9 }}
                 title="Deletar coluna"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-[15px] h-[15px]" />
               </motion.button>
             </div>
           </div>
@@ -677,7 +686,7 @@ function DroppableArea({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <DollarSign 
-                        className="w-4 h-4" 
+                        className="w-[15px] h-[15px]" 
                         style={{ color: coluna.cor }}
                       />
                       <span className={`text-xs font-medium ${
@@ -823,6 +832,12 @@ function DroppableArea({
             onOpenVideoChamada={onOpenVideoChamada}
             onOpenLigacao={onOpenLigacao}
             onOpenCompartilharTela={onOpenCompartilharTela}
+            onOpenConexaoFila={(card) => {
+              console.log('🚀 Disparando evento openConexaoFilaModal:', card);
+              const event = new CustomEvent('openConexaoFilaModal', { detail: card });
+              window.dispatchEvent(event);
+              console.log('✅ Evento openConexaoFilaModal disparado');
+            }}
             orcamentosData={orcamentosData}
             agendamentosData={agendamentosData}
             assinaturasData={assinaturasData}
@@ -890,6 +905,7 @@ interface SortableCardProps {
   onOpenVideoChamada: () => void;
   onOpenLigacao: () => void;
   onOpenCompartilharTela: () => void;
+  onOpenConexaoFila: (card: any) => void;
   orcamentosData: any;
   agendamentosData: any;
   assinaturasData: any;
@@ -1083,6 +1099,7 @@ function SortableCard({
   onOpenVideoChamada,
   onOpenLigacao,
   onOpenCompartilharTela,
+  onOpenConexaoFila,
   orcamentosData,
   agendamentosData,
   assinaturasData,
@@ -1095,10 +1112,24 @@ function SortableCard({
   console.log('🃏 [SORTABLE CARD] Props recebidas:', {
     cardId: card.id,
     agentesCount,
+    agentesData: Array.isArray(agentesData) ? agentesData.length : 'not array',
+    agentesDataValue: agentesData,
     orcamentosCount,
     agendamentosCount,
-    ticketsCount,
-    anotacoesCount
+    anotacoesCount,
+    tagsCount,
+    ticketsCount
+  })
+  
+  // DEBUG específico para agentes
+  console.log('🤖 [SORTABLE CARD] Dados de agentes detalhados:', {
+    cardId: card.id,
+    agentesCount,
+    agentesCountType: typeof agentesCount,
+    agentesData,
+    agentesDataType: typeof agentesData,
+    agentesDataIsArray: Array.isArray(agentesData),
+    agentesDataLength: Array.isArray(agentesData) ? agentesData.length : 'N/A'
   })
   
   // DEBUG ESPECÍFICO AGENTES
@@ -1193,7 +1224,7 @@ onError={(e) => {
               }`}
               style={{ display: card.avatar ? 'none' : 'flex' }}
             >
-              <User className="w-5 h-5" />
+              <User className="w-[19px] h-[19px]" />
             </div>
             
             {/* Indicador Online */}
@@ -1236,6 +1267,10 @@ onError={(e) => {
             </div>
           </div>
         </div>
+
+
+        {/* Filas, Atendentes, Conexões */}
+        <ConexaoFilaBadges card={card} onClick={onOpenConexaoFila} />
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1 mb-3">
@@ -1321,7 +1356,7 @@ onError={(e) => {
                   onOpenTicket(card)
                 }}
               >
-                <Ticket className="w-3 h-3" />
+                <Ticket className="w-[11px] h-[11px]" />
                 <span>{ticketCount}</span>
               </div>
             )
@@ -1352,7 +1387,7 @@ onError={(e) => {
                   onOpenAgente(card)
                 }}
               >
-                <Bot className="w-3 h-3" />
+                <Bot className="w-[11px] h-[11px]" />
                 <span>{agentesAtivos}</span>
               </div>
             )
@@ -1372,7 +1407,7 @@ onError={(e) => {
                 }}
                 title={`${filasCount} fila(s) atribuída(s)`}
               >
-                <Layers className="w-3 h-3" />
+                <Layers className="w-[11px] h-[11px]" />
                 <span>{filasCount}</span>
               </div>
             )
@@ -1392,7 +1427,7 @@ onError={(e) => {
                 }}
                 title={`${atendentesCount} atendente(s) responsável(eis)`}
               >
-                <UserCheck className="w-3 h-3" />
+                <UserCheck className="w-[11px] h-[11px]" />
                 <span>{atendentesCount}</span>
               </div>
             )
@@ -1998,12 +2033,18 @@ onError={(e) => {
           boxShadow: `0 4px 12px ${columnColor || '#64748b'}15`
         }}>
       
-          {/* Atendente */}
+          {/* Conexão/Fila */}
           <motion.button 
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onOpenAgente(card)
+            onClick={() => {
+              console.log('🔥 1. Clicou no botão')
+              console.log('🔥 2. onOpenConexaoFila existe?', typeof onOpenConexaoFila)
+              console.log('🔥 3. card:', card)
+              try {
+                onOpenConexaoFila(card)
+                console.log('🔥 4. onOpenConexaoFila executou!')
+              } catch (error) {
+                console.error('🔥 ERRO ao executar onOpenConexaoFila:', error)
+              }
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
@@ -2012,9 +2053,9 @@ onError={(e) => {
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            title="Gerenciar Atendente"
+            title="Gerenciar Conexão/Fila"
           >
-            <Bot className="w-3 h-3" />
+            <Network className="w-[11px] h-[11px]" />
           </motion.button>
 
           {/* Gerenciar Agente IA */}
@@ -2033,7 +2074,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Gerenciar Agente IA"
           >
-            <Bot className="w-3 h-3" />
+            <Bot className="w-[11px] h-[11px]" />
             
             {/* Badge de quantidade de agentes */}
             {(() => {
@@ -2069,15 +2110,15 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Editar Contato"
           >
-            <UserCheck className="w-3 h-3" />
+            <UserCheck className="w-[11px] h-[11px]" />
           </motion.button>
-
-          {/* Excluir Card */}
+            
+          {/* Deletar Card */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              console.log('🗑️ Clicou em Excluir Card:', card)
+              console.log('🗑️ Clicou em Deletar Card:', card)
               onOpenDeleteCard(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
@@ -2089,7 +2130,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Excluir Card"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-[11px] h-[11px]" />
           </motion.button>
             
           {/* Agendar */}
@@ -2108,7 +2149,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Agendar"
           >
-              <Calendar className="w-3 h-3" />
+              <Calendar className="w-[11px] h-[11px]" />
               {/* Badge com número de agendamentos - SEMPRE MOSTRA SE > 0 */}
               {(agendamentosCount || 0) > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -2133,7 +2174,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Orçamento"
           >
-              <DollarSign className="w-3 h-3" />
+              <DollarSign className="w-[11px] h-[11px]" />
               {/* Badge com número de orçamentos - SEMPRE MOSTRA SE > 0 */}
               {(orcamentosCount || 0) > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -2158,7 +2199,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Assinatura"
           >
-              <FileSignature className="w-3 h-3" />
+              <FileSignature className="w-[11px] h-[11px]" />
               {/* Badge com número de assinaturas - SEMPRE MOSTRA SE > 0 */}
               {(assinaturasCount || 0) > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -2184,7 +2225,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Anotações"
           >
-              <StickyNote className="w-3 h-3" />
+              <StickyNote className="w-[11px] h-[11px]" />
               {/* Badge com número de anotações - SEMPRE MOSTRA SE > 0 */}
               {(notesCount || 0) > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -2209,7 +2250,7 @@ onError={(e) => {
             whileTap={{ scale: 0.9 }}
             title="Tickets"
           >
-              <Ticket className="w-3 h-3" />
+              <Ticket className="w-[11px] h-[11px]" />
               {/* Badge com número de tickets - SEMPRE MOSTRA SE > 0 */}
               {(ticketsCount || 0) > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
@@ -2446,11 +2487,42 @@ export default function QuadroPage() {
 
   const agentesCount = useMemo(() => {
     const counts: Record<string, number> = {}
-    Object.keys(agentesDataState).forEach(cardId => {
-      counts[cardId] = agentesDataState[cardId]?.length || 0
-    })
+    
+    // Aguardar dados do batch carregarem
+    if (optimizedLoading) {
+      console.log('🤖 [AGENTES COUNT] Aguardando dados carregarem - optimizedLoading:', optimizedLoading)
+      return counts // Retorna vazio enquanto carrega
+    }
+    
+    console.log('🤖 [DEBUG] optimizedCards disponível?', !!optimizedCards)
+    console.log('🤖 [DEBUG] optimizedCards keys:', optimizedCards ? Object.keys(optimizedCards) : 'undefined')
+    
+    // USAR DADOS DO BATCH (useKanbanOptimized) quando carregou
+    if (optimizedCards && Object.keys(optimizedCards).length > 0) {
+      console.log('🤖 [AGENTES COUNT] Usando dados do batch otimizado')
+      console.log('🤖 [AGENTES COUNT] optimizedCards:', optimizedCards)
+      
+      // Contar agentes dos dados otimizados
+      Object.keys(optimizedCards).forEach(cardId => {
+        const cardData = optimizedCards[cardId]
+        if (cardData?.agentes && Array.isArray(cardData.agentes)) {
+          counts[cardId] = cardData.agentes.length
+          console.log('🤖 [AGENTES COUNT] Card', cardId, ':', cardData.agentes.length, 'agentes')
+        } else {
+          console.log('🤖 [AGENTES COUNT] Card', cardId, ': SEM agentes ou não array')
+        }
+      })
+    } else {
+      // Fallback para agentesDataState se batch não disponível
+      console.log('🤖 [AGENTES COUNT] Fallback para individual:', agentesDataState)
+      Object.keys(agentesDataState).forEach(cardId => {
+        counts[cardId] = agentesDataState[cardId]?.length || 0
+      })
+    }
+    
+    console.log('🤖 [AGENTES COUNT] Counts finais:', counts)
     return counts
-  }, [agentesDataState])
+  }, [optimizedCards, agentesDataState, optimizedLoading])
   
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [isClient, setIsClient] = useState(false)
@@ -2476,28 +2548,21 @@ export default function QuadroPage() {
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [showCreateCardModal, setShowCreateCardModal] = useState(false)
   const [selectedColunaId, setSelectedColunaId] = useState<string | null>(null)
-  const [showColorModal, setShowColorModal] = useState(false)
-  const [selectedColumn, setSelectedColumn] = useState<any>(null)
-  const [showAgendamentoModal, setShowAgendamentoModal] = useState(false)
-  const [showOrcamentoModal, setShowOrcamentoModal] = useState(false)
-  const [showAssinaturaModal, setShowAssinaturaModal] = useState(false)
-  const [showAnotacoesModal, setShowAnotacoesModal] = useState(false)
-  const [showCriarCardModal, setShowCriarCardModal] = useState(false)
-  const [showTicketModal, setShowTicketModal] = useState(false)
-  const [selectedTicketCard, setSelectedTicketCard] = useState<any>(null)
-  const [showAgenteModal, setShowAgenteModal] = useState(false)
-  const [selectedAgenteCard, setSelectedAgenteCard] = useState<any>(null)
-  const [showTransferModal, setShowTransferModal] = useState(false)
-  const [selectedTransferCard, setSelectedTransferCard] = useState<any>(null)
-  const [showEditContactModal, setShowEditContactModal] = useState(false)
-  const [selectedEditCard, setSelectedEditCard] = useState<any>(null)
-  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false)
-  const [selectedDeleteCard, setSelectedDeleteCard] = useState<any>(null)
-  const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
-  const [selectedVideoChamadaCard, setSelectedVideoChamadaCard] = useState<any>(null)
-  const [showLigacaoModal, setShowLigacaoModal] = useState(false)
-  const [selectedLigacaoCard, setSelectedLigacaoCard] = useState<any>(null)
-  const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [agendamentoModal, setAgendamentoModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [orcamentoModal, setOrcamentoModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [assinaturaModal, setAssinaturaModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [anotacoesModal, setAnotacoesModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [ticketModal, setTicketModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [agenteModal, setAgenteModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [conexaoFilaModal, setConexaoFilaModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [editContactModal, setEditContactModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [deleteCardModal, setDeleteCardModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [criarCardModal, setCriarCardModal] = useState({ isOpen: false, colunaId: '' })
+  const [videoChamadaModal, setVideoChamadaModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [ligacaoModal, setLigacaoModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [compartilharTelaModal, setCompartilharTelaModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [colorPickerModal, setColorPickerModal] = useState({ isOpen: false, colunaId: '', currentColor: '#3b82f6' })
   const [selectedCompartilharTelaCard, setSelectedCompartilharTelaCard] = useState<any>(null)
   const [editingQuadroName, setEditingQuadroName] = useState('')
   const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
@@ -2758,7 +2823,7 @@ export default function QuadroPage() {
       })
       
       if (response.ok) {
-        setShowAgendamentoModal(false)
+        setAgendamentoModal({ isOpen: false, card: null })
         showNotification('Agendamento criado com sucesso!', 'success')
         
         // Invalidar cache e atualizar dados do kanban
@@ -2825,7 +2890,7 @@ export default function QuadroPage() {
 
       if (response.ok) {
         console.log('✅ Orçamento criado com sucesso')
-        setShowOrcamentoModal(false)
+        setOrcamentoModal({ isOpen: false, card: null })
         showNotification('Orçamento criado com sucesso!', 'success')
         
         // Invalidar cache e atualizar dados do kanban
@@ -2849,7 +2914,7 @@ export default function QuadroPage() {
   const handleAssinaturaSave = async (data: any) => {
     // O AssinaturaModal já salva no backend, aqui só fechamos e atualizamos
     console.log('Assinatura salva:', data)
-    setShowAssinaturaModal(false)
+    setAssinaturaModal({ isOpen: false, card: null })
     
     // Fazer refresh dos dados otimizados após salvar
     setTimeout(async () => {
@@ -2861,13 +2926,12 @@ export default function QuadroPage() {
   }
 
   const handleAgenteSave = async (data?: any) => {
-    // O AgenteSelectionModal já salva no backend, aqui fechamos e atualizamos
-    console.log('🤖 [AGENTE SAVE] Agente ativado/desativado:', data)
-    setShowAgenteModal(false)
+    console.log('🤖 [AGENTE SAVE] *** CHAMADO *** - Agente:', data)
+    setAgenteModal({ isOpen: false, card: null })
     
-    // Fazer refresh dos dados otimizados após salvar agente
+    // Invalidar cache e atualizar dados - MESMO PADRÃO dos orçamentos
     setTimeout(async () => {
-      console.log('🔄 [DEBUG] Forçando reload completo dos dados após agente')
+      console.log('🔄 [DEBUG] Forçando reload após agente - IGUAL orçamento')
       await forceRefresh()
       await carregarMetadados()
       loadChatsManual()
@@ -3224,7 +3288,27 @@ export default function QuadroPage() {
   const [activeColumn, setActiveColumn] = useState<any>(null)
   const [notesCount, setNotesCount] = useState<Record<string, number>>({}) // Contador real de anotações
   const [contactStatus, setContactStatus] = useState<Record<string, 'synced' | 'error'>>({}) // Status dos contatos
-  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showColorModal, setShowColorModal] = useState(false)
+  const [selectedColumn, setSelectedColumn] = useState<any>(null)
+  const [selectedEditCard, setSelectedEditCard] = useState<any>(null)
+  const [showEditContactModal, setShowEditContactModal] = useState(false)
+  const [selectedDeleteCard, setSelectedDeleteCard] = useState<any>(null)
+  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false)
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [selectedTicketCard, setSelectedTicketCard] = useState<any>(null)
+  const [showAgenteModal, setShowAgenteModal] = useState(false)
+  const [selectedAgenteCard, setSelectedAgenteCard] = useState<any>(null)
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [selectedTransferCard, setSelectedTransferCard] = useState<any>(null)
+  const [showVideoChamadaModal, setShowVideoChamadaModal] = useState(false)
+  const [selectedVideoChamadaCard, setSelectedVideoChamadaCard] = useState<any>(null)
+  const [showLigacaoModal, setShowLigacaoModal] = useState(false)
+  const [selectedLigacaoCard, setSelectedLigacaoCard] = useState<any>(null)
+  const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
+  const [showAgendamentoModal, setShowAgendamentoModal] = useState(false)
+  const [showOrcamentoModal, setShowOrcamentoModal] = useState(false)
+  const [showAssinaturaModal, setShowAssinaturaModal] = useState(false)
+  const [showAnotacoesModal, setShowAnotacoesModal] = useState(false)
   
   // Estados para edição de colunas
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
@@ -3438,35 +3522,39 @@ export default function QuadroPage() {
     setShowColorModal(true)
   }
   
-  // Handlers para modais
+  // Handlers para agente
+  const handleAgenteModal = (card: any) => {
+    setAgenteModal({ isOpen: true, card })
+  }
+
+  // Handler para conexão/fila modal
+  const handleConexaoFilaModal = (card: any) => {
+    setConexaoFilaModal({ isOpen: true, card })
+  }
+
   const handleOpenAgendamento = (card: any) => {
-    setSelectedCard(card)
-    setShowAgendamentoModal(true)
+    setAgendamentoModal({ isOpen: true, card })
   }
   
   const handleOpenOrcamento = (card: any) => {
-    setSelectedCard(card)
-    setShowOrcamentoModal(true)
+    setOrcamentoModal({ isOpen: true, card })
   }
   
   const handleOpenAssinatura = (card: any) => {
-    setSelectedCard(card)
-    setShowAssinaturaModal(true)
+    setAssinaturaModal({ isOpen: true, card })
   }
   
   const handleOpenAnotacoes = (card: any) => {
-    setSelectedCard(card)
-    setShowAnotacoesModal(true)
+    setAnotacoesModal({ isOpen: true, card })
   }
 
-  const handleOpenEditContato = (card: any) => {
-    setSelectedEditCard(card)
-    setShowEditContactModal(true)
+  const handleOpenEditContact = (card: any) => {
+    console.log('🔍 [DEBUG] handleOpenEditContact - Card data:', card)
+    setEditContactModal({ isOpen: true, card })
   }
 
   const handleOpenDeleteCard = (card: any) => {
-    setSelectedDeleteCard(card)
-    setShowDeleteCardModal(true)
+    setDeleteCardModal({ isOpen: true, card })
   }
   
   const handleOpenVideoChamada = (card?: any) => {
@@ -4463,7 +4551,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-[19px] h-[19px]" />
               </motion.button>
               
 
@@ -4484,7 +4572,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     }}
                     whileHover={{ rotate: 5, scale: 1.05 }}
                   >
-                    <Trello className="w-5 h-5" style={{ color: '#305e73' }} />
+                    <Trello className="w-[19px] h-[19px]" style={{ color: '#305e73' }} />
                   </motion.div>
                   
                   <div>
@@ -4709,7 +4797,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                   whileTap={{ scale: 0.95 }}
                   title="Resetar mudanças manuais e remapear conversas"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-[15px] h-[15px]" />
                   <span className="text-sm">
                     Remapear
                   </span>
@@ -4727,7 +4815,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Keyboard className="w-4 h-4" />
+                <Keyboard className="w-[15px] h-[15px]" />
                 
                 {/* Tooltip com atalhos */}
                 {showShortcuts && (
@@ -4761,7 +4849,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <MoreVertical className="w-5 h-5" />
+                <MoreVertical className="w-[19px] h-[19px]" />
               </motion.button>
             </div>
           </div>
@@ -4874,14 +4962,19 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                       setShowTicketModal(true)
                     }}
                     onOpenAgente={(card) => {
-                      setSelectedAgenteCard(card)
-                      setShowAgenteModal(true)
+                      console.log(`🚀 CLICK BOT! Card ID: ${card?.id}`)
+                      setAgenteModal({ isOpen: true, card })
+                      
+                      // Debug imediato
+                      setTimeout(() => {
+                        console.log(`🔍 DEBUG ESTADO: showAgenteModal: ${showAgenteModal}, selectedAgenteCard: ${selectedAgenteCard?.id}`)
+                      }, 100)
                     }}
                     onOpenTransferencia={(card) => {
                       setSelectedTransferCard(card)
                       setShowTransferModal(true)
                     }}
-                    onOpenEditContato={handleOpenEditContato}
+                    onOpenEditContato={handleOpenEditContact}
                     onOpenDeleteCard={handleOpenDeleteCard}
                     onOpenVideoChamada={handleOpenVideoChamada}
                     onOpenLigacao={handleOpenLigacao}
@@ -4935,6 +5028,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 card={activeCard} 
                 theme={theme} 
                 columnColor={activeCard.columnColor}
+                onOpenConexaoFila={() => {}}
                 notesCount={0}
                 orcamentosCount={0}
                 agendamentosCount={0}
@@ -4994,24 +5088,24 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
       
       {/* Modais do ChatArea */}
       <UniversalAgendamentoModal
-        isOpen={showAgendamentoModal}
-        onClose={() => setShowAgendamentoModal(false)}
+        isOpen={agendamentoModal.isOpen}
+        onClose={() => setAgendamentoModal({ isOpen: false, card: null })}
         onSave={handleAgendamentoSave}
         contactData={getContactData()}
         mode="create"
       />
       
       <CriarOrcamentoModal
-        isOpen={showOrcamentoModal}
-        onClose={() => setShowOrcamentoModal(false)}
+        isOpen={orcamentoModal.isOpen}
+        onClose={() => setOrcamentoModal({ isOpen: false, card: null })}
         onSave={handleOrcamentoSave}
         contactData={getContactData()}
         disableContactFields={true}
       />
       
       <AssinaturaModal
-        isOpen={showAssinaturaModal}
-        onClose={() => setShowAssinaturaModal(false)}
+        isOpen={assinaturaModal.isOpen}
+        onClose={() => setAssinaturaModal({ isOpen: false, card: null })}
         onSave={handleAssinaturaSave}
         chatId={selectedCard?.id}
         contactData={getContactData()}
@@ -5049,12 +5143,9 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
 
       {/* Modal de Agente IA */}
       <AgenteSelectionModal 
-        isOpen={showAgenteModal}
-        onClose={() => {
-          setShowAgenteModal(false)
-          setSelectedAgenteCard(null)
-        }}
-        chatId={selectedAgenteCard?.id || selectedAgenteCard?.chatId || null}
+        isOpen={agenteModal.isOpen}
+        onClose={() => setAgenteModal({ isOpen: false, card: null })}
+        chatId={agenteModal.card?.id || null}
         onAgentActivated={handleAgenteSave}
       />
 
@@ -5137,22 +5228,22 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
           setSelectedEditCard(null)
         }}
         contactData={{
-          id: selectedEditCard?.chatId || selectedEditCard?.id || '',
-          nome: selectedEditCard?.nome || selectedEditCard?.name || '',
-          numeroTelefone: selectedEditCard?.numeroTelefone || selectedEditCard?.telefone || selectedEditCard?.id || '',
-          email: selectedEditCard?.email || '',
-          empresa: selectedEditCard?.empresa || '',
-          cpf: selectedEditCard?.cpf || '',
-          cnpj: selectedEditCard?.cnpj || '',
-          cep: selectedEditCard?.cep || '',
-          rua: selectedEditCard?.rua || '',
-          numero: selectedEditCard?.numero || '',
-          bairro: selectedEditCard?.bairro || '',
-          cidade: selectedEditCard?.cidade || '',
-          estado: selectedEditCard?.estado || '',
-          pais: selectedEditCard?.pais || 'Brasil',
-          fotoPerfil: selectedEditCard?.fotoPerfil || '',
-          tags: selectedEditCard?.tags || []
+          id: selectedEditCard?.contato?.id || selectedEditCard?.id || '',
+          nome: selectedEditCard?.contato?.nome || '',
+          numeroTelefone: selectedEditCard?.contato?.numeroTelefone || selectedEditCard?.phone || '',
+          email: selectedEditCard?.contato?.email || '',
+          empresa: selectedEditCard?.contato?.empresa || '',
+          cpf: selectedEditCard?.contato?.cpf || '',
+          cnpj: selectedEditCard?.contato?.cnpj || '',
+          cep: selectedEditCard?.contato?.cep || '',
+          rua: selectedEditCard?.contato?.rua || '',
+          numero: selectedEditCard?.contato?.numero || '',
+          bairro: selectedEditCard?.contato?.bairro || '',
+          cidade: selectedEditCard?.contato?.cidade || '',
+          estado: selectedEditCard?.contato?.estado || '',
+          pais: selectedEditCard?.contato?.pais || 'Brasil',
+          fotoPerfil: selectedEditCard?.contato?.fotoPerfil || '',
+          tags: selectedEditCard?.contato?.tags?.map((tag: any) => tag.nome) || []
         }}
         onSave={async (data) => {
           try {
@@ -5167,8 +5258,28 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
             })
 
             if (response.ok) {
-              console.log('✅ Contato atualizado com sucesso')
-              // Recarregar dados do kanban
+              const updatedContact = await response.json()
+              console.log('✅ Contato atualizado com sucesso:', updatedContact)
+              
+              // Atualizar dados do card selecionado com os dados do DB
+              setSelectedEditCard({
+                ...selectedEditCard,
+                nome: updatedContact.nome,
+                email: updatedContact.email,
+                empresa: updatedContact.empresa,
+                cpf: updatedContact.cpf,
+                cnpj: updatedContact.cnpj,
+                cep: updatedContact.cep,
+                rua: updatedContact.rua,
+                numero: updatedContact.numero,
+                bairro: updatedContact.bairro,
+                cidade: updatedContact.cidade,
+                estado: updatedContact.estado,
+                pais: updatedContact.pais
+              })
+              
+              // Recarregar dados do kanban - invalidar cache
+              await forceRefresh()
               loadChatsManual()
             } else {
               console.error('❌ Erro ao atualizar contato')
@@ -5223,6 +5334,13 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
             console.error('❌ Erro ao excluir card:', error)
           }
         }}
+      />
+
+      {/* Modal de Conexão e Fila */}
+      <ConexaoFilaModal
+        isOpen={conexaoFilaModal.isOpen}
+        onClose={() => setConexaoFilaModal({ isOpen: false, card: null })}
+        card={conexaoFilaModal.card || { id: '' }}
       />
     </div>
   )

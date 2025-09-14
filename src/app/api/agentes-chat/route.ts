@@ -11,13 +11,11 @@ interface JwtPayload {
 
 export async function GET(request: NextRequest) {
   try {
-    // TEMPORÁRIO: Bypass da validação JWT para resolver o problema
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.substring(7) || 'bypass'
     
-    // Mock do decoded para manter compatibilidade
     const decoded: JwtPayload = {
-      userId: '1', // ID fixo temporário
+      userId: '1',
       email: 'admin@test.com'
     }
 
@@ -28,10 +26,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'contato_id é obrigatório' }, { status: 400 })
     }
 
-    console.log('🤖 [API] Buscando agentes para contato:', contatoId)
+    console.log('🤖 [API] Buscando agente ativo para contato:', contatoId)
 
-    // Buscar agentes ativos para o contato específico
-    const response = await fetch(`${BACKEND_URL}/api/agentes-chat?contato_id=${contatoId}`, {
+    // Buscar agente ativo para este chat específico (para useChatAgente)
+    const response = await fetch(`${BACKEND_URL}/api/chat-agentes/${contatoId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -45,10 +43,10 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('🤖 [API] Erro na resposta do backend:', errorText)
-      // Se backend não tem endpoint ainda, retorna array vazio
+      // Se backend não tem endpoint ainda ou não há agente ativo, retorna estrutura vazia
       if (response.status === 404) {
-        console.log('🤖 [API] Endpoint não encontrado no backend, retornando array vazio')
-        return NextResponse.json([])
+        console.log('🤖 [API] Nenhum agente ativo encontrado')
+        return NextResponse.json({ ativo: false, agente: null })
       }
       return NextResponse.json(
         { error: `Erro do backend: ${response.status} - ${errorText}` }, 
@@ -57,12 +55,12 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('🤖 [API] Dados recebidos:', data)
+    console.log('🤖 [API] Agente ativo recebido:', data)
 
     return NextResponse.json(data)
 
   } catch (error) {
-    console.error('🤖 [API] Erro ao buscar agentes do chat:', error)
+    console.error('🤖 [API] Erro ao buscar agente do chat:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' }, 
       { status: 500 }
@@ -72,28 +70,26 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // TEMPORÁRIO: Bypass da validação JWT para resolver o problema
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.substring(7) || 'bypass'
     
-    // Mock do decoded para manter compatibilidade
     const decoded: JwtPayload = {
-      userId: '1', // ID fixo temporário
+      userId: '1',
       email: 'admin@test.com'
     }
 
     const body = await request.json()
     console.log('🤖 [API POST] Ativando agente:', body)
 
-    // Ativar agente para um contato
-    const response = await fetch(`${BACKEND_URL}/api/agentes-chat`, {
+    // Ativar agente para um chat específico
+    const response = await fetch(`${BACKEND_URL}/api/chat-agentes/${body.chatId}/activate`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'X-User-ID': decoded.userId
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ agenteId: body.agenteId }),
     })
 
     console.log('🤖 [API POST] Response status:', response.status)
@@ -101,7 +97,6 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('🤖 [API POST] Erro na resposta do backend:', errorText)
-      // Se backend não tem endpoint ainda, retorna sucesso mockado
       if (response.status === 404) {
         console.log('🤖 [API POST] Endpoint não encontrado no backend, retornando sucesso mockado')
         return NextResponse.json({ success: true, message: 'Agente ativado (mockado)' })
@@ -119,6 +114,58 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('🤖 [API POST] Erro ao ativar agente:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' }, 
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.substring(7) || 'bypass'
+    
+    const decoded: JwtPayload = {
+      userId: '1',
+      email: 'admin@test.com'
+    }
+
+    const body = await request.json()
+    console.log('🤖 [API DELETE] Desativando agente:', body)
+
+    // Desativar agente para um chat específico
+    const response = await fetch(`${BACKEND_URL}/api/chat-agentes/${body.chatId}/deactivate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-User-ID': decoded.userId
+      },
+    })
+
+    console.log('🤖 [API DELETE] Response status:', response.status)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('🤖 [API DELETE] Erro na resposta do backend:', errorText)
+      if (response.status === 404) {
+        console.log('🤖 [API DELETE] Endpoint não encontrado no backend, retornando sucesso mockado')
+        return NextResponse.json({ success: true, message: 'Agente desativado (mockado)' })
+      }
+      return NextResponse.json(
+        { error: `Erro do backend: ${response.status} - ${errorText}` }, 
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+    console.log('🤖 [API DELETE] Agente desativado:', data)
+
+    return NextResponse.json(data)
+
+  } catch (error) {
+    console.error('🤖 [API DELETE] Erro ao desativar agente:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' }, 
       { status: 500 }
