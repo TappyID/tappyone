@@ -106,6 +106,7 @@ import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import { useContatoTags } from '@/hooks/useContatoTags'
+import { useDeepSeekAutoResponse } from '@/hooks/useDeepSeekAutoResponse'
 import CreateContactModal from '../../contatos/components/CreateContactModal'
 
 interface ChatAreaProps {
@@ -187,6 +188,14 @@ export default function ChatArea({
   const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
   const { tags: contatoTags, updateContatoTags, fetchContatoTags } = useContatoTags(chatId)
+  
+  // Hook para auto-resposta com DeepSeek
+  const { isGenerating, processNewMessage } = useDeepSeekAutoResponse({
+    agenteAtivo,
+    agenteAtual,
+    chatId,
+    onSendMessage
+  })
   
   // Função para buscar informações do quadro e coluna
   const getKanbanInfo = async (chatId: string) => {
@@ -587,6 +596,30 @@ export default function ChatArea({
       }, 100)
     }
   }, [conversation?.id])
+
+  // Monitorar novas mensagens para auto-resposta com IA
+  useEffect(() => {
+    if (!agenteAtivo || !messages || messages.length === 0) return
+
+    // Pegar a última mensagem
+    const lastMessage = messages[messages.length - 1]
+    
+    // Se a última mensagem não é nossa (fromMe = false ou sender !== 'agent') e tem conteúdo
+    if (lastMessage && lastMessage.sender !== 'agent' && lastMessage.content && lastMessage.content.trim().length > 0) {
+      console.log('🤖 [CHAT-AREA] Nova mensagem do usuário detectada para auto-resposta:', lastMessage.content.substring(0, 100))
+      
+      // Processar mensagem para auto-resposta (usando mensagens transformadas)
+      const messageForProcessing = {
+        fromMe: false,
+        body: lastMessage.content,
+        id: lastMessage.id,
+        timestamp: new Date().getTime()
+      }
+      
+      // Passar histórico de mensagens também
+      processNewMessage(messageForProcessing, messages)
+    }
+  }, [messages, agenteAtivo, processNewMessage])
 
   // Detectar quando usuário está fazendo scroll manual
   useEffect(() => {
@@ -2707,13 +2740,27 @@ export default function ChatArea({
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAgenteModal(true)}
             className="p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all duration-300 relative"
-            title={agenteAtivo ? `Agente ativo: ${agenteAtual?.nome}` : "Selecionar agente IA"}
+            title={
+              isGenerating 
+                ? `Gerando resposta... (${agenteAtual?.nome})` 
+                : agenteAtivo 
+                  ? `Agente ativo: ${agenteAtual?.nome}` 
+                  : "Selecionar agente IA"
+            }
           >
             <Bot className="w-5 h-5 text-blue-500" />
-            {/* Badge - Verde se ativo, vermelho se inativo */}
-            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
-              agenteAtivo ? 'bg-green-500' : 'bg-red-500'
+            {/* Badge - Amarelo pulsando se gerando, verde se ativo, vermelho se inativo */}
+            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background transition-all duration-300 ${
+              isGenerating 
+                ? 'bg-yellow-500 animate-pulse' 
+                : agenteAtivo 
+                  ? 'bg-green-500' 
+                  : 'bg-red-500'
             }`}></div>
+            {/* Indicador adicional quando gerando */}
+            {isGenerating && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 animate-ping"></div>
+            )}
           </motion.button>
 
           {/* Send Button */}

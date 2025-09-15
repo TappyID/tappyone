@@ -85,7 +85,17 @@ export function NewConnectionModal({ isOpen, onClose, onSuccess }: NewConnection
         },
         body: JSON.stringify({
           name: newSessionName,
-          config: {}
+          config: {
+            webhooks: [
+              {
+                url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/api/webhooks/whatsapp`,
+                events: ['message', 'message.any'],
+                hmac: null,
+                retries: 3,
+                customHeaders: []
+              }
+            ]
+          }
         })
       })
 
