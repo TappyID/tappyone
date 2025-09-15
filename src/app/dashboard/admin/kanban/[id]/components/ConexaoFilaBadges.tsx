@@ -38,8 +38,38 @@ export default function ConexaoFilaBadges({ card, onClick }: ConexaoFilaBadgesPr
     enabled: !!contatoId 
   })
 
-  if (loading || !hasConnection) {
-    return null
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border animate-pulse">
+        <Circle className="w-[8px] h-[8px]" />
+        <span>Carregando...</span>
+      </div>
+    )
+  }
+
+  // Se não tem conexão, mostrar "Contato sem fila"
+  if (!hasConnection) {
+    return (
+      <div className="mb-2"> {/* Espaçamento igual outras badges */}
+        <div 
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+          style={{
+            backgroundColor: '#ef444420',
+            borderColor: '#ef444440',
+            color: '#ef4444'
+          }}
+          title="Este contato não está configurado em nenhuma conexão/fila"
+          onClick={onClick ? (e: React.MouseEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onClick(card)
+          } : undefined}
+        >
+          <WifiOff className="w-[11px] h-[11px]" />
+          <span>Contato sem fila</span>
+        </div>
+      </div>
+    )
   }
 
   const handleClick = (e: React.MouseEvent) => {

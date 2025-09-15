@@ -1334,13 +1334,7 @@ onError={(e) => {
           {(() => {
             const ticketCount = ticketsCount || 0
             const openTickets = ticketsData?.filter((t: any) => t.status === 'ABERTO').length || 0
-            
-            // DEBUG: logs para verificar tickets
-            console.log(`🎫 [BADGE DEBUG] Card ${card.id}:`)
-            console.log(`  📊 ticketsData (prop):`, ticketsData)
-            console.log(`  📊 ticketsCount (prop):`, ticketsCount)
-            console.log(`  🔢 Total tickets: ${ticketCount}`)
-            console.log(`  🔴 Tickets abertos: ${openTickets}`)
+       
             
             return ticketCount > 0 && (
               <div

@@ -162,42 +162,39 @@ export default function AtendimentosPage() {
     retryCount
   } = useWhatsAppData()
 
-  // Carregar mensagens quando uma conversa for selecionada
+  // Função para buscar todas as contagens
+  const fetchBadgeCounts = async (chatId: string) => {
+    try {
+      const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, ticketsCountResult, contactStatusResult] = await Promise.all([
+        fetchNotesCount(chatId),
+        fetchOrcamentosCount(chatId),
+        fetchAgendamentosCount(chatId),
+        fetchAssinaturasCount(chatId),
+        fetchTicketsCount(chatId),
+        checkContactStatus(chatId)
+      ])
+      
+      setNotesCount(notesCountResult)
+      setOrcamentosCount(orcamentosCountResult)
+      setAgendamentosCount(agendamentosCountResult)
+      setAssinaturasCount(assinaturasCountResult)
+      setTicketsCount(ticketsCountResult)
+      setContactStatus(contactStatusResult)
+      
+      console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, ${ticketsCountResult} tickets, status: ${contactStatusResult}`)
+    } catch (error) {
+      console.error('Erro ao buscar contagens:', error)
+    }
+  }
+
+  // Carregar mensagens quando conversation muda
   useEffect(() => {
     if (selectedConversation) {
       const chatId = extractChatId(selectedConversation)
-      if (!chatId) {
-        return
+      if (chatId) {
+        loadChatMessages(chatId)
+        fetchBadgeCounts(chatId)
       }
-      
-      loadChatMessages(chatId)
-      
-      // Buscar contagens dos badges
-      const fetchBadgeCounts = async () => {
-        try {
-          const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, ticketsCountResult, contactStatusResult] = await Promise.all([
-            fetchNotesCount(chatId),
-            fetchOrcamentosCount(chatId),
-            fetchAgendamentosCount(chatId),
-            fetchAssinaturasCount(chatId),
-            fetchTicketsCount(chatId),
-            checkContactStatus(chatId)
-          ])
-          
-          setNotesCount(notesCountResult)
-          setOrcamentosCount(orcamentosCountResult)
-          setAgendamentosCount(agendamentosCountResult)
-          setAssinaturasCount(assinaturasCountResult)
-          setTicketsCount(ticketsCountResult)
-          setContactStatus(contactStatusResult)
-          
-          console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, ${ticketsCountResult} tickets, status: ${contactStatusResult}`)
-        } catch (error) {
-          console.error('Erro ao buscar contagens:', error)
-        }
-      }
-      
-      fetchBadgeCounts()
     } else {
       // Reset contadores quando não há conversa selecionada
       setNotesCount(0)
@@ -209,17 +206,17 @@ export default function AtendimentosPage() {
     }
   }, [selectedConversation, loadChatMessages])
 
-  // Polling para recarregar mensagens do chat ativo a cada 5 segundos
+  // Polling em tempo real para mensagens do chat ativo (a cada 3 segundos)
   useEffect(() => {
     if (!selectedConversation) return
     
     const chatId = extractChatId(selectedConversation)
     if (!chatId) return
     
+    // Polling a cada 3 segundos para o chat ativo
     const interval = setInterval(() => {
-      // Usar reloadChatMessages para forçar o reload
       reloadChatMessages(chatId)
-    }, 60000) // 60 segundos - otimizado
+    }, 3000) // 3 segundos para tempo real
     
     return () => clearInterval(interval)
   }, [selectedConversation, reloadChatMessages])
