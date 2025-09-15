@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://server.tappy.id';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081';
 
 export async function GET(request: NextRequest) {
   try {
