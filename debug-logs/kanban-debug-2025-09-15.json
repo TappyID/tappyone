@@ -1,91 +1,170 @@
 [
   {
-    "timestamp": "2025-09-15T00:15:41.444Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_started",
-    "data": {
-      "loading": false,
-      "chatsLength": 0
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-15T00:15:41.445Z",
-    "component": "Kanban",
-    "action": "loadContatos_started",
-    "data": {
-      "timestamp": "2025-09-15T00:15:41.445Z"
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-15T00:15:41.496Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_started",
-    "data": {
-      "loading": false,
-      "chatsLength": 0
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-15T00:15:45.408Z",
+    "timestamp": "2025-09-15T02:25:53.524Z",
     "component": "Kanban",
     "action": "loadAllCounts_cards_mapped",
     "data": {
-      "totalCards": 1,
-      "uniqueCardIds": 1,
+      "totalCards": 9,
+      "uniqueCardIds": 9,
       "sampleCardIds": [
-        "demo-1"
+        "558004940140@c.us",
+        "5518991161341@c.us",
+        "5518991222983@c.us",
+        "5518997974883@c.us",
+        "593993695740@c.us"
       ],
       "allCardIds": [
-        "demo-1"
+        "558004940140@c.us",
+        "5518991161341@c.us",
+        "5518991222983@c.us",
+        "5518997974883@c.us",
+        "593993695740@c.us",
+        "5518981248008@c.us",
+        "2349162389789@c.us",
+        "554396159222@c.us",
+        "5518997200106@c.us"
       ]
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-15T00:15:45.418Z",
+    "timestamp": "2025-09-15T02:25:56.231Z",
     "component": "Kanban",
-    "action": "loadContatos_config",
+    "action": "loadAllCounts_card_processed",
     "data": {
-      "hasToken": true,
-      "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18",
-      "timestamp": "2025-09-15T00:15:45.418Z"
+      "cardId": "558004940140@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-15T00:15:45.981Z",
+    "timestamp": "2025-09-15T02:25:57.846Z",
     "component": "Kanban",
-    "action": "loadAllCounts_cards_mapped",
+    "action": "loadAllCounts_card_processed",
     "data": {
-      "totalCards": 1,
-      "uniqueCardIds": 1,
-      "sampleCardIds": [
-        "demo-1"
-      ],
-      "allCardIds": [
-        "demo-1"
-      ]
+      "cardId": "5518991161341@c.us",
+      "notesCount": 1,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-15T00:15:47.550Z",
+    "timestamp": "2025-09-15T02:25:58.982Z",
     "component": "Kanban",
-    "action": "loadChatsManual_response",
-    "data": {},
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518991222983@c.us",
+      "notesCount": 4,
+      "assinaturasCount": 4,
+      "contactStatus": "synced"
+    },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-15T00:15:55.528Z",
+    "timestamp": "2025-09-15T02:26:00.387Z",
     "component": "Kanban",
-    "action": "loadContatos_response",
+    "action": "loadAllCounts_card_processed",
     "data": {
-      "status": 200,
-      "ok": true,
-      "timestamp": "2025-09-15T00:15:55.528Z"
+      "cardId": "5518997974883@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T02:26:01.649Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "593993695740@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 2,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T02:26:03.176Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518981248008@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T02:26:04.807Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "2349162389789@c.us",
+      "notesCount": 2,
+      "assinaturasCount": 2,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T02:26:06.027Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "554396159222@c.us",
+      "notesCount": 1,
+      "assinaturasCount": 2,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T02:26:07.388Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518997200106@c.us",
+      "notesCount": 2,
+      "assinaturasCount": 2,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T02:26:07.642Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "558004940140@c.us": 0,
+        "5518991161341@c.us": 1,
+        "5518991222983@c.us": 4,
+        "5518997974883@c.us": 0,
+        "593993695740@c.us": 0,
+        "5518981248008@c.us": 0,
+        "2349162389789@c.us": 2,
+        "554396159222@c.us": 1,
+        "5518997200106@c.us": 2
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "558004940140@c.us": 0,
+        "5518991161341@c.us": 0,
+        "5518991222983@c.us": 4,
+        "5518997974883@c.us": 1,
+        "593993695740@c.us": 2,
+        "5518981248008@c.us": 1,
+        "2349162389789@c.us": 2,
+        "554396159222@c.us": 2,
+        "5518997200106@c.us": 2
+      },
+      "totalOptimizedCards": 9
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   }

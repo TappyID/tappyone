@@ -21,6 +21,7 @@ interface ConexaoFilaModalProps {
     id: string
     nome?: string
     contato?: {
+      id?: string
       numero_telefone?: string
       nome?: string
     }
@@ -31,8 +32,17 @@ export default function ConexaoFilaModal({ isOpen, onClose, card }: ConexaoFilaM
   console.log('🔗🔗🔗 MODAL CONEXAO PROPS:', { isOpen, card })
   const { theme } = useTheme()
   
-  // Extrair número do contato
+  // 🎯 ESTRATÉGIA OTIMIZADA: Extrair múltiplas fontes de ID
   const contatoId = card.contato?.numero_telefone?.replace('@c.us', '') || card.id.replace('@c.us', '')
+  const chatId = card.id // Chat WhatsApp completo com @c.us
+  const contatoBancoId = card.contato?.id // ID do contato no banco (se vinculado)
+  
+  console.log('🔍 [CONEXAO MODAL] IDs disponíveis:', {
+    contatoId,
+    chatId, 
+    contatoBancoId,
+    cardData: card
+  })
   
   const { 
     data, 
@@ -45,6 +55,7 @@ export default function ConexaoFilaModal({ isOpen, onClose, card }: ConexaoFilaM
     refetch 
   } = useConexaoFila({ 
     contatoId,
+    chatId, // ✅ USAR CHAT ID COMPLETO COMO FONTE PRIMÁRIA
     enabled: isOpen && !!contatoId 
   })
 

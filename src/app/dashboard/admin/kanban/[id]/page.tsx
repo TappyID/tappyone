@@ -2761,7 +2761,7 @@ export default function QuadroPage() {
   }
   
   // Handlers dos modais do ChatArea
-  const handleAgendamentoSave = async (agendamento: any) => {
+  const handleAgendamentoSave = async (agendamento: any): Promise<void> => {
     try {
       const token = localStorage.getItem('token')
       if (!token) return
@@ -2776,17 +2776,10 @@ export default function QuadroPage() {
           nome: contatoData.nome || selectedCard.name || 'Contato',
           numeroTelefone: contatoData.telefone || selectedCard.id.replace('@c.us', ''),
           email: contatoData.email || '',
-          empresa: contatoData.empresa || '',
-          cpf: (contatoData as any).cpf || '',
-          cnpj: (contatoData as any).cnpj || '',
-          endereco: (contatoData as any).endereco || '',
-          cidade: (contatoData as any).cidade || '',
-          estado: (contatoData as any).estado || '',
-          cep: (contatoData as any).cep || '',
-          tags: (contatoData as any).tags || []
+          empresa: contatoData.empresa || ''
         }
-        
-        const response = await fetch('/api/contatos', {
+
+        const contatoResponse = await fetch('/api/contatos', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2794,19 +2787,33 @@ export default function QuadroPage() {
           },
           body: JSON.stringify(novoContato)
         })
-        
-        if (response.ok) {
-          const contato = await response.json()
+
+        if (contatoResponse.ok) {
+          const contato = await contatoResponse.json()
           contatoId = contato.id
         }
       }
-      
-      // Salvar o agendamento
+
+      // Extrair número de telefone do chat ID para usar como contato_id
+      const numeroTelefone = selectedCard?.id.replace('@c.us', '') || contatoData.telefone?.replace('@c.us', '')
+
+      // ✅ CORRIGIR MAPEAMENTO DE CAMPOS - Backend espera InicioEm/FimEm ao invés de hora_inicio/hora_fim
+      // ✅ CORRIGIR FORMATO DOS CAMPOS DE TEMPO - Backend espera datetime completo como ChatArea
       const agendamentoData = {
-        ...agendamento,
-        contato_id: contatoId || contatoData.id
+        titulo: agendamento.titulo,
+        descricao: agendamento.descricao,
+        // Usar formato ChatArea: inicio_em e fim_em com datetime completo
+        inicio_em: `${agendamento.data}T${agendamento.hora_inicio || agendamento.InicioEm}:00-03:00`,
+        fim_em: `${agendamento.data}T${agendamento.hora_fim || agendamento.FimEm}:00-03:00`,
+        link_meeting: agendamento.link_video,
+        contato_id: numeroTelefone,
+        cliente_nome: contatoData.nome || agendamento.cliente || 'Cliente',
+        status: agendamento.status,
+        observacoes: agendamento.observacoes
       }
-      
+
+      console.log('📅 [DEBUG] Enviando agendamento com campos corretos:', agendamentoData)
+
       const response = await fetch('/api/agendamentos', {
         method: 'POST',
         headers: {
@@ -2815,10 +2822,10 @@ export default function QuadroPage() {
         },
         body: JSON.stringify(agendamentoData)
       })
-      
+
       if (response.ok) {
-        setAgendamentoModal({ isOpen: false, card: null })
         showNotification('Agendamento criado com sucesso!', 'success')
+        setAgendamentoModal({ isOpen: false, card: null })
         
         // Invalidar cache e atualizar dados do kanban
         setTimeout(async () => {
@@ -2830,7 +2837,8 @@ export default function QuadroPage() {
         }, 500)
       } else {
         const error = await response.json()
-        showNotification(`Erro ao criar agendamento: ${error.error}`, 'error')
+        console.error('❌ [DEBUG] Erro do backend ao criar agendamento:', error)
+        showNotification(`Erro ao criar agendamento: ${error.error || error.message || 'Erro desconhecido'}`, 'error')
       }
     } catch (error) {
       console.error('Erro ao salvar agendamento:', error)
@@ -2941,47 +2949,75 @@ export default function QuadroPage() {
   }
   
   // Função para obter dados do contato real
-  const getContactData = () => {
-    if (!selectedCard?.id) {
-      return {
-        id: `temp-${Date.now()}`,
-        nome: 'Contato não encontrado',
-        telefone: '',
-        email: '',
-        empresa: '',
-        avatar: ''
-      }
-    }
-
-    // Buscar contato real pelo chatId (JID)
-    const contato = chats.find(c => c.id === selectedCard.id)
-    
-    if (contato) {
-      return {
-        id: contato.id || `temp-${Date.now()}`,
-        nome: contato.name || 'Contato sem nome',
-        telefone: contato.id || '',
-        email: '',
-        empresa: '',
-        avatar: contato.profilePictureUrl || ''
-      }
-    }
-
+const getContactData = () => {
+  if (!selectedCard?.id) {
     return {
-      id: selectedCard.id || `temp-${Date.now()}`,
+      id: `temp-${Date.now()}`,
       nome: 'Contato não encontrado',
-      telefone: selectedCard.id || '',
+      telefone: '',
       email: '',
       empresa: '',
       avatar: ''
     }
   }
 
+  // Primeiro, buscar nos dados otimizados do banco (contatos criados recentemente)
+  const cardData = getCardData(selectedCard.id)
+  if (cardData?.contato) {
+    console.log('📞 [getContactData] Encontrado contato nos dados otimizados:', cardData.contato)
+    return {
+      id: cardData.contato.id || selectedCard.id,
+      nome: cardData.contato.nome || 'Contato sem nome',
+      telefone: selectedCard.id, // IMPORTANTE: usar o chat ID completo (com @c.us) para consistência
+      email: cardData.contato.email || '',
+      empresa: cardData.contato.empresa || '',
+      cpf: cardData.contato.cpf || '',
+      cnpj: cardData.contato.cnpj || '',
+      cep: cardData.contato.cep || '',
+      endereco: cardData.contato.endereco || '',
+      bairro: cardData.contato.bairro || '',
+      rua: cardData.contato.rua || '',
+      numero: cardData.contato.numero || '',
+      estado: cardData.contato.estado || '',
+      cidade: cardData.contato.cidade || '',
+      pais: cardData.contato.pais || 'Brasil',
+      tags: cardData.contato.tags || [],
+      avatar: cardData.contato.avatar || ''
+    }
+  }
+
+  // Fallback: buscar contato real pelo chatId (JID) nos dados do WhatsApp
+  const contato = chats.find(c => c.id === selectedCard.id)
+  
+  if (contato) {
+    console.log('📞 [getContactData] Encontrado contato nos dados do WhatsApp:', contato)
+    return {
+      id: contato.id || `temp-${Date.now()}`,
+      nome: contato.name || 'Contato sem nome',
+      telefone: contato.id || '', // Chat ID completo com @c.us
+      email: '',
+      empresa: '',
+      avatar: contato.profilePictureUrl || ''
+    }
+  }
+
+  console.log('⚠️ [getContactData] Contato não encontrado para selectedCard:', selectedCard.id)
+  return {
+    id: selectedCard.id || `temp-${Date.now()}`,
+    nome: 'Contato não encontrado',
+    telefone: selectedCard.id || '', // Chat ID completo como fallback
+    email: '',
+    empresa: '',
+    avatar: ''
+  }
+}
+
 
   // Função para buscar dados completos de orçamentos
   const fetchOrcamentosDetalhes = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
+      console.log('🔍 DEBUG fetchOrcamentosDetalhes para card:', chatId)
       // Extrair número do JID para buscar corretamente
       const numeroTelefone = chatId.replace('@c.us', '')
       const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(numeroTelefone)}`, {
@@ -3518,28 +3554,37 @@ export default function QuadroPage() {
   
   // Handlers para agente
   const handleAgenteModal = (card: any) => {
+    setSelectedCard(card)
     setAgenteModal({ isOpen: true, card })
   }
 
   // Handler para conexão/fila modal
   const handleConexaoFilaModal = (card: any) => {
+    setSelectedCard(card)
     setConexaoFilaModal({ isOpen: true, card })
   }
 
   const handleOpenAgendamento = (card: any) => {
-    setAgendamentoModal({ isOpen: true, card })
-  }
-  
+  // IMPORTANTE: Definir selectedCard antes de abrir o modal
+  // para que getContactData() funcione corretamente
+  setSelectedCard(card)
+  setAgendamentoModal({ isOpen: true, card })
+}
+
   const handleOpenOrcamento = (card: any) => {
+    setSelectedCard(card)
     setOrcamentoModal({ isOpen: true, card })
   }
   
   const handleOpenAssinatura = (card: any) => {
+    setSelectedCard(card)
     setAssinaturaModal({ isOpen: true, card })
   }
   
   const handleOpenAnotacoes = (card: any) => {
+    setSelectedCard(card)
     setAnotacoesModal({ isOpen: true, card })
+    setShowAnotacoesModal(true)
   }
 
   const handleOpenEditContact = (card: any) => {

@@ -17,32 +17,75 @@ export interface ConexaoFilaData {
 
 interface UseConexaoFilaProps {
   contatoId: string // número do WhatsApp (ex: "5519999999999")
+  chatId?: string   // chat ID completo (ex: "5519999999999@c.us") 
   enabled?: boolean
 }
 
-export function useConexaoFila({ contatoId, enabled = true }: UseConexaoFilaProps) {
+export function useConexaoFila({ contatoId, chatId, enabled = true }: UseConexaoFilaProps) {
   const [data, setData] = useState<ConexaoFilaData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchConexaoFila = async () => {
-    if (!contatoId || !enabled) return
+    if ((!contatoId && !chatId) || !enabled) return
 
     setLoading(true)
     setError(null)
 
     try {
-      // Buscar conexão/fila por contato
-      const response = await fetch(`/api/conexoes/contato/${contatoId}`, {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado')
+      }
+
+      // 🎯 ESTRATÉGIA CORRIGIDA: Usar chatId completo como primária
+      const searchId = chatId || `${contatoId}@c.us`
+      
+      console.log('🔍 [useConexaoFila] Buscando conexão para:', {
+        chatId,
+        contatoId,
+        searchId,
+        url: `/api/conexoes/contato/${searchId.replace('@c.us', '')}`
+      })
+
+      // Primeira tentativa: buscar por ID (ainda usa número limpo na URL)
+      const response = await fetch(`/api/conexoes/contato/${searchId.replace('@c.us', '')}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
       })
 
       if (!response.ok) {
         if (response.status === 404) {
-          // Contato não tem conexão/fila associada
+          // 2. Fallback: buscar por chat ID completo se busca por contato falhou
+          console.log(`🔍 Contato ${contatoId} não encontrado, tentando buscar por chat ID...`)
+          
+          const chatResponse = await fetch(`/api/conexoes/chat/${contatoId}@c.us`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+          })
+          
+          if (chatResponse.ok) {
+            const chatResult = await chatResponse.json()
+            setData({
+              conexaoId: chatResult.conexao?.id || '',
+              sessionName: chatResult.conexao?.session_name || '',
+              status: chatResult.conexao?.status || 'disconnected',
+              filaId: chatResult.fila?.id || null,
+              filaNome: chatResult.fila?.nome || null,
+              filaCor: chatResult.fila?.cor || null,
+              atendentes: chatResult.atendentes || [],
+              hasConnection: !!chatResult.conexao
+            })
+            return
+          }
+          
+          // 3. Último fallback: sem conexão
           setData({
             conexaoId: '',
             sessionName: '',
@@ -86,7 +129,7 @@ export function useConexaoFila({ contatoId, enabled = true }: UseConexaoFilaProp
 
   useEffect(() => {
     fetchConexaoFila()
-  }, [contatoId, enabled])
+  }, [contatoId, chatId, enabled])
 
   return {
     data,
