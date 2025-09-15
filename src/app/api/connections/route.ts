@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('✅ [CONNECTIONS] Dados recebidos do backend:', data)
     return NextResponse.json(data)
   } catch (error) {
     console.error('❌ [CONNECTIONS] Erro na API proxy:', error)

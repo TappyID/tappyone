@@ -16,8 +16,21 @@ export function useMessageActions({ chatId, onMessageUpdate }: UseMessageActions
       throw new Error('Token não encontrado')
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
-    const response = await fetch(`${backendUrl}/api/whatsapp${endpoint}`, {
+    // Rotas que devem usar Next.js API ao invés do backend Go
+    const nextjsRoutes = ['/sendLocation', '/sendContact', '/sendContactVcard', '/sendPoll']
+    const useNextjs = nextjsRoutes.includes(endpoint)
+
+    let url: string
+    if (useNextjs) {
+      // Usar Next.js API routes
+      url = `/api/whatsapp${endpoint}`
+    } else {
+      // Usar backend Go
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
+      url = `${backendUrl}/api/whatsapp${endpoint}`
+    }
+
+    const response = await fetch(url, {
       method,
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -28,7 +41,7 @@ export function useMessageActions({ chatId, onMessageUpdate }: UseMessageActions
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || `Erro ${response.status}`)
+      throw new Error(`API returned status ${response.status}: ${JSON.stringify(errorData)}`)
     }
 
     // Verificar se há conteúdo para fazer parse do JSON
