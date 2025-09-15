@@ -253,7 +253,6 @@ export default function ChatArea({
             }
           }
         } catch (error) {
-          console.log('Erro ao buscar metadados do quadro:', quadro.id, error)
         }
       }
       
@@ -292,25 +291,72 @@ export default function ChatArea({
   // Transformar mensagens da WAHA API para o formato do componente
   const transformedMessages = transformMessages(messages || [])
   
+  // DEBUG: Limpar console após 20s e mostrar apenas dados relevantes
+  useEffect(() => {
+    const debugTimer = setTimeout(() => {
+      console.clear()
+      console.log('🔍 ANÁLISE APÓS 20s - DETECÇÃO DE TIPOS:')
+      console.log('═══════════════════════════════════════════')
+      
+      if (messages && messages.length > 0) {
+        messages.slice(0, 10).forEach((m, i) => {
+          const hasMediaUrl = !!(m as any).mediaUrl
+          const isDocument = hasMediaUrl && (
+            (m as any).mediaUrl?.includes('.pdf') || 
+            (m as any).mediaUrl?.includes('.doc') || 
+            (m as any).mediaUrl?.includes('.docx') ||
+            (m as any).mediaUrl?.includes('.txt') ||
+            (m as any).mediaUrl?.includes('.xls')
+          )
+          const isLocation = !!(m.type === 'location' || (m as any).location)
+          const isPoll = !!(m.type === 'poll' || (m as any).poll)
+          const hasLocationKeywords = m.content && (
+            m.content.toLowerCase().includes('latitude') || 
+            m.content.toLowerCase().includes('localização') ||
+            m.content.toLowerCase().includes('location')
+          )
+          const hasPollKeywords = m.content && m.content.toLowerCase().includes('enquete')
+          
+          // Só mostrar mensagens interessantes
+          if (hasMediaUrl || isLocation || isPoll || hasLocationKeywords || hasPollKeywords) {
+            console.log(`📝 MSG ${i + 1}:`, {
+              type: m.type,
+              mediaUrl: hasMediaUrl ? (m as any).mediaUrl.substring(0, 50) + '...' : null,
+              content: m.content ? m.content.substring(0, 40) + '...' : null,
+              location: (m as any).location,
+              poll: (m as any).poll,
+              filename: (m as any).filename || (m as any).fileName,
+              isDocument,
+              isLocation, 
+              isPoll,
+              hasLocationKeywords,
+              hasPollKeywords,
+              DEVERIA_RENDERIZAR_ESPECIAL: isDocument || isLocation || isPoll || hasLocationKeywords || hasPollKeywords
+            })
+          }
+        })
+      }
+      console.log('═══════════════════════════════════════════')
+    }, 20000)
+    
+    return () => clearTimeout(debugTimer)
+  }, [messages])
+  
   // Usar mensagens traduzidas se disponíveis, senão usar originais
   const displayMessages = translatedMessages.length > 0 ? translatedMessages : transformedMessages
   
   // Escutar mudanças de idioma
   useEffect(() => {
     const handleLanguageChange = async (event: CustomEvent) => {
-      console.log('🎯 ChatArea recebeu evento languageChanged:', event.detail)
       const { languageCode } = event.detail
       setSelectedLanguage(languageCode)
       
       if (languageCode === 'pt' || languageCode === 'pt-BR') {
         // Voltar ao português original
-        console.log('🇧🇷 Voltando para português original')
         setTranslatedMessages([])
       } else {
         // Traduzir mensagens para o novo idioma
-        console.log('🌍 Iniciando tradução das mensagens para:', languageCode, 'Total mensagens:', transformedMessages.length)
         const translated = await translateMessages(transformedMessages, languageCode)
-        console.log('✅ Tradução concluída:', translated.length, 'mensagens')
         setTranslatedMessages(translated)
       }
     }
@@ -342,7 +388,6 @@ export default function ChatArea({
     )
     
     if (shouldTranslate) {
-      console.log('🌍 Traduzindo', transformedMessages.length, 'mensagens para:', selectedLanguage)
       
       translateMessages(transformedMessages, selectedLanguage).then(translated => {
         setTranslatedMessages(translated)
@@ -408,8 +453,6 @@ export default function ChatArea({
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
     
-    console.log('🔍 Buscando por:', searchQuery)
-    console.log('📝 Total de mensagens:', messages.length)
     
     const filtered = messages.filter(message => {
       const body = message.body?.toLowerCase() || ''
@@ -420,7 +463,6 @@ export default function ChatArea({
       const matches = body.includes(searchTerm) || text.includes(searchTerm) || content.includes(searchTerm)
       
       if (matches) {
-        console.log('✅ Mensagem encontrada:', { body, text, content })
       }
       
       return matches
@@ -429,7 +471,6 @@ export default function ChatArea({
       matchText: message.body || message.text || message.content || ''
     }))
     
-    console.log('🎯 Resultados da busca:', filtered.length)
     return filtered
   }, [messages, searchQuery])
   
@@ -496,16 +537,11 @@ export default function ChatArea({
       if (!chatId) return
       
       // Buscar nas mensagens carregadas (usar displayMessages para incluir traduzidas)
-      const filtered = displayMessages.filter(msg => 
-        msg.content.toLowerCase().includes(query.toLowerCase()) ||
-        (msg as any).caption?.toLowerCase().includes(query.toLowerCase())
-      )
-      
-      setSearchResults(filtered)
+      // Busca é feita via useMemo searchResults baseado em searchQuery
+      // Não precisamos de setSearchResults aqui
       
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error)
-      setSearchResults([])
     } finally {
       setIsSearching(false)
     }
@@ -606,7 +642,6 @@ export default function ChatArea({
     
     // Se a última mensagem não é nossa (fromMe = false ou sender !== 'agent') e tem conteúdo
     if (lastMessage && lastMessage.sender !== 'agent' && lastMessage.content && lastMessage.content.trim().length > 0) {
-      console.log('🤖 [CHAT-AREA] Nova mensagem do usuário detectada para auto-resposta:', lastMessage.content.substring(0, 100))
       
       // Processar mensagem para auto-resposta (usando mensagens transformadas)
       const messageForProcessing = {
@@ -1422,33 +1457,26 @@ export default function ChatArea({
             <div className="flex items-center gap-3">
               <h3 className="font-semibold text-gray-900 dark:text-slate-100">{conversation.name}</h3>
               
-              {/* Tags do contato - Debug */}
-              {(() => {
-                console.log(`🏷️ [CHATAREA] Conversa selecionada:`, conversation?.name, 'Tags:', conversation?.tags)
-                if (conversation?.tags && conversation.tags.length > 0) {
-                  console.log(`🏷️ [CHATAREA] Exibindo ${conversation.tags.length} tags para ${conversation.name}`)
-                  return (
-                    <div className="flex items-center gap-1">
-                      {conversation.tags.slice(0, 2).map((tag: any) => (
-                        <div
-                          key={tag.id}
-                          className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
-                          style={{ backgroundColor: tag.cor || '#6b7280' }}
-                          title={tag.nome}
-                        >
-                          #{tag.nome}
-                        </div>
-                      ))}
-                      {conversation.tags.length > 2 && (
-                        <div className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
-                          +{conversation.tags.length - 2}
-                        </div>
-                      )}
+              {/* Tags do contato */}
+              {conversation?.tags && conversation.tags.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {conversation.tags.slice(0, 2).map((tag: any) => (
+                    <div
+                      key={tag.id}
+                      className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
+                      style={{ backgroundColor: tag.cor || '#6b7280' }}
+                      title={tag.nome}
+                    >
+                      #{tag.nome}
                     </div>
-                  )
-                }
-                return null
-              })()}
+                  ))}
+                  {conversation.tags.length > 2 && (
+                    <div className="px-2 py-1 rounded-md text-xs font-medium bg-slate-500 text-white shadow-sm">
+                      +{conversation.tags.length - 2}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -1712,8 +1740,15 @@ export default function ChatArea({
                 >
                   {/* Renderizar conteúdo da mensagem com mídia */}
                   
+                  
+                  
                   {/* Verificar se é localização */}
-                  {msg.type === 'location' || (msg as any).location ? (
+                  {msg.type === 'location' || (msg as any).location || 
+                   (msg.content && (
+                     msg.content.toLowerCase().includes('latitude') || 
+                     msg.content.toLowerCase().includes('localização') ||
+                     msg.content.toLowerCase().includes('location')
+                   )) ? (
                     <div className="mb-2">
                       <div className={`flex items-center gap-3 p-3 rounded-lg ${
                         msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-gray-100 dark:bg-gray-200 border border-gray-300'
@@ -1761,6 +1796,51 @@ export default function ChatArea({
                         </button>
                       </div>
                     </div>
+                  ) : msg.type === 'poll' || (msg as any).poll || 
+                   (msg.content && msg.content.toLowerCase().includes('enquete')) ? (
+                    <div className="mb-2">
+                      <div className={`p-3 rounded-lg ${
+                        msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/30'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className={`p-2 rounded-full ${
+                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-800'
+                          }`}>
+                            <svg className={`w-4 h-4 ${msg.sender === 'agent' ? 'text-white' : 'text-purple-600 dark:text-purple-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                          </div>
+                          <div className={`font-medium text-sm ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-purple-800 dark:text-purple-200'
+                          }`}>
+                            📊 {(msg as any).poll?.name || msg.content || 'Enquete'}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {((msg as any).poll?.options || []).map((option: any, index: number) => (
+                            <div key={index} className={`flex items-center gap-2 p-2 rounded ${
+                              msg.sender === 'agent' ? 'bg-white/10' : 'bg-white dark:bg-purple-800/30'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                msg.sender === 'agent' ? 'bg-white/60' : 'bg-purple-400'
+                              }`} />
+                              <span className={`text-sm ${
+                                msg.sender === 'agent' ? 'text-white/90' : 'text-purple-700 dark:text-purple-200'
+                              }`}>
+                                {option.name || option}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {(msg as any).poll?.multipleAnswers && (
+                          <div className={`text-xs mt-2 ${
+                            msg.sender === 'agent' ? 'text-white/70' : 'text-purple-600 dark:text-purple-400'
+                          }`}>
+                            ✓ Múltiplas respostas permitidas
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ) : (msg as any).mediaUrl && (
                     (msg as any).mediaUrl.includes('.jpeg') ||
                     (msg as any).mediaUrl.includes('.jpg') ||
@@ -1769,6 +1849,11 @@ export default function ChatArea({
                     (msg as any).mediaUrl.includes('.webp') ||
                     msg.type === 'image' || 
                     (msg as any).mimetype?.includes('image')
+                  ) && !(
+                    (msg as any).mediaUrl.includes('.webm') ||
+                    (msg as any).mediaUrl.includes('.mp4') ||
+                    (msg as any).mediaUrl.includes('.mov') ||
+                    (msg as any).mediaUrl.includes('.avi')
                   ) ? (
                     <div className="mb-2">
                       <div className="relative">
@@ -1788,38 +1873,16 @@ export default function ChatArea({
                         </p>
                       )}
                     </div>
-                  ) : (() => {
-                    // Log para debug de mensagens de áudio
-                    if (msg.type === 'audio' || (msg as any).mimetype?.includes('audio') || 
-                        ((msg as any).mediaUrl && (
-                          (msg as any).mediaUrl.includes('.oga') ||
-                          (msg as any).mediaUrl.includes('.ogg') ||
-                          (msg as any).mediaUrl.includes('.mp3') ||
-                          (msg as any).mediaUrl.includes('.wav') ||
-                          (msg as any).mediaUrl.includes('.webm') ||
-                          (msg as any).mediaUrl.includes('.bin')
-                        ))) {
-                      console.log('🎵 ÁUDIO DETECTADO:', {
-                        id: msg.id,
-                        type: msg.type,
-                        mediaUrl: (msg as any).mediaUrl,
-                        mimetype: (msg as any).mimetype,
-                        hasMedia: !!(msg as any).media,
-                        hasMediaData: !!(msg as any).media?.data
-                      })
-                    }
-                    
-                    return (msg as any).mediaUrl && (
-                      (msg as any).mediaUrl.includes('.oga') ||
-                      (msg as any).mediaUrl.includes('.ogg') ||
-                      (msg as any).mediaUrl.includes('.mp3') ||
-                      (msg as any).mediaUrl.includes('.wav') ||
-                      (msg as any).mediaUrl.includes('.webm') ||
-                      (msg as any).mediaUrl.includes('.bin') ||
-                      msg.type === 'audio' || 
-                      (msg as any).mimetype?.includes('audio')
-                    )
-                  })() ? (
+                  ) : (msg as any).mediaUrl && (
+                    (msg as any).mediaUrl.includes('.oga') ||
+                    (msg as any).mediaUrl.includes('.ogg') ||
+                    (msg as any).mediaUrl.includes('.mp3') ||
+                    (msg as any).mediaUrl.includes('.wav') ||
+                    (msg as any).mediaUrl.includes('.webm') ||
+                    (msg as any).mediaUrl.includes('.bin') ||
+                    msg.type === 'audio' || 
+                    (msg as any).mimetype?.includes('audio')
+                  ) ? (
                     <div className="mb-2">
                       {/* Usar dados base64 se disponíveis, senão usar URL */}
                       {(msg as any).media?.data ? (
@@ -1888,24 +1951,19 @@ export default function ChatArea({
                         </p>
                       )}
                     </div>
-                  ) : (() => {
-                    // Debug para vídeos
-                    if (msg.type === 'video' || (msg as any).mimetype?.includes('video') || 
-                        (msg as any).mediaUrl?.includes('.mp4') || (msg as any).mediaUrl?.includes('.webm') ||
-                        (msg as any).mediaUrl?.includes('.mov') || (msg as any).mediaUrl?.includes('.avi')) {
-                      console.log('🎥 VÍDEO DEBUG:', {
-                        id: msg.id,
-                        type: msg.type,
-                        processedType: (msg as any).processedType,
-                        mediaUrl: (msg as any).mediaUrl,
-                        mimetype: (msg as any).mimetype,
-                        hasMedia: !!(msg as any).media,
-                        hasMediaData: !!(msg as any).media?.data
-                      })
-                      return true
-                    }
-                    return false
-                  })() ? (
+                  ) : (msg as any).mediaUrl && (
+                    (msg as any).mediaUrl.includes('.mp4') ||
+                    (msg as any).mediaUrl.includes('.webm') ||
+                    (msg as any).mediaUrl.includes('.mov') ||
+                    (msg as any).mediaUrl.includes('.avi') ||
+                    msg.type === 'video' || 
+                    (msg as any).mimetype?.includes('video')
+                  ) && !(
+                    (msg as any).mediaUrl.includes('.oga') ||
+                    (msg as any).mediaUrl.includes('.ogg') ||
+                    (msg as any).mediaUrl.includes('.mp3') ||
+                    (msg as any).mediaUrl.includes('.wav')
+                  ) ? (
                     <div className="mb-2">
                       <div className={`p-3 rounded-lg ${
                         msg.sender === 'agent' ? 'bg-white/5 dark:bg-black/40 backdrop-blur-md border border-white/10 dark:border-slate-600/30 shadow-lg dark:shadow-black/50' : 'bg-muted/50 dark:bg-slate-800/50 dark:backdrop-blur-sm dark:border dark:border-slate-600/30'
@@ -1971,7 +2029,7 @@ export default function ChatArea({
                               if (['doc', 'docx'].includes(ext)) return <FileText className="w-5 h-5 text-blue-600" />
                               if (['xls', 'xlsx'].includes(ext)) return <FileText className="w-5 h-5 text-green-600" />
                               if (['txt'].includes(ext)) return <FileText className="w-5 h-5 text-gray-600" />
-                              return <File className={`w-5 h-5 ${msg.sender === 'agent' ? 'text-white' : 'text-gray-600'}`} />
+                              return <FileText className={`w-5 h-5 ${msg.sender === 'agent' ? 'text-white' : 'text-gray-600'}`} />
                             })()}
                           </div>
                           <div className="flex-1">

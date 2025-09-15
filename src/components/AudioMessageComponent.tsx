@@ -46,14 +46,24 @@ export default function AudioMessageComponent({ message, onTranscribe }: AudioMe
       const formData = new FormData()
       formData.append('audio', audioBlob, 'audio.ogg')
 
+      console.log('🎤 [Transcrição] Enviando para /api/transcribe...')
+
       // Chamar API de transcrição
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData
       })
 
+      console.log('🎤 [Transcrição] Resposta da API:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      })
+
       if (!response.ok) {
-        throw new Error(`Erro na transcrição: ${response.status}`)
+        const errorText = await response.text()
+        console.error('🎤 [Transcrição] Erro da API:', errorText)
+        throw new Error(`Erro na transcrição: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()

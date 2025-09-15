@@ -48,6 +48,7 @@
   import { useChatAgente } from '@/hooks/useChatAgente'
   import { useContatoData } from '@/hooks/useContatoData'
   import { useContatoTags } from '@/hooks/useContatoTags'
+  import { useConexaoFila } from '@/hooks/useConexaoFila'
   import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
   import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
   import { useInfiniteChats } from '@/hooks/useInfiniteChats'
@@ -408,9 +409,111 @@
       { value: 'name', label: 'Por Nome', icon: Hash }
     ]
     
-    // Cache para evitar requests desnecessários
+    // Cache para dados de agentes por chat
+    const [agentesCache, setAgentesCache] = useState<{[chatId: string]: any}>({})
+    const [loadingAgentes, setLoadingAgentes] = useState<{[chatId: string]: boolean}>({})
+    
+    // Cache para evitar requests desnecessários do Kanban
     const [kanbanCache, setKanbanCache] = useState<{[key: string]: any}>({})
-    const [lastKanbanFetch, setLastKanbanFetch] = useState<number>(0)
+    const [lastKanbanFetch, setLastKanbanFetch] = useState(0)
+    
+    // Cache para dados de conexão/fila por chat
+    const [conexaoFilaCache, setConexaoFilaCache] = useState<{[chatId: string]: any}>({})
+    const [loadingConexaoFila, setLoadingConexaoFila] = useState<{[chatId: string]: boolean}>({})
+    
+    // Função para buscar dados do agente de um chat específico
+    const fetchAgenteForChat = async (chatId: string) => {
+      if (!chatId || agentesCache[chatId] || loadingAgentes[chatId]) return
+      
+      setLoadingAgentes(prev => ({ ...prev, [chatId]: true }))
+      
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) return
+        
+        const response = await fetch(`/api/agentes-chat?contato_id=${chatId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          setAgentesCache(prev => ({ ...prev, [chatId]: result }))
+        } else {
+          // Se não encontrar agente, armazenar como null para não tentar novamente
+          setAgentesCache(prev => ({ ...prev, [chatId]: null }))
+        }
+      } catch (error) {
+        console.error('Erro ao buscar agente do chat:', error)
+        setAgentesCache(prev => ({ ...prev, [chatId]: null }))
+      } finally {
+        setLoadingAgentes(prev => ({ ...prev, [chatId]: false }))
+      }
+    }
+    
+    // Função para buscar dados de conexão/fila de um chat específico
+    const fetchConexaoFilaForChat = async (chatId: string) => {
+      if (!chatId || conexaoFilaCache[chatId] || loadingConexaoFila[chatId]) return
+      
+      setLoadingConexaoFila(prev => ({ ...prev, [chatId]: true }))
+      
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) return
+        
+        // Usar o número limpo para a busca (sem @c.us)
+        const contatoId = chatId.replace('@c.us', '')
+        
+        const response = await fetch(`/api/conexoes/contato/${contatoId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          const conexaoFilaData = {
+            hasConnection: !!result.conexao,
+            isConnected: result.conexao?.status === 'connected',
+            conexao: result.conexao ? {
+              id: result.conexao.id,
+              sessionName: result.conexao.session_name,
+              status: result.conexao.status
+            } : null,
+            fila: result.fila ? {
+              id: result.fila.id,
+              nome: result.fila.nome,
+              cor: result.fila.cor
+            } : null,
+            atendentes: result.atendentes || []
+          }
+          setConexaoFilaCache(prev => ({ ...prev, [chatId]: conexaoFilaData }))
+        } else {
+          // Se não encontrar, armazenar como sem conexão
+          setConexaoFilaCache(prev => ({ ...prev, [chatId]: {
+            hasConnection: false,
+            isConnected: false,
+            conexao: null,
+            fila: null,
+            atendentes: []
+          }}))
+        }
+      } catch (error) {
+        console.error('Erro ao buscar conexão/fila do chat:', error)
+        setConexaoFilaCache(prev => ({ ...prev, [chatId]: {
+          hasConnection: false,
+          isConnected: false,
+          conexao: null,
+          fila: null,
+          atendentes: []
+        }}))
+      } finally {
+        setLoadingConexaoFila(prev => ({ ...prev, [chatId]: false }))
+      }
+    }
     
     // Função para buscar informações do quadro e coluna (com cache)
     const getKanbanInfo = async (chatId: string) => {
@@ -668,25 +771,26 @@
       const name = getContactName(chat, activeContacts)
       const lastMessage = getLastMessage(chat)
       
-      // Buscar dados do contato do cache
-      const contatoData = contatosData[chatId] || null
+      // Buscar dados do backend para este chat
+      const contatoData = contatosData[chatId]
+      
+      // Aplicar fallback da fila usando a nova lógica que considera conexões
+      const chatQueue = getChatQueue(chatId)
       
       // Buscar tags do cache - igual ao ChatArea
       const contatoTags = tagsCache[chatId] || []
       
-      // Buscar fila usando a nova lógica que considera conexões
-      const chatQueue = getChatQueue(chatId)
+      // Buscar dados do agente do cache
+      const agenteData = agentesCache[chatId]
+      const agenteAtivo = agenteData?.ativo && agenteData?.agente
       
-        // Debug: Log dados do contato
-        if (contatoData) {
-         
-        } else {
-          }
-        
-        return {
+      // Buscar dados de conexão/fila do cache
+      const conexaoFilaData = conexaoFilaCache[chatId]
+      
+      return {
         id: chatId,
-        name,
-        lastMessage: lastMessage === 'Sem mensagens' ? 'Nova conversa' : lastMessage,
+        name: name || chat.name || 'Sem nome',
+        lastMessage: lastMessage,
         timestamp: formatTimestamp(chat.timestamp),
         unread: chat.unreadCount || 0,
         status: 'offline',
@@ -696,10 +800,13 @@
         // Dados reais do contato - usando tags do cache igual ao ChatArea
         tags: Array.isArray(contatoTags) ? contatoTags : [],
         queue: chatQueue, // Usar a nova lógica que considera conexões
-        atendente: contatoData?.atendente || null,
-        kanbanBoard: contatoData?.kanbanBoard || null,
+        atendente: agenteAtivo ? agenteData.agente : null, // Usar dados reais do agente
+        kanbanBoard: kanbanInfo[chatId]?.quadro !== 'Sem quadro' ? `${kanbanInfo[chatId]?.quadro} • ${kanbanInfo[chatId]?.coluna}` : null,
         orcamento: contatoData?.orcamento || null,
         agendamento: contatoData?.agendamento || null,
+        
+        // Dados de conexão/fila - igual ao card do kanban
+        conexaoFila: conexaoFilaData || null,
         
         // Badge do kanban se existir
         badge: contatoData?.kanbanBoard ? {
@@ -713,7 +820,45 @@
         hasReply: chat.lastMessage !== 'Nova conversa' && chat.lastMessage !== 'Sem mensagens',
         originalChat: chat
       }
-    }), [activeChats, contatosData, tagsCache, conexoes, filas, atendentes])
+    }), [activeChats, contatosData, tagsCache, conexoes, filas, atendentes, kanbanInfo, agentesCache, conexaoFilaCache])
+
+    // Carregar informações dos agentes para chats visíveis
+    useEffect(() => {
+      const loadAgentesInfo = async () => {
+        // Carregar apenas para os primeiros 10 chats (visíveis)
+        const visibleChats = activeChats.slice(0, 10)
+        
+        for (const chat of visibleChats) {
+          const chatId = chat.id?._serialized || chat.id || ''
+          if (chatId) {
+            fetchAgenteForChat(chatId)
+          }
+        }
+      }
+      
+      if (activeChats.length > 0) {
+        loadAgentesInfo()
+      }
+    }, [activeChats])
+
+    // Carregar informações de conexão/fila para chats visíveis
+    useEffect(() => {
+      const loadConexaoFilaInfo = async () => {
+        // Carregar apenas para os primeiros 10 chats (visíveis)
+        const visibleChats = activeChats.slice(0, 10)
+        
+        for (const chat of visibleChats) {
+          const chatId = chat.id?._serialized || chat.id || ''
+          if (chatId) {
+            fetchConexaoFilaForChat(chatId)
+          }
+        }
+      }
+      
+      if (activeChats.length > 0) {
+        loadConexaoFilaInfo()
+      }
+    }, [activeChats])
 
     // Carregar informações do Kanban apenas para chats visíveis (otimização)
     useEffect(() => {
@@ -1261,8 +1406,24 @@
                       </div>
                     </div>
                     
-                    {/* Informações da Fila, Atendente e Tag */}
+                    {/* Informações da Fila, Conexão, Atendente e Tag */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      {/* Conexão - igual ao card do kanban */}
+                      {conversation.conexaoFila && (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium" style={{
+                          backgroundColor: conversation.conexaoFila.isConnected ? '#10b98120' : '#6b728020',
+                          borderColor: conversation.conexaoFila.isConnected ? '#10b98140' : '#6b728040',
+                          color: conversation.conexaoFila.isConnected ? '#10b981' : '#6b7280'
+                        }} title={`Conexão: ${conversation.conexaoFila.conexao?.status || 'desconectada'} ${conversation.conexaoFila.conexao?.sessionName ? `(${conversation.conexaoFila.conexao.sessionName})` : ''}`}>
+                          {conversation.conexaoFila.isConnected ? (
+                            <Wifi className="w-3 h-3" />
+                          ) : (
+                            <WifiOff className="w-3 h-3" />
+                          )}
+                          <span>{conversation.conexaoFila.isConnected ? 'Conectado' : 'Desconectado'}</span>
+                        </div>
+                      )}
+                      
                       {/* Fila */}
                       {conversation.queue && (
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
@@ -1276,41 +1437,39 @@
                         </div>
                       )}
                       
-                      {/* Atendente */}
+                      {/* DEBUG TEMPORÁRIO - Quadro Kanban */}
+                      {(() => {
+                        const chatId = conversation.id
+                        const contatoData = contatosData[chatId]
+                        console.log(`🔍 [SIDEBAR-KANBAN] Chat ${chatId}:`, {
+                          kanbanBoard: conversation.kanbanBoard,
+                          contatoDataKanban: contatoData?.kanbanBoard,
+                          atendente: conversation.atendente,
+                          contatoDataAtendente: contatoData?.atendente
+                        })
+                        
+                        if (conversation.kanbanBoard) {
+                          return (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-purple-500/20 border-purple-400/40">
+                              <Layers className="w-3 h-3 text-purple-500" />
+                              <span className="text-xs font-medium text-purple-500">
+                                {conversation.kanbanBoard}
+                              </span>
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
+
+                      {/* DEBUG TEMPORÁRIO - Agente Ativo */}
                       {conversation.atendente && (
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-blue-500/20 border-blue-400/40">
                           <User className="w-3 h-3 text-blue-500" />
                           <span className="text-xs font-medium text-blue-500">
-                            {conversation.atendente.nome || 'Atendente'}
+                            {conversation.atendente.nome || 'Agente'}
                           </span>
                         </div>
                       )}
-                      
-                      {/* Atendentes da Fila */}
-                      {(() => {
-                        if (conversation.queue?.id) {
-                          const atendentesFromFila = getAtendentesFromFila(conversation.queue.id)
-                          if (atendentesFromFila.length > 0) {
-                            return (
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {atendentesFromFila.map((atendente, index) => (
-                                  <div 
-                                    key={atendente.id || index}
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-indigo-500/20 border-indigo-400/40" 
-                                    title={`Atendente: ${atendente.nome}`}
-                                  >
-                                    <User className="w-3 h-3 text-indigo-500" />
-                                    <span className="text-xs font-medium text-indigo-500">
-                                      {atendente.nome}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )
-                          }
-                        }
-                        return null
-                      })()}
 
                       {/* Tag Principal */}
                       {(() => {
@@ -1368,14 +1527,18 @@
                               backgroundColor: '#3b82f620',
                               borderColor: '#3b82f640'
                             }}
-                            title={`Agendamento: ${conversation.agendamento.data || 'Sem data'}`}
+                            title={`${(conversation.agendamento as any).quantidade > 1 ? `${(conversation.agendamento as any).quantidade} agendamentos` : 'Agendamento'} - Último: ${conversation.agendamento.data ? new Date(conversation.agendamento.data).toLocaleDateString('pt-BR') : 'Sem data'}`}
                             onClick={() => {}}
                           >
                             <svg className="w-3 h-3" style={{ color: '#3b82f6' }} fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                             </svg>
                             <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>
-                              Agenda
+                              {(() => {
+                                if (!conversation.agendamento.data) return 'Agenda'
+                                const date = new Date(conversation.agendamento.data)
+                                return isNaN(date.getTime()) ? 'Agenda' : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                              })()}
                             </span>
                           </motion.div>
                         )}
@@ -1393,7 +1556,7 @@
                                 backgroundColor: '#7c3aed20',
                                 borderColor: '#7c3aed40'
                               }}
-                              title={`Assinatura: ${assinatura.descricao} - ${new Intl.NumberFormat('pt-BR', {
+                              title={`${(assinatura as any).quantidade > 1 ? `${(assinatura as any).quantidade} assinaturas ativas` : 'Assinatura ativa'} - Plano: ${(assinatura as any).nomePlano} - ${new Intl.NumberFormat('pt-BR', {
                                 style: 'currency',
                                 currency: 'BRL'
                               }).format(Number(assinatura.valor || 0))}`}
@@ -1403,7 +1566,7 @@
                                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                               <span className="text-xs font-medium" style={{ color: '#7c3aed' }}>
-                                Assinatura
+                                {(assinatura as any).nomePlano || 'Plano'}
                               </span>
                             </motion.div>
                           )
@@ -1445,7 +1608,7 @@
                               backgroundColor: '#10b98120',
                               borderColor: '#10b98140'
                             }}
-                            title={`Orçamento: ${new Intl.NumberFormat('pt-BR', {
+                            title={`${(conversation.orcamento as any).quantidade > 1 ? `${(conversation.orcamento as any).quantidade} orçamentos` : 'Orçamento'} - Total: ${new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL'
                             }).format(Number(conversation.orcamento.valor || 0))}`}
@@ -2010,7 +2173,12 @@
                             selectedQueues: [],
                             selectedTags: [],
                             selectedKanbans: [],
-                            selectedAtendentes: []
+                            selectedAtendentes: [],
+                            dateRange: {
+                              start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 dias atrás
+                              end: new Date()
+                            },
+                            messageCount: 100
                           })
                         }}
                         className="flex-1 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors text-sm font-medium"

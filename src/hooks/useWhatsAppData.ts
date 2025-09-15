@@ -24,7 +24,7 @@ export interface WhatsAppMessage {
   fromMe: boolean
   author?: string
   body: string
-  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'location'
+  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'location' | 'poll'
   timestamp: string
   status?: 'pending' | 'sent' | 'delivered' | 'read'
   quotedMessage?: WhatsAppMessage
@@ -338,19 +338,35 @@ export function useWhatsAppData() {
         const messagesData = await response.json()
         
         // Processar mensagens para converter formato WAHA para nosso formato
-        const processedMessages = messagesData.map((msg: any) => ({
-          id: msg.id?._serialized || msg.id || `msg_${Date.now()}_${Math.random()}`,
-          chatId: chatId,
-          fromMe: msg.fromMe || false,
-          author: msg.author || msg.from,
-          body: msg.body || msg.text || '',
-          type: msg.processedType || msg.type || 'text',
-          timestamp: new Date(msg.timestamp * 1000 || Date.now()).toISOString(),
-          status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
-          mediaUrl: msg.mediaUrl,
-          fileName: msg.filename || msg.fileName,
-          caption: msg.caption
-        }))
+        const processedMessages = messagesData.map((msg: any) => {
+          const baseMessage = {
+            id: msg.id?._serialized || msg.id || `msg_${Date.now()}_${Math.random()}`,
+            chatId: chatId,
+            fromMe: msg.fromMe || false,
+            author: msg.author || msg.from,
+            body: msg.body || msg.text || '',
+            type: msg.processedType || msg.type || 'text',
+            timestamp: new Date(msg.timestamp * 1000 || Date.now()).toISOString(),
+            status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
+            mediaUrl: msg.mediaUrl,
+            fileName: msg.filename || msg.fileName,
+            caption: msg.caption
+          } as any
+          
+          // Preservar dados de poll
+          if (msg.poll || msg.type === 'poll') {
+            baseMessage.poll = msg.poll
+          }
+          
+          // Preservar dados de location
+          if (msg.location || msg.type === 'location') {
+            baseMessage.location = msg.location
+            baseMessage.latitude = msg.latitude
+            baseMessage.longitude = msg.longitude
+          }
+          
+          return baseMessage
+        })
 
         const sortedMessages = processedMessages.sort((a: WhatsAppMessage, b: WhatsAppMessage) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -395,19 +411,35 @@ export function useWhatsAppData() {
         const messagesData = await response.json()
         
         // Processar mensagens para converter formato WAHA para nosso formato
-        const processedMessages = messagesData.map((msg: any) => ({
-          id: msg.id?._serialized || msg.id || `msg_${Date.now()}_${Math.random()}`,
-          chatId: chatId,
-          fromMe: msg.fromMe || false,
-          author: msg.author || msg.from,
-          body: msg.body || msg.text || '',
-          type: msg.processedType || msg.type || 'text',
-          timestamp: new Date(msg.timestamp * 1000 || Date.now()).toISOString(),
-          status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
-          mediaUrl: msg.mediaUrl,
-          fileName: msg.filename || msg.fileName,
-          caption: msg.caption
-        }))
+        const processedMessages = messagesData.map((msg: any) => {
+          const baseMessage = {
+            id: msg.id?._serialized || msg.id || `msg_${Date.now()}_${Math.random()}`,
+            chatId: chatId,
+            fromMe: msg.fromMe || false,
+            author: msg.author || msg.from,
+            body: msg.body || msg.text || '',
+            type: msg.processedType || msg.type || 'text',
+            timestamp: new Date(msg.timestamp * 1000 || Date.now()).toISOString(),
+            status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
+            mediaUrl: msg.mediaUrl,
+            fileName: msg.filename || msg.fileName,
+            caption: msg.caption
+          } as any
+          
+          // Preservar dados de poll
+          if (msg.poll || msg.type === 'poll') {
+            baseMessage.poll = msg.poll
+          }
+          
+          // Preservar dados de location
+          if (msg.location || msg.type === 'location') {
+            baseMessage.location = msg.location
+            baseMessage.latitude = msg.latitude
+            baseMessage.longitude = msg.longitude
+          }
+          
+          return baseMessage
+        })
 
         const sortedMessages = processedMessages.sort((a: WhatsAppMessage, b: WhatsAppMessage) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()

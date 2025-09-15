@@ -58,21 +58,18 @@ export function useContatoData(chatIds: string[]) {
 
   const fetchContatoData = async (chatId: string) => {
     if (!chatId || chatId.trim() === '') {
-      console.log(`⚠️ [useContatoData] ChatId vazio ou inválido: "${chatId}"`)
       return null
     }
 
     // Verificar cache primeiro
     const cached = cache[chatId]
     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-      console.log(`💾 [useContatoData] Cache hit para ${chatId}`)
       return cached.data
     }
 
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        console.error('❌ [useContatoData] Token não encontrado no localStorage')
         throw new Error('Token não encontrado')
       }
       
@@ -126,53 +123,54 @@ export function useContatoData(chatIds: string[]) {
       if (tagsResponse?.ok) {
         const tagsData = await tagsResponse.json()
         tags = tagsData.data || tagsData || []
-        console.log(`🏷️ [useContatoData] ${chatId} - Tags encontradas:`, tags.length)
-        console.log(`🏷️ [useContatoData] ${chatId} - Tags raw:`, tagsData)
-        console.log(`🏷️ [useContatoData] ${chatId} - Tags processadas:`, tags)
-        
+       
         // Verificar se há tags "padrão" sendo retornadas incorretamente
         if (tags.length > 0) {
           tags.forEach((tag, index) => {
-            console.log(`🏷️ [useContatoData] ${chatId} - Tag ${index}:`, {
-              id: tag.id,
-              nome: tag.nome,
-              cor: tag.cor
-            })
           })
         }
       } else {
-        console.log(`🏷️ [useContatoData] ${chatId} - Sem tags - Response OK: ${tagsResponse?.ok}`)
-        console.log(`🏷️ [useContatoData] ${chatId} - Response status:`, tagsResponse?.status)
-        console.log(`🏷️ [useContatoData] ${chatId} - Response statusText:`, tagsResponse?.statusText)
       }
 
-      // Processar orçamentos
+      // Processar orçamentos - calcular total de todos orçamentos
       let orcamento = null
       if (orcamentosResponse?.ok) {
         const orcamentos = await orcamentosResponse.json()
         if (orcamentos.length > 0) {
+          // Somar todos os orçamentos do contato
+          const valorTotal = orcamentos.reduce((total: number, orc: any) => {
+            return total + (parseFloat(orc.valor) || parseFloat(orc.valorTotal) || 0)
+          }, 0)
+          
           orcamento = {
-            valor: orcamentos[0].valor || orcamentos[0].valorTotal || 0,
-            status: orcamentos[0].status
+            valor: valorTotal,
+            status: orcamentos[0].status, // Status do primeiro orçamento
+            quantidade: orcamentos.length // Quantidade de orçamentos
           }
-          console.log(`💰 [useContatoData] ${chatId} - Orçamento encontrado:`, orcamento.valor)
         }
       }
 
-      // Processar agendamentos
+      // Processar agendamentos - pegar o mais recente
       let agendamento = null
       if (agendamentosResponse?.ok) {
         const agendamentos = await agendamentosResponse.json()
         if (agendamentos.length > 0) {
+          // Ordenar por data para pegar o mais recente
+          const agendamentosOrdenados = agendamentos.sort((a: any, b: any) => {
+            const dataA = new Date(a.data_agendamento || a.data).getTime()
+            const dataB = new Date(b.data_agendamento || b.data).getTime()
+            return dataB - dataA // Mais recente primeiro
+          })
+          
           agendamento = {
-            data: agendamentos[0].data_agendamento || agendamentos[0].data,
-            status: agendamentos[0].status
+            data: agendamentosOrdenados[0].data_agendamento || agendamentosOrdenados[0].data,
+            status: agendamentosOrdenados[0].status,
+            quantidade: agendamentos.length // Total de agendamentos
           }
-          console.log(`📅 [useContatoData] ${chatId} - Agendamento encontrado:`, agendamento.data)
         }
       }
 
-      // Processar assinaturas
+      // Processar assinaturas - mostrar nome do plano
       let assinatura = null
       if (assinaturasResponse?.ok) {
         const assinaturasData = await assinaturasResponse.json()
@@ -183,9 +181,9 @@ export function useContatoData(chatIds: string[]) {
               id: assinaturasAtivas[0].id,
               valor: assinaturasAtivas[0].valor || 0,
               status: assinaturasAtivas[0].status,
-              descricao: assinaturasAtivas[0].descricao || assinaturasAtivas[0].nome || 'Assinatura'
+              nomePlano: assinaturasAtivas[0].plano?.nome || assinaturasAtivas[0].nome || assinaturasAtivas[0].descricao || 'Plano',
+              quantidade: assinaturasAtivas.length // Quantidade de assinaturas ativas
             }
-            console.log(`📝 [useContatoData] ${chatId} - Assinatura encontrada:`, assinatura.descricao)
           }
         }
       }
@@ -201,7 +199,6 @@ export function useContatoData(chatIds: string[]) {
             status: ticket.status,
             prioridade: ticket.prioridade
           }))
-          console.log(`🎫 [useContatoData] ${chatId} - Tickets encontrados:`, tickets.length)
         }
       }
 
@@ -221,14 +218,6 @@ export function useContatoData(chatIds: string[]) {
         tickets
       }
 
-      console.log(`✅ [useContatoData] ${chatId} - Dados completos:`, {
-        id: result.id,
-        tagsCount: result.tags?.length || 0,
-        hasOrcamento: !!result.orcamento,
-        hasAgendamento: !!result.agendamento,
-        hasAssinatura: !!result.assinatura,
-        ticketsCount: result.tickets?.length || 0
-      })
 
       // Salvar no cache
       setCache(prev => ({
@@ -238,7 +227,6 @@ export function useContatoData(chatIds: string[]) {
 
       return result
     } catch (err) {
-      console.error('❌ [useContatoData] Erro ao buscar dados do contato:', err)
       return null
     }
   }
@@ -294,7 +282,6 @@ export function useContatoData(chatIds: string[]) {
         }
       }
     } catch (err) {
-      console.error('❌ [useContatoData] Erro geral:', err)
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
@@ -312,12 +299,10 @@ export function useContatoData(chatIds: string[]) {
   }
 
   useEffect(() => {
-    console.log(`🔄 [useContatoData] useEffect disparado, chatIds:`, chatIds)
     
     // Evitar requests duplicados - só carregar se há chatIds novos
     const newChatIds = chatIds.filter(id => !contatos[id] && id.trim() !== '')
     if (newChatIds.length === 0) {
-      console.log(`⏭️ [useContatoData] Nenhum chatId novo para carregar`)
       return
     }
     
