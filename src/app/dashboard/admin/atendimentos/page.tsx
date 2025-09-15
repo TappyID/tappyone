@@ -159,7 +159,10 @@ export default function AtendimentosPage() {
     sendTyping,
     getPresence,
     resetRetry,
-    retryCount
+    retryCount,
+    loadMoreChats,
+    hasMoreChats,
+    loadingMore
   } = useWhatsAppData()
 
   // Função para buscar todas as contagens
@@ -247,6 +250,9 @@ export default function AtendimentosPage() {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           isQuickActionsSidebarOpen={isQuickActionsSidebarOpen}
+          loadMoreChats={loadMoreChats}
+          hasMoreChats={hasMoreChats}
+          loadingMore={loadingMore}
         />
         
         {/* Área do Chat */}

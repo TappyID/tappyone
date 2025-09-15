@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 export const dynamic = 'force-dynamic'
 
 const wahaUrl = 'http://159.65.34.199:3001'
+const backendUrl = 'http://159.65.34.199:8081'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,15 +38,19 @@ export async function GET(request: NextRequest) {
 
     const sessionName = activeSession.name
    
-    // Proxy direto para WAHA
-    const response = await fetch(`${wahaUrl}/api/${sessionName}/groups`, {
+    // OTIMIZAÇÃO: Adicionar suporte a paginação 
+    const url = new URL(request.url)
+    const limit = url.searchParams.get('limit') || '50'
+    const offset = url.searchParams.get('offset') || '0'
+    
+    // Usar backend Go com Redis cache em vez de WAHA direto
+    const response = await fetch(`${backendUrl}/api/whatsapp/groups/cached?session=${sessionName}&limit=${limit}&offset=${offset}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'tappyone-waha-2024-secretkey'
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
       }
     })
-
 
     if (!response.ok) {
       const errorText = await response.text()

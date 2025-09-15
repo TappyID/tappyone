@@ -59,13 +59,15 @@ export function useWhatsAppData() {
   const { playNotificationSound, playSentSound } = useNotificationSound()
   const [chats, setChats] = useState<WhatsAppChat[]>([])
   const [contacts, setContacts] = useState<WhatsAppContact[]>([])
-  const [messages, setMessages] = useState<Record<string, WhatsAppMessage[]>>({})
+  const [messages, setMessages] = useState<{ [chatId: string]: WhatsAppMessage[] }>({})
   const [previousMessageCounts, setPreviousMessageCounts] = useState<Record<string, number>>({})
   const [presence, setPresence] = useState<Record<string, any>>({})
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [lastUpdate, setLastUpdate] = useState(Date.now())
+  const [lastUpdate, setLastUpdate] = useState(0)
   const [retryCount, setRetryCount] = useState(0)
+  const [hasMoreChats, setHasMoreChats] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const MAX_RETRIES = 3
 
   // WebSocket para mensagens real-time da WAHA
@@ -172,15 +174,16 @@ export function useWhatsAppData() {
         return
       }
       
-      // Buscar chats e grupos usando API routes do Next.js
+      // 🚀 OTIMIZAÇÃO: Carregar apenas primeiras 50 conversas
+      const INITIAL_LIMIT = 50
       const [chatsResponse, groupsResponse] = await Promise.all([
-        fetch(`/api/whatsapp/chats`, {
+        fetch(`/api/whatsapp/chats?limit=${INITIAL_LIMIT}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`/api/whatsapp/groups`, {
+        fetch(`/api/whatsapp/groups?limit=${INITIAL_LIMIT}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -633,6 +636,60 @@ export function useWhatsAppData() {
     return loadInitialData()
   }, [loadInitialData])
 
+  // 🚀 Função para carregar mais conversas
+  const loadMoreChats = useCallback(async () => {
+    if (loadingMore || !hasMoreChats || !user) return
+
+    try {
+      setLoadingMore(true)
+      const token = localStorage.getItem('token')
+      
+      if (!token) return
+
+      const currentCount = chats.length
+      const BATCH_SIZE = 50
+      
+      const [chatsResponse, groupsResponse] = await Promise.all([
+        fetch(`/api/whatsapp/chats?limit=${BATCH_SIZE}&offset=${currentCount}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`/api/whatsapp/groups?limit=${BATCH_SIZE}&offset=${currentCount}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ])
+
+      let newChats = []
+      
+      if (chatsResponse.ok) {
+        const chatsData = await chatsResponse.json()
+        newChats = [...newChats, ...chatsData]
+      }
+      
+      if (groupsResponse.ok) {
+        const groupsData = await groupsResponse.json()
+        newChats = [...newChats, ...groupsData]
+      }
+
+      if (newChats.length < BATCH_SIZE) {
+        setHasMoreChats(false)
+      }
+
+      setChats(prev => [...prev, ...newChats])
+      debugLogger.log(`Loaded ${newChats.length} more chats. Total: ${chats.length + newChats.length}`)
+      
+    } catch (error) {
+      debugLogger.error('Error loading more chats:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [chats.length, hasMoreChats, loadingMore, user])
+
   return {
     chats,
     contacts,
@@ -651,6 +708,9 @@ export function useWhatsAppData() {
     getPresence,
     refreshData,
     resetRetry,
-    retryCount
+    retryCount,
+    loadMoreChats,
+    hasMoreChats,
+    loadingMore
   }
 }

@@ -65,6 +65,9 @@
     onToggleCollapse?: () => void
     isQuickActionsSidebarOpen?: boolean
     useInfiniteScroll?: boolean // Nova prop para ativar scroll infinito
+    loadMoreChats?: () => void
+    hasMoreChats?: boolean
+    loadingMore?: boolean
   }
 
   // Função para formatar timestamp
@@ -172,7 +175,10 @@
     isCollapsed = false,
     onToggleCollapse,
     isQuickActionsSidebarOpen = false,
-    useInfiniteScroll = true // Ativado por padrão
+    useInfiniteScroll = false, // Desativado por padrão até resolver o problema
+    loadMoreChats,
+    hasMoreChats,
+    loadingMore
   }: ConversationSidebarProps) {
     const [activeFilter, setActiveFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
@@ -183,6 +189,7 @@
     // const { isOnline, isTyping } = usePresence() // Hook removido para evitar erro
     
     const scrollContainerRef = useRef<HTMLDivElement>(null)
+    const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
     
     // Buscar dados reais dos contatos - OTIMIZADO: só processar se há chats
     const chatIds = chats.length > 0 ? chats.map(chat => chat.id?._serialized || chat.id || '').filter(id => id) : []
@@ -667,8 +674,50 @@
     
     // Usar dados do infinite scroll se ativado, senão usar props
     const activeChats = useInfiniteScroll ? infiniteChats : chats
-    const activeContacts = contacts 
+    const activeContacts = contacts
+    
+    // DEBUG: Log dados dos chats
+    console.log('🔍 [DEBUG] ConversationSidebar:', {
+      useInfiniteScroll,
+      infiniteChats: infiniteChats?.length || 0,
+      chats: chats?.length || 0,
+      activeChats: activeChats?.length || 0,
+      loading,
+      hasMore
+    })
+    // Usar loading adequado baseado no modo
     const activeLoading = useInfiniteScroll ? loading : isLoading
+    
+    // IntersectionObserver para scroll infinito
+    useEffect(() => {
+      if (!useInfiniteScroll || !loadMoreChats || !hasMoreChats || loadingMore) {
+        return
+      }
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const target = entries[0]
+          if (target.isIntersecting) {
+            console.log('🔄 [ConversationSidebar] Carregando mais chats...')
+            loadMoreChats()
+          }
+        },
+        {
+          threshold: 0.1,
+          rootMargin: '50px'
+        }
+      )
+      
+      if (loadMoreTriggerRef.current) {
+        observer.observe(loadMoreTriggerRef.current)
+      }
+      
+      return () => {
+        if (loadMoreTriggerRef.current) {
+          observer.unobserve(loadMoreTriggerRef.current)
+        }
+      }
+    }, [useInfiniteScroll, loadMoreChats, hasMoreChats, loadingMore])
     
     // Buscar dados reais dos contatos para fotos de perfil (sempre necessário)
     const activeChatIds = activeChats.map(chat => chat.id?._serialized || chat.id || '')
@@ -765,6 +814,11 @@
       ).slice(0, 3) // Limitar a 3 atendentes para não sobrecarregar
     }, [atendentes])
 
+    // DEBUG: Verificar filteredConversations
+    console.log('🔍 [DEBUG] Dados antes da transformação:', {
+      activeChats: activeChats?.slice(0, 3) // Primeiros 3 chats
+    })
+    
     // Memoizar a transformação de chats em conversations para evitar recálculos
     const conversations = useMemo(() => activeChats.map(chat => {
       const chatId = chat.id?._serialized || chat.id || ''
@@ -987,6 +1041,16 @@
         }
       })
     }, [conversations, searchQuery, activeFilter, selectedQueue, selectedTag, advancedFilters, hiddenChats, sortBy])
+    
+    // DEBUG: Log conversas filtradas
+    console.log('🔍 [DEBUG] Conversas processadas:', {
+      conversations: conversations?.length || 0,
+      filteredConversations: filteredConversations?.length || 0,
+      activeFilter,
+      searchQuery,
+      selectedQueue,
+      loading: activeLoading
+    })
 
     // Configurar polling de presença para chats visíveis - DESABILITADO para performance
     const pollingChatIds = filteredConversations.slice(0, 5).map(conv => conv.id)
@@ -1660,6 +1724,52 @@
               </motion.div>
             ))}
           </AnimatePresence>
+          
+          {/* Scroll Infinito - Trigger */}
+          {useInfiniteScroll && hasMoreChats && (
+            <div 
+              ref={loadMoreTriggerRef}
+              className="flex items-center justify-center py-4"
+            >
+              {loadingMore ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2 text-muted-foreground"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full"
+                  />
+                  <span className="text-sm font-medium">Carregando mais conversas...</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-xs text-muted-foreground px-4 py-2 rounded-full bg-accent/20"
+                >
+                  Role para carregar mais
+                </motion.div>
+              )}
+            </div>
+          )}
+          
+          {/* Indicador de fim da lista */}
+          {useInfiniteScroll && !hasMoreChats && filteredConversations.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-center py-6 text-xs text-muted-foreground"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-px bg-border"></div>
+                <span>Todas as conversas carregadas</span>
+                <div className="w-12 h-px bg-border"></div>
+              </div>
+            </motion.div>
+          )}
           
           {/* Loading indicator para scroll infinito */}
           {useInfiniteScroll && activeLoading && (
