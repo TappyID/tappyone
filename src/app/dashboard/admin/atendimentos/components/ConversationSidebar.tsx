@@ -719,8 +719,8 @@
       }
     }, [useInfiniteScroll, loadMoreChats, hasMoreChats, loadingMore])
     
-    // Buscar dados reais dos contatos para fotos de perfil (sempre necessário)
-    const activeChatIds = activeChats.map(chat => chat.id?._serialized || chat.id || '')
+    // OTIMIZAÇÃO: Carregar dados apenas dos primeiros 50 chats visíveis
+    const activeChatIds = activeChats.slice(0, 50).map(chat => chat.id?._serialized || chat.id || '')
     const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
     
     // Cache de tags por chatId - igual ao ChatArea para manter consistência
@@ -749,9 +749,9 @@
       }
     }, [])
     
-    // Buscar tags para todos os chatIds ativos
+    // OTIMIZAÇÃO: Buscar tags apenas dos primeiros 20 chats visíveis
     useEffect(() => {
-      activeChatIds.forEach(chatId => {
+      activeChatIds.slice(0, 20).forEach(chatId => {
         if (!tagsCache[chatId] && chatId.trim() !== '') {
           fetchTagsForChat(chatId)
         }
@@ -819,8 +819,8 @@
       activeChats: activeChats?.slice(0, 3) // Primeiros 3 chats
     })
     
-    // Memoizar a transformação de chats em conversations para evitar recálculos
-    const conversations = useMemo(() => activeChats.map(chat => {
+    // OTIMIZAÇÃO CRÍTICA: Processar apenas chats visíveis (primeiros 100)
+    const conversations = useMemo(() => activeChats.slice(0, 100).map(chat => {
       const chatId = chat.id?._serialized || chat.id || ''
       const name = getContactName(chat, activeContacts)
       const lastMessage = getLastMessage(chat)
@@ -876,11 +876,11 @@
       }
     }), [activeChats, contatosData, tagsCache, conexoes, filas, atendentes, kanbanInfo, agentesCache, conexaoFilaCache])
 
-    // Carregar informações dos agentes para chats visíveis
+    // OTIMIZAÇÃO: Carregar informações dos agentes apenas para 5 chats visíveis
     useEffect(() => {
       const loadAgentesInfo = async () => {
-        // Carregar apenas para os primeiros 10 chats (visíveis)
-        const visibleChats = activeChats.slice(0, 10)
+        // Carregar apenas para os primeiros 5 chats (visíveis)
+        const visibleChats = activeChats.slice(0, 5)
         
         for (const chat of visibleChats) {
           const chatId = chat.id?._serialized || chat.id || ''
@@ -895,11 +895,11 @@
       }
     }, [activeChats])
 
-    // Carregar informações de conexão/fila para chats visíveis
+    // OTIMIZAÇÃO: Carregar informações de conexão/fila apenas para 5 chats visíveis
     useEffect(() => {
       const loadConexaoFilaInfo = async () => {
-        // Carregar apenas para os primeiros 10 chats (visíveis)
-        const visibleChats = activeChats.slice(0, 10)
+        // Carregar apenas para os primeiros 5 chats (visíveis)
+        const visibleChats = activeChats.slice(0, 5)
         
         for (const chat of visibleChats) {
           const chatId = chat.id?._serialized || chat.id || ''
@@ -914,13 +914,13 @@
       }
     }, [activeChats])
 
-    // Carregar informações do Kanban apenas para chats visíveis (otimização)
+    // OTIMIZAÇÃO: Carregar informações do Kanban apenas para 5 chats visíveis
     useEffect(() => {
       const loadKanbanInfo = async () => {
         const newKanbanInfo: {[key: string]: any} = {}
         
-        // Carregar apenas para os primeiros 10 chats (visíveis)
-        const visibleChats = activeChats.slice(0, 10)
+        // Carregar apenas para os primeiros 5 chats (visíveis)
+        const visibleChats = activeChats.slice(0, 5)
         
         for (const chat of visibleChats) {
           const chatId = chat.id._serialized || chat.id
@@ -1052,14 +1052,14 @@
       loading: activeLoading
     })
 
-    // Configurar polling de presença para chats visíveis - DESABILITADO para performance
-    const pollingChatIds = filteredConversations.slice(0, 5).map(conv => conv.id)
+    // OTIMIZAÇÃO: Polling de presença TOTALMENTE DESABILITADO com 800+ chats
+    // const pollingChatIds = filteredConversations.slice(0, 5).map(conv => conv.id)
     
-    usePresencePolling({
-      chatIds: pollingChatIds,
-      enabled: false, // DESABILITADO temporariamente para melhorar performance
-      interval: 60000 // 60 segundos
-    })
+    // usePresencePolling({
+    //   chatIds: pollingChatIds,
+    //   enabled: false, // DESABILITADO para performance
+    //   interval: 60000 // 60 segundos
+    // })
 
     // Presença removida para melhorar performance
 
