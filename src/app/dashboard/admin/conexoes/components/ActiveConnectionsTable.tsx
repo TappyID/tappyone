@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   Eye, 
   Edit, 
@@ -70,6 +71,7 @@ export function ActiveConnectionsTable({
   onCreateConnection 
 }: ActiveConnectionsTableProps) {
   const { theme } = useTheme()
+  const { user, loading: authLoading } = useAuth()
   const [connections, setConnections] = useState<ActiveConnection[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -124,29 +126,38 @@ export function ActiveConnectionsTable({
       
       if (!token) {
         console.log('❌ [TOKEN] Token não encontrado no localStorage, redirecionando para login...')
-        // Redirecionar para login ou mostrar erro
         setError('Sessão expirada. Faça login novamente.')
         return
       }
-      
-      const wahaResponse = await fetch('/api/whatsapp/sessions', {
+
+      // Obter sessões ativas da WAHA via proxy API
+      const wahaResponse = await fetch('/api/waha/sessions', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       })
-      let wahaSessions: WhatsAppSession[] = []
       
-      if (wahaResponse.ok) {
-        wahaSessions = await wahaResponse.json()
-        console.log('🔍 [WAHA] Sessões WAHA obtidas:', wahaSessions)
-      } else {
-        console.error('❌ [WAHA] Erro ao buscar sessões WAHA:', wahaResponse.status)
-        const errorText = await wahaResponse.text()
-        console.error('❌ [WAHA] Erro detalhado:', errorText)
+      if (!wahaResponse.ok) {
+        console.error('🚨 [WAHA] Erro ao buscar sessões:', wahaResponse.status)
+        return
       }
+      
+      const wahaSessionsData = await wahaResponse.json()
+      const allWahaSessions = Array.isArray(wahaSessionsData) ? wahaSessionsData : []
+      
+      // 🔍 FILTRAR apenas sessões do usuário logado (usar apenas primeiros 8 chars + underscore)
+      const userPrefix = `user_${user.id.slice(0, 8)}_`
+      const wahaSessions = allWahaSessions.filter(session => 
+        session.name && session.name.startsWith(userPrefix)
+      )
+      
+      console.log('🔍 [WAHA] Total sessões WAHA:', allWahaSessions.length)
+      console.log('🔍 [WAHA] TODAS as sessões disponíveis:', allWahaSessions.map(s => s.name))
+      console.log('🔍 [WAHA] Sessões do usuário filtradas:', wahaSessions.length)
+      console.log('🔍 [WAHA] Prefixo do usuário:', userPrefix)
+      console.log('🔍 [WAHA] Sessões filtradas:', wahaSessions.map(s => s.name))
 
-      // Buscar conexões do backend
+      // Buscar conexões do backend (apenas do usuário atual)
       const backendResponse = await fetch('/api/connections', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -157,13 +168,33 @@ export function ActiveConnectionsTable({
       let backendConnections: any[] = []
       if (backendResponse.ok) {
         const backendData = await backendResponse.json()
-        backendConnections = backendData.connections || []
+        const allConnections = backendData.connections || []
+        
+        // Filtrar conexões apenas do usuário atual
+        if (user?.id) {
+          backendConnections = allConnections.filter((conn: any) => {
+            const sessionName = conn.session_name || conn.id
+            return sessionName.includes(`user_${user.id}`) || 
+                   sessionName.startsWith(`user_${user.id.slice(0, 8)}`)
+          })
+        } else {
+          // Se user.id não está disponível, usar todas as conexões temporariamente
+          console.warn('⚠️ [FILTER] User ID não disponível, usando todas as conexões')
+          backendConnections = allConnections
+        }
+        
+        console.log('🔍 [FILTER] Total connections from backend:', allConnections.length)
+        console.log('🔍 [FILTER] All backend connections:', allConnections.map(c => c.session_name || c.id))
+        console.log('🔍 [FILTER] User connections after filter:', backendConnections.length)
+        console.log('🔍 [FILTER] Filtered connections:', backendConnections.map(c => c.session_name || c.id))
+        console.log('🔍 [FILTER] User ID for filtering:', user?.id)
+        console.log('🔍 [FILTER] User object:', user)
       }
 
         // Combinar dados das duas APIs
       const activeConnections: ActiveConnection[] = []
       
-      console.log('📊 [DEBUG] Total WAHA sessions:', wahaSessions.length)
+      console.log('📊 [DEBUG] Total WAHA sessions (filtered):', wahaSessions.length)
       console.log('📊 [DEBUG] Total backend connections:', backendConnections.length)
 
       // Processar sessões WAHA
@@ -182,9 +213,11 @@ export function ActiveConnectionsTable({
           console.log('🔍 [TABLE] Modulation content:', backendConnection.modulation)
         }
 
-        // Se a sessão está ativa no WAHA mas não tem conexão no backend, sincronizar
-        if (session.status === 'WORKING' && !backendConnection) {
+        // Se a sessão está ativa no WAHA mas não tem conexão no backend, sincronizar (apenas uma vez por sessão)
+        const syncKey = `synced_${session.name}`
+        if (session.status === 'WORKING' && !backendConnection && !sessionStorage.getItem(syncKey)) {
           console.log(`🔄 [AUTO-SYNC] Sincronizando sessão ativa não registrada: ${session.name}`)
+          sessionStorage.setItem(syncKey, 'true')
           syncSessionInBackground(session.name)
         }
 
@@ -222,9 +255,24 @@ export function ActiveConnectionsTable({
         if (!hasValidModulation && session.status === 'WORKING') {
           try {
             const [chatsRes, contactsRes, groupsRes] = await Promise.all([
-              fetch(`/api/whatsapp/chats`).catch(() => null),
-              fetch(`/api/whatsapp/contacts`).catch(() => null),
-              fetch(`/api/whatsapp/groups`).catch(() => null)
+              fetch(`/api/whatsapp/chats`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }).catch(() => null),
+              fetch(`/api/whatsapp/contacts`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }).catch(() => null),
+              fetch(`/api/whatsapp/groups`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }).catch(() => null)
             ])
 
             const chats = chatsRes?.ok ? await chatsRes.json() : []
@@ -271,12 +319,18 @@ export function ActiveConnectionsTable({
   }
 
   useEffect(() => {
-    fetchConnections()
-    
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(fetchConnections, 30000)
-    return () => clearInterval(interval)
-  }, [])
+    // Aguardar auth loading terminar E user estar disponível
+    if (!authLoading && user?.id) {
+      console.log('🔐 [AUTH] Auth carregado, user ID:', user.id)
+      fetchConnections()
+      
+      // Atualizar a cada 30 segundos
+      const interval = setInterval(fetchConnections, 30000)
+      return () => clearInterval(interval)
+    } else {
+      console.log('🔐 [AUTH] Aguardando auth - loading:', authLoading, 'user ID:', user?.id)
+    }
+  }, [authLoading, user?.id])
 
   // Conectar sessão
   const handleConnectSession = async (connection: ActiveConnection) => {
@@ -498,10 +552,11 @@ export function ActiveConnectionsTable({
       
       if (response.ok) {
         console.log(`✅ [BACKGROUND-SYNC] Sessão ${sessionName} sincronizada com sucesso`)
-        // Recarregar conexões após sincronizar
-        setTimeout(() => fetchConnections(), 1000)
+        // NÃO recarregar automaticamente para evitar loop
+        console.log(`✅ [BACKGROUND-SYNC] Sessão ${sessionName} sincronizada, aguardando ação manual para reload`)
       } else {
         console.error(`❌ [BACKGROUND-SYNC] Erro ao sincronizar ${sessionName}:`, response.status)
+        sessionStorage.removeItem(`syncing_${sessionName}`)
       }
     } catch (error) {
       console.error(`❌ [BACKGROUND-SYNC] Erro na sincronização de ${sessionName}:`, error)

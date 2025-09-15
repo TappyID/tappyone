@@ -91,7 +91,10 @@ export function NewConnectionModal({ isOpen, onClose, onSuccess }: NewConnection
                 url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/api/webhooks/whatsapp`,
                 events: ['message', 'message.any'],
                 hmac: null,
-                retries: 3,
+                retries: {
+                  maxRetries: 3,
+                  delay: 1000
+                },
                 customHeaders: []
               }
             ]
