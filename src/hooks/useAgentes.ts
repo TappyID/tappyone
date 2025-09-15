@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081';
+const API_BASE_URL = '';
 
 export interface AgenteIa {
   id: string;
