@@ -14,7 +14,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'
+    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
     
     // Fazer proxy para o backend Go
     const response = await fetch(`${backendUrl}/api/whatsapp/messages/${messageId}/reaction`, {

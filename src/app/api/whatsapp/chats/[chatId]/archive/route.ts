@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.tappy.id'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
 
 export async function POST(
   request: NextRequest,

@@ -10,24 +10,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ChatId e arquivo são obrigatórios' }, { status: 400 })
     }
 
-    // Criar novo FormData com nome correto do campo
-    const backendFormData = new FormData()
-    backendFormData.append('image', file)
+    // Criar FormData para WAHA API
+    const wahaFormData = new FormData()
+    wahaFormData.append('chatId', chatId as string)
+    wahaFormData.append('file', file)
     if (formData.get('caption')) {
-      backendFormData.append('caption', formData.get('caption') as string)
+      wahaFormData.append('caption', formData.get('caption') as string)
     }
     
-    // Pegar o backend URL
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'
-    const token = request.headers.get('authorization')
+    // Usar WAHA API para envio direto de mídia
+    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+    const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
-    // Fazer proxy direto para o backend Go
-    const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/image`, {
+    // Fazer requisição direta para WAHA
+    const response = await fetch(`${wahaUrl}/api/sendImage`, {
       method: 'POST',
       headers: {
-        'Authorization': token || ''
+        'X-API-Key': wahaApiKey
       },
-      body: backendFormData
+      body: wahaFormData
     })
 
     if (!response.ok) {

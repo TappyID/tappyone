@@ -12,25 +12,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ChatId e arquivo são obrigatórios' }, { status: 400 })
     }
 
-    // Upload do arquivo para o Vercel Blob Storage
-    const uploadResult = await uploadToBlob(file)
-    const blobUrl = uploadResult.url
+    // Usar WAHA API para envio direto de arquivos
+    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+    const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
-    // Enviar URL do arquivo para o backend Go
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081/'
-    const token = request.headers.get('authorization')
+    // Criar FormData para WAHA
+    const wahaFormData = new FormData()
+    wahaFormData.append('chatId', chatId as string)
+    wahaFormData.append('file', file)
+    if (formData.get('caption')) {
+      wahaFormData.append('caption', formData.get('caption') as string)
+    }
 
-    const response = await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/file`, {
+    const response = await fetch(`${wahaUrl}/api/sendFile`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token || '',
+        'X-API-Key': wahaApiKey
       },
-      body: JSON.stringify({
-        fileUrl: blobUrl,
-        filename: file.name,
-        caption: caption,
-      }),
+      body: wahaFormData,
     })
 
     if (!response.ok) {
