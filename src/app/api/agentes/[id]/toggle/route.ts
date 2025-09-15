@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081';
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cookieStore = cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'No token found' }, { status: 401 });
     }
+
+    const token = authHeader.substring(7);
 
     const response = await fetch(`${BACKEND_URL}/api/agentes/${params.id}/toggle`, {
       method: 'POST',
