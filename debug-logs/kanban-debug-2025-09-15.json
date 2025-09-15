@@ -1,0 +1,92 @@
+[
+  {
+    "timestamp": "2025-09-15T00:15:41.444Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:41.445Z",
+    "component": "Kanban",
+    "action": "loadContatos_started",
+    "data": {
+      "timestamp": "2025-09-15T00:15:41.445Z"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:41.496Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 0
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:45.408Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:45.418Z",
+    "component": "Kanban",
+    "action": "loadContatos_config",
+    "data": {
+      "hasToken": true,
+      "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18",
+      "timestamp": "2025-09-15T00:15:45.418Z"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:45.981Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 1,
+      "uniqueCardIds": 1,
+      "sampleCardIds": [
+        "demo-1"
+      ],
+      "allCardIds": [
+        "demo-1"
+      ]
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:47.550Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_response",
+    "data": {},
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-15T00:15:55.528Z",
+    "component": "Kanban",
+    "action": "loadContatos_response",
+    "data": {
+      "status": 200,
+      "ok": true,
+      "timestamp": "2025-09-15T00:15:55.528Z"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  }
+]

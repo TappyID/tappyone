@@ -575,7 +575,7 @@ export function useWhatsAppData() {
       loadInitialData()
       connectWebSocketToWAHA() // Conectar WebSocket após carregar dados
     }
-  }, [user, loadInitialData, connectWebSocketToWAHA])
+  }, [user]) // Remover dependências que causam loop
 
   // Polling inteligente - atualiza dados a cada 5 segundos
   useEffect(() => {
@@ -587,7 +587,7 @@ export function useWhatsAppData() {
     }, 30000) // 30 segundos - otimizado
 
     return () => clearInterval(interval)
-  }, [user, chats.length, loadInitialData])
+  }, [user, chats.length]) // Remover loadInitialData para evitar loop
 
   // Função para resetar retry count
   const resetRetry = useCallback(() => {
