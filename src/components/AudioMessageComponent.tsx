@@ -24,9 +24,23 @@ export default function AudioMessageComponent({ message, onTranscribe }: AudioMe
     setError(null)
 
     try {
+      // Corrigir URL para produção se necessário
+      let audioUrl = message.mediaUrl
+      if (audioUrl.includes('localhost:3000') && typeof window !== 'undefined') {
+        audioUrl = audioUrl.replace('http://localhost:3000', window.location.origin)
+      }
+      
+      console.log('🎤 [Transcrição] URL do áudio:', audioUrl)
+
       // Baixar o arquivo de áudio
-      const audioResponse = await fetch(message.mediaUrl)
+      const audioResponse = await fetch(audioUrl)
+      
+      if (!audioResponse.ok) {
+        throw new Error(`Erro ao baixar áudio: ${audioResponse.status}`)
+      }
+      
       const audioBlob = await audioResponse.blob()
+      console.log('🎤 [Transcrição] Áudio baixado:', audioBlob.size, 'bytes')
       
       // Criar FormData para enviar para a API de transcrição
       const formData = new FormData()
