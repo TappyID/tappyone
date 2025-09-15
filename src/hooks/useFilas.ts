@@ -30,14 +30,12 @@ interface FilaContato {
 }
 
 export function useFilas() {
-  console.log('🏷️ [useFilas] Hook inicializado')
   
   const { token } = useAuth()
   const [filas, setFilas] = useState<Fila[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  console.log('🏷️ [useFilas] Token do useAuth:', token ? 'Presente' : 'Ausente')
 
   // Usar sempre as rotas proxy do Next.js para evitar CORS
   const baseURL = '/api/filas'
@@ -53,9 +51,7 @@ export function useFilas() {
       setLoading(true)
       setError(null)
       
-      console.log(`🏷️ [useFilas] Buscando filas...`)
-      console.log(`🏷️ [useFilas] URL: ${baseURL}`)
-      console.log(`🏷️ [useFilas] Token: ${token ? 'Presente' : 'Ausente'}`)
+      
       
       const response = await fetch(baseURL, {
         headers: {
@@ -64,23 +60,18 @@ export function useFilas() {
         },
       })
 
-      console.log(`🏷️ [useFilas] Response status: ${response.status}`)
-      console.log(`🏷️ [useFilas] Response ok: ${response.ok}`)
+     
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.log(`🏷️ [useFilas] Error response: ${errorText}`)
         throw new Error(`Erro ao buscar filas: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log(`🏷️ [useFilas] Response completa:`, result)
       
       const data = result.success ? result.data : result
-      console.log(`🏷️ [useFilas] Data extraída:`, data)
       
       const filasArray = Array.isArray(data) ? data : []
-      console.log(`🏷️ [useFilas] Filas processadas:`, filasArray)
       
       setFilas(filasArray)
     } catch (err) {
@@ -225,7 +216,6 @@ export function useFilas() {
   }, [token, baseURL, fetchFilas])
 
   useEffect(() => {
-    console.log('🏷️ [useFilas] useEffect executando...')
     fetchFilas()
   }, [fetchFilas])
 

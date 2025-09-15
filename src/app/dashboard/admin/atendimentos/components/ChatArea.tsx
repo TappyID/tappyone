@@ -1512,13 +1512,11 @@ export default function ChatArea({
 
           <button
             onClick={() => {
-              // Navegar para página de contatos com filtro
-              if (conversation?.id) {
-                window.open(`/dashboard/admin/contatos?search=${encodeURIComponent(conversation.id)}`, '_blank')
-              }
+              // Abrir modal de criação de contato
+              setShowCreateContactModal(true)
             }}
             className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
-            title="Contato"
+            title="Contato / Lead"
           >
             <UserCheck className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge de status do contato */}

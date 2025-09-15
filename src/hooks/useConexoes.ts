@@ -20,14 +20,12 @@ interface Conexao {
 }
 
 export function useConexoes() {
-  console.log('🔗 [useConexoes] Hook inicializado')
   
   const { token } = useAuth()
   const [conexoes, setConexoes] = useState<Conexao[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  console.log('🔗 [useConexoes] Token do useAuth:', token ? 'Presente' : 'Ausente')
 
   // Usar sempre as rotas proxy do Next.js para evitar CORS
   const baseURL = '/api/connections'
@@ -43,10 +41,6 @@ export function useConexoes() {
       setLoading(true)
       setError(null)
       
-      console.log(`🔗 [useConexoes] Buscando conexões ativas...`)
-      console.log(`🔗 [useConexoes] URL: ${baseURL}`)
-      console.log(`🔗 [useConexoes] Token: ${token ? token.substring(0, 30) + '...' : 'Ausente'}`)
-      
       const response = await fetch(baseURL, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -54,24 +48,17 @@ export function useConexoes() {
         },
       })
 
-      console.log(`🔗 [useConexoes] Response status: ${response.status}`)
-      console.log(`🔗 [useConexoes] Response ok: ${response.ok}`)
-
       if (!response.ok) {
         const errorText = await response.text()
-        console.log(`🔗 [useConexoes] Error response: ${errorText}`)
         throw new Error(`Erro ao buscar conexões: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log(`🔗 [useConexoes] Response completa:`, result)
       
       // A API retorna { connections: [...] }, não { success: true, data: [...] }
       const data = result.connections || result.data || result
-      console.log(`🔗 [useConexoes] Data extraída:`, data)
       
       const conexoesAtivas = Array.isArray(data) ? data.filter(c => c.status === 'connected') : []
-      console.log(`🔗 [useConexoes] Conexões ativas filtradas:`, conexoesAtivas)
       
       setConexoes(conexoesAtivas)
     } catch (err) {
@@ -93,7 +80,6 @@ export function useConexoes() {
   }, [conexoes])
 
   useEffect(() => {
-    console.log('🔗 [useConexoes] useEffect executando...')
     fetchConexoes()
   }, [fetchConexoes])
 

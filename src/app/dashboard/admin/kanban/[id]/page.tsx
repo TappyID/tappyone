@@ -2035,16 +2035,10 @@ onError={(e) => {
       
           {/* Conexão/Fila */}
           <motion.button 
-            onClick={() => {
-              console.log('🔥 1. Clicou no botão')
-              console.log('🔥 2. onOpenConexaoFila existe?', typeof onOpenConexaoFila)
-              console.log('🔥 3. card:', card)
-              try {
-                onOpenConexaoFila(card)
-                console.log('🔥 4. onOpenConexaoFila executou!')
-              } catch (error) {
-                console.error('🔥 ERRO ao executar onOpenConexaoFila:', error)
-              }
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onOpenConexaoFila(card)
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               theme === 'dark' 
@@ -4197,12 +4191,22 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
       console.log('✅ Modal de excluir card deve abrir agora');
     };
     
+    const handleOpenConexaoFila = (event: CustomEvent) => {
+      const card = event.detail;
+      console.log('🔗 EVENT LISTENER EXECUTOU! Card:', card);
+      console.log('🔗 Estado atual conexaoFilaModal:', conexaoFilaModal);
+      setConexaoFilaModal({ isOpen: true, card });
+      console.log('🔗 Estado setado para: { isOpen: true, card }');
+    };
+
     window.addEventListener('openEditContactModal', handleOpenEditContact as EventListener);
     window.addEventListener('openDeleteCardModal', handleOpenDeleteCard as EventListener);
+    window.addEventListener('openConexaoFilaModal', handleOpenConexaoFila as EventListener);
     
     return () => {
       window.removeEventListener('openEditContactModal', handleOpenEditContact as EventListener);
       window.removeEventListener('openDeleteCardModal', handleOpenDeleteCard as EventListener);
+      window.removeEventListener('openConexaoFilaModal', handleOpenConexaoFila as EventListener);
     };
   }, [])
 
@@ -5337,6 +5341,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
       />
 
       {/* Modal de Conexão e Fila */}
+      {console.log('🔗 RENDERIZANDO ConexaoFilaModal com:', { isOpen: conexaoFilaModal.isOpen, card: conexaoFilaModal.card })}
       <ConexaoFilaModal
         isOpen={conexaoFilaModal.isOpen}
         onClose={() => setConexaoFilaModal({ isOpen: false, card: null })}

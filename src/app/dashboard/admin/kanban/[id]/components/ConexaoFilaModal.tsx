@@ -28,6 +28,7 @@ interface ConexaoFilaModalProps {
 }
 
 export default function ConexaoFilaModal({ isOpen, onClose, card }: ConexaoFilaModalProps) {
+  console.log('🔗🔗🔗 MODAL CONEXAO PROPS:', { isOpen, card })
   const { theme } = useTheme()
   
   // Extrair número do contato

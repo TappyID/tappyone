@@ -119,7 +119,6 @@ export function useInfiniteChats() {
             if (pictureResponse.ok) {
               const pictureData = await pictureResponse.json()
               profilePictureUrl = pictureData.url
-              console.log(`✅ Foto encontrada para ${chat.name || chatId}:`, profilePictureUrl)
             } else {
               console.warn(`❌ Foto não encontrada para ${chat.name || chatId} (${pictureResponse.status}):`, chatId)
             }

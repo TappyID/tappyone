@@ -13,7 +13,7 @@ import {
   Check
 } from 'lucide-react'
 
-type TabType = 'chats' | 'contatos' | 'grupos' | 'filas'
+type TabType = 'chats' | 'grupos' | 'filas'
 
 interface Connection {
   id: string
@@ -42,13 +42,15 @@ export function EditConnectionModal({
 
   // State para seleções
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set())
-  const [selectedContatos, setSelectedContatos] = useState<Set<string>>(new Set())
   const [selectedGrupos, setSelectedGrupos] = useState<Set<string>>(new Set())
   const [selectedFilas, setSelectedFilas] = useState<Set<string>>(new Set())
 
+  // State para datas de importação
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
+
   // State para dados
   const [chats, setChats] = useState<any[]>([])
-  const [contatos, setContatos] = useState<any[]>([])
   const [grupos, setGrupos] = useState<any[]>([])
   const [filas, setFilas] = useState<any[]>([])
   const [loadingData, setLoadingData] = useState(false)
@@ -106,11 +108,6 @@ export function EditConnectionModal({
             console.log('✅ [LOAD CONFIG] Chats pré-selecionados:', modulation.selectedChats)
           }
           
-          if (Array.isArray(modulation.selectedContacts)) {
-            setSelectedContatos(new Set(modulation.selectedContacts))
-            console.log('✅ [LOAD CONFIG] Contatos pré-selecionados:', modulation.selectedContacts)
-          }
-          
           if (Array.isArray(modulation.selectedGroups)) {
             setSelectedGrupos(new Set(modulation.selectedGroups))
             console.log('✅ [LOAD CONFIG] Grupos pré-selecionados:', modulation.selectedGroups)
@@ -136,7 +133,6 @@ export function EditConnectionModal({
     try {
       await Promise.all([
         fetchChats(),
-        fetchContatos(), 
         fetchGrupos(),
         fetchFilas()
       ])
@@ -206,23 +202,7 @@ export function EditConnectionModal({
     }
   }
 
-  const fetchContatos = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/contatos', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setContatos(Array.isArray(data) ? data : [])
-      }
-    } catch (error) {
-      console.error('Erro ao buscar contatos:', error)
-    }
-  }
+
 
   const fetchGrupos = async () => {
     try {
@@ -259,27 +239,27 @@ export function EditConnectionModal({
       
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ [GRUPOS] Dados recebidos:', data)
+        console.log('✅ [GRUPOS] Dados recebidos RAW:', JSON.stringify(data, null, 2))
+        console.log('✅ [GRUPOS] Tipo dos dados:', typeof data)
+        console.log('✅ [GRUPOS] É array?', Array.isArray(data))
+        console.log('✅ [GRUPOS] Length:', data?.length)
+        
+        // Verificar estrutura dos grupos
+        if (Array.isArray(data) && data.length > 0) {
+          console.log('✅ [GRUPOS] Primeiro item:', JSON.stringify(data[0], null, 2))
+          console.log('✅ [GRUPOS] Keys do primeiro item:', Object.keys(data[0]))
+        }
+        
         setGrupos(Array.isArray(data) ? data : [])
       } else {
+        const errorText = await response.text()
         console.log('❌ [GRUPOS] Erro na resposta:', response.status, response.statusText)
-        // Criar dados mock para teste
-        const mockGrupos = [
-          { id: 'grupo1@g.us', name: 'Grupo Teste 1', membros: 5 },
-          { id: 'grupo2@g.us', name: 'Grupo Teste 2', membros: 10 }
-        ]
-        setGrupos(mockGrupos)
-        console.log('✅ [GRUPOS] Usando dados mock:', mockGrupos)
+        console.log('❌ [GRUPOS] Texto do erro:', errorText)
+        setGrupos([])
       }
     } catch (error) {
       console.error('❌ [GRUPOS] Erro ao buscar grupos:', error)
-      // Fallback para dados mock
-      const mockGrupos = [
-        { id: 'grupo1@g.us', name: 'Grupo Teste 1', membros: 5 },
-        { id: 'grupo2@g.us', name: 'Grupo Teste 2', membros: 10 }
-      ]
-      setGrupos(mockGrupos)
-      console.log('✅ [GRUPOS] Fallback para dados mock:', mockGrupos)
+      setGrupos([])
     }
   }
 
@@ -297,8 +277,29 @@ export function EditConnectionModal({
         console.log('✅ [FILAS] Dados recebidos:', data)
         // A API retorna {data: [...], success: true}
         const filasData = data.data || data
-        setFilas(Array.isArray(filasData) ? filasData : [])
-        console.log('✅ [FILAS] Filas processadas:', filasData.length)
+        
+        // Os atendentes já vêm na resposta da API /api/filas
+        console.log('🔍 [FILAS] Primeira fila completa:', filasData[0])
+        console.log('🔍 [FILAS] Atendentes da primeira fila:', filasData[0]?.atendentes)
+        if (filasData[0]?.atendentes?.length > 0) {
+          console.log('🔍 [FILAS] Primeiro atendente estrutura:', filasData[0].atendentes[0])
+          console.log('🔍 [FILAS] Keys do primeiro atendente:', Object.keys(filasData[0].atendentes[0]))
+        }
+        
+        const filasComAtendentes = filasData.map((fila: any) => {
+          console.log(`🔍 [FILA ${fila.nome}] Array atendentes:`, fila.atendentes)
+          console.log(`🔍 [FILA ${fila.nome}] Quantidade:`, fila.atendentes?.length)
+          if (fila.atendentes?.length > 0) {
+            console.log(`🔍 [FILA ${fila.nome}] Primeiro atendente:`, fila.atendentes[0])
+          }
+          return {
+            ...fila,
+            atendentes: Array.isArray(fila.atendentes) ? fila.atendentes : []
+          }
+        })
+        
+        setFilas(Array.isArray(filasComAtendentes) ? filasComAtendentes : [])
+        console.log('✅ [FILAS] Filas com atendentes processadas:', filasComAtendentes.length)
       }
     } catch (error) {
       console.error('Erro ao buscar filas:', error)
@@ -311,7 +312,6 @@ export function EditConnectionModal({
   const handleSave = () => {
     const modulation = {
       selectedChats: Array.from(selectedChats),
-      selectedContatos: [],
       selectedGrupos: Array.from(selectedGrupos),
       selectedFilas: Array.from(selectedFilas)
     }
@@ -407,7 +407,7 @@ export function EditConnectionModal({
             <p className={`text-sm ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
             }`}>
-              Selecione chats, contatos e filas para modular a conexão
+              Selecione chats, grupos e filas para modular a conexão
             </p>
           </div>
           <button
@@ -456,23 +456,66 @@ export function EditConnectionModal({
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search e Filtros de Data */}
         <div className={`px-6 py-4 border-b ${
           theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
         }`}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={`Buscar ${activeTab}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 border rounded-lg ${
-                theme === 'dark' 
-                  ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-            />
+          <div className="space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder={`Buscar ${activeTab}...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg ${
+                  theme === 'dark' 
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
+
+            {/* Filtros de Data para Chats */}
+            {activeTab === 'chats' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Data Início
+                  </label>
+                  <input
+                    type="date"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-white' 
+                        : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Data Fim
+                  </label>
+                  <input
+                    type="date"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-white' 
+                        : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -524,6 +567,36 @@ export function EditConnectionModal({
                             {item.descricao}
                           </p>
                         )}
+                        {item.atendentes && item.atendentes.length > 0 && (
+                          <div className="mt-2">
+                            <p className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                              Atendentes ({item.atendentes.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {item.atendentes.slice(0, 3).map((atendente: any, index: number) => (
+                                <span
+                                  key={atendente.id || index}
+                                  className={`px-2 py-1 text-xs rounded-full ${
+                                    theme === 'dark' 
+                                      ? 'bg-blue-900/30 text-blue-300' 
+                                      : 'bg-blue-100 text-blue-700'
+                                  }`}
+                                >
+                                  {atendente.usuario?.nome || atendente.usuario?.email || 'Sem nome'}
+                                </span>
+                              ))}
+                              {item.atendentes.length > 3 && (
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  theme === 'dark' 
+                                    ? 'bg-gray-700 text-gray-300' 
+                                    : 'bg-gray-200 text-gray-600'
+                                }`}>
+                                  +{item.atendentes.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {item.cor && (
@@ -554,7 +627,7 @@ export function EditConnectionModal({
             theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
           }`}>
             Filas: {selectedFilas.size} | Chats: {selectedChats.size} | 
-            Contatos: {selectedContatos.size} | Grupos: {selectedGrupos.size}
+             | Grupos: {selectedGrupos.size}
           </div>
           <div className="flex gap-3">
             <button

@@ -77,9 +77,9 @@ export function ActiveConnectionsTable({
   const fetchFilasNames = async (filaIds: string[]): Promise<string[]> => {
     try {
       const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
+      console.log('🔍 [FILAS] Buscando filas via proxy API local')
       
-      const response = await fetch(`${backendUrl}/api/filas`, {
+      const response = await fetch('/api/filas', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

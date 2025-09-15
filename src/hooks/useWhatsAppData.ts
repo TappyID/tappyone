@@ -127,9 +127,9 @@ export function useWhatsAppData() {
   // Conectar WebSocket quando sessão WAHA for obtida
   const connectWebSocketToWAHA = useCallback(async () => {
     try {
-      // Buscar sessão ativa da WAHA para este usuário
+      // Buscar sessão ativa da WAHA para este usuário via proxy API
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connections/`, {
+      const response = await fetch('/api/connections/', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       

@@ -76,11 +76,9 @@ export function useContatoData(chatIds: string[]) {
         throw new Error('Token não encontrado')
       }
       
-      console.log(`🔑 [useContatoData] Token encontrado para ${chatId}`)
 
       // Extrair número do telefone do chatId (mesmo formato do Kanban)
       const numeroTelefone = chatId.replace('@c.us', '').replace('@g.us', '')
-      console.log(`🔍 [useContatoData] Buscando dados para número: ${numeroTelefone}`)
 
       // Buscar contato base pelo número do telefone
       const contatoResponse = await fetch(`/api/contatos?numero_telefone=${numeroTelefone}`, {
@@ -94,11 +92,9 @@ export function useContatoData(chatIds: string[]) {
       if (contatoResponse.ok) {
         const contatos = await contatoResponse.json()
         contatoData = contatos.length > 0 ? contatos[0] : null
-        console.log(`📱 [useContatoData] Contato encontrado:`, contatoData?.id || 'Não encontrado')
       }
 
       if (!contatoData) {
-        console.log(`ℹ️ [useContatoData] Chat sem contato CRM: ${chatId}`)
         return null
       }
 

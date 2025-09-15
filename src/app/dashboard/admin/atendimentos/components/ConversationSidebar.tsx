@@ -679,22 +679,7 @@
       
         // Debug: Log dados do contato
         if (contatoData) {
-          console.log(`🔍 [SIDEBAR] Dados do contato ${chatId}:`, {
-            id: contatoData.id,
-            tagsFromCache: contatoTags,
-            tagsFromCacheLength: contatoTags?.length || 0,
-            tagsFromCacheRaw: JSON.stringify(contatoTags),
-            fila: contatoData.fila,
-            chatQueue: chatQueue,
-            hasQueue: !!chatQueue,
-            orcamento: contatoData.orcamento,
-            orcamentoValor: contatoData.orcamento?.valor,
-            orcamentoValorTotal: (contatoData.orcamento as any)?.valorTotal,
-            fullOrcamento: JSON.stringify(contatoData.orcamento),
-            agendamento: contatoData.agendamento,
-            agendamentoTitulo: (contatoData.agendamento as any)?.titulo,
-            fullAgendamento: JSON.stringify(contatoData.agendamento)
-          })
+         
         } else {
           }
         

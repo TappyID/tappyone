@@ -56,8 +56,19 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
+   
     
-    return NextResponse.json(data)
+    // Mapear dados do WAHA para formato esperado pelo frontend
+    const mappedGroups = Array.isArray(data) ? data.map(group => ({
+      id: group.JID || group.id,
+      name: group.Name || group.name,
+      membros: group.ParticipantCount || 0,
+      topic: group.Topic,
+      created: group.GroupCreated,
+      owner: group.OwnerJID
+    })) : []
+    
+    return NextResponse.json(mappedGroups)
   } catch (error) {
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

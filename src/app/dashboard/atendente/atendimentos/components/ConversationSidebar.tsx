@@ -336,21 +336,6 @@
                 ? JSON.parse(currentConnection.modulation) 
                 : currentConnection.modulation
               
-              console.log('✅ [CONNECTIONS] Dados recebidos do backend:', {
-                connections: [
-                  {
-                    id: 'dad31f0c-411a-409c-9787-24816efe9253',
-                    user_id: '3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18',
-                    platform: 'whatsapp',
-                    status: 'connected',
-                    session_name: 'user_3a24ed72_1757352414251',
-                    modulation: modulation,
-                  },
-                ],
-              })
-              console.log('🔍 [MODULATION] Modulation completa após parse:', JSON.stringify(modulation, null, 2))
-              console.log('🔍 [MODULATION] selectedChats:', modulation?.selectedChats)
-              console.log('🔍 [MODULATION] selectedFilas:', modulation?.selectedFilas)
               return modulation
             }
           }
