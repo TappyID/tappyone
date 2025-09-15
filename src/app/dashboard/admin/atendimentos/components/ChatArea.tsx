@@ -820,8 +820,7 @@ export default function ChatArea({
         setSelectedMediaFile(null)
         setSelectedMediaType(null)
         
-        // Forçar reload das mensagens
-        window.location.reload()
+        // Não forçar reload - deixar WebSocket/polling atualizar naturalmente
       } else {
         const errorText = await response.text()
         console.error('❌ Erro da API:', errorText)

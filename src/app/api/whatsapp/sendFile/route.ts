@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadToBlob } from '@/lib/blob-storage'
+import { put } from '@vercel/blob'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,24 +12,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ChatId e arquivo são obrigatórios' }, { status: 400 })
     }
 
-    // Usar WAHA API para envio direto de arquivos
+    // Upload do arquivo para Vercel Blob Storage
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substring(2, 15)
+    const extension = file.name.split('.').pop()
+    const fileName = `file/${timestamp}_${randomId}.${extension}`
+    
+    const blob = await put(fileName, file, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
+
+    // Usar WAHA API diretamente com formato correto
     const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
     const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
 
-    // Criar FormData para WAHA
-    const wahaFormData = new FormData()
-    wahaFormData.append('chatId', chatId as string)
-    wahaFormData.append('file', file)
-    if (formData.get('caption')) {
-      wahaFormData.append('caption', formData.get('caption') as string)
+    // Payload no formato correto do WAHA para arquivos
+    const payload: any = {
+      chatId: chatId as string,
+      file: {
+        mimetype: file.type || 'application/octet-stream',
+        filename: file.name,
+        url: blob.url
+      },
+      session: 'user_3a24ed72_1757773035131'
     }
 
+    if (caption) {
+      payload.caption = caption
+    }
+
+    // Fazer requisição direta para WAHA
     const response = await fetch(`${wahaUrl}/api/sendFile`, {
       method: 'POST',
       headers: {
-        'X-API-Key': wahaApiKey
+        'X-API-Key': wahaApiKey,
+        'Content-Type': 'application/json'
       },
-      body: wahaFormData,
+      body: JSON.stringify(payload)
     })
 
     if (!response.ok) {

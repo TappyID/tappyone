@@ -1,34 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const chatId = formData.get('chatId')
-    const file = formData.get('file')
+    const file = formData.get('file') as File
+    const caption = formData.get('caption') as string
     
     if (!chatId || !file) {
       return NextResponse.json({ error: 'ChatId e arquivo são obrigatórios' }, { status: 400 })
     }
 
-    // Criar FormData para WAHA API
-    const wahaFormData = new FormData()
-    wahaFormData.append('chatId', chatId as string)
-    wahaFormData.append('file', file)
-    if (formData.get('caption')) {
-      wahaFormData.append('caption', formData.get('caption') as string)
-    }
+    // Upload do arquivo para Vercel Blob Storage
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substring(2, 15)
+    const extension = file.name.split('.').pop()
+    const fileName = `image/${timestamp}_${randomId}.${extension}`
     
-    // Usar WAHA API para envio direto de mídia
+    const blob = await put(fileName, file, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
+
+    // Usar WAHA API diretamente com formato correto
     const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
     const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
+
+    // Payload no formato correto do WAHA
+    const payload: any = {
+      chatId: chatId as string,
+      file: {
+        mimetype: file.type || 'image/jpeg',
+        filename: file.name,
+        url: blob.url
+      },
+      session: 'user_3a24ed72_1757773035131'
+    }
+
+    if (caption) {
+      payload.caption = caption
+    }
 
     // Fazer requisição direta para WAHA
     const response = await fetch(`${wahaUrl}/api/sendImage`, {
       method: 'POST',
       headers: {
-        'X-API-Key': wahaApiKey
+        'X-API-Key': wahaApiKey,
+        'Content-Type': 'application/json'
       },
-      body: wahaFormData
+      body: JSON.stringify(payload)
     })
 
     if (!response.ok) {
