@@ -11,9 +11,16 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const queryParams = url.searchParams.toString()
-    const backendUrl = queryParams 
-      ? `${BACKEND_URL}/api/respostas-rapidas/?${queryParams}`
-      : `${BACKEND_URL}/api/respostas-rapidas/`
+    
+    // Forçar inclusão das ações no GET
+    const includeActions = 'include_acoes=true'
+    const finalQueryParams = queryParams 
+      ? `${queryParams}&${includeActions}`
+      : includeActions
+    
+    const backendUrl = `${BACKEND_URL}/api/respostas-rapidas/?${finalQueryParams}`
+    
+    console.log('🔍 [RESPOSTAS-RAPIDAS] GET - URL backend:', backendUrl)
 
     const response = await fetch(backendUrl, {
       method: 'GET',

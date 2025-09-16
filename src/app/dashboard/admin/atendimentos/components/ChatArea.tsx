@@ -185,6 +185,7 @@ export default function ChatArea({
   // Extrair chatId primeiro
   const chatId = useMemo(() => extractChatId(conversation), [conversation])
   
+  
   const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
   const { tags: contatoTags, updateContatoTags, fetchContatoTags } = useContatoTags(chatId)
@@ -1740,16 +1741,46 @@ export default function ChatArea({
                 >
                   {/* Renderizar conteúdo da mensagem com mídia */}
                   
-                  
-                  
+               
                   {/* Verificar se é localização */}
-                  {msg.type === 'location' || (msg as any).location || 
-                   (msg.content && (
-                     msg.content.toLowerCase().includes('latitude') || 
-                     msg.content.toLowerCase().includes('localização') ||
-                     msg.content.toLowerCase().includes('location')
-                   )) ? (
+                  {(() => {
+                    const isLocation = msg.type === 'location' || (msg as any).location || 
+                     (msg.content && (
+                       msg.content.toLowerCase().includes('latitude') || 
+                       msg.content.toLowerCase().includes('localização') ||
+                       msg.content.toLowerCase().includes('location')
+                     ))
+                    
+                    // 🔍 DEBUG APENAS PARA LOCATION REAL
+                    if (msg.type === 'location' || (msg as any).latitude || (msg as any).longitude || (msg as any).location || 
+                        (msg.content && msg.content.includes('Rua Isaltino'))) {
+                      console.log('🗺️ LOCATION ENCONTRADA!:', {
+                        ...msg,
+                        allKeys: Object.keys(msg as any),
+                        hasLatitude: !!(msg as any).latitude,
+                        hasLongitude: !!(msg as any).longitude,
+                        body: (msg as any).body,
+                        lat: (msg as any).lat,
+                        lng: (msg as any).lng
+                      })
+                    }
+                    
+                    return isLocation
+                  })() ? (
                     <div className="mb-2">
+                      {/* 🔍 DEBUG VISUAL - Indicador LOCATION na mensagem */}
+                      <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded text-xs">
+                        <div className="font-bold text-green-800">📍 LOCATION DEBUG:</div>
+                        <div>Type: {msg.type} → isLocation: {String(msg.type === 'location' || (msg as any).location || 
+                         (msg.content && (
+                           msg.content.toLowerCase().includes('latitude') || 
+                           msg.content.toLowerCase().includes('localização') ||
+                           msg.content.toLowerCase().includes('location')
+                         )))}</div>
+                        <div>Has .location: {String(!!(msg as any).location)}</div>
+                        <div>Has .latitude: {String(!!(msg as any).latitude)}</div>
+                        <div>Content: {msg.content?.substring(0, 50)}...</div>
+                      </div>
                       <div className={`flex items-center gap-3 p-3 rounded-lg ${
                         msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-gray-100 dark:bg-gray-200 border border-gray-300'
                       }`}>
@@ -1796,9 +1827,38 @@ export default function ChatArea({
                         </button>
                       </div>
                     </div>
-                  ) : msg.type === 'poll' || (msg as any).poll || 
-                   (msg.content && msg.content.toLowerCase().includes('enquete')) ? (
+                  ) : (() => {
+                    const isPoll = msg.type === 'poll' || (msg as any).poll || 
+                     (msg.content && (
+                       msg.content.toLowerCase().includes('enquete') ||
+                       // 📊 Detectar listas numeradas com emojis
+                       (msg.content.includes('1️⃣') && msg.content.includes('2️⃣')) ||
+                       // 📋 Padrões de formulário/questionário
+                       (msg.content.includes('Me conte:') && msg.content.includes('?')) ||
+                       (msg.content.includes('Qual ') && msg.content.includes('?') && msg.content.includes('\n'))
+                     ))
+                    
+                    // 🔍 DEBUG APENAS PARA POLL REAL
+                    if (msg.type === 'poll' || (msg as any).poll || (msg as any).pollData || 
+                        (msg.content && (msg.content.includes('?') || msg.content.toLowerCase().includes('enquete')))) {
+                    
+                    }
+                    
+                    return isPoll
+                  })() ? (
                     <div className="mb-2">
+                      {/* 🔍 DEBUG VISUAL - Indicador POLL na mensagem */}
+                      <div className="mb-2 p-2 bg-purple-100 border border-purple-300 rounded text-xs">
+                        <div className="font-bold text-purple-800">📊 POLL DEBUG:</div>
+                        <div>Type: {msg.type} → isPoll: {String(msg.type === 'poll' || (msg as any).poll || 
+                         (msg.content && (
+                           msg.content.toLowerCase().includes('enquete') ||
+                           (msg.content.includes('1️⃣') && msg.content.includes('2️⃣')) ||
+                           (msg.content.includes('Me conte:') && msg.content.includes('?')) ||
+                           (msg.content.includes('Qual ') && msg.content.includes('?') && msg.content.includes('\n'))
+                         )))}</div>
+                        <div>Content: {msg.content?.substring(0, 50)}...</div>
+                      </div>
                       <div className={`p-3 rounded-lg ${
                         msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/30'
                       }`}>
@@ -1813,11 +1873,39 @@ export default function ChatArea({
                           <div className={`font-medium text-sm ${
                             msg.sender === 'agent' ? 'text-white' : 'text-purple-800 dark:text-purple-200'
                           }`}>
-                            📊 {(msg as any).poll?.name || msg.content || 'Enquete'}
+                            📊 {(() => {
+                              // Extrair título da enquete do conteúdo
+                              if ((msg as any).poll?.name) return (msg as any).poll.name;
+                              if (msg.content) {
+                                const firstLine = msg.content.split('\n')[0];
+                                return firstLine.length > 50 ? 'Formulário/Questionário' : firstLine;
+                              }
+                              return 'Enquete';
+                            })()}
                           </div>
                         </div>
                         <div className="space-y-2">
-                          {((msg as any).poll?.options || []).map((option: any, index: number) => (
+                          {(() => {
+                            // 📊 Extrair opções do conteúdo se for poll manual
+                            const pollOptions = (msg as any).poll?.options || [];
+                            
+                            if (pollOptions.length === 0 && msg.content) {
+                              // Extrair linhas que começam com emojis numerados
+                              const lines = msg.content.split('\n');
+                              const extractedOptions: string[] = [];
+                              
+                              lines.forEach(line => {
+                                const trimmed = line.trim();
+                                if (trimmed.match(/^[1-9]️⃣|^[1-9]\.|^[1-9]\)/)) {
+                                  extractedOptions.push(trimmed);
+                                }
+                              });
+                              
+                              return extractedOptions.length > 0 ? extractedOptions : ['📋 ' + msg.content];
+                            }
+                            
+                            return pollOptions;
+                          })().map((option: any, index: number) => (
                             <div key={index} className={`flex items-center gap-2 p-2 rounded ${
                               msg.sender === 'agent' ? 'bg-white/10' : 'bg-white dark:bg-purple-800/30'
                             }`}>
@@ -1827,7 +1915,7 @@ export default function ChatArea({
                               <span className={`text-sm ${
                                 msg.sender === 'agent' ? 'text-white/90' : 'text-purple-700 dark:text-purple-200'
                               }`}>
-                                {option.name || option}
+                                {typeof option === 'string' ? option : (option.name || option)}
                               </span>
                             </div>
                           ))}
@@ -1873,16 +1961,23 @@ export default function ChatArea({
                         </p>
                       )}
                     </div>
-                  ) : (msg as any).mediaUrl && (
-                    (msg as any).mediaUrl.includes('.oga') ||
-                    (msg as any).mediaUrl.includes('.ogg') ||
-                    (msg as any).mediaUrl.includes('.mp3') ||
-                    (msg as any).mediaUrl.includes('.wav') ||
-                    (msg as any).mediaUrl.includes('.webm') ||
-                    (msg as any).mediaUrl.includes('.bin') ||
-                    msg.type === 'audio' || 
-                    (msg as any).mimetype?.includes('audio')
-                  ) ? (
+                  ) : (() => {
+                    const isAudio = (msg as any).mediaUrl && (
+                      (msg as any).mediaUrl.includes('.oga') ||
+                      (msg as any).mediaUrl.includes('.ogg') ||
+                      (msg as any).mediaUrl.includes('.mp3') ||
+                      (msg as any).mediaUrl.includes('.mpga') || // 🎤 FIX: Extensão .mpga (MPEG Audio)
+                      (msg as any).mediaUrl.includes('.wav') ||
+                      (msg as any).mediaUrl.includes('.webm') ||
+                      (msg as any).mediaUrl.includes('.bin') ||
+                      (msg as any).mediaUrl.includes('.mp4') || // 🎤 FIX: Arquivos de áudio podem ter extensão .mp4
+                      msg.type === 'audio' || 
+                      msg.type === 'ptt' || // 🎤 FIX: Adicionar detecção por type ptt
+                      (msg as any).processedType === 'audio' || // 🎤 FIX: Usar processedType do backend
+                      (msg as any).mimetype?.includes('audio')
+                    );
+                    return isAudio;
+                  })() ? (
                     <div className="mb-2">
                       {/* Usar dados base64 se disponíveis, senão usar URL */}
                       {(msg as any).media?.data ? (
@@ -1910,40 +2005,54 @@ export default function ChatArea({
                           </div>
                         </div>
                       ) : (msg as any).mediaUrl ? (
-                        <AudioMessageComponent 
-                          message={{
-                            mediaUrl: (msg as any).mediaUrl,
-                            body: msg.content,
-                            caption: (msg as any).caption
-                          }}
-                          onTranscribe={(text) => {
-                            // Transcrição recebida
-                          }}
-                        />
+                        <>
+                         
+                          <AudioMessageComponent 
+                            message={{
+                              mediaUrl: (msg as any).mediaUrl,
+                              body: msg.content,
+                              caption: (msg as any).caption
+                            }}
+                            onTranscribe={(text) => {
+                              console.log('🎤 Transcrição recebida:', { messageId: msg.id, text });
+                            }}
+                          />
+                        </>
                       ) : (
-                        <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
-                          msg.sender === 'agent' ? 'bg-orange-50/10 dark:bg-orange-900/20 border-orange-300/50 dark:border-orange-600/40 backdrop-blur-sm' : 'bg-orange-50 dark:bg-orange-100 border-orange-200 dark:border-orange-300'
-                        }`}>
-                          <div className={`p-2 rounded-full ${
-                            msg.sender === 'agent' ? 'bg-orange-200/20 dark:bg-orange-800/40' : 'bg-orange-100 dark:bg-orange-200'
+                        <>
+                          {console.log('❌ AUDIO FALLBACK RENDER:', {
+                            id: msg.id,
+                            reason: 'No mediaUrl and no media.data',
+                            hasMediaUrl: !!(msg as any).mediaUrl,
+                            hasMediaData: !!(msg as any).media?.data,
+                            type: msg.type,
+                            mimetype: (msg as any).mimetype,
+                            content: msg.content?.substring(0, 50)
+                          })}
+                          <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
+                            msg.sender === 'agent' ? 'bg-orange-50/10 dark:bg-orange-900/20 border-orange-300/50 dark:border-orange-600/40 backdrop-blur-sm' : 'bg-orange-50 dark:bg-orange-100 border-orange-200 dark:border-orange-300'
                           }`}>
-                            <AudioLines className={`w-4 h-4 ${
-                              msg.sender === 'agent' ? 'text-orange-300' : 'text-orange-600'
-                            }`} />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                              msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700 dark:text-orange-800'
+                            <div className={`p-2 rounded-full ${
+                              msg.sender === 'agent' ? 'bg-orange-200/20 dark:bg-orange-800/40' : 'bg-orange-100 dark:bg-orange-200'
                             }`}>
-                              🎤 Mensagem de Áudio
-                            </p>
-                            <p className={`text-xs ${
-                              msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600 dark:text-orange-700'
-                            }`}>
-                              Arquivo não disponível
-                            </p>
+                              <AudioLines className={`w-4 h-4 ${
+                                msg.sender === 'agent' ? 'text-orange-300' : 'text-orange-600'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${
+                                msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700 dark:text-orange-800'
+                              }`}>
+                                🎤 Mensagem de Áudio
+                              </p>
+                              <p className={`text-xs ${
+                                msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600 dark:text-orange-700'
+                              }`}>
+                                Arquivo não disponível
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                       {(msg.content || (msg as any).caption) && (
                         <p className={`text-sm mt-2 ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
@@ -1951,19 +2060,34 @@ export default function ChatArea({
                         </p>
                       )}
                     </div>
-                  ) : (msg as any).mediaUrl && (
-                    (msg as any).mediaUrl.includes('.mp4') ||
-                    (msg as any).mediaUrl.includes('.webm') ||
-                    (msg as any).mediaUrl.includes('.mov') ||
-                    (msg as any).mediaUrl.includes('.avi') ||
-                    msg.type === 'video' || 
-                    (msg as any).mimetype?.includes('video')
-                  ) && !(
-                    (msg as any).mediaUrl.includes('.oga') ||
-                    (msg as any).mediaUrl.includes('.ogg') ||
-                    (msg as any).mediaUrl.includes('.mp3') ||
-                    (msg as any).mediaUrl.includes('.wav')
-                  ) ? (
+                  ) : (() => {
+                    // 🎬 DETECÇÃO DE VÍDEO - Excluir arquivos que já foram detectados como áudio
+                    const isAudioFile = (msg as any).mediaUrl && (
+                      (msg as any).mediaUrl.includes('.oga') ||
+                      (msg as any).mediaUrl.includes('.ogg') ||
+                      (msg as any).mediaUrl.includes('.mp3') ||
+                      (msg as any).mediaUrl.includes('.mpga') || // 🎤 FIX: Extensão .mpga (MPEG Audio)
+                      (msg as any).mediaUrl.includes('.wav') ||
+                      (msg as any).mediaUrl.includes('.webm') ||
+                      (msg as any).mediaUrl.includes('.bin') ||
+                      msg.type === 'audio' || 
+                      msg.type === 'ptt' || 
+                      (msg as any).processedType === 'audio' || 
+                      (msg as any).mimetype?.includes('audio')
+                    );
+                    
+                    const isVideoFile = (msg as any).mediaUrl && (
+                      (msg as any).mediaUrl.includes('.mp4') ||
+                      (msg as any).mediaUrl.includes('.webm') ||
+                      (msg as any).mediaUrl.includes('.mov') ||
+                      (msg as any).mediaUrl.includes('.avi') ||
+                      msg.type === 'video' || 
+                      (msg as any).mimetype?.includes('video')
+                    );
+                    
+                    // 🚨 SÓ é vídeo se NÃO for áudio
+                    return isVideoFile && !isAudioFile;
+                  })() ? (
                     <div className="mb-2">
                       <div className={`p-3 rounded-lg ${
                         msg.sender === 'agent' ? 'bg-white/5 dark:bg-black/40 backdrop-blur-md border border-white/10 dark:border-slate-600/30 shadow-lg dark:shadow-black/50' : 'bg-muted/50 dark:bg-slate-800/50 dark:backdrop-blur-sm dark:border dark:border-slate-600/30'
@@ -1993,23 +2117,38 @@ export default function ChatArea({
                       </div>
                     </div>
                   ) : (() => {
-                    // Debug para documentos
-                    if ((msg.type === 'document' || msg.type === 'file') || 
+                    const isDocument = (msg.type === 'document' || msg.type === 'file') || 
                         (msg as any).mimetype?.includes('application/') || 
                         (msg as any).mimetype?.includes('text/') ||
-                        (msg as any).mediaUrl?.includes('.pdf') || (msg as any).mediaUrl?.includes('.doc') ||
-                        (msg as any).mediaUrl?.includes('.txt') || (msg as any).mediaUrl?.includes('.xlsx')) {
-                      console.log('📄 DOCUMENTO DEBUG:', {
+                        // 📎 Documentos
+                        (msg as any).mediaUrl?.includes('.pdf') || (msg as any).mediaUrl?.includes('.doc') || (msg as any).mediaUrl?.includes('.docx') ||
+                        (msg as any).mediaUrl?.includes('.txt') || (msg as any).mediaUrl?.includes('.rtf') ||
+                        // 📊 Planilhas
+                        (msg as any).mediaUrl?.includes('.xlsx') || (msg as any).mediaUrl?.includes('.xls') || (msg as any).mediaUrl?.includes('.csv') ||
+                        // 📋 Apresentações
+                        (msg as any).mediaUrl?.includes('.ppt') || (msg as any).mediaUrl?.includes('.pptx') ||
+                        // 🗂️ Arquivos Compactados
+                        (msg as any).mediaUrl?.includes('.zip') || (msg as any).mediaUrl?.includes('.rar') || (msg as any).mediaUrl?.includes('.7z') ||
+                        // 🔧 Código & Dados
+                        (msg as any).mediaUrl?.includes('.json') || (msg as any).mediaUrl?.includes('.xml') || (msg as any).mediaUrl?.includes('.md') ||
+                        (msg as any).mediaUrl?.includes('.js') || (msg as any).mediaUrl?.includes('.ts') || (msg as any).mediaUrl?.includes('.html') ||
+                        (msg as any).mediaUrl?.includes('.css') || (msg as any).mediaUrl?.includes('.py') || (msg as any).mediaUrl?.includes('.java') ||
+                        // 📄 Outros formatos comuns
+                        (msg as any).mediaUrl?.includes('.epub') || (msg as any).mediaUrl?.includes('.mobi');
+                    
+                    const hasMediaUrl = !!(msg as any).mediaUrl;
+                    const shouldRender = isDocument && hasMediaUrl;
+                    
+                   
+                    if (isDocument && !hasMediaUrl) {
+                      console.log('❌ DOCUMENT SKIPPED - No mediaUrl:', {
                         id: msg.id,
                         type: msg.type,
-                        processedType: (msg as any).processedType,
-                        mediaUrl: (msg as any).mediaUrl,
-                        mimetype: (msg as any).mimetype,
-                        filename: (msg as any).filename || (msg as any).fileName
-                      })
-                      return !!(msg as any).mediaUrl
+                        mimetype: (msg as any).mimetype
+                      });
                     }
-                    return false
+                    
+                    return shouldRender;
                   })() ? (
                     <div className="mb-2">
                       <div className={`p-4 rounded-xl backdrop-blur-md border ${
@@ -2025,10 +2164,20 @@ export default function ChatArea({
                             {(() => {
                               const filename = (msg as any).fileName || (msg as any).filename || 'documento'
                               const ext = filename.toLowerCase().split('.').pop()
+                              // 📄 Documentos
                               if (ext === 'pdf') return <FileText className="w-5 h-5 text-red-600" />
-                              if (['doc', 'docx'].includes(ext)) return <FileText className="w-5 h-5 text-blue-600" />
-                              if (['xls', 'xlsx'].includes(ext)) return <FileText className="w-5 h-5 text-green-600" />
-                              if (['txt'].includes(ext)) return <FileText className="w-5 h-5 text-gray-600" />
+                              if (['doc', 'docx', 'rtf'].includes(ext)) return <FileText className="w-5 h-5 text-blue-600" />
+                              if (['txt', 'md'].includes(ext)) return <FileText className="w-5 h-5 text-gray-600" />
+                              // 📊 Planilhas
+                              if (['xls', 'xlsx', 'csv'].includes(ext)) return <FileText className="w-5 h-5 text-green-600" />
+                              // 📋 Apresentações
+                              if (['ppt', 'pptx'].includes(ext)) return <FileText className="w-5 h-5 text-orange-600" />
+                              // 🗂️ Compactados
+                              if (['zip', 'rar', '7z'].includes(ext)) return <FileText className="w-5 h-5 text-yellow-600" />
+                              // 🔧 Código
+                              if (['js', 'ts', 'html', 'css', 'py', 'java', 'json', 'xml'].includes(ext)) return <FileText className="w-5 h-5 text-purple-600" />
+                              // 📚 E-books
+                              if (['epub', 'mobi'].includes(ext)) return <FileText className="w-5 h-5 text-indigo-600" />
                               return <FileText className={`w-5 h-5 ${msg.sender === 'agent' ? 'text-white' : 'text-gray-600'}`} />
                             })()}
                           </div>
@@ -2036,14 +2185,37 @@ export default function ChatArea({
                             <p className={`text-sm font-semibold ${
                               msg.sender === 'agent' ? 'text-white' : 'text-gray-900 dark:text-gray-900'
                             }`}>
-                              📄 {(() => {
+                              {(() => {
                                 const filename = (msg as any).fileName || (msg as any).filename || 'documento'
                                 const ext = filename.toLowerCase().split('.').pop()
-                                if (ext === 'pdf') return 'Documento PDF'
-                                if (['doc', 'docx'].includes(ext)) return 'Documento Word'
-                                if (['xls', 'xlsx'].includes(ext)) return 'Planilha Excel'
-                                if (['txt'].includes(ext)) return 'Arquivo de Texto'
-                                return 'Documento'
+                                // 📄 Documentos
+                                if (ext === 'pdf') return '📄 Documento PDF'
+                                if (['doc', 'docx'].includes(ext)) return '📝 Documento Word'
+                                if (ext === 'rtf') return '📝 Documento RTF'
+                                if (ext === 'txt') return '📋 Arquivo de Texto'
+                                if (ext === 'md') return '📋 Markdown'
+                                // 📊 Planilhas
+                                if (['xls', 'xlsx'].includes(ext)) return '📊 Planilha Excel'
+                                if (ext === 'csv') return '📊 Planilha CSV'
+                                // 📋 Apresentações
+                                if (['ppt', 'pptx'].includes(ext)) return '📋 Apresentação PowerPoint'
+                                // 🗂️ Compactados
+                                if (ext === 'zip') return '🗂️ Arquivo ZIP'
+                                if (ext === 'rar') return '🗂️ Arquivo RAR'
+                                if (ext === '7z') return '🗂️ Arquivo 7-Zip'
+                                // 🔧 Código
+                                if (ext === 'js') return '🔧 JavaScript'
+                                if (ext === 'ts') return '🔧 TypeScript'
+                                if (ext === 'html') return '🔧 HTML'
+                                if (ext === 'css') return '🔧 CSS'
+                                if (ext === 'py') return '🔧 Python'
+                                if (ext === 'java') return '🔧 Java'
+                                if (ext === 'json') return '🔧 JSON'
+                                if (ext === 'xml') return '🔧 XML'
+                                // 📚 E-books
+                                if (ext === 'epub') return '📚 E-book EPUB'
+                                if (ext === 'mobi') return '📚 E-book Mobi'
+                                return '📁 Documento'
                               })()}
                             </p>
                             <p className={`text-xs ${
@@ -2065,10 +2237,29 @@ export default function ChatArea({
                               {(() => {
                                 const filename = (msg as any).fileName || (msg as any).filename || 'documento'
                                 const ext = filename.toLowerCase().split('.').pop()
+                                // 📄 Documentos
                                 if (ext === 'pdf') return <div className="text-2xl">📄</div>
                                 if (['doc', 'docx'].includes(ext)) return <div className="text-2xl">📝</div>
+                                if (ext === 'rtf') return <div className="text-2xl">📝</div>
+                                if (ext === 'txt') return <div className="text-2xl">📋</div>
+                                if (ext === 'md') return <div className="text-2xl">📝</div>
+                                // 📊 Planilhas
                                 if (['xls', 'xlsx'].includes(ext)) return <div className="text-2xl">📊</div>
-                                if (['txt'].includes(ext)) return <div className="text-2xl">📋</div>
+                                if (ext === 'csv') return <div className="text-2xl">📈</div>
+                                // 📋 Apresentações
+                                if (['ppt', 'pptx'].includes(ext)) return <div className="text-2xl">📊</div>
+                                // 🗂️ Compactados
+                                if (['zip', 'rar', '7z'].includes(ext)) return <div className="text-2xl">🗜️</div>
+                                // 🔧 Código
+                                if (['js', 'ts'].includes(ext)) return <div className="text-2xl">🔧</div>
+                                if (ext === 'html') return <div className="text-2xl">🌐</div>
+                                if (ext === 'css') return <div className="text-2xl">🎨</div>
+                                if (ext === 'py') return <div className="text-2xl">🐍</div>
+                                if (ext === 'java') return <div className="text-2xl">☕</div>
+                                if (ext === 'json') return <div className="text-2xl">📋</div>
+                                if (ext === 'xml') return <div className="text-2xl">📄</div>
+                                // 📚 E-books
+                                if (['epub', 'mobi'].includes(ext)) return <div className="text-2xl">📚</div>
                                 return <div className="text-2xl">📁</div>
                               })()}
                             </div>
@@ -2125,10 +2316,29 @@ export default function ChatArea({
                       </div>
                     </div>
                   ) : (
-                    <MessageContent 
-                      content={msg.content} 
-                      className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-900 dark:text-gray-900'}
-                    />
+                    <div>
+                      {/* 🔍 DEBUG VISUAL - Só mostra se mensagem tem dados de mídia mas caiu no fallback */}
+                      {((msg as any).mediaUrl || (msg as any).poll || (msg as any).location || msg.type !== 'text' || (msg as any).processedType) && (
+                        <div className="mb-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
+                          <div className="font-bold text-yellow-800">⚠️ FALLBACK DEBUG:</div>
+                          <div>Type: <span className="font-mono">{msg.type}</span> → <span className="font-mono">{(msg as any).processedType || 'N/A'}</span></div>
+                          <div>MediaURL: {(msg as any).mediaUrl ? '✅ SIM' : '❌ NÃO'}</div>
+                          {(msg as any).mediaUrl && (
+                            <div className="text-xs bg-gray-200 p-1 rounded mt-1">
+                              <strong>URL:</strong> <span className="font-mono break-all">{(msg as any).mediaUrl}</span>
+                            </div>
+                          )}
+                          <div>Poll: {(msg as any).poll ? '✅ SIM' : '❌ NÃO'}</div>
+                          <div>Location: {(msg as any).location ? '✅ SIM' : '❌ NÃO'}</div>
+                          <div>Mimetype: <span className="font-mono">{(msg as any).mimetype || 'N/A'}</span></div>
+                          <div className="text-red-600 font-bold mt-1">↑ Deveria renderizar como mídia!</div>
+                        </div>
+                      )}
+                      <MessageContent 
+                        content={msg.content} 
+                        className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-900 dark:text-gray-900'}
+                      />
+                    </div>
                   )}
                   
                   {/* Linha com timestamp e ícones */}
@@ -2982,8 +3192,36 @@ export default function ChatArea({
         isOpen={isQuickActionsSidebarOpen}
         onClose={() => onToggleQuickActionsSidebar?.()}
         activeChatId={conversation?.id || conversation?.jid}
-        onSelectAction={(action) => {
-          // Abre modal de edição para permitir edição antes do envio
+        onSelectAction={async (action) => {
+          // Se há ações editadas, executar diretamente
+          if (action.editedActions && action.editedActions.length > 0) {
+            console.log('🎯 Executando resposta rápida com ações editadas:', action.editedActions)
+            
+            try {
+              const response = await fetch(`/api/respostas-rapidas/${action.originalData?.id}/executar`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                  chat_id: conversation?.id || conversation?.jid,
+                  acoes_customizadas: action.editedActions // Enviar ações editadas
+                })
+              })
+              
+              if (response.ok) {
+                console.log('✅ Resposta rápida executada com sucesso!')
+              } else {
+                console.error('❌ Erro ao executar resposta rápida:', await response.text())
+              }
+            } catch (error) {
+              console.error('❌ Erro ao executar resposta rápida:', error)
+            }
+            return
+          }
+          
+          // Fluxo normal: abre modal de edição para permitir edição antes do envio
           const textContent = action.originalData?.acoes?.find(a => a.tipo === 'texto')?.conteudo?.texto || action.content
           setEditingText(textContent)
           setEditingAction(action)

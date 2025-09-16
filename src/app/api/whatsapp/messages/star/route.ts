@@ -2,96 +2,119 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { messageId, chatId, action } = await request.json()
+    const { messageId, chatId } = await request.json()
     
     if (!messageId || !chatId) {
-      return NextResponse.json({ 
-        error: 'messageId e chatId são obrigatórios' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'messageId e chatId são obrigatórios' }, { status: 400 })
     }
 
-    // Validar JWT token
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
     
-    // Fazer request diretamente para WAHA API para obter sessões ativas
-    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:8081'
-    const wahaToken = process.env.WAHA_API_KEY || 'your-api-key'
+    // Salvar favorito no backend Go
+    const backendResponse = await fetch(`${backendUrl}/api/favorites`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messageId,
+        chatId,
+        starred: true
+      })
+    })
 
-    // Buscar sessões ativas na WAHA API
+    if (!backendResponse.ok) {
+      // Se backend não tem endpoint, usar só localStorage pelo frontend
+      console.log('⚠️ Backend não suporta favoritos, usando localStorage')
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Favorito salvo localmente',
+        useLocalStorage: true 
+      })
+    }
+
+    const result = await backendResponse.json()
+    console.log('✅ Mensagem favoritada no backend:', result)
+    
+    return NextResponse.json({ success: true, message: 'Mensagem favoritada com sucesso' })
+
+  } catch (error) {
+    console.error('💥 Erro ao favoritar mensagem:', error)
+    // Fallback para localStorage
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Favorito salvo localmente (fallback)',
+      useLocalStorage: true 
+    })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { messageId, chatId, session } = await request.json()
+    
+    if (!messageId || !chatId) {
+      return NextResponse.json({ error: 'messageId e chatId são obrigatórios' }, { status: 400 })
+    }
+
+    const wahaToken = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
+    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+    
+    // Buscar sessões ativas para obter a primeira sessão WORKING
     const sessionsResponse = await fetch(`${wahaUrl}/api/sessions`, {
       method: 'GET',
       headers: {
-        'X-Api-Key': wahaToken
+        'X-Api-Key': wahaToken,
+        'Content-Type': 'application/json'
       }
     })
 
     if (!sessionsResponse.ok) {
-      console.error('❌ STARS - Erro ao obter sessões WAHA:', sessionsResponse.status)
       return NextResponse.json({ error: 'Erro ao obter sessão ativa' }, { status: 500 })
     }
 
     const sessions = await sessionsResponse.json()
-    let activeSession = null
-
-    // Encontrar sessão ativa (WORKING) - buscar por prefixo do token
-    const userPrefix = `user_${token.substring(0, 8)}`
+    const activeSession = sessions.find((s: any) => s.status === 'WORKING')
     
-    for (const session of sessions) {
-      if (session.name && session.name.startsWith(userPrefix) && session.status === 'WORKING') {
-        activeSession = session
-        break
-      }
-    }
-
     if (!activeSession) {
-      console.error('❌ STARS - Nenhuma sessão ativa encontrada para usuário')
-      return NextResponse.json({ error: 'Nenhuma sessão ativa encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Nenhuma sessão ativa encontrada' }, { status: 500 })
     }
 
-    console.log('⭐ STARS - Sessão ativa encontrada:', activeSession.name)
-    console.log('⭐ STARS - Ação:', action, 'messageId:', messageId)
+    const sessionName = activeSession.name
 
-    const response = await fetch(`${wahaUrl}/api/${activeSession.name}/messages/${messageId}/star`, {
-      method: 'POST',
+    // Usar a API nativa do WAHA para remover favorito
+    const unstarResponse = await fetch(`${wahaUrl}/api/star`, {
+      method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Key': wahaToken
+        'X-Api-Key': wahaToken,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        star: action === 'star' ? true : false
+        messageId: messageId,
+        chatId: chatId,
+        star: false,
+        session: sessionName
       })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ STARS - Erro WAHA:', response.status, errorText)
-      return NextResponse.json({ 
-        error: `Erro ao ${action === 'star' ? 'favoritar' : 'desfavoritar'} mensagem`, 
-        details: errorText 
-      }, { status: response.status })
+    if (!unstarResponse.ok) {
+      const errorText = await unstarResponse.text()
+      return NextResponse.json({ error: `Erro ao remover favorito: ${errorText}` }, { status: unstarResponse.status })
     }
 
-    const result = await response.json()
-    console.log(`✅ STARS - ${action === 'star' ? 'Favoritar' : 'Desfavoritar'} realizado com sucesso`)
-
-    return NextResponse.json({
-      success: true,
-      messageId,
-      starred: action === 'star',
-      action,
-      ...result
-    })
+    const result = await unstarResponse.json()
+    console.log('✅ Favorito removido com sucesso:', result)
+    
+    return NextResponse.json({ success: true, message: 'Favorito removido com sucesso' })
 
   } catch (error) {
-    console.error('💥 Erro ao favoritar mensagem:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    console.error('💥 Erro ao remover favorito:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

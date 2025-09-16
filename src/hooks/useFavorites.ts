@@ -19,27 +19,63 @@ export function useFavorites(chatId?: string): UseFavoritesReturn {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<Set<string>>(new Set())
 
-  // Carregar favoritos do localStorage (fallback)
-  useEffect(() => {
-    if (chatId) {
-      const stored = localStorage.getItem(`favorites_${chatId}`)
-      if (stored) {
-        try {
-          const favoriteIds = JSON.parse(stored) as string[]
-          setFavorites(new Set(favoriteIds))
-        } catch (error) {
-          console.error('Erro ao carregar favoritos:', error)
-        }
-      }
-    }
-  }, [chatId])
-
   // Salvar no localStorage como backup
   const saveFavoritesToStorage = useCallback((updatedFavorites: Set<string>) => {
     if (chatId) {
       localStorage.setItem(`favorites_${chatId}`, JSON.stringify(Array.from(updatedFavorites)))
     }
   }, [chatId])
+
+  const refreshFavorites = useCallback(async () => {
+    if (!chatId) return
+
+    try {
+      console.log('🔄 Sincronizando favoritos do servidor...')
+      
+      const response = await fetch(`/api/favorites?chatId=${chatId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const serverFavorites = new Set<string>(
+          data.favorites?.map((fav: any) => fav.message_id as string) || []
+        )
+        
+        console.log(`📥 Carregados ${serverFavorites.size} favoritos do servidor`)
+        setFavorites(serverFavorites)
+        saveFavoritesToStorage(serverFavorites)
+      } else {
+        console.log('⚠️ Erro ao carregar favoritos do servidor, usando localStorage')
+      }
+      
+    } catch (error) {
+      console.error('💥 Erro ao sincronizar favoritos:', error)
+      console.log('📱 Usando favoritos do localStorage como fallback')
+    }
+  }, [chatId, saveFavoritesToStorage])
+
+  // Carregar favoritos do servidor e localStorage como fallback
+  useEffect(() => {
+    if (chatId) {
+      // Primeiro carregar do localStorage para UI responsiva
+      const stored = localStorage.getItem(`favorites_${chatId}`)
+      if (stored) {
+        try {
+          const favoriteIds = JSON.parse(stored) as string[]
+          setFavorites(new Set(favoriteIds))
+        } catch (error) {
+          console.error('Erro ao carregar favoritos do localStorage:', error)
+        }
+      }
+      
+      // Depois sincronizar com servidor
+      setTimeout(() => refreshFavorites(), 100)
+    }
+  }, [chatId, refreshFavorites])
 
   const isStarred = useCallback((messageId: string) => {
     return favorites.has(messageId)
@@ -59,8 +95,8 @@ export function useFavorites(chatId?: string): UseFavoritesReturn {
     try {
       console.log(`${newStarredState ? '⭐ Favoritando' : '⭐ Removendo favorito'} mensagem:`, { messageId, targetChatId })
 
-      const endpoint = '/api/whatsapp/messages/star'
-      const method = newStarredState ? 'POST' : 'DELETE'
+      const endpoint = '/api/favorites'
+      const method = 'POST' // Backend usa POST para criar/atualizar
 
       const response = await fetch(endpoint, {
         method,
@@ -71,7 +107,7 @@ export function useFavorites(chatId?: string): UseFavoritesReturn {
         body: JSON.stringify({
           messageId,
           chatId: targetChatId,
-          session: `user_${localStorage.getItem('userId') || 'default'}`
+          starred: newStarredState
         })
       })
 
@@ -114,20 +150,6 @@ export function useFavorites(chatId?: string): UseFavoritesReturn {
       })
     }
   }, [favorites, saveFavoritesToStorage])
-
-  const refreshFavorites = useCallback(async () => {
-    if (!chatId) return
-
-    try {
-      console.log('🔄 Sincronizando favoritos do servidor...')
-      
-      // TODO: Implementar endpoint para buscar favoritos do WAHA
-      // Por enquanto, mantemos o localStorage como fonte
-      
-    } catch (error) {
-      console.error('💥 Erro ao sincronizar favoritos:', error)
-    }
-  }, [chatId])
 
   return {
     favorites,

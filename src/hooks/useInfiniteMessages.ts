@@ -146,7 +146,7 @@ export function useInfiniteMessages({
   }, [chatId])
 
   return {
-    messages: messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+    messages: messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
     loading,
     hasMore,
     loadMore,

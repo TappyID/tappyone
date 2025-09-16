@@ -719,12 +719,31 @@
     // Cache de tags por chatId - igual ao ChatArea para manter consistência
     const [tagsCache, setTagsCache] = useState<{[chatId: string]: any[]}>({})
     
-    // Função para buscar tags de um chatId específico - igual ao ChatArea
+    // Função para buscar tags de um chatId específico - com verificação de contato CRM
     const fetchTagsForChat = useCallback(async (chatId: string) => {
       try {
         const token = localStorage.getItem('token')
         if (!token) return
         
+        // Primeiro verificar se é um contato CRM válido
+        const contatoResponse = await fetch(`/api/contatos/${chatId}/dados-completos`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (!contatoResponse.ok) {
+          setTagsCache(prev => ({ ...prev, [chatId]: [] }))
+          return
+        }
+        
+        const contatoData = await contatoResponse.json()
+        
+        if (contatoData.isWhatsAppChat) {
+          // Chat WAHA sem contato CRM, sem tags
+          setTagsCache(prev => ({ ...prev, [chatId]: [] }))
+          return
+        }
+        
+        // Só buscar tags se for um contato CRM válido
         const response = await fetch(`/api/contatos/${chatId}/tags`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })

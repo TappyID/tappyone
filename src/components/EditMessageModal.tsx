@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Save } from 'lucide-react'
+import { X, Save, Sparkles, Wand2, Briefcase, Smile, Minus, Plus, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useDeepSeekAI } from '@/hooks/useDeepSeekAI'
 
 interface EditMessageModalProps {
   isOpen: boolean
@@ -20,6 +21,7 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
   loading = false
 }) => {
   const [text, setText] = useState(initialText)
+  const { generateText, loading: aiLoading, error: aiError } = useDeepSeekAI()
 
   useEffect(() => {
     setText(initialText)
@@ -38,6 +40,26 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
       onClose()
     }
   }
+
+  const handleAIAction = async (action: 'generate' | 'improve' | 'formal' | 'casual' | 'shorter' | 'longer') => {
+    if (!text.trim()) return
+    
+    const result = await generateText(text, action)
+    if (result) {
+      setText(result)
+    }
+  }
+
+  const aiButtons = [
+    { action: 'generate' as const, label: 'Gerar com IA', icon: Sparkles, color: 'bg-purple-600 hover:bg-purple-700' },
+    { action: 'improve' as const, label: 'Melhorar', icon: Wand2, color: 'bg-blue-600 hover:bg-blue-700' },
+    { action: 'formal' as const, label: 'Formal', icon: Briefcase, color: 'bg-gray-600 hover:bg-gray-700' },
+    { action: 'casual' as const, label: 'Casual', icon: Smile, color: 'bg-green-600 hover:bg-green-700' },
+    { action: 'shorter' as const, label: 'Resumir', icon: Minus, color: 'bg-orange-600 hover:bg-orange-700' },
+    { action: 'longer' as const, label: 'Expandir', icon: Plus, color: 'bg-indigo-600 hover:bg-indigo-700' }
+  ]
+
+  const isAnyLoading = loading || aiLoading
 
   return (
     <AnimatePresence>
@@ -69,10 +91,47 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
                 placeholder="Digite sua mensagem..."
                 className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 autoFocus
-                disabled={loading}
+                disabled={isAnyLoading}
               />
               
-              <div className="text-xs text-gray-500 mt-2">
+              {/* Botões de IA */}
+              <div className="mt-4">
+                <div className="text-sm font-medium text-gray-700 mb-2">Ferramentas de IA:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {aiButtons.map((button) => {
+                    const Icon = button.icon
+                    return (
+                      <button
+                        key={button.action}
+                        onClick={() => handleAIAction(button.action)}
+                        disabled={isAnyLoading || !text.trim()}
+                        className={`
+                          ${button.color} text-white px-3 py-2 rounded-lg text-xs font-medium
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          transition-colors flex items-center gap-2 justify-center
+                        `}
+                      >
+                        {aiLoading ? (
+                          <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Icon className="w-3 h-3" />
+                        )}
+                        {button.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Erro da IA */}
+              {aiError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-red-700">{aiError}</div>
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-500 mt-3">
                 Pressione Ctrl+Enter para salvar ou Esc para cancelar
               </div>
             </div>
@@ -81,16 +140,16 @@ export const EditMessageModal: React.FC<EditMessageModalProps> = ({
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                disabled={loading}
+                disabled={isAnyLoading}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
-                disabled={loading || !text.trim() || text === initialText}
+                disabled={isAnyLoading || !text.trim() || text === initialText}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                {loading ? (
+                {isAnyLoading ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />

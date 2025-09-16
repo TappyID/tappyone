@@ -318,42 +318,42 @@ export default function QuickActionsSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={`fixed top-0 left-0 h-full w-[520px] bg-background border-r border-border shadow-2xl transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 left-0 h-full w-[420px] bg-background border-r border-border shadow-2xl transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } z-50 pt-20`}
         >
           {/* Header */}
-          <div className="p-4 border-b border-border bg-muted/30">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Respostas Rápidas</h3>
+          <div className="p-3 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-sm text-foreground">Respostas Rápidas</h3>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-accent rounded-lg transition-colors"
+                className="p-1.5 hover:bg-accent rounded-md transition-colors"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
             
          
 
             {/* Search */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
-                placeholder="Buscar ações rápidas..."
+                placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-9"
+                className="pl-8 h-8 text-xs"
               />
             </div>
 
             {/* Category Filter */}
-            <div className="flex gap-1 overflow-x-auto pb-2">
+            <div className="flex gap-1 overflow-x-auto pb-1">
               <Button
                 variant={selectedCategory === 'all' ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory('all')}
-                className="whitespace-nowrap text-xs"
+                className="whitespace-nowrap text-xs h-7 px-2"
               >
                 Todas
               </Button>
@@ -363,7 +363,7 @@ export default function QuickActionsSidebar({
                   variant={selectedCategory === categoria.nome ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(categoria.nome)}
-                  className="whitespace-nowrap text-xs"
+                  className="whitespace-nowrap text-xs h-7 px-2"
                 >
                   {categoria.nome}
                 </Button>
@@ -372,20 +372,20 @@ export default function QuickActionsSidebar({
           </div>
 
           {/* Actions List */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-3">
             {Object.entries(groupedActions).map(([category, actions]) => (
-              <div key={category} className="mb-4">
+              <div key={category} className="mb-3">
                 <button
                   onClick={() => toggleCategory(category)}
-                  className="flex items-center gap-2 w-full text-left p-2 hover:bg-accent/50 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 w-full text-left p-1.5 hover:bg-accent/50 rounded-md transition-colors"
                 >
                   {expandedCategories.has(category) ? (
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                   )}
-                  <span className="font-medium text-foreground">{category}</span>
-                  <Badge variant="secondary" className="ml-auto text-xs">
+                  <span className="font-medium text-sm text-foreground">{category}</span>
+                  <Badge variant="secondary" className="ml-auto text-xs px-1.5 py-0.5">
                     {actions.length}
                   </Badge>
                 </button>
@@ -399,69 +399,69 @@ export default function QuickActionsSidebar({
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="ml-6 space-y-2 mt-2">
+                      <div className="ml-4 space-y-1.5 mt-1.5">
                         {actions.map(action => (
                           <motion.div
                             key={action.id}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="p-4 border border-border rounded-xl hover:border-primary hover:bg-accent/50 cursor-pointer transition-all group bg-card shadow-sm"
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            className="p-2.5 border border-border rounded-lg hover:border-primary hover:bg-accent/50 cursor-pointer transition-all group bg-card shadow-sm"
                           >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${getTypeColor(action.type)}`}>
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className={`p-1.5 rounded-md ${getTypeColor(action.type)}`}>
                                   {getTypeIcon(action.type)}
                                 </div>
-                                <div>
-                                  <span className="font-semibold text-foreground text-sm block">
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-medium text-foreground text-xs block truncate">
                                     {action.title}
                                   </span>
-                                  <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-1.5 mt-0.5">
                                     {/* Status Badge */}
                                     {action.isAutomatic && (
-                                      <Badge className="text-xs px-2 py-0.5 bg-green-500/20 text-green-600 dark:bg-green-500/30 dark:text-green-400">
-                                        <Zap className="w-3 h-3 mr-1" />
+                                      <Badge className="text-xs px-1.5 py-0 bg-green-500/20 text-green-600 dark:bg-green-500/30 dark:text-green-400">
+                                        <Zap className="w-2.5 h-2.5 mr-0.5" />
                                         Auto
                                       </Badge>
                                     )}
                                     {action.isPaused && (
-                                      <Badge className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-500/30 dark:text-yellow-400">
-                                        <Clock className="w-3 h-3 mr-1" />
+                                      <Badge className="text-xs px-1.5 py-0 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-500/30 dark:text-yellow-400">
+                                        <Clock className="w-2.5 h-2.5 mr-0.5" />
                                         Pausada
                                       </Badge>
                                     )}
                                     <span className="text-xs text-muted-foreground">
-                                      {action.usageCount} usos
+                                      {action.usageCount}
                                     </span>
                                   </div>
                                 </div>
                               </div>
                               
                               {/* Action Buttons */}
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     onEditAction?.(action)
                                   }}
-                                  className="p-1.5 bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 dark:bg-blue-500/30 dark:text-blue-400 rounded-lg transition-colors"
-                                  title="Editar resposta"
+                                  className="p-1 bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 dark:bg-blue-500/30 dark:text-blue-400 rounded-md transition-colors"
+                                  title="Editar"
                                 >
-                                  <Edit className="w-3 h-3" />
+                                  <Edit className="w-2.5 h-2.5" />
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     onScheduleAction?.(action)
                                   }}
-                                  className="p-1.5 bg-purple-500/20 text-purple-600 hover:bg-purple-500/30 dark:bg-purple-500/30 dark:text-purple-400 rounded-lg transition-colors"
-                                  title="Agendar envio"
+                                  className="p-1 bg-purple-500/20 text-purple-600 hover:bg-purple-500/30 dark:bg-purple-500/30 dark:text-purple-400 rounded-md transition-colors"
+                                  title="Agendar"
                                 >
-                                  <Calendar className="w-3 h-3" />
+                                  <Calendar className="w-2.5 h-2.5" />
                                 </button>
                                 <button
                                   onClick={(e) => handleToggleAutomatic(action, e)}
-                                  className={`p-1.5 rounded-lg transition-colors ${
+                                  className={`p-1 rounded-md transition-colors ${
                                     action.isAutomatic 
                                       ? 'bg-green-500/20 text-green-600 hover:bg-green-500/30 dark:bg-green-500/30 dark:text-green-400' 
                                       : action.isPaused 
@@ -470,26 +470,26 @@ export default function QuickActionsSidebar({
                                   }`}
                                   title={action.isAutomatic ? 'Desativar automático' : action.isPaused ? 'Despausar' : 'Ativar automático'}
                                 >
-                                  <Zap className="w-3 h-3" />
+                                  <Zap className="w-2.5 h-2.5" />
                                 </button>
                               </div>
                             </div>
 
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                            <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">
                               {action.content}
                             </p>
 
                             <div className="flex items-center justify-between">
-                              <div className="flex gap-1 flex-wrap">
+                              <div className="flex gap-0.5 flex-wrap">
                                 {/* Keywords/Tags */}
-                                {(action.tags || []).slice(0, 3).map(tag => (
-                                  <Badge key={tag} variant="outline" className="text-xs px-2 py-0.5">
+                                {(action.tags || []).slice(0, 2).map(tag => (
+                                  <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
                                     {tag}
                                   </Badge>
                                 ))}
-                                {(action.tags || []).length > 3 && (
-                                  <Badge variant="outline" className="text-xs px-2 py-0.5">
-                                    +{(action.tags || []).length - 3}
+                                {(action.tags || []).length > 2 && (
+                                  <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                    +{(action.tags || []).length - 2}
                                   </Badge>
                                 )}
                               </div>
@@ -499,10 +499,10 @@ export default function QuickActionsSidebar({
                                   e.stopPropagation()
                                   handleActionSelect(action)
                                 }}
-                                className="h-7 px-3 opacity-0 group-hover:opacity-100 transition-opacity bg-primary hover:bg-primary/90"
-                                title="Enviar agora"
+                                className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary hover:bg-primary/90 text-xs"
+                                title="Enviar"
                               >
-                                <Send className="w-3 h-3 mr-1" />
+                                <Send className="w-2.5 h-2.5 mr-1" />
                                 Enviar
                               </Button>
                             </div>
@@ -517,26 +517,14 @@ export default function QuickActionsSidebar({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border bg-muted/30 space-y-2">
+          <div className="p-3 border-t border-border bg-muted/30">
             <Button 
               className="w-full" 
               size="sm"
               onClick={() => onCreateWithAI?.()}
             >
-              <Bot className="w-4 h-4 mr-2" />
+              <Bot className="w-3.5 h-3.5 mr-2" />
               Criar com IA
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              size="sm"
-              onClick={() => {
-                // Redirect to respostas-rapidas page
-                window.location.href = '/dashboard/admin/respostas-rapidas'
-              }}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Ação Rápida
             </Button>
           </div>
         </motion.div>

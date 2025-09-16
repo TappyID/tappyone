@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
-
 export async function POST(request: NextRequest) {
   try {
     const { prompt, context, type = 'response' } = await request.json()
@@ -10,7 +8,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt é obrigatório' }, { status: 400 })
     }
 
-    console.log('🤖 Iniciando geração com IA:', {
+    console.log('🤖 Iniciando geração com DeepSeek:', {
       prompt: prompt.substring(0, 100) + '...',
       type,
       hasContext: !!context
@@ -39,14 +37,14 @@ export async function POST(request: NextRequest) {
       systemMessage += `\n\nContexto adicional: ${context}`
     }
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const deepseekResponse = await fetch(`${process.env.DEEPSEEK_API_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -57,23 +55,22 @@ export async function POST(request: NextRequest) {
             content: prompt
           }
         ],
-        max_tokens: 500,
+        max_tokens: 1000,
         temperature: 0.7,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+        stream: false
       })
     })
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text()
-      console.error('❌ Erro da OpenAI:', openaiResponse.status, errorText)
+    if (!deepseekResponse.ok) {
+      const errorText = await deepseekResponse.text()
+      console.error('❌ Erro do DeepSeek:', deepseekResponse.status, errorText)
       return NextResponse.json({ 
         error: 'Erro ao gerar conteúdo com IA', 
         details: errorText 
-      }, { status: openaiResponse.status })
+      }, { status: deepseekResponse.status })
     }
 
-    const completion = await openaiResponse.json()
+    const completion = await deepseekResponse.json()
     const generatedText = completion.choices[0]?.message?.content || ''
     
     console.log('✅ Geração concluída:', {

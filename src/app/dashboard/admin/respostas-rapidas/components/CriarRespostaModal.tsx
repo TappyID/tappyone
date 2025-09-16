@@ -334,7 +334,7 @@ export default function CriarRespostaModal({
       const processedAcoes = acoes.map(({ tipo, conteudo, ordem }) => {
         const processedAction = {
           tipo,
-          conteudo: typeof conteudo === 'string' ? conteudo : JSON.stringify(conteudo),
+          conteudo: typeof conteudo === 'string' ? JSON.parse(conteudo) : conteudo,
           ordem,
           ativo: true
         }

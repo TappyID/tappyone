@@ -23,7 +23,26 @@ export async function POST(
     
     // Converter para chat_id (formato esperado pelo backend Go)
     const backendBody = {
-      chat_id: body.chat_id || body.chatId || body.ChatID
+      chat_id: body.chat_id || body.chatId || body.ChatID,
+      // Se há ações customizadas, converter conteudo para string JSON (formato esperado pelo Go)
+      ...(body.acoes_customizadas && { 
+        acoes_customizadas: body.acoes_customizadas.map(acao => ({
+          ...acao,
+          conteudo: typeof acao.conteudo === 'object' 
+            ? JSON.stringify(acao.conteudo) 
+            : acao.conteudo
+        }))
+      })
+    }
+    
+    console.log('📦 [RESPOSTAS-RAPIDAS] Body enviado para backend:', JSON.stringify(backendBody, null, 2))
+    
+    // Log das ações customizadas se existirem
+    if (backendBody.acoes_customizadas) {
+      console.log('🎯 [RESPOSTAS-RAPIDAS] Ações customizadas sendo enviadas:')
+      backendBody.acoes_customizadas.forEach((acao, index) => {
+        console.log(`  ${index + 1}. Tipo: ${acao.tipo}, Ativo: ${acao.ativo}, ID: ${acao.id}`)
+      })
     }
     
     // Chamada para o endpoint /executar no backend Go
