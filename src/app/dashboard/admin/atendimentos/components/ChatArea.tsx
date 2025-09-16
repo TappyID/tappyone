@@ -603,25 +603,25 @@ export default function ChatArea({
     }
   }, [messages, isUserScrolling])
 
-  // Marcar mensagens como vistas quando o chat é aberto ou mensagens mudam
-  useEffect(() => {
-    if (messages && messages.length > 0 && conversation) {
-      // Filtrar mensagens não vistas do contato (não do agente)
-      const unseenMessages = messages
-        .filter(msg => msg.sender !== 'agent' && !(msg as any).seen)
-        .map(msg => msg.id || (msg as any)._data?.id?.id)
-        .filter(Boolean)
+  // TEMPORARIAMENTE DESABILITADO - Marcar mensagens como vistas quando o chat é aberto ou mensagens mudam
+  // useEffect(() => {
+  //   if (messages && messages.length > 0 && conversation) {
+  //     // Filtrar mensagens não vistas do contato (não do agente)
+  //     const unseenMessages = messages
+  //       .filter(msg => msg.sender !== 'agent' && !(msg as any).seen)
+  //       .map(msg => msg.id || (msg as any)._data?.id?.id)
+  //       .filter(Boolean)
       
-      if (unseenMessages.length > 0) {
-        // Aguardar um pouco antes de marcar como visto para simular leitura
-        const timer = setTimeout(() => {
-          markMessagesAsSeen(unseenMessages)
-        }, 1000)
+  //     if (unseenMessages.length > 0) {
+  //       // Aguardar um pouco antes de marcar como visto para simular leitura
+  //       const timer = setTimeout(() => {
+  //         markMessagesAsSeen(unseenMessages)
+  //       }, 1000)
         
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [messages, conversation])
+  //       return () => clearTimeout(timer)
+  //     }
+  //   }
+  // }, [messages, conversation])
 
   // Scroll inicial para o final quando conversa carrega
   useEffect(() => {
@@ -1061,7 +1061,7 @@ export default function ChatArea({
       if (!token) return
       
       // Chamar backend direto
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
       await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/seen`, {
         method: 'POST',
         headers: {

@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
     const limit = url.searchParams.get('limit') || '50'
     const offset = url.searchParams.get('offset') || '0'
     
-    // Usar backend Go com Redis cache em vez de WAHA direto
-    const response = await fetch(`${backendUrl}/api/whatsapp/groups/cached?session=${sessionName}&limit=${limit}&offset=${offset}`, {
+    // Usar backend Go em vez de WAHA direto
+    const response = await fetch(`${backendUrl}/api/whatsapp/groups?limit=${limit}&offset=${offset}`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

@@ -13,9 +13,18 @@ export async function middleware(request: NextRequest) {
   
   console.log(`[MIDDLEWARE] Processando: ${pathname}`)
 
-  // Permitir acesso livre às API routes do WhatsApp
-  if (pathname.startsWith('/api/whatsapp/')) {
-    console.log(`[MIDDLEWARE] ✅ API WhatsApp permitida: ${pathname}`)
+  // Permitir acesso livre às API routes do WhatsApp e outras APIs backend
+  if (pathname.startsWith('/api/whatsapp/') || 
+      pathname.startsWith('/api/respostas-rapidas/') ||
+      pathname.startsWith('/api/contatos/') ||
+      pathname.startsWith('/api/agendamentos/') ||
+      pathname.startsWith('/api/orcamentos/') ||
+      pathname.startsWith('/api/anotacoes/') ||
+      pathname.startsWith('/api/assinaturas/') ||
+      pathname.startsWith('/api/tickets/') ||
+      pathname.startsWith('/api/tags/') ||
+      pathname.startsWith('/api/connections/')) {
+    console.log(`[MIDDLEWARE] ✅ API permitida: ${pathname}`)
     return NextResponse.next()
   }
 

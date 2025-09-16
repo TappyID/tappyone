@@ -298,10 +298,32 @@ export function useRespostasRapidas() {
     try {
       setLoading(true)
       setError(null)
-      await apiCall(`/${id}/executar`, {
+      
+      console.log(`[executeResposta] Executando via Next.js handler para ID: ${id}`)
+      console.log(`[executeResposta] Chat ID: ${chatId}`)
+      
+      // Usar o handler Next.js que faz proxy para o backend
+      const response = await fetch(`${baseURL}/${id}/executar`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ chat_id: chatId }),
       })
+      
+      console.log(`[executeResposta] Status da resposta: ${response.status}`)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[executeResposta] Erro do servidor:', errorText)
+        throw new Error(`Erro ${response.status}: ${errorText || response.statusText}`)
+      }
+      
+      const result = await response.json()
+      console.log('[executeResposta] Resposta executada com sucesso:', result)
+      
+      return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao executar resposta')
       console.error('Erro ao executar resposta:', err)
@@ -309,7 +331,7 @@ export function useRespostasRapidas() {
     } finally {
       setLoading(false)
     }
-  }, [apiCall])
+  }, [token, baseURL])
 
   const createCategoria = useCallback(async (data: CreateCategoriaRequest) => {
     console.log('[createCategoria] Dados originais recebidos:', data)

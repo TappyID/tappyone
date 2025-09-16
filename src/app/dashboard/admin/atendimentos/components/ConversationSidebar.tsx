@@ -677,14 +677,7 @@
     const activeContacts = contacts
     
     // DEBUG: Log dados dos chats
-    console.log('🔍 [DEBUG] ConversationSidebar:', {
-      useInfiniteScroll,
-      infiniteChats: infiniteChats?.length || 0,
-      chats: chats?.length || 0,
-      activeChats: activeChats?.length || 0,
-      loading,
-      hasMore
-    })
+  
     // Usar loading adequado baseado no modo
     const activeLoading = useInfiniteScroll ? loading : isLoading
     
@@ -815,9 +808,7 @@
     }, [atendentes])
 
     // DEBUG: Verificar filteredConversations
-    console.log('🔍 [DEBUG] Dados antes da transformação:', {
-      activeChats: activeChats?.slice(0, 3) // Primeiros 3 chats
-    })
+   
     
     // OTIMIZAÇÃO CRÍTICA: Processar apenas chats visíveis (primeiros 100)
     const conversations = useMemo(() => activeChats.slice(0, 100).map(chat => {
@@ -1043,14 +1034,7 @@
     }, [conversations, searchQuery, activeFilter, selectedQueue, selectedTag, advancedFilters, hiddenChats, sortBy])
     
     // DEBUG: Log conversas filtradas
-    console.log('🔍 [DEBUG] Conversas processadas:', {
-      conversations: conversations?.length || 0,
-      filteredConversations: filteredConversations?.length || 0,
-      activeFilter,
-      searchQuery,
-      selectedQueue,
-      loading: activeLoading
-    })
+   
 
     // OTIMIZAÇÃO: Polling de presença TOTALMENTE DESABILITADO com 800+ chats
     // const pollingChatIds = filteredConversations.slice(0, 5).map(conv => conv.id)
@@ -1505,12 +1489,7 @@
                       {(() => {
                         const chatId = conversation.id
                         const contatoData = contatosData[chatId]
-                        console.log(`🔍 [SIDEBAR-KANBAN] Chat ${chatId}:`, {
-                          kanbanBoard: conversation.kanbanBoard,
-                          contatoDataKanban: contatoData?.kanbanBoard,
-                          atendente: conversation.atendente,
-                          contatoDataAtendente: contatoData?.atendente
-                        })
+                       
                         
                         if (conversation.kanbanBoard) {
                           return (
@@ -1636,28 +1615,44 @@
                           )
                         })()}
                         
-                        {/* Badge Tickets - Minimalista */}
+                        {/* Badge Tickets - Exibe Nome e Status */}
                         {(() => {
                           const contatoData = contatosData[conversation.id?._serialized || conversation.id || '']
                           const tickets = contatoData?.tickets
-                          return tickets && tickets.length > 0 && (
+                          if (!tickets || tickets.length === 0) return null
+                          
+                          // Pegar o ticket mais relevante (prioritário: ABERTO > outros status)
+                          const ticketAtivo = tickets.find(t => t.status === 'ABERTO') || tickets[0]
+                          const statusColor = ticketAtivo.status === 'ABERTO' ? '#ef4444' : 
+                                            ticketAtivo.status === 'FECHADO' ? '#10b981' : '#f59e0b'
+                          const statusBgColor = ticketAtivo.status === 'ABERTO' ? '#ef444420' : 
+                                              ticketAtivo.status === 'FECHADO' ? '#10b98120' : '#f59e0b20'
+                          const statusBorderColor = ticketAtivo.status === 'ABERTO' ? '#ef444440' : 
+                                                  ticketAtivo.status === 'FECHADO' ? '#10b98140' : '#f59e0b40'
+                          
+                          return (
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                              className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer max-w-[120px]"
                               style={{
-                                backgroundColor: '#ef444420',
-                                borderColor: '#ef444440'
+                                backgroundColor: statusBgColor,
+                                borderColor: statusBorderColor
                               }}
-                              title={`${tickets.length} ticket(s) - ${tickets.filter(t => t.status === 'ABERTO').length} aberto(s)`}
+                              title={`${ticketAtivo.titulo || 'Sem título'} - Status: ${ticketAtivo.status}${tickets.length > 1 ? ` (+${tickets.length - 1} outros)` : ''}`}
                               onClick={() => {}}
                             >
-                              <svg className="w-3 h-3" style={{ color: '#ef4444' }} fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-3 h-3 flex-shrink-0" style={{ color: statusColor }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                               </svg>
-                              <span className="text-xs font-medium" style={{ color: '#ef4444' }}>
-                                {tickets.length}
+                              <span className="text-xs font-medium truncate" style={{ color: statusColor }}>
+                                {ticketAtivo.titulo || 'Sem título'}
                               </span>
+                              {tickets.length > 1 && (
+                                <span className="text-xs font-bold ml-1" style={{ color: statusColor }}>
+                                  +{tickets.length - 1}
+                                </span>
+                              )}
                             </motion.div>
                           )
                         })()}
