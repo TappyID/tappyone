@@ -178,7 +178,9 @@
     useInfiniteScroll = false, // Desativado por padrão até resolver o problema
     loadMoreChats,
     hasMoreChats,
-    loadingMore
+    loadingMore,
+    onOpenLigacaoModal,
+    onOpenVideoChamadaModal
   }: ConversationSidebarProps) {
     const [activeFilter, setActiveFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
@@ -886,11 +888,11 @@
       }
     }), [activeChats, contatosData, tagsCache, conexoes, filas, atendentes, kanbanInfo, agentesCache, conexaoFilaCache])
 
-    // OTIMIZAÇÃO: Carregar informações dos agentes apenas para 5 chats visíveis
+    // OTIMIZAÇÃO: Carregar informações dos agentes para 30 chats visíveis
     useEffect(() => {
       const loadAgentesInfo = async () => {
-        // Carregar apenas para os primeiros 5 chats (visíveis)
-        const visibleChats = activeChats.slice(0, 5)
+        // Carregar para os primeiros 30 chats (suficiente para badges visíveis)
+        const visibleChats = activeChats.slice(0, 30)
         
         for (const chat of visibleChats) {
           const chatId = chat.id?._serialized || chat.id || ''
@@ -905,11 +907,11 @@
       }
     }, [activeChats])
 
-    // OTIMIZAÇÃO: Carregar informações de conexão/fila apenas para 5 chats visíveis
+    // OTIMIZAÇÃO: Carregar informações de conexão/fila para 30 chats visíveis 
     useEffect(() => {
       const loadConexaoFilaInfo = async () => {
-        // Carregar apenas para os primeiros 5 chats (visíveis)
-        const visibleChats = activeChats.slice(0, 5)
+        // Carregar para os primeiros 30 chats (suficiente para badges visíveis)
+        const visibleChats = activeChats.slice(0, 30)
         
         for (const chat of visibleChats) {
           const chatId = chat.id?._serialized || chat.id || ''
@@ -1872,28 +1874,6 @@
             )}
           </div>
 
-          {/* Quick Actions Footer */}
-          <div className="p-4 border-t border-gray-200/50 dark:border-slate-700/50 bg-gray-50/80 dark:bg-slate-800/30 backdrop-blur-sm">
-            <div className="flex gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-gray-50 dark:bg-emerald-600/20 dark:hover:bg-emerald-500 text-gray-600 hover:text-gray-700 dark:text-emerald-300 dark:hover:text-white rounded-lg transition-all duration-300 border border-gray-200 dark:border-emerald-500/30 shadow-sm dark:shadow-emerald-500/20"
-              >
-                <Phone className="w-4 h-4" />
-                <span className="text-sm font-medium">Ligar</span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-blue-600/20 dark:hover:bg-blue-500 text-gray-600 hover:text-gray-700 dark:text-blue-300 dark:hover:text-white rounded-lg transition-all duration-300 border border-gray-200 dark:border-blue-500/30 shadow-sm dark:shadow-blue-500/20"
-              >
-                <Video className="w-4 h-4" />
-                <span className="text-sm font-medium">Vídeo</span>
-              </motion.button>
-            </div>
-          </div>
         </motion.div>
         
 

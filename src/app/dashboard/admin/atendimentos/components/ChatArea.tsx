@@ -80,7 +80,8 @@ import {
   Contact,
   Square,
   Expand,
-  Ticket
+  Ticket,
+  Users2
 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useAudioRecorder, formatDuration, blobToFile } from '@/hooks/useAudioRecorder'
@@ -170,6 +171,7 @@ export default function ChatArea({
   const [message, setMessage] = useState('')
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const [kanbanInfo, setKanbanInfo] = useState<{quadro: string, coluna: string, color: string} | null>(null)
+  const [conexaoFilaInfo, setConexaoFilaInfo] = useState<any>(null)
   const [showAgenteModal, setShowAgenteModal] = useState(false)
   
   // Função para extrair chatId
@@ -279,6 +281,52 @@ export default function ChatArea({
     
     loadKanbanInfo()
   }, [conversation])
+
+  // Carregar informações de conexão/fila quando a conversa mudar
+  useEffect(() => {
+    const loadConexaoFilaInfo = async () => {
+      if (conversation && chatId) {
+        try {
+          const token = localStorage.getItem('token')
+          if (!token) return
+
+          // Usar o número limpo para a busca (sem @c.us)
+          const contatoId = chatId.replace('@c.us', '')
+          
+          const response = await fetch(`/api/conexoes/contato/${contatoId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            setConexaoFilaInfo({
+              hasConnection: !!result.conexao,
+              isConnected: result.conexao?.status === 'connected',
+              conexao: result.conexao ? {
+                id: result.conexao.id,
+                sessionName: result.conexao.session_name,
+                status: result.conexao.status
+              } : null,
+              fila: result.fila ? {
+                id: result.fila.id,
+                nome: result.fila.nome,
+                cor: result.fila.cor
+              } : null,
+              atendentes: result.atendentes || []
+            })
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados de conexão/fila:', error)
+        }
+      }
+    }
+    
+    loadConexaoFilaInfo()
+  }, [conversation, chatId])
   
   // Hook de tradução
   const { translateMessage, translateMessages, selectedLanguage, setSelectedLanguage, isTranslating } = useTranslation()
@@ -1692,6 +1740,22 @@ export default function ChatArea({
             >
               <Tag className="w-3 h-3 mr-1" />
               Carregando...
+            </motion.span>
+          )}
+
+
+
+          {/* Badge de Atendentes */}
+          {conexaoFilaInfo?.atendentes && conexaoFilaInfo.atendentes.length > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              className="inline-flex items-center px-3 py-1 text-xs text-white bg-blue-500 rounded-full font-medium shadow-sm ml-2 flex-shrink-0 cursor-help"
+              title={`Atendentes: ${conexaoFilaInfo.atendentes.map((atendente: any) => atendente.nome || atendente.name || 'Sem nome').join(', ')}`}
+            >
+              <Users2 className="w-3 h-3 mr-1" />
+              {conexaoFilaInfo.atendentes.length} Atendente{conexaoFilaInfo.atendentes.length > 1 ? 's' : ''}
             </motion.span>
           )}
         </div>
