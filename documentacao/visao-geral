@@ -1,0 +1,1022 @@
+/home/willian/Área de Trabalho/tappyone/documentacao/api-whatsapp
+/home/willian/Área de Trabalho/tappyone/documentacao/backend
+/home/willian/Área de Trabalho/tappyone/documentacao/frontend
+/home/willian/Área de Trabalho/tappyone/documentacao/postgresql
+/home/willian/Área de Trabalho/tappyone/documentacao/reddis
+
+
+1 - Backend 
+
+# JWT Secret
+JWT_SECRET=tappyone_jwt_secret_2024_secure_key_a8f9e2d1c5b7f3e6a4d8c9b2e5f1a7d3
+
+# WAHA API Configuration (production)
+WAHA_API_URL=http://159.65.34.199:3001
+WAHA_API_KEY=tappyone-waha-2024-secretkey
+WHATSAPP_API_TOKEN=tappyone-waha-2024-secretkey
+
+# Backend URL for webhooks
+BACKEND_URL=http://159.65.34.199:8081
+
+# Frontend URL (production)
+FRONTEND_URL=https://crm.tappy.id
+
+# Webhook URL
+WEBHOOK_URL=http://159.65.34.199:3001/webhooks/whatsapp
+
+# Database - PostgreSQL na Digital Ocean
+DATABASE_URL=postgresql://tappyone_app:vQXVvOQOmQL9IZAMhG70sJ4Oe@159.65.34.199:5432/tappyone?sslmode=disable
+
+# DeepSeek AI Configuration
+DEEPSEEK_API_KEY=sk-f98ff4ede4c4484c9c5ac3725af150c4
+DEEPSEEK_API_URL=https://api.deepseek.com/v1
+DEEPSEEK_MODEL=deepseek-chat
+
+# Email Configuration
+EMAIL_FROM=contato@vyzer.com.br
+EMAIL_SERVER_HOST=smtp.hostinger.com
+EMAIL_SERVER_PASSWORD=Lala147??
+EMAIL_SERVER_PORT=465
+EMAIL_SERVER_SECURE=true
+EMAIL_SERVER_USER=contato@vyzer.com.br
+
+TA NA DIGITAL OCEAN NA PORTA 8081 O BACKEND E NA PORTA 3001 A API DO WHATSAPP
+
+
+
+*** System restart required ***
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~# docker ps
+CONTAINER ID   IMAGE                          COMMAND                  CREATED          STATUS          PORTS                                         NAMES
+39034e387547   backend-backend                "./main"                 51 minutes ago   Up 51 minutes   0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp   backend-backend-1
+b02ee4fba5c9   devlikeapro/waha-plus:chrome   "/usr/bin/tini -- /e…"   3 days ago       Up 3 days       0.0.0.0:3001->3000/tcp, [::]:3001->3000/tcp   backend-waha-1
+9baa7061b5d0   redis:7-alpine                 "docker-entrypoint.s…"   8 days ago       Up 8 days       6379/tcp                                      backend-redis-1
+bf93ce41fc62   postgres:15                    "docker-entrypoint.s…"   8 days ago       Up 8 days       5432/tcp                                      backend-postgres-1
+cf428cf6a7cc   devlikeapro/waha-plus          "/usr/bin/tini -- /e…"   2 weeks ago      Up 2 weeks      3000/tcp                                      bold_sinoussi
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~# 
+
+
+
+Fluxo local 
+
+/tappyone/ git add . 
+/tappyone/ git commit -m ""
+/tappyone/ git push origin main
+
+Envia para o github e pra vercel
+
+
+Fluxo local backend
+
+cd /tappyone/backend
+git add .
+git commit -m ""
+git push origin main
+
+Envia para o github e pra Digital Oceaan
+
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~/backend# docker-compose build --no-cache backend
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~/backend# docker-compose up -d
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~/backend# docker-compose ps
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~/backend# docker-compose logs -f --tail=50 backend
+ 
+
+Fluxo do banco de dados
+
+root@ubuntu-s-4vcpu-8gb-nyc3-01:~/backend# docker-compose exec backend psql -U tappyone_app -d tappyone
+
+
+
+
+willian@pop-os:~/Área de Trabalho/tappyone$ cd backend/
+willian@pop-os:~/Área de Trabalho/tappyone/backend$ tree
+.
+├── backend.exe
+├── cmd
+│   ├── cleanup
+│   │   └── main.go
+│   ├── create-users
+│   │   └── main.go
+│   ├── fix-data
+│   │   └── main.go
+│   ├── force-migrate
+│   │   └── main.go
+│   ├── hash-password
+│   │   └── main.go
+│   ├── migrate
+│   │   └── main.go
+│   ├── server
+│   │   └── main.go
+│   └── verify
+│       └── main.go
+├── debug-users.sh
+├── docker-compose.yml
+├── go.mod
+├── go.sum
+├── hash-password.py
+├── internal
+│   ├── cache
+│   │   └── redis.go
+│   ├── config
+│   │   └── config.go
+│   ├── database
+│   │   ├── connection.go
+│   │   └── migrate.go
+│   ├── handlers
+│   │   ├── agendamentos_batch.go
+│   │   ├── agendamentos.go
+│   │   ├── agentes.go
+│   │   ├── alertas.go
+│   │   ├── anotacoes_batch.go
+│   │   ├── anotacoes.go
+│   │   ├── assinaturas_batch.go
+│   │   ├── assinaturas.go
+│   │   ├── automacao.go
+│   │   ├── chat_interno.go
+│   │   ├── cobranca.go
+│   │   ├── conexao_contato.go
+│   │   ├── connection.go
+│   │   ├── contatos_batch.go
+│   │   ├── contatos.go
+│   │   ├── conteudo.go
+│   │   ├── conversas.go
+│   │   ├── dashboard.go
+│   │   ├── favorites.go
+│   │   ├── filas.go
+│   │   ├── fluxos.go
+│   │   ├── handlers.go
+│   │   ├── media.go
+│   │   ├── orcamentos_batch.go
+│   │   ├── orcamentos.go
+│   │   ├── quadros.go
+│   │   ├── resposta_rapida.go
+│   │   ├── sessoes_whatsapp.go
+│   │   ├── tags.go
+│   │   ├── tickets.go
+│   │   ├── websocket.go
+│   │   ├── whatsapp_autoresponse.go
+│   │   ├── whatsapp_cache.go
+│   │   ├── whatsapp_media.go
+│   │   ├── whatsapp_messages.go
+│   │   └── whatsapp_webhook.go
+│   ├── middleware
+│   │   └── auth.go
+│   ├── models
+│   │   ├── alerta.go
+│   │   ├── business.go
+│   │   ├── connection.go
+│   │   ├── favorite.go
+│   │   ├── fila.go
+│   │   ├── kanban.go
+│   │   ├── models.go
+│   │   └── resposta_rapida.go
+│   ├── repositories
+│   │   ├── connection.go
+│   │   └── resposta_rapida.go
+│   ├── router
+│   │   └── router.go
+│   ├── services
+│   │   ├── auth.go
+│   │   ├── connection.go
+│   │   ├── container.go
+│   │   ├── fluxo_execution.go
+│   │   ├── resposta_rapida.go
+│   │   └── services.go
+│   └── utils
+│       ├── auth.go
+│       └── jwt_helper.go
+├── main
+├── main.exe~
+├── main.go
+├── migrations
+│   ├── 003_create_user_connections.sql
+│   ├── 004_create_respostas_rapidas.sql
+│   ├── 005_add_fallback_column.sql
+│   ├── 006_add_four_flows_models.sql
+│   ├── 007_create_filas.sql
+│   ├── 008_add_fila_id_to_users.sql
+│   ├── 008_create_alertas.sql
+│   ├── 008_create_fila_contatos.sql
+│   ├── 009_add_modulation_to_connections.sql
+│   ├── 010_create_tickets.sql
+│   ├── 011_create_agentes.sql
+│   ├── 011_create_contato_agente.sql
+│   └── 013_create_favorites.sql
+├── security-setup.sh
+├── server.exe
+├── tappyone-backend.exe
+├── tappyone.exe
+└── uploads
+    └── voice_message-1755739816.webm
+
+22 directories, 120 files
+willian@pop-os:~/Área de Trabalho/tappyone/backend$ 
+
+
+Estrutura do frontend 
+
+├── debug_helio.sql
+├── debug-logs
+│   ├── kanban-debug-2025-09-13.json
+│   ├── kanban-debug-2025-09-14.json
+│   ├── kanban-debug-2025-09-15.json
+│   ├── kanban-debug-2025-09-16.json
+│   └── kanban-debug-2025-09-17.json
+├── documentacao
+│   ├── api-whatsapp
+│   ├── frontend
+│   ├── postgresql
+│   ├── reddis
+│   └── visao-geral
+├── fluxo-filtros-permissoes.md
+├── logo-branca.svg
+├── logo.svg
+├── Makefile
+├── memoriaGloba.md
+├── middleware.ts
+├── next.config.js
+├── next-env.d.ts
+├── package.json
+├── pnpm-lock.yaml
+├── postcss.config.js
+├── prisma
+│   └── schema.prisma
+├── public
+│   ├── favicon.svg
+│   ├── favicon-white.svg
+│   ├── logo-branca.svg
+│   └── logo.svg
+├── README.md
+├── src
+│   ├── app
+│   │   ├── adminrecovery
+│   │   │   └── page.tsx
+│   │   ├── api
+│   │   │   ├── admin
+│   │   │   │   └── generate-password
+│   │   │   │       └── route.ts
+│   │   │   ├── agendamentos
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── agentes
+│   │   │   │   ├── ativos
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   └── toggle
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── agentes-chat
+│   │   │   │   └── route.ts
+│   │   │   ├── ai
+│   │   │   │   ├── deepseek
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── generate
+│   │   │   │       └── route.ts
+│   │   │   ├── alertas
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── anotacoes
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── assinaturas
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   └── status
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── atendentes
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── atendimentos
+│   │   │   │   └── stats
+│   │   │   ├── auth
+│   │   │   │   ├── forgot-password
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── login
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── me
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── reset-password
+│   │   │   │       └── route.ts
+│   │   │   ├── chat-agentes
+│   │   │   │   └── [chatId]
+│   │   │   │       ├── activate
+│   │   │   │       │   └── route.ts
+│   │   │   │       ├── deactivate
+│   │   │   │       │   └── route.ts
+│   │   │   │       └── route.ts
+│   │   │   ├── chat-interno
+│   │   │   │   ├── accept
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── reject
+│   │   │   │       └── route.ts
+│   │   │   ├── conexoes
+│   │   │   │   └── contato
+│   │   │   │       └── [contatoId]
+│   │   │   │           └── route.ts
+│   │   │   ├── connections
+│   │   │   │   ├── route.ts
+│   │   │   │   └── whatsapp
+│   │   │   │       ├── route.ts
+│   │   │   │       ├── [sessionName]
+│   │   │   │       │   └── route.ts
+│   │   │   │       └── sync
+│   │   │   │           └── [sessionName]
+│   │   │   │               └── route.ts
+│   │   │   ├── contatos
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── export
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── atendentes
+│   │   │   │   │   ├── dados-completos
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── filas
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   └── tags
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── import
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── route.ts
+│   │   │   │   └── stats
+│   │   │   │       └── route.ts
+│   │   │   ├── debug-logs
+│   │   │   │   └── route.ts
+│   │   │   ├── deepseek
+│   │   │   │   └── route.ts
+│   │   │   ├── favorites
+│   │   │   │   └── route.ts
+│   │   │   ├── filas
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── contatos
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── files
+│   │   │   │   └── [...path]
+│   │   │   │       └── route.ts
+│   │   │   ├── fluxos
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── execute
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   └── toggle
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── route.ts
+│   │   │   │   └── stats
+│   │   │   │       └── route.ts
+│   │   │   ├── generate-audio
+│   │   │   ├── generate-image
+│   │   │   ├── kanban
+│   │   │   │   ├── card-movement
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── cards
+│   │   │   │   │   └── [quadroId]
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── column-create
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── column-delete
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── column-edit
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── coluna
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── color
+│   │   │   │   │   │       └── route.ts
+│   │   │   │   │   └── reorder
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── colunas
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── metadata
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── quadros
+│   │   │   │       ├── [id]
+│   │   │   │       │   └── route.ts
+│   │   │   │       └── route.ts
+│   │   │   ├── link-preview
+│   │   │   │   └── route.ts
+│   │   │   ├── media
+│   │   │   │   └── [...path]
+│   │   │   │       └── route.ts
+│   │   │   ├── orcamentos
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── proxy
+│   │   │   │   └── [...path]
+│   │   │   │       └── route.ts
+│   │   │   ├── respostas-rapidas
+│   │   │   │   ├── categorias
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── executar
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── sessoes-whatsapp
+│   │   │   │   └── route.ts
+│   │   │   ├── tags
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── contatos
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── tickets
+│   │   │   │   ├── abertos
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── batch
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   └── status
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── route.ts
+│   │   │   │   └── transfer
+│   │   │   │       └── route.ts
+│   │   │   ├── transcribe
+│   │   │   │   └── route.ts
+│   │   │   ├── translate
+│   │   │   │   └── route.ts
+│   │   │   ├── upload
+│   │   │   │   ├── blob
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── blob-from-backend
+│   │   │   │       └── route.ts
+│   │   │   ├── users
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── filas
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── usuarios
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── filas
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── waha
+│   │   │   │   ├── [sessionName]
+│   │   │   │   │   ├── auth
+│   │   │   │   │   │   └── qr
+│   │   │   │   │   │       └── route.ts
+│   │   │   │   │   └── screenshot
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── sessions
+│   │   │   │       ├── route.ts
+│   │   │   │       └── [sessionName]
+│   │   │   │           ├── route.ts
+│   │   │   │           ├── start
+│   │   │   │           │   └── route.ts
+│   │   │   │           └── stop
+│   │   │   │               └── route.ts
+│   │   │   ├── webhooks
+│   │   │   │   └── whatsapp
+│   │   │   │       └── route.ts
+│   │   │   └── whatsapp
+│   │   │       ├── chats
+│   │   │       │   ├── [chatId]
+│   │   │       │   │   ├── archive
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── contact
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── delete
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── file
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── image
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── messages
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── picture
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── read
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── seen
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── typing
+│   │   │       │   │   │   ├── start
+│   │   │       │   │   │   │   └── route.ts
+│   │   │       │   │   │   └── stop
+│   │   │       │   │   │       └── route.ts
+│   │   │       │   │   ├── unarchive
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   ├── video
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   └── voice
+│   │   │       │   │       └── route.ts
+│   │   │       │   └── route.ts
+│   │   │       ├── check-connection
+│   │   │       │   └── route.ts
+│   │   │       ├── contacts
+│   │   │       │   └── route.ts
+│   │   │       ├── groups
+│   │   │       │   └── route.ts
+│   │   │       ├── messages
+│   │   │       │   ├── forward
+│   │   │       │   │   └── route.ts
+│   │   │       │   ├── [messageId]
+│   │   │       │   │   ├── forward
+│   │   │       │   │   │   └── route.ts
+│   │   │       │   │   └── reaction
+│   │   │       │   │       └── route.ts
+│   │   │       │   └── star
+│   │   │       │       └── route.ts
+│   │   │       ├── reaction
+│   │   │       │   └── route.ts
+│   │   │       ├── reply
+│   │   │       │   └── route.ts
+│   │   │       ├── sendContact
+│   │   │       │   └── route.ts
+│   │   │       ├── sendFile
+│   │   │       │   └── route.ts
+│   │   │       ├── sendImage
+│   │   │       │   └── route.ts
+│   │   │       ├── sendLocation
+│   │   │       │   └── route.ts
+│   │   │       ├── sendPoll
+│   │   │       │   └── route.ts
+│   │   │       ├── sendSeen
+│   │   │       │   └── route.ts
+│   │   │       ├── sendVideo
+│   │   │       │   └── route.ts
+│   │   │       ├── sessions
+│   │   │       │   ├── route.ts
+│   │   │       │   └── [sessionName]
+│   │   │       │       ├── qr
+│   │   │       │       │   └── route.ts
+│   │   │       │       ├── route.ts
+│   │   │       │       ├── start
+│   │   │       │       │   └── route.ts
+│   │   │       │       ├── status
+│   │   │       │       │   └── route.ts
+│   │   │       │       └── stop
+│   │   │       │           └── route.ts
+│   │   │       └── star
+│   │   │           └── route.ts
+│   │   ├── dashboard
+│   │   │   ├── admin
+│   │   │   │   ├── agendamentos
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AgendamentoStats.tsx
+│   │   │   │   │   │   ├── CalendarioSofisticado.tsx
+│   │   │   │   │   │   ├── CriarAgendamentoModal.tsx
+│   │   │   │   │   │   └── DetalhesAgendamentoModal.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── agentes
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AgentesList.tsx
+│   │   │   │   │   │   ├── CriarAgenteModal.tsx
+│   │   │   │   │   │   └── EstatisticasAgentes.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── alertas
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AlertasFilters.tsx
+│   │   │   │   │   │   ├── AlertasHeader.tsx
+│   │   │   │   │   │   ├── AlertasList.tsx
+│   │   │   │   │   │   ├── AlertasStats.tsx
+│   │   │   │   │   │   └── CriarAlertaModal.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── assinaturas
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AssinaturasFilters.tsx
+│   │   │   │   │   │   ├── AssinaturasHeader.tsx
+│   │   │   │   │   │   ├── AssinaturasList.tsx
+│   │   │   │   │   │   ├── AssinaturasStats.tsx
+│   │   │   │   │   │   └── CriarAssinaturaModal.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── atendentes
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AtendentesFilters.tsx
+│   │   │   │   │   │   ├── AtendentesHeader.tsx
+│   │   │   │   │   │   ├── AtendentesListSimplified.tsx
+│   │   │   │   │   │   ├── AtendentesList.tsx
+│   │   │   │   │   │   ├── AtendentesStats.tsx
+│   │   │   │   │   │   ├── AtribuirFilaModal.tsx
+│   │   │   │   │   │   ├── CriarAtendenteModalSimplified.tsx
+│   │   │   │   │   │   ├── CriarAtendenteModal.tsx
+│   │   │   │   │   │   ├── EditarAtendenteModal.tsx
+│   │   │   │   │   │   └── VisualizarAtendenteModal.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── atendimentos
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AnotacoesSidebar.tsx
+│   │   │   │   │   │   ├── AtendimentosTopBar.tsx
+│   │   │   │   │   │   ├── ChatArea.tsx
+│   │   │   │   │   │   ├── ConversationSidebar.tsx
+│   │   │   │   │   │   ├── CriarFluxoIAModal.tsx
+│   │   │   │   │   │   ├── EditTextModal.tsx
+│   │   │   │   │   │   ├── InfiniteConversationSidebar.tsx
+│   │   │   │   │   │   ├── modals
+│   │   │   │   │   │   │   ├── AgendamentoModal.tsx
+│   │   │   │   │   │   │   ├── AgenteSelectionModal.tsx
+│   │   │   │   │   │   │   ├── AnotacoesModal.tsx
+│   │   │   │   │   │   │   ├── AssinaturaModal.tsx
+│   │   │   │   │   │   │   ├── CompartilharTelaModal.tsx
+│   │   │   │   │   │   │   ├── LigacaoModal.tsx
+│   │   │   │   │   │   │   ├── OrcamentoModal.tsx
+│   │   │   │   │   │   │   ├── TagsModal.tsx
+│   │   │   │   │   │   │   ├── TicketModal.tsx
+│   │   │   │   │   │   │   ├── TransferirAtendimentoModal.tsx
+│   │   │   │   │   │   │   └── VideoChamadaModal.tsx
+│   │   │   │   │   │   ├── OptimizedConversationSidebar.tsx
+│   │   │   │   │   │   └── QuickActionsSidebar.tsx
+│   │   │   │   │   ├── layout.tsx
+│   │   │   │   │   ├── optimized-page.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── atendimentos-teste
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── chat-interno
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AtendentesLista.tsx
+│   │   │   │   │   │   ├── ChatInternoArea.tsx
+│   │   │   │   │   │   ├── ChatInternoTopBar.tsx
+│   │   │   │   │   │   └── MicroModals.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── components
+│   │   │   │   │   ├── AdminLayout.tsx
+│   │   │   │   │   ├── AgendaButton.tsx
+│   │   │   │   │   ├── AgentSelector.tsx
+│   │   │   │   │   ├── analytics
+│   │   │   │   │   │   ├── FunnelAnalytics.tsx
+│   │   │   │   │   │   ├── NCSAnalytics.tsx
+│   │   │   │   │   │   └── OverviewAnalytics.tsx
+│   │   │   │   │   ├── AnalyticsHub.tsx
+│   │   │   │   │   ├── ChatToggle.tsx
+│   │   │   │   │   ├── ColorThemeSelector.tsx
+│   │   │   │   │   ├── ComponentInterfaces.ts
+│   │   │   │   │   ├── GlassClock.tsx
+│   │   │   │   │   ├── LanguageSelector.tsx
+│   │   │   │   │   ├── NotificationsDropdown.tsx
+│   │   │   │   │   ├── ProfileDropdown.tsx
+│   │   │   │   │   ├── QuickResponsesButton.tsx
+│   │   │   │   │   ├── QuoteButton.tsx
+│   │   │   │   │   ├── SearchBar.tsx
+│   │   │   │   │   ├── SidebarItem.tsx
+│   │   │   │   │   ├── SidebarLogo.tsx
+│   │   │   │   │   ├── sidebar-scrollbar.css
+│   │   │   │   │   ├── SidebarToggle.tsx
+│   │   │   │   │   ├── Sidebar.tsx
+│   │   │   │   │   ├── SubscriptionButton.tsx
+│   │   │   │   │   ├── ThemeToggle.tsx
+│   │   │   │   │   ├── TopBarButton.tsx
+│   │   │   │   │   └── TopBar.tsx
+│   │   │   │   ├── conexoes
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── ActiveConnectionsTable.tsx
+│   │   │   │   │   │   ├── ApiTest.tsx
+│   │   │   │   │   │   ├── ConnectionsGrid.tsx
+│   │   │   │   │   │   ├── ConnectionStats.tsx
+│   │   │   │   │   │   ├── EditConnectionModal.tsx
+│   │   │   │   │   │   ├── NewConnectionModal.tsx
+│   │   │   │   │   │   ├── SocialConnection.tsx
+│   │   │   │   │   │   ├── ViewConnectionModal.tsx
+│   │   │   │   │   │   └── WhatsAppConnection.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── configuracoes
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── BackupSection.tsx
+│   │   │   │   │   │   ├── EmailSection.tsx
+│   │   │   │   │   │   ├── GeralSection.tsx
+│   │   │   │   │   │   ├── IntegracoesSection.tsx
+│   │   │   │   │   │   ├── NotificacoesSection.tsx
+│   │   │   │   │   │   ├── PerformanceSection.tsx
+│   │   │   │   │   │   ├── PermissoesSection.tsx
+│   │   │   │   │   │   ├── SegurancaSection.tsx
+│   │   │   │   │   │   ├── TarefasSection.tsx
+│   │   │   │   │   │   └── TemaSection.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── contatos
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── ContactActionModal.tsx
+│   │   │   │   │   │   ├── ContatosList.tsx
+│   │   │   │   │   │   ├── ContatosStats.tsx
+│   │   │   │   │   │   ├── ContatosTopBar.tsx
+│   │   │   │   │   │   ├── CreateContactModal.tsx
+│   │   │   │   │   │   ├── ExportModal.tsx
+│   │   │   │   │   │   └── ImportModal.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── debug
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── filas
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── CriarFilaModal.tsx
+│   │   │   │   │   │   ├── FilasFilters.tsx
+│   │   │   │   │   │   ├── FilasHeader.tsx
+│   │   │   │   │   │   ├── FilasList.tsx
+│   │   │   │   │   │   └── FilasStats.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── fluxograma
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── AiGeneratorModal.tsx
+│   │   │   │   │   │   ├── CreateFluxoTab.tsx
+│   │   │   │   │   │   ├── FlowEditor.tsx
+│   │   │   │   │   │   ├── FluxoCard.tsx
+│   │   │   │   │   │   ├── FluxoNodes.tsx
+│   │   │   │   │   │   └── ViewFluxosTab.tsx
+│   │   │   │   │   ├── page-clean.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── kanban
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── ColorPickerModal.tsx
+│   │   │   │   │   │   ├── CriarCardModal.tsx
+│   │   │   │   │   │   └── CriarQuadroModal.tsx
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   ├── components
+│   │   │   │   │   │   │   ├── ConexaoFilaBadges.tsx
+│   │   │   │   │   │   │   └── ConexaoFilaModal.tsx
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── orcamentos
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── ContatosSidebar.tsx
+│   │   │   │   │   │   ├── CriarOrcamentoModal.tsx
+│   │   │   │   │   │   ├── OrcamentoPDF.tsx
+│   │   │   │   │   │   ├── OrcamentoStats.tsx
+│   │   │   │   │   │   └── OrcamentoViewer.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── respostas-rapidas
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── CategoriasList.tsx
+│   │   │   │   │   │   ├── CriarCategoriaModal.tsx
+│   │   │   │   │   │   ├── CriarComIAModal.tsx
+│   │   │   │   │   │   ├── CriarRespostaModal.tsx
+│   │   │   │   │   │   ├── EstatisticasCard.tsx
+│   │   │   │   │   │   ├── RespostasList.tsx
+│   │   │   │   │   │   └── VisualizarRespostaModal.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── tags
+│   │   │   │   │   ├── components
+│   │   │   │   │   │   ├── CriarTagModal.tsx
+│   │   │   │   │   │   ├── EditarTagModal.tsx
+│   │   │   │   │   │   ├── ImportarTagsModal.tsx
+│   │   │   │   │   │   ├── TagsList.tsx
+│   │   │   │   │   │   ├── TagsStats.tsx
+│   │   │   │   │   │   └── TagsTopBar.tsx
+│   │   │   │   │   ├── layout.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── tickets
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── usuarios
+│   │   │   │       ├── components
+│   │   │   │       │   ├── CriarUsuarioModal.tsx
+│   │   │   │       │   ├── EditarUsuarioModal.tsx
+│   │   │   │       │   ├── ImportarUsuariosModal.tsx
+│   │   │   │       │   ├── PermissoesModal.tsx
+│   │   │   │       │   ├── UsuariosList.tsx
+│   │   │   │       │   └── UsuariosStats.tsx
+│   │   │   │       ├── layout.tsx
+│   │   │   │       └── page.tsx
+│   │   │   ├── assinante
+│   │   │   └── atendente
+│   │   │       ├── agendamentos
+│   │   │       │   ├── components
+│   │   │       │   │   ├── AgendamentoStats.tsx
+│   │   │       │   │   ├── CalendarioSofisticado.tsx
+│   │   │       │   │   ├── CriarAgendamentoModal.tsx
+│   │   │       │   │   └── DetalhesAgendamentoModal.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── agentes
+│   │   │       │   ├── components
+│   │   │       │   │   ├── AgentesList.tsx
+│   │   │       │   │   ├── CriarAgenteModal.tsx
+│   │   │       │   │   └── EstatisticasAgentes.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── assinaturas
+│   │   │       │   ├── components
+│   │   │       │   │   ├── AssinaturasFilters.tsx
+│   │   │       │   │   ├── AssinaturasHeader.tsx
+│   │   │       │   │   ├── AssinaturasList.tsx
+│   │   │       │   │   ├── AssinaturasStats.tsx
+│   │   │       │   │   └── CriarAssinaturaModal.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── atendimentos
+│   │   │       │   ├── components
+│   │   │       │   │   ├── AnotacoesSidebar.tsx
+│   │   │       │   │   ├── AtendimentosTopBar.tsx
+│   │   │       │   │   ├── ChatArea.tsx
+│   │   │       │   │   ├── ConversationSidebar.tsx
+│   │   │       │   │   ├── EditTextModal.tsx
+│   │   │       │   │   ├── InfiniteConversationSidebar.tsx
+│   │   │       │   │   ├── modals
+│   │   │       │   │   │   ├── AgendamentoModal.tsx
+│   │   │       │   │   │   ├── AgenteSelectionModal.tsx
+│   │   │       │   │   │   ├── AnotacoesModal.tsx
+│   │   │       │   │   │   ├── AssinaturaModal.tsx
+│   │   │       │   │   │   ├── CompartilharTelaModal.tsx
+│   │   │       │   │   │   ├── LigacaoModal.tsx
+│   │   │       │   │   │   ├── OrcamentoModal.tsx
+│   │   │       │   │   │   ├── TagsModal.tsx
+│   │   │       │   │   │   ├── TicketModal.tsx
+│   │   │       │   │   │   ├── TransferirAtendimentoModal.tsx
+│   │   │       │   │   │   └── VideoChamadaModal.tsx
+│   │   │       │   │   ├── OptimizedConversationSidebar.tsx
+│   │   │       │   │   └── QuickActionsSidebar.tsx
+│   │   │       │   ├── layout.tsx
+│   │   │       │   ├── optimized-page.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── chat-interno
+│   │   │       │   ├── components
+│   │   │       │   │   ├── AtendentesLista.tsx
+│   │   │       │   │   ├── ChatInternoArea.tsx
+│   │   │       │   │   ├── ChatInternoTopBar.tsx
+│   │   │       │   │   ├── ChatPendingModal.tsx
+│   │   │       │   │   └── MicroModals.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── components
+│   │   │       │   ├── AdminLayout.tsx
+│   │   │       │   ├── AgendaButton.tsx
+│   │   │       │   ├── AgentSelector.tsx
+│   │   │       │   ├── analytics
+│   │   │       │   │   ├── FunnelAnalytics.tsx
+│   │   │       │   │   ├── NCSAnalytics.tsx
+│   │   │       │   │   └── OverviewAnalytics.tsx
+│   │   │       │   ├── AnalyticsHub.tsx
+│   │   │       │   ├── ChatToggle.tsx
+│   │   │       │   ├── ColorThemeSelector.tsx
+│   │   │       │   ├── ComponentInterfaces.ts
+│   │   │       │   ├── GlassClock.tsx
+│   │   │       │   ├── LanguageSelector.tsx
+│   │   │       │   ├── NotificationsDropdown.tsx
+│   │   │       │   ├── ProfileDropdown.tsx
+│   │   │       │   ├── QuickResponsesButton.tsx
+│   │   │       │   ├── QuoteButton.tsx
+│   │   │       │   ├── SearchBar.tsx
+│   │   │       │   ├── SidebarAtendente.tsx
+│   │   │       │   ├── SidebarItem.tsx
+│   │   │       │   ├── SidebarLogo.tsx
+│   │   │       │   ├── sidebar-scrollbar.css
+│   │   │       │   ├── SidebarToggle.tsx
+│   │   │       │   ├── Sidebar.tsx
+│   │   │       │   ├── SubscriptionButton.tsx
+│   │   │       │   ├── ThemeToggle.tsx
+│   │   │       │   ├── TopBarButton.tsx
+│   │   │       │   └── TopBar.tsx
+│   │   │       ├── contatos
+│   │   │       │   ├── components
+│   │   │       │   │   ├── ContactActionModal.tsx
+│   │   │       │   │   ├── ContatosList.tsx
+│   │   │       │   │   ├── ContatosStats.tsx
+│   │   │       │   │   ├── ContatosTopBar.tsx
+│   │   │       │   │   ├── CreateContactModal.tsx
+│   │   │       │   │   ├── ExportModal.tsx
+│   │   │       │   │   └── ImportModal.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── kanban
+│   │   │       │   ├── components
+│   │   │       │   │   ├── ColorPickerModal.tsx
+│   │   │       │   │   ├── CriarCardModal.tsx
+│   │   │       │   │   └── CriarQuadroModal.tsx
+│   │   │       │   ├── [id]
+│   │   │       │   │   └── page.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── orcamentos
+│   │   │       │   ├── components
+│   │   │       │   │   ├── ContatosSidebar.tsx
+│   │   │       │   │   ├── CriarOrcamentoModal.tsx
+│   │   │       │   │   ├── OrcamentoPDF.tsx
+│   │   │       │   │   ├── OrcamentoStats.tsx
+│   │   │       │   │   └── OrcamentoViewer.tsx
+│   │   │       │   └── page.tsx
+│   │   │       ├── page.tsx
+│   │   │       ├── respostas-rapidas
+│   │   │       │   ├── components
+│   │   │       │   │   ├── CategoriasList.tsx
+│   │   │       │   │   ├── CriarCategoriaModal.tsx
+│   │   │       │   │   ├── CriarComIAModal.tsx
+│   │   │       │   │   ├── CriarRespostaModal.tsx
+│   │   │       │   │   ├── EstatisticasCard.tsx
+│   │   │       │   │   ├── RespostasList.tsx
+│   │   │       │   │   └── VisualizarRespostaModal.tsx
+│   │   │       │   └── page.tsx
+│   │   │       └── tickets
+│   │   │           └── page.tsx
+│   │   ├── globals.css
+│   │   ├── landingpage
+│   │   │   ├── components
+│   │   │   │   ├── AboutSection.tsx
+│   │   │   │   ├── BackgroundPatterns.tsx
+│   │   │   │   ├── FeaturesSection.tsx
+│   │   │   │   ├── Footer.tsx
+│   │   │   │   ├── HeroSection.tsx
+│   │   │   │   ├── Navigation.tsx
+│   │   │   │   ├── PricingSection.tsx
+│   │   │   │   └── TestimonialsSection.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   ├── login
+│   │   │   └── page.tsx
+│   │   ├── page.tsx
+│   │   └── reset-password
+│   │       └── page.tsx
+│   ├── components
+│   │   ├── AudioMessageComponent.tsx
+│   │   ├── DeleteConfirmTooltip.tsx
+│   │   ├── EditMessageModal.tsx
+│   │   ├── EmojiPicker.tsx
+│   │   ├── ForwardMessageModal.tsx
+│   │   ├── InputLinkPreview.tsx
+│   │   ├── landing
+│   │   │   ├── BenefitsSection.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── HeroSection.tsx
+│   │   │   ├── NewsletterCTA.tsx
+│   │   │   ├── PricingSection.tsx
+│   │   │   ├── ServicesCarousel.tsx
+│   │   │   └── TestimonialsSection.tsx
+│   │   ├── LinkPreview.tsx
+│   │   ├── MediaSendModal.tsx
+│   │   ├── MessageContent.tsx
+│   │   ├── MessageContextMenu.tsx
+│   │   ├── MessageSearch.tsx
+│   │   ├── shared
+│   │   │   ├── AudioRecorder.tsx
+│   │   │   ├── CookieConsent.tsx
+│   │   │   ├── DeleteCardModal.tsx
+│   │   │   ├── EditContactModalSteps.tsx
+│   │   │   ├── EditContactModal.tsx
+│   │   │   ├── FloatingChat.tsx
+│   │   │   ├── MediaUpload.tsx
+│   │   │   ├── RoleGuard.tsx
+│   │   │   ├── SkeletonLoader.tsx
+│   │   │   ├── TopBar.tsx
+│   │   │   └── UniversalAgendamentoModal.tsx
+│   │   ├── ui
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── ChatBlurOverlay.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── MediaSendModal.tsx
+│   │   │   ├── SpecialMediaModal.tsx
+│   │   │   ├── TicketModal.tsx
+│   │   │   └── VirtualizedList.tsx
+│   │   └── VirtualizedChatArea.tsx
+│   ├── contexts
+│   │   ├── ColorThemeContext.tsx
+│   │   └── ThemeContext.tsx
+│   ├── hooks
+│   │   ├── useAgentes.ts
+│   │   ├── useAlertas.ts
+│   │   ├── useAssinaturas.ts
+│   │   ├── useAtendenteFilas.ts
+│   │   ├── useAtendentes.ts
+│   │   ├── useAtendimentoStats.ts
+│   │   ├── useAudioRecorder.ts
+│   │   ├── useAuth.ts
+│   │   ├── useCachedAuth.ts
+│   │   ├── useChatAgente.ts
+│   │   ├── useChatInternoWS.ts
+│   │   ├── useChatQueue.ts
+│   │   ├── useConexaoFila.ts
+│   │   ├── useConexoes.ts
+│   │   ├── useContatoData.ts
+│   │   ├── useContatoTags.ts
+│   │   ├── useDeepSeekAI.ts
+│   │   ├── useDeepSeekAutoResponse.ts
+│   │   ├── useFavorites.ts
+│   │   ├── useFilas.ts
+│   │   ├── useInfiniteChats.ts
+│   │   ├── useInfiniteMessages.ts
+│   │   ├── useKanbanOptimized.ts
+│   │   ├── useKanban.ts
+│   │   ├── useMediaUpload.ts
+│   │   ├── useMessageActions.ts
+│   │   ├── useNotificationSound.ts
+│   │   ├── useOptimizedAtendimentos.ts
+│   │   ├── useOptimizedChats.ts
+│   │   ├── useOrcamentos.ts
+│   │   ├── usePresencePolling.ts
+│   │   ├── usePresence.ts
+│   │   ├── useRespostasRapidas.ts
+│   │   ├── useTags.ts
+│   │   ├── useTickets.ts
+│   │   ├── useTranslation.ts
+│   │   ├── useUsuarios.ts
+│   │   ├── useWebSocket.ts
+│   │   ├── useWhatsAppDataFiltered.ts
+│   │   ├── useWhatsAppData.ts
+│   │   └── useWhatsAppSession.ts
+│   ├── lib
+│   │   ├── blob-storage.ts
+│   │   └── utils.ts
+│   └── utils
+│       ├── debugLogger.ts
+│       ├── fileLogger.ts
+│       ├── globalCache.ts
+│       ├── linkDetector.ts
+│       └── testSound.ts
+├── tailwind.config.ts
+└── tsconfig.json

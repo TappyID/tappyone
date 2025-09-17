@@ -40,54 +40,93 @@ import {
   Send, 
   Database, 
   X, 
-  Info 
+  Info,
+  Edit,
+  UserPlus,
+  Grid3X3
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useState } from 'react'
 
-// Types for Flow Nodes
+// Types for Flow Nodes - TappyOne Específico
 export type NodeType = 
-  // Triggers específicos
-  | 'trigger-whatsapp-message'
-  | 'trigger-whatsapp-media' 
-  | 'trigger-new-contact'
-  | 'trigger-kanban-move'
-  | 'trigger-schedule'
-  | 'trigger-keyword'
-  | 'trigger-webhook'
+  // ========== GATILHOS WHATSAPP (4) ==========
+  | 'trigger-whatsapp-message'     // Nova mensagem recebida
+  | 'trigger-whatsapp-media'       // Mídia recebida (foto/vídeo/áudio)
+  | 'trigger-keyword'              // Palavra-chave detectada
+  | 'trigger-webhook'              // Webhook externo recebido
   
-  // Condições
-  | 'condition-text-contains'
-  | 'condition-time-range'
-  | 'condition-contact-field'
+  // ========== GATILHOS SISTEMA (10) ==========
+  | 'trigger-contato-created'      // Contato criado no sistema
+  | 'trigger-conexao-created'      // Conexão criada
+  | 'trigger-fila-created'         // Fila criada
+  | 'trigger-atendente-created'    // Atendente criado
+  | 'trigger-ticket-created'       // Ticket criado
+  | 'trigger-tag-created'          // Tag criada
+  | 'trigger-quadro-created'       // Quadro Kanban criado
+  | 'trigger-coluna-created'       // Coluna Kanban criada
+  | 'trigger-agendamento-created'  // Agendamento criado
+  | 'trigger-schedule'             // Data/hora específica
   
-  // Ações CRM
-  | 'action-whatsapp-text'
-  | 'action-whatsapp-media'
-  | 'action-whatsapp-template'
-  | 'action-kanban-move'
-  | 'action-kanban-create'
-  | 'action-contact-update'
-  | 'action-contact-tag'
-  | 'action-ia-process'
-  | 'action-resposta-rapida'
-  | 'action-agendamento-create'
-  | 'action-orcamento-create'
-  | 'action-contract-generate'
-  | 'action-notification-send'
-  | 'action-delay-wait'
-  | 'action-webhook-call'
-  | 'action-database-update'
-  | 'action-payment-pix'
-  | 'action-email-send'
-  | 'action-sms-send'
-  | 'action-follow-up'
-  | 'action-lead-qualify'
-  | 'action-meeting-schedule'
-  | 'action-crm-log'
-  | 'action-ticket-create'
-  | 'action-survey-send'
-  | 'action-analytics-track'
+  // ========== GATILHOS KANBAN (2) ==========
+  | 'trigger-kanban-move'          // Card movido no Kanban
+  | 'trigger-kanban-created'       // Card criado no Kanban
+  
+  // ========== CONDIÇÕES (4) ==========
+  | 'condition-if'                 // Condição Se/Então geral
+  | 'condition-text-contains'      // Texto contém palavra
+  | 'condition-time-range'         // Horário/dia específico
+  | 'condition-contact-field'      // Campo do contato
+  
+  // ========== AÇÕES WHATSAPP (5) ==========
+  | 'action-whatsapp-text'         // Enviar texto
+  | 'action-whatsapp-media'        // Enviar mídia
+  | 'action-whatsapp-template'     // Template aprovado
+  | 'action-whatsapp-location'     // Enviar localização
+  | 'action-whatsapp-contact'      // Cartão de contato
+  
+  // ========== AÇÕES KANBAN (3) ==========
+  | 'action-kanban-create'         // Criar card
+  | 'action-kanban-move'           // Mover card
+  | 'action-kanban-update'         // Atualizar card
+  
+  // ========== AÇÕES CONTATOS (4) ==========
+  | 'action-contact-create'        // Criar contato
+  | 'action-contact-update'        // Atualizar contato
+  | 'action-contact-tag'           // Adicionar tag
+  | 'action-contact-merge'         // Unir contatos duplicados
+  
+  // ========== AÇÕES CRM (4) ==========
+  | 'action-agendamento-create'    // Criar agendamento
+  | 'action-orcamento-create'      // Gerar orçamento
+  | 'action-assinatura-create'     // Criar assinatura
+  | 'action-business-update'       // Atualizar dados empresa
+  
+  // ========== AÇÕES FILAS (3) ==========
+  | 'action-fila-assign'           // Atribuir à fila
+  | 'action-fila-transfer'         // Transferir fila
+  | 'action-fila-close'            // Fechar atendimento
+  
+  // ========== AÇÕES IA & AUTOMAÇÃO (4) ==========
+  | 'action-ia-process'            // Processar com IA
+  | 'action-resposta-rapida'       // Resposta rápida
+  | 'action-ia-classify'           // Classificar automaticamente
+  | 'action-ia-sentiment'          // Análise de sentimento
+  
+  // ========== AÇÕES SISTEMA ADMIN (8) ==========
+  | 'action-conexao-create'        // Criar conexão WhatsApp
+  | 'action-fila-create'           // Criar fila de atendimento
+  | 'action-atendente-assign'      // Atribuir atendente à fila
+  | 'action-quadro-create'         // Criar quadro Kanban
+  | 'action-coluna-create'         // Criar coluna Kanban
+  | 'action-tag-create'            // Criar tag no sistema
+  | 'action-ticket-assign'         // Atribuir ticket a atendente
+  | 'action-contato-assign'        // Atribuir contato à fila/atendente
+  
+  // ========== AÇÕES SISTEMA (3) ==========
+  | 'action-delay-wait'            // Aguardar tempo
+  | 'action-webhook-call'          // Chamar webhook
+  | 'action-notification-send'     // Enviar notificação
 
 export interface FluxoNodeData {
   id: string
@@ -123,10 +162,82 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'trigger'
   },
   
-  'trigger-new-contact': {
+  'trigger-contato-created': {
     icon: Users,
-    label: 'Novo Contato',
-    description: 'Quando adicionar novo contato',
+    label: 'Contato Criado',
+    description: 'Quando criar novo contato no sistema',
+    color: 'blue',
+    category: 'trigger'
+  },
+  
+  'trigger-conexao-created': {
+    icon: Zap,
+    label: 'Conexão Criada',
+    description: 'Quando criar nova conexão WhatsApp',
+    color: 'green',
+    category: 'trigger'
+  },
+  
+  'trigger-fila-created': {
+    icon: Users,
+    label: 'Fila Criada',
+    description: 'Quando criar nova fila de atendimento',
+    color: 'cyan',
+    category: 'trigger'
+  },
+  
+  'trigger-atendente-created': {
+    icon: UserPlus,
+    label: 'Atendente Criado',
+    description: 'Quando adicionar novo atendente',
+    color: 'indigo',
+    category: 'trigger'
+  },
+  
+  'trigger-ticket-created': {
+    icon: AlertCircle,
+    label: 'Ticket Criado',
+    description: 'Quando abrir novo ticket',
+    color: 'red',
+    category: 'trigger'
+  },
+  
+  'trigger-tag-created': {
+    icon: Target,
+    label: 'Tag Criada',
+    description: 'Quando criar nova tag',
+    color: 'purple',
+    category: 'trigger'
+  },
+  
+  'trigger-quadro-created': {
+    icon: Grid3X3,
+    label: 'Quadro Criado',
+    description: 'Quando criar novo quadro Kanban',
+    color: 'blue',
+    category: 'trigger'
+  },
+  
+  'trigger-coluna-created': {
+    icon: Plus,
+    label: 'Coluna Criada',
+    description: 'Quando criar nova coluna no Kanban',
+    color: 'blue',
+    category: 'trigger'
+  },
+  
+  'trigger-agendamento-created': {
+    icon: Calendar,
+    label: 'Agendamento Criado',
+    description: 'Quando criar novo agendamento',
+    color: 'teal',
+    category: 'trigger'
+  },
+  
+  'trigger-kanban-created': {
+    icon: PlusCircle,
+    label: 'Card Criado',
+    description: 'Quando criar novo card no Kanban',
     color: 'blue',
     category: 'trigger'
   },
@@ -172,7 +283,7 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'condition'
   },
   
-  'condition-contains': {
+  'condition-text-contains': {
     icon: Filter,
     label: 'Contém Texto',
     description: 'Se mensagem contém texto específico',
@@ -180,7 +291,7 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'condition'
   },
   
-  'condition-time': {
+  'condition-time-range': {
     icon: Clock,
     label: 'Horário',
     description: 'Baseado em hora/dia da semana',
@@ -220,8 +331,32 @@ export const NODE_TYPES: Record<NodeType, {
     color: 'green',
     category: 'action'
   },
+  
+  'action-whatsapp-location': {
+    icon: MapPin,
+    label: 'Enviar Localização',
+    description: 'Envia localização via WhatsApp',
+    color: 'green',
+    category: 'action'
+  },
+  
+  'action-whatsapp-contact': {
+    icon: Users,
+    label: 'Cartão de Contato',
+    description: 'Envia cartão de contato',
+    color: 'green',
+    category: 'action'
+  },
 
   // ============= ACTIONS - Kanban =============
+  'action-kanban-create': {
+    icon: Plus,
+    label: 'Criar Card Kanban',
+    description: 'Cria novo card no quadro',
+    color: 'blue',
+    category: 'action'
+  },
+  
   'action-kanban-move': {
     icon: ArrowRight,
     label: 'Mover Card Kanban',
@@ -230,15 +365,23 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'action'
   },
   
-  'action-kanban-create': {
-    icon: Plus,
-    label: 'Criar Card Kanban',
-    description: 'Cria novo card no quadro',
+  'action-kanban-update': {
+    icon: Edit,
+    label: 'Atualizar Card',
+    description: 'Atualiza dados do card',
     color: 'blue',
     category: 'action'
   },
 
   // ============= ACTIONS - Contatos =============
+  'action-contact-create': {
+    icon: UserPlus,
+    label: 'Criar Contato',
+    description: 'Cria novo contato no sistema',
+    color: 'indigo',
+    category: 'action'
+  },
+  
   'action-contact-update': {
     icon: Users,
     label: 'Atualizar Contato',
@@ -251,6 +394,14 @@ export const NODE_TYPES: Record<NodeType, {
     icon: Target,
     label: 'Adicionar Tag',
     description: 'Adiciona etiqueta ao contato',
+    color: 'indigo',
+    category: 'action'
+  },
+  
+  'action-contact-merge': {
+    icon: Copy,
+    label: 'Unir Contatos',
+    description: 'Une contatos duplicados',
     color: 'indigo',
     category: 'action'
   },
@@ -289,23 +440,65 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'action'
   },
   
-  'action-contract-generate': {
+  'action-assinatura-create': {
     icon: FileText,
-    label: 'Gerar Contrato',
-    description: 'Cria contrato digital',
-    color: 'red',
+    label: 'Criar Assinatura',
+    description: 'Cria nova assinatura/contrato',
+    color: 'purple',
+    category: 'action'
+  },
+  
+  'action-business-update': {
+    icon: Settings,
+    label: 'Atualizar Empresa',
+    description: 'Atualiza dados da empresa',
+    color: 'gray',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - Filas =============
+  'action-fila-assign': {
+    icon: Users,
+    label: 'Atribuir à Fila',
+    description: 'Direciona para fila específica',
+    color: 'cyan',
+    category: 'action'
+  },
+  
+  'action-fila-transfer': {
+    icon: ArrowRight,
+    label: 'Transferir Fila',
+    description: 'Move entre filas de atendimento',
+    color: 'cyan',
+    category: 'action'
+  },
+  
+  'action-fila-close': {
+    icon: CheckCircle,
+    label: 'Fechar Atendimento',
+    description: 'Finaliza o atendimento',
+    color: 'cyan',
+    category: 'action'
+  },
+
+  // ============= ACTIONS - IA & Automação =============
+  'action-ia-classify': {
+    icon: Brain,
+    label: 'Classificar com IA',
+    description: 'Classifica automaticamente',
+    color: 'purple',
+    category: 'action'
+  },
+  
+  'action-ia-sentiment': {
+    icon: Eye,
+    label: 'Análise de Sentimento',
+    description: 'Analisa humor da mensagem',
+    color: 'purple',
     category: 'action'
   },
 
   // ============= ACTIONS - Sistema =============
-  'action-notification-send': {
-    icon: Bell,
-    label: 'Enviar Notificação',
-    description: 'Notifica usuários do sistema',
-    color: 'pink',
-    category: 'action'
-  },
-  
   'action-delay-wait': {
     icon: Clock,
     label: 'Aguardar',
@@ -322,92 +515,76 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'action'
   },
   
-  'action-database-update': {
-    icon: Database,
-    label: 'Atualizar Banco',
-    description: 'Modifica dados no banco',
-    color: 'slate',
+  'action-notification-send': {
+    icon: Bell,
+    label: 'Enviar Notificação',
+    description: 'Notifica usuários do sistema',
+    color: 'pink',
     category: 'action'
   },
 
-  // ============= ACTIONS - Vendas e E-commerce =============
-  'action-payment-pix': {
-    icon: DollarSign,
-    label: 'Gerar PIX',
-    description: 'Cria cobrança via PIX',
+  // ============= ACTIONS - Sistema Admin =============
+  'action-conexao-create': {
+    icon: Zap,
+    label: 'Criar Conexão',
+    description: 'Cria nova conexão WhatsApp',
     color: 'green',
     category: 'action'
   },
-
-  'action-email-send': {
-    icon: MessageSquare,
-    label: 'Enviar Email',
-    description: 'Envia email personalizado',
-    color: 'blue',
-    category: 'action'
-  },
-
-  'action-sms-send': {
-    icon: Phone,
-    label: 'Enviar SMS',
-    description: 'Envia SMS para contato',
+  
+  'action-fila-create': {
+    icon: Users,
+    label: 'Criar Fila',
+    description: 'Cria nova fila de atendimento',
     color: 'cyan',
     category: 'action'
   },
-
-  'action-follow-up': {
-    icon: Timer,
-    label: 'Programar Follow-up',
-    description: 'Agenda próximo contato',
-    color: 'orange',
-    category: 'action'
-  },
-
-  'action-lead-qualify': {
-    icon: Target,
-    label: 'Qualificar Lead',
-    description: 'Classifica potencial do lead',
-    color: 'purple',
-    category: 'action'
-  },
-
-  'action-meeting-schedule': {
-    icon: Calendar,
-    label: 'Agendar Reunião',
-    description: 'Marca reunião automática',
+  
+  'action-atendente-assign': {
+    icon: UserPlus,
+    label: 'Atribuir Atendente',
+    description: 'Adiciona atendente à fila',
     color: 'indigo',
     category: 'action'
   },
-
-  'action-crm-log': {
-    icon: FileText,
-    label: 'Registrar no CRM',
-    description: 'Salva interação no histórico',
-    color: 'gray',
+  
+  'action-quadro-create': {
+    icon: Grid3X3,
+    label: 'Criar Quadro',
+    description: 'Cria novo quadro Kanban',
+    color: 'blue',
     category: 'action'
   },
-
-  'action-ticket-create': {
+  
+  'action-coluna-create': {
+    icon: Plus,
+    label: 'Criar Coluna',
+    description: 'Adiciona coluna ao Kanban',
+    color: 'blue',
+    category: 'action'
+  },
+  
+  'action-tag-create': {
+    icon: Target,
+    label: 'Criar Tag',
+    description: 'Cria nova tag no sistema',
+    color: 'purple',
+    category: 'action'
+  },
+  
+  'action-ticket-assign': {
     icon: AlertCircle,
-    label: 'Criar Ticket',
-    description: 'Abre chamado de suporte',
+    label: 'Atribuir Ticket',
+    description: 'Atribui ticket a atendente',
     color: 'red',
     category: 'action'
   },
-
-  'action-survey-send': {
-    icon: BarChart3,
-    label: 'Enviar Pesquisa',
-    description: 'Envia formulário de satisfação',
-    color: 'teal',
-    category: 'action'
-  },
-
-  'action-analytics-track': {
-    icon: BarChart3,
-    label: 'Rastrear Evento',
-    description: 'Registra evento para analytics',
-    color: 'slate',
+  
+  'action-contato-assign': {
+    icon: Users,
+    label: 'Atribuir Contato',
+    description: 'Atribui contato à fila/atendente',
+    color: 'indigo',
     category: 'action'
   }
 }
@@ -854,7 +1031,7 @@ export function NodeConfigModal({
         )
 
       // ============= CONDITIONS =============
-      case 'condition-contains':
+      case 'condition-text-contains':
         return (
           <div className="space-y-4">
             <div>
@@ -888,7 +1065,7 @@ export function NodeConfigModal({
           </div>
         )
 
-      case 'condition-time':
+      case 'condition-time-range':
         return (
           <div className="space-y-4">
             <div>

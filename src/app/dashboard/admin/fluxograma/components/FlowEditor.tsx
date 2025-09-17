@@ -1,45 +1,33 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Save, 
   Play, 
-  Pause, 
-  Trash2, 
-  Copy, 
-  Undo, 
+  Download, 
+  Upload, 
   ZoomIn, 
   ZoomOut, 
-  Grid, 
-  Settings, 
-  Brain, 
-  Download, 
-  Upload,
-  Move 
+  Maximize,
+  Settings,
+  Trash2,
+  Brain,
+  Minimize,
+  Expand,
+  Grid3X3,
+  Move
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { 
-  NodePalette, 
-  FlowNode, 
-  NodeConfigModal, 
-  FluxoNodeData, 
-  NodeType, 
-  NODE_TYPES 
-} from './FluxoNodes'
-import { AiGeneratorModal } from './AiGeneratorModal'
-
-// Flow Editor Types
-interface FlowConnection {
-  id: string
-  sourceNodeId: string
-  targetNodeId: string
-  sourcePort?: string
-  targetPort?: string
-}
+import FlowCanvas from './FlowCanvas'
+import { NodePalette } from './FluxoNodes'
+import NodeConfigModal from './NodeConfigModal'
+import FlowNodeComponent from './FlowNodeComponent'
+import { FlowNode, FlowConnection, NodeConfigModalState } from './types'
+import { NODE_TYPES, NodeType } from './FluxoNodes'
 
 interface FlowEditorState {
-  nodes: FluxoNodeData[]
+  nodes: FlowNode[]
   connections: FlowConnection[]
   selectedNodeId: string | null
   selectedConnectionId: string | null
@@ -51,18 +39,18 @@ interface FlowEditorState {
 
 interface FlowEditorProps {
   flowId?: string
-  initialNodes?: FluxoNodeData[]
+  initialNodes?: FlowNode[]
   initialConnections?: FlowConnection[]
-  readOnly?: boolean
-  onSave?: (nodes: FluxoNodeData[], connections: FlowConnection[]) => void
+  onSave?: (nodes: FlowNode[], connections: FlowConnection[]) => void
+  onExecute?: (nodes: FlowNode[], connections: FlowConnection[]) => void
 }
 
 export default function FlowEditor({ 
   flowId, 
   initialNodes = [], 
   initialConnections = [], 
-  readOnly = false, 
-  onSave 
+  onSave, 
+  onExecute 
 }: FlowEditorProps) {
   const { actualTheme } = useTheme()
   const isDark = actualTheme === 'dark'
@@ -71,7 +59,7 @@ export default function FlowEditor({
   const [showNodeConfig, setShowNodeConfig] = useState<{
     nodeId: string
     nodeType: NodeType
-    config?: Record<string, any>
+    config: Record<string, any>
   } | null>(null)
   
   const [state, setState] = useState<FlowEditorState>({
@@ -85,11 +73,13 @@ export default function FlowEditor({
     pan: { x: 0, y: 0 }
   })
 
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionStart, setConnectionStart] = useState<{ nodeId: string, x: number, y: number } | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  const [selectedConfig, setSelectedConfig] = useState<FluxoNodeData | null>(null)
+  const [selectedConfig, setSelectedConfig] = useState<FlowNode | null>(null)
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [showAiModal, setShowAiModal] = useState(false)
 
@@ -99,11 +89,9 @@ export default function FlowEditor({
     if (!canvas) return
 
     const canvasRect = canvas.getBoundingClientRect()
-    const newNode: FluxoNodeData = {
+    const newNode: FlowNode = {
       id: `node_${Date.now()}`,
       type: nodeType,
-      label: NODE_TYPES[nodeType].label,
-      description: NODE_TYPES[nodeType].description,
       position: {
         x: (canvasRect.width / 2) - 100 + Math.random() * 100,
         y: (canvasRect.height / 2) - 50 + Math.random() * 100
@@ -128,14 +116,14 @@ export default function FlowEditor({
   }, [])
 
   // Edit node configuration
-  const handleNodeEdit = useCallback((nodeId: string) => {
+  const handleConfigUpdate = useCallback((nodeId: string, config?: any) => {
     const node = state.nodes.find(n => n.id === nodeId)
     if (!node) return
 
     setShowNodeConfig({
       nodeId: node.id,
-      nodeType: node.type,
-      config: node.config
+      nodeType: node.type as NodeType,
+      config: node.config || {}
     })
   }, [state.nodes])
 
@@ -145,7 +133,7 @@ export default function FlowEditor({
       ...prev,
       nodes: prev.nodes.filter(n => n.id !== nodeId),
       connections: prev.connections.filter(c => 
-        c.sourceNodeId !== nodeId && c.targetNodeId !== nodeId
+        c.from !== nodeId && c.to !== nodeId
       ),
       selectedNodeId: prev.selectedNodeId === nodeId ? null : prev.selectedNodeId
     }))
@@ -259,29 +247,21 @@ export default function FlowEditor({
 
     if (connectionStart.nodeId !== targetNodeId) {
       // Validate connection before creating
-      if (!isValidConnection(connectionStart.nodeId, targetNodeId)) {
-        // Show error feedback
-        const sourceNode = state.nodes.find(n => n.id === connectionStart.nodeId)
-        const targetNode = state.nodes.find(n => n.id === targetNodeId)
-        
-        if (sourceNode && targetNode) {
-          const sourceCategory = NODE_TYPES[sourceNode.type]?.category
-          const targetCategory = NODE_TYPES[targetNode.type]?.category
-          
-          // You could show a toast/notification here
-          console.warn(`Conexão inválida: ${sourceCategory} não pode conectar com ${targetCategory}`)
-        }
+      const invalidConnection = !isValidConnection(connectionStart.nodeId, targetNodeId)
+      
+      if (invalidConnection) {
+        console.warn('Conexão inválida')
       } else {
         // Check if connection already exists
         const connectionExists = state.connections.some(
-          conn => conn.sourceNodeId === connectionStart.nodeId && conn.targetNodeId === targetNodeId
+          conn => conn.from === connectionStart.nodeId && conn.to === targetNodeId
         )
         
         if (!connectionExists) {
           const newConnection: FlowConnection = {
             id: `connection_${Date.now()}`,
-            sourceNodeId: connectionStart.nodeId,
-            targetNodeId
+            from: connectionStart.nodeId,
+            to: targetNodeId
           }
 
           setState(prev => ({
@@ -336,22 +316,98 @@ export default function FlowEditor({
   }, [showNodeConfig])
 
   // Save flow
-  const handleSave = useCallback(async () => {
-    if (!onSave) return
-
+  const handleSaveFlow = async () => {
     try {
-      await onSave(state.nodes, state.connections)
-      // Show success feedback
-    } catch (error) {
-      console.error('Erro ao salvar fluxo:', error)
-      // Show error feedback
-    }
-  }, [state.nodes, state.connections, onSave])
+      const flowData = {
+        name: `Fluxo ${new Date().toLocaleDateString()}`,
+        description: 'Fluxo de automação criado no editor',
+        nodes: state.nodes.map(node => ({
+          id: node.id,
+          type: node.type,
+          position: node.position,
+          config: node.config || {}
+        })),
+        connections: state.connections,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      }
 
-  // Execute flow (placeholder)
+      console.log('Saving flow:', flowData)
+      
+      // Call backend API to save flow
+      const response = await fetch('/api/fluxos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(flowData)
+      })
+
+      if (response.ok) {
+        const savedFlow = await response.json()
+        console.log('Flow saved successfully:', savedFlow)
+        // Show success message
+        alert('Fluxo salvo com sucesso!')
+      } else {
+        throw new Error('Failed to save flow')
+      }
+    } catch (error) {
+      console.error('Error saving flow:', error)
+      alert('Erro ao salvar fluxo. Tente novamente.')
+    }
+  }
+
+  // Execute flow
   const handleExecute = useCallback(async () => {
-    console.log('Executing flow:', state)
-    // TODO: Implement execute functionality
+    try {
+      console.log('Executing flow:', state)
+      
+      if (state.nodes.length === 0) {
+        alert('Adicione nodes ao fluxo antes de executar')
+        return
+      }
+
+      // Find trigger nodes (start points)
+      const triggerNodes = state.nodes.filter(node => 
+        NODE_TYPES[node.type]?.category === 'trigger'
+      )
+
+      if (triggerNodes.length === 0) {
+        alert('Adicione pelo menos um gatilho para executar o fluxo')
+        return
+      }
+
+      const executionData = {
+        flowId: `flow_${Date.now()}`,
+        nodes: state.nodes,
+        connections: state.connections,
+        triggerNodes: triggerNodes.map(node => ({
+          id: node.id,
+          type: node.type,
+          config: node.config || {}
+        }))
+      }
+
+      // Call backend execution API
+      const response = await fetch('/api/fluxos/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(executionData)
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Flow execution started:', result)
+        alert('Fluxo iniciado com sucesso!')
+      } else {
+        throw new Error('Failed to execute flow')
+      }
+    } catch (error) {
+      console.error('Error executing flow:', error)
+      alert('Erro ao executar fluxo. Verifique a configuração.')
+    }
   }, [state])
 
   // Handle export flow
@@ -414,75 +470,86 @@ export default function FlowEditor({
   }, [])
 
   return (
-    <div className={`flex h-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50' : 'h-full'} flex ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Node Palette */}
-      {!readOnly && <NodePalette onNodeSelect={handleNodeAdd} />}
+      <NodePalette onNodeSelect={handleNodeAdd} />
 
       {/* Main Editor Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Toolbar */}
-        <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-          <div className="flex items-center space-x-2">
-            {/* Save Button */}
-            {!readOnly && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleSave}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                <span>Salvar</span>
-              </motion.button>
-            )}
+    <div className="flex-1 flex flex-col">
+      {/* Toolbar */}
+      <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+        <div className="flex items-center space-x-2">
+          {/* Save Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSaveFlow}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <Save className="w-4 h-4" />
+            <span>Salvar</span>
+          </motion.button>
 
-            {/* Execute Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleExecute}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              <Play className="w-4 h-4" />
-              <span>Executar</span>
-            </motion.button>
+          {/* Execute Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleExecute}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            <span>Executar</span>
+          </motion.button>
 
-            {/* AI Generate Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowAiModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-            >
-              <Brain className="w-4 h-4" />
-              <span>Gerar com IA</span>
-            </motion.button>
+          {/* AI Generate Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowAiModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+          >
+            <Brain className="w-4 h-4" />
+            <span>Gerar com IA</span>
+          </motion.button>
 
             {/* Export Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleExport}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-              }`}
-            >
-              <Download className="w-4 h-4" />
-              <span>Exportar</span>
-            </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleExport}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+              isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+            }`}
+          >
+            <Download className="w-4 h-4" />
+            <span>Exportar</span>
+          </motion.button>
 
-            {/* Import Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleImport}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-              }`}
-            >
-              <Upload className="w-4 h-4" />
-              <span>Importar</span>
-            </motion.button>
+          {/* Import Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleImport}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+              isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+            }`}
+          >
+            <Upload className="w-4 h-4" />
+            <span>Importar</span>
+          </motion.button>
+
+          {/* Fullscreen Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+              isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+            }`}
+            title={isFullscreen ? 'Sair do modo tela cheia' : 'Entrar em modo tela cheia'}
+          >
+            {isFullscreen ? <Minimize /> : <Expand />}
+          </motion.button>
           </div>
 
           {/* Zoom Controls */}
@@ -514,7 +581,7 @@ export default function FlowEditor({
             <button
               className={`p-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'} transition-colors`}
             >
-              <Grid className="w-4 h-4" />
+              <Grid3X3 className="w-4 h-4" />
             </button>
             
             <button
@@ -548,17 +615,15 @@ export default function FlowEditor({
           >
             {/* Render Nodes */}
             {state.nodes.map(node => (
-              <FlowNode
+              <FlowNodeComponent
                 key={node.id}
-                data={node}
-                selected={state.selectedNodeId === node.id}
-                onSelect={handleNodeSelect}
-                onEdit={handleNodeEdit}
-                onDelete={handleNodeDelete}
+                node={node}
+                isSelected={state.selectedNodeId === node.id}
+                isDark={isDark}
                 onDragStart={handleNodeDragStart}
+                onConfigOpen={(nodeId) => handleConfigUpdate(nodeId, {})}
                 onConnectionStart={handleConnectionStart}
-                onConnectionEnd={handleConnectionEnd}
-                isDragging={state.isDragging && state.selectedNodeId === node.id}
+                onDelete={handleNodeDelete}
               />
             ))}
 
@@ -566,10 +631,10 @@ export default function FlowEditor({
             <svg className="absolute inset-0 pointer-events-none w-full h-full">
               {/* Existing connections */}
               {state.connections.map(connection => {
-                const sourceNode = state.nodes.find(n => n.id === connection.sourceNodeId)
-                const targetNode = state.nodes.find(n => n.id === connection.targetNodeId)
+                const fromNode = state.nodes.find(n => n.id === connection.from)
+                const toNode = state.nodes.find(n => n.id === connection.to)
                 
-                if (!sourceNode || !targetNode) return null
+                if (!fromNode || !toNode) return null
 
                 // Calculate connection points based on actual visual elements
                 const nodeWidth = 200 // min-w-[200px] from FlowNode
@@ -577,12 +642,12 @@ export default function FlowEditor({
                 
                 // Connection points should align with the visual circles
                 // Output point (green circle on right): -right-3 (12px) + center (12px) = node + width
-                const startX = sourceNode.position.x + nodeWidth
-                const startY = sourceNode.position.y + nodeHeight / 2
+                const startX = fromNode.position.x + nodeWidth
+                const startY = fromNode.position.y + nodeHeight / 2
                 
                 // Input point (blue circle on left): -left-3 (12px) + center (12px) = node position
-                const endX = targetNode.position.x
-                const endY = targetNode.position.y + nodeHeight / 2
+                const endX = toNode.position.x
+                const endY = toNode.position.y + nodeHeight / 2
 
                 const midX = (startX + endX) / 2
 
@@ -719,7 +784,7 @@ export default function FlowEditor({
             </svg>
 
             {/* Empty State */}
-            {state.nodes.length === 0 && !readOnly && (
+            {state.nodes.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className={`w-24 h-24 mx-auto mb-4 rounded-full ${isDark ? 'bg-gray-800' : 'bg-gray-200'} flex items-center justify-center`}>
@@ -746,36 +811,23 @@ export default function FlowEditor({
           
           <div className="flex items-center space-x-4">
             {state.selectedNodeId && (
-              <span>Nó selecionado: {state.nodes.find(n => n.id === state.selectedNodeId)?.label}</span>
+              <span>Nó selecionado: {NODE_TYPES[state.nodes.find(n => n.id === state.selectedNodeId)?.type || '']?.label || 'Desconhecido'}</span>
             )}
           </div>
         </div>
       </div>
 
       {/* Node Configuration Modal */}
-      <AnimatePresence>
-          {showConfigModal && selectedConfig && (
-            <NodeConfigModal
-              isOpen={showConfigModal}
-              nodeData={selectedConfig}
-              onClose={() => setShowConfigModal(false)}
-              onSave={(config) => {
-                // Handle config save
-                setShowConfigModal(false)
-                setSelectedConfig(null)
-              }}
-            />
-          )}
-
-          {/* AI Generator Modal */}
-          <AiGeneratorModal
-            isOpen={showAiModal}
-            onClose={() => setShowAiModal(false)}
-            onGenerate={(flowData) => {
-              setState(flowData)
-              setShowAiModal(false)
-            }}
-          /></AnimatePresence>
+      {showNodeConfig && (
+        <NodeConfigModal
+          nodeId={showNodeConfig.nodeId}
+          nodeType={showNodeConfig.nodeType}
+          initialConfig={showNodeConfig.config}
+          isOpen={true}
+          onClose={() => setShowNodeConfig(null)}
+          onSave={handleNodeConfigSave}
+        />
+      )}
     </div>
   )
 }
