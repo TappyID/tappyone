@@ -32,10 +32,13 @@ import { useAgentes, AgenteIa } from '@/hooks/useAgentes'
 export default function AgentesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'agentes' | 'estatisticas'>('agentes')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [agenteParaEditar, setAgenteParaEditar] = useState<AgenteIa | null>(null)
+  const [selectedFilter, setSelectedFilter] = useState<'todos' | 'ativo' | 'inativo'>('todos')
+  const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategoria, setSelectedCategoria] = useState<string>('')
   const [selectedFuncao, setSelectedFuncao] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'true' | 'false'>('all')
-  const [showCreateModal, setShowCreateModal] = useState(false)
   
   const { 
     agentes, 
@@ -71,9 +74,24 @@ export default function AgentesPage() {
   const handleCreateAgente = async (novoAgente: Omit<AgenteIa, 'id' | 'usuarioId' | 'tokensUsados' | 'createdAt' | 'updatedAt'>) => {
     try {
       await createAgente(novoAgente)
+      setShowCreateModal(false)
+      setAgenteParaEditar(null)
     } catch (error) {
       console.error('Erro ao criar agente:', error)
       alert('Erro ao criar agente')
+    }
+  }
+
+  const handleUpdateAgente = async (agenteAtualizado: Omit<AgenteIa, 'id' | 'usuarioId' | 'tokensUsados' | 'createdAt' | 'updatedAt'>) => {
+    if (!agenteParaEditar) return
+    
+    try {
+      await updateAgente(agenteParaEditar.id, agenteAtualizado)
+      setShowCreateModal(false)
+      setAgenteParaEditar(null)
+    } catch (error) {
+      console.error('Erro ao atualizar agente:', error)
+      alert('Erro ao atualizar agente')
     }
   }
 
@@ -359,8 +377,8 @@ export default function AgentesPage() {
               <AgentesList
                 agentes={filteredAgentes}
                 onEdit={(agente) => {
-                  // TODO: Implement edit modal
-                  console.log('Edit agente:', agente)
+                  setAgenteParaEditar(agente)
+                  setShowCreateModal(true)
                 }}
                 onToggleStatus={handleToggleStatus}
                 onDelete={handleDeleteAgente}
@@ -390,11 +408,12 @@ export default function AgentesPage() {
       {/* Modal */}
       {showCreateModal && (
         <CriarAgenteModal
-          onClose={() => setShowCreateModal(false)}
-          onSave={(agente) => {
-            handleCreateAgente(agente)
+          onClose={() => {
             setShowCreateModal(false)
+            setAgenteParaEditar(null)
           }}
+          onSave={agenteParaEditar ? handleUpdateAgente : handleCreateAgente}
+          agenteParaEditar={agenteParaEditar}
         />
       )}
     </div>

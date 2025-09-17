@@ -10,7 +10,9 @@ import {
   RefreshCw, 
   Sparkles,
   MessageSquare,
-  Loader2
+  Loader2,
+  Image,
+  Volume2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -41,7 +43,7 @@ export default function EditTextModal({
     onClose()
   }
 
-  const handleGenerate = async (type: 'improve' | 'formal' | 'casual' | 'response') => {
+  const handleGenerate = async (type: 'improve' | 'formal' | 'casual' | 'response' | 'image' | 'audio') => {
     if (!text.trim() && type !== 'response') return
     
     setIsGenerating(true)
@@ -70,6 +72,12 @@ export default function EditTextModal({
         case 'response':
           prompt = text || 'Crie uma resposta de atendimento ao cliente profissional e amigável'
           break
+        case 'image':
+          prompt = text || 'Gere uma imagem profissional e atrativa'
+          break
+        case 'audio':
+          prompt = text || 'Gere um áudio profissional'
+          break
       }
 
       const response = await fetch('/api/ai/generate', {
@@ -86,7 +94,18 @@ export default function EditTextModal({
 
       if (response.ok) {
         const data = await response.json()
-        setText(data.text)
+        
+        if (type === 'image') {
+          if (data.imageUrl) {
+            setText(`🖼️ Imagem gerada: ${data.imageUrl}\n\n${data.revised_prompt || data.prompt}`)
+          } else {
+            alert('Erro: URL da imagem não encontrada')
+          }
+        } else if (type === 'audio') {
+          setText(`🎵 ${data.message || 'Áudio gerado com sucesso!'}\n\nPrompt: ${data.prompt}`)
+        } else {
+          setText(data.text)
+        }
       } else {
         console.error('Erro ao gerar com IA:', response.status)
         alert('Erro ao gerar conteúdo com IA')
@@ -192,6 +211,28 @@ export default function EditTextModal({
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
                 Casual
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGenerate('image')}
+                disabled={isGenerating}
+                className="h-8"
+              >
+                <Image className="w-3 h-3 mr-1" />
+                Gerar Imagem
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGenerate('audio')}
+                disabled={isGenerating}
+                className="h-8"
+              >
+                <Volume2 className="w-3 h-3 mr-1" />
+                Gerar Áudio
               </Button>
 
               {text !== originalText && (

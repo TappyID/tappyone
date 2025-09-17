@@ -1,5 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Generate image with OpenAI DALL-E 3
+async function generateImage(prompt: string) {
+  try {
+    console.log('🎨 Gerando imagem com DALL-E 3:', prompt.substring(0, 100))
+    
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: prompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid'
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('❌ Erro do OpenAI:', response.status, error)
+      return NextResponse.json({ 
+        error: 'Erro ao gerar imagem', 
+        details: error 
+      }, { status: response.status })
+    }
+
+    const result = await response.json()
+    const imageUrl = result.data[0]?.url
+
+    console.log('✅ Imagem gerada com sucesso')
+
+    return NextResponse.json({
+      success: true,
+      type: 'image',
+      imageUrl,
+      prompt,
+      revised_prompt: result.data[0]?.revised_prompt
+    })
+
+  } catch (error) {
+    console.error('💥 Erro na geração de imagem:', error)
+    return NextResponse.json(
+      { error: 'Erro interno na geração de imagem' },
+      { status: 500 }
+    )
+  }
+}
+
+// Generate audio (placeholder for future implementation)
+async function generateAudio(prompt: string) {
+  try {
+    console.log('🎵 Simulando geração de áudio:', prompt.substring(0, 100))
+    
+    // Simulate audio generation delay
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    return NextResponse.json({
+      success: true,
+      type: 'audio',
+      message: '🎵 Áudio gerado com sucesso! (Funcionalidade em desenvolvimento)',
+      audioUrl: 'https://example.com/generated-audio.mp3', // Placeholder
+      prompt
+    })
+
+  } catch (error) {
+    console.error('💥 Erro na geração de áudio:', error)
+    return NextResponse.json(
+      { error: 'Erro interno na geração de áudio' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { prompt, context, type = 'response' } = await request.json()
@@ -8,11 +85,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt é obrigatório' }, { status: 400 })
     }
 
-    console.log('🤖 Iniciando geração com DeepSeek:', {
+    console.log('🤖 Iniciando geração:', {
       prompt: prompt.substring(0, 100) + '...',
       type,
       hasContext: !!context
     })
+
+    // Handle image generation with OpenAI DALL-E 3
+    if (type === 'image') {
+      return await generateImage(prompt)
+    }
+
+    // Handle audio generation (placeholder)
+    if (type === 'audio') {
+      return await generateAudio(prompt)
+    }
 
     let systemMessage = ''
     

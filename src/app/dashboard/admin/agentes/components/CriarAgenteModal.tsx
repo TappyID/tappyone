@@ -23,6 +23,7 @@ import { AgenteIa } from '@/hooks/useAgentes'
 interface CriarAgenteModalProps {
   onClose: () => void
   onSave: (agente: Omit<AgenteIa, 'id' | 'usuarioId' | 'tokensUsados' | 'createdAt' | 'updatedAt'>) => void
+  agenteParaEditar?: AgenteIa
 }
 
 const nichos = [
@@ -88,19 +89,20 @@ const modelos = [
 
 export default function CriarAgenteModal({
   onClose,
-  onSave
+  onSave,
+  agenteParaEditar
 }: CriarAgenteModalProps) {
   const [activeTab, setActiveTab] = useState<'basico' | 'configuracao' | 'integracoes' | 'regras'>('basico')
   const [loading, setLoading] = useState(false)
   
   const [formData, setFormData] = useState({
-    nome: '',
-    descricao: '',
-    categoria: '',
-    funcao: '',
-    prompt: '',
-    modelo: 'deepseek' as 'deepseek' | 'chatgpt' | 'qwen',
-    ativo: true
+    nome: agenteParaEditar?.nome || '',
+    descricao: agenteParaEditar?.descricao || '',
+    categoria: agenteParaEditar?.categoria || '',
+    funcao: agenteParaEditar?.funcao || '',
+    prompt: agenteParaEditar?.prompt || '',
+    modelo: (agenteParaEditar?.modelo as 'deepseek' | 'chatgpt' | 'qwen') || 'deepseek',
+    ativo: agenteParaEditar?.ativo ?? true
   })
 
   const [regras, setRegras] = useState<string[]>([''])
@@ -200,8 +202,8 @@ export default function CriarAgenteModal({
                   <Brain className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Novo Agente de IA</h2>
-                  <p className="text-white/80 text-sm">Configure seu assistente inteligente</p>
+                  <h2 className="text-xl font-bold">{agenteParaEditar ? 'Editar Agente de IA' : 'Novo Agente de IA'}</h2>
+                  <p className="text-white/80 text-sm">{agenteParaEditar ? 'Modifique as configurações do seu assistente' : 'Configure seu assistente inteligente'}</p>
                 </div>
               </div>
               
@@ -501,7 +503,7 @@ export default function CriarAgenteModal({
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      Criar Agente
+                      {agenteParaEditar ? 'Salvar Alterações' : 'Criar Agente'}
                     </>
                   )}
                 </button>
