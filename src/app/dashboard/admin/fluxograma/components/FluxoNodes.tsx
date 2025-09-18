@@ -27,7 +27,12 @@ import {
   MessageCircle, 
   Brain, 
   Eye, 
-  Shield, 
+  Shield,
+  Tag,
+  UserCheck,
+  Building,
+  Hash,
+  Shuffle, 
   Volume2, 
   Phone, 
   MapPin, 
@@ -50,19 +55,21 @@ import { useState } from 'react'
 
 // Types for Flow Nodes - TappyOne Específico
 export type NodeType = 
-  // ========== GATILHOS WHATSAPP (4) ==========
-  | 'trigger-whatsapp-message'     // Nova mensagem recebida
-  | 'trigger-whatsapp-media'       // Mídia recebida (foto/vídeo/áudio)
-  | 'trigger-keyword'              // Palavra-chave detectada
-  | 'trigger-webhook'              // Webhook externo recebido
-  
+  // ========== TRIGGERS (11) ==========
+  | 'trigger-whatsapp-message'    // Mensagem WhatsApp recebida
+  | 'trigger-whatsapp-media'      // Mídia WhatsApp recebida  
+  | 'trigger-keyword'             // Palavra-chave específica
+  | 'trigger-menu-list'           // Menu com múltiplas opções
+  | 'trigger-time-schedule'       // Agendamento de tempo
+  | 'trigger-webhook'             // Webhook externo
+  | 'trigger-user-action'         // Ação do usuário
+  | 'trigger-system-event'        // Evento do sistema
+  | 'trigger-login-system'        // Login no sistema
+  | 'trigger-flow-start'          // Início do fluxo
+  | 'trigger-conexao-created'      // Conexão criada
   // ========== GATILHOS SISTEMA (10) ==========
   | 'trigger-contato-created'      // Contato criado no sistema
-  | 'trigger-conexao-created'      // Conexão criada
-  | 'trigger-fila-created'         // Fila criada
-  | 'trigger-atendente-created'    // Atendente criado
-  | 'trigger-ticket-created'       // Ticket criado
-  | 'trigger-tag-created'          // Tag criada
+  | 'trigger-agendamento-created'  // Agendamento criado
   | 'trigger-quadro-created'       // Quadro Kanban criado
   | 'trigger-coluna-created'       // Coluna Kanban criada
   | 'trigger-agendamento-created'  // Agendamento criado
@@ -72,29 +79,40 @@ export type NodeType =
   | 'trigger-kanban-move'          // Card movido no Kanban
   | 'trigger-kanban-created'       // Card criado no Kanban
   
-  // ========== CONDIÇÕES (4) ==========
+  // ========== CONDIÇÕES (12) ==========
   | 'condition-if'                 // Condição Se/Então geral
   | 'condition-text-contains'      // Texto contém palavra
   | 'condition-time-range'         // Horário/dia específico
   | 'condition-contact-field'      // Campo do contato
+  | 'condition-message-type'       // Tipo de mensagem (texto, áudio, imagem)
+  | 'condition-contact-tag'        // Se contato tem tag específica
+  | 'condition-contact-status'     // Status do contato (ativo, inativo)
+  | 'condition-queue-assignment'   // Se contato está em fila específica
+  | 'condition-business-hours'     // Horário comercial
+  | 'condition-last-message-time'  // Tempo desde última mensagem
+  | 'condition-conversation-count' // Número de conversas do contato
+  | 'condition-random'             // Condição aleatória (A/B testing)
   
-  // ========== AÇÕES WHATSAPP (5) ==========
+  // ========== AÇÕES WHATSAPP (7) ==========
   | 'action-whatsapp-text'         // Enviar texto
   | 'action-whatsapp-media'        // Enviar mídia
   | 'action-whatsapp-template'     // Template aprovado
   | 'action-whatsapp-location'     // Enviar localização
   | 'action-whatsapp-contact'      // Cartão de contato
+  | 'action-whatsapp-list'         // Enviar menu de lista
+  | 'action-whatsapp-event'        // Enviar evento/agendamento
   
   // ========== AÇÕES KANBAN (3) ==========
   | 'action-kanban-create'         // Criar card
   | 'action-kanban-move'           // Mover card
   | 'action-kanban-update'         // Atualizar card
   
-  // ========== AÇÕES CONTATOS (4) ==========
+  // ========== AÇÕES CONTATOS (5) ==========
   | 'action-contact-create'        // Criar contato
   | 'action-contact-update'        // Atualizar contato
-  | 'action-contact-tag'           // Adicionar tag
+  | 'action-contact-add-tag'       // Adicionar tag ao contato
   | 'action-contact-merge'         // Unir contatos duplicados
+  | 'action-multi'                 // Múltiplas ações em sequência
   
   // ========== AÇÕES CRM (4) ==========
   | 'action-agendamento-create'    // Criar agendamento
@@ -127,6 +145,14 @@ export type NodeType =
   | 'action-delay-wait'            // Aguardar tempo
   | 'action-webhook-call'          // Chamar webhook
   | 'action-notification-send'     // Enviar notificação
+  
+  // ========== ENCERRAMENTO (6) ==========
+  | 'end-success'                  // Encerrar com sucesso
+  | 'end-error'                    // Encerrar com erro
+  | 'end-timeout'                  // Encerrar por timeout
+  | 'end-user-cancel'              // Usuário cancelou
+  | 'end-condition-met'            // Condição de parada atingida
+  | 'end-manual-stop'              // Parada manual
 
 export interface FluxoNodeData {
   id: string
@@ -143,7 +169,7 @@ export const NODE_TYPES: Record<NodeType, {
   label: string
   description: string
   color: string
-  category: 'trigger' | 'condition' | 'action'
+  category: 'trigger' | 'condition' | 'action' | 'end'
 }> = {
   // ============= TRIGGERS =============
   'trigger-whatsapp-message': {
@@ -159,6 +185,30 @@ export const NODE_TYPES: Record<NodeType, {
     label: 'Mídia WhatsApp',
     description: 'Quando receber foto/vídeo/áudio',
     color: 'green',
+    category: 'trigger'
+  },
+  
+  'trigger-menu-list': {
+    icon: Grid3X3,
+    label: 'Menu Lista',
+    description: 'Menu interativo com múltiplas opções e ações',
+    color: 'orange',
+    category: 'trigger'
+  },
+  
+  'trigger-login-system': {
+    icon: UserCheck,
+    label: 'Login no Sistema',
+    description: 'Quando usuário fizer login no sistema',
+    color: 'purple',
+    category: 'trigger'
+  },
+  
+  'trigger-flow-start': {
+    icon: Play,
+    label: 'Início do Fluxo',
+    description: 'Quando o fluxo for iniciado manualmente',
+    color: 'blue',
     category: 'trigger'
   },
   
@@ -307,6 +357,70 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'condition'
   },
 
+  'condition-message-type': {
+    icon: MessageSquare,
+    label: 'Tipo de Mensagem',
+    description: 'Verifica se é texto, áudio, imagem, etc.',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-contact-tag': {
+    icon: Tag,
+    label: 'Tag do Contato',
+    description: 'Se contato possui tag específica',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-contact-status': {
+    icon: UserCheck,
+    label: 'Status do Contato',
+    description: 'Verifica se contato está ativo/inativo',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-queue-assignment': {
+    icon: Users,
+    label: 'Fila de Atendimento',
+    description: 'Se contato está em fila específica',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-business-hours': {
+    icon: Building,
+    label: 'Horário Comercial',
+    description: 'Verifica se está em horário comercial',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-last-message-time': {
+    icon: Clock,
+    label: 'Tempo da Última Mensagem',
+    description: 'Baseado no tempo desde última mensagem',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-conversation-count': {
+    icon: Hash,
+    label: 'Número de Conversas',
+    description: 'Quantidade de conversas do contato',
+    color: 'yellow',
+    category: 'condition'
+  },
+
+  'condition-random': {
+    icon: Shuffle,
+    label: 'Condição Aleatória',
+    description: 'Para testes A/B e distribuição aleatória',
+    color: 'yellow',
+    category: 'condition'
+  },
+
   // ============= ACTIONS - WhatsApp =============
   'action-whatsapp-text': {
     icon: MessageCircle,
@@ -344,6 +458,22 @@ export const NODE_TYPES: Record<NodeType, {
     icon: Users,
     label: 'Cartão de Contato',
     description: 'Envia cartão de contato',
+    color: 'green',
+    category: 'action'
+  },
+  
+  'action-whatsapp-list': {
+    icon: Grid3X3,
+    label: 'Enviar Menu Lista',
+    description: 'Envia menu interativo com opções',
+    color: 'green',
+    category: 'action'
+  },
+  
+  'action-whatsapp-event': {
+    icon: Calendar,
+    label: 'Enviar Evento',
+    description: 'Envia convite de evento/agendamento',
     color: 'green',
     category: 'action'
   },
@@ -390,12 +520,20 @@ export const NODE_TYPES: Record<NodeType, {
     category: 'action'
   },
   
-  'action-contact-tag': {
-    icon: Target,
-    label: 'Adicionar Tag',
-    description: 'Adiciona etiqueta ao contato',
-    color: 'indigo',
-    category: 'action'
+  'action-contact-add-tag': {
+    label: 'Adicionar Tag ao Contato',
+    icon: Tag,
+    category: 'action',
+    color: 'bg-green-500',
+    description: 'Adiciona uma tag específica ao contato'
+  },
+  
+  'action-multi': {
+    label: 'Múltiplas Ações',
+    icon: Plus,
+    category: 'action',
+    color: 'bg-purple-500',
+    description: 'Executa múltiplas ações em sequência'
   },
   
   'action-contact-merge': {
@@ -586,6 +724,55 @@ export const NODE_TYPES: Record<NodeType, {
     description: 'Atribui contato à fila/atendente',
     color: 'indigo',
     category: 'action'
+  },
+
+  // ============= ENCERRAMENTO =============
+  'end-success': {
+    icon: CheckCircle,
+    label: 'Encerrar com Sucesso',
+    description: 'Finaliza fluxo com sucesso',
+    color: 'green',
+    category: 'end'
+  },
+  
+  'end-error': {
+    icon: AlertCircle,
+    label: 'Encerrar com Erro',
+    description: 'Finaliza fluxo por erro',
+    color: 'red',
+    category: 'end'
+  },
+  
+  'end-timeout': {
+    icon: Timer,
+    label: 'Encerrar por Timeout',
+    description: 'Finaliza fluxo por tempo limite',
+    color: 'orange',
+    category: 'end'
+  },
+  
+  'end-user-cancel': {
+    icon: X,
+    label: 'Usuário Cancelou',
+    description: 'Finaliza porque usuário cancelou',
+    color: 'gray',
+    category: 'end'
+  },
+  
+  'end-condition-met': {
+    icon: Target,
+    label: 'Condição de Parada',
+    description: 'Finaliza ao atingir condição',
+    color: 'blue',
+    category: 'end'
+  },
+  
+  'end-manual-stop': {
+    icon: Shield,
+    label: 'Parada Manual',
+    description: 'Finaliza por intervenção manual',
+    color: 'purple',
+    category: 'end'
   }
 }
 
@@ -598,7 +785,8 @@ export function NodePalette({ onNodeSelect }: { onNodeSelect: (nodeType: NodeTyp
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     trigger: false,
     condition: false, 
-    action: false
+    action: false,
+    end: false
   })
   
   const toggleCategory = (categoryKey: string) => {
@@ -611,7 +799,8 @@ export function NodePalette({ onNodeSelect }: { onNodeSelect: (nodeType: NodeTyp
   const categories = {
     trigger: { label: 'Gatilhos', icon: Play },
     condition: { label: 'Condições', icon: GitBranch },
-    action: { label: 'Ações', icon: Zap }
+    action: { label: 'Ações', icon: Zap },
+    end: { label: 'Encerramento', icon: Shield }
   }
 
   return (
@@ -776,47 +965,82 @@ export function FlowNode({
     }
   }
 
-  const handleConnectionClick = (e: React.MouseEvent) => {
+  const handleConnectionStart = (nodeId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    onConnectionStart?.(data.id, e)
+    onConnectionStart(nodeId, e)
   }
 
-  const handleDropTarget = (e: React.MouseEvent) => {
-    e.preventDefault()
-    onConnectionEnd?.(data.id)
+  const handleConnectionEnd = (nodeId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    onConnectionEnd(nodeId, e)
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ scale: isDragging ? 1 : 1.02 }}
-      className={`absolute select-none transition-all ${
-        selected ? 'ring-2 ring-blue-500 z-10' : 'z-0'
-      } ${
-        isDragging ? 'cursor-grabbing z-20' : 'cursor-grab'
-      }`}
+      key={data.id}
+      drag
+      dragMomentum={false}
+      onDragStart={(e, info) => onDragStart?.(data.id, e, info)}
+      className={`
+        absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border-2 cursor-move
+        transition-all duration-200 hover:shadow-xl
+        ${data.config?.isMiniNode 
+          ? 'min-w-[180px] max-w-[180px]' 
+          : 'min-w-[200px]'
+        }
+        ${isSelected 
+          ? 'border-blue-500 shadow-blue-200 dark:shadow-blue-900' 
+          : isDark 
+            ? 'border-gray-600 hover:border-gray-500' 
+            : 'border-gray-200 hover:border-gray-300'
+        }
+      `}
       style={{ 
         left: data.position.x, 
-        top: data.position.y 
+        top: data.position.y,
+        zIndex: isSelected ? 50 : data.config?.isMiniNode ? 5 : 10 
       }}
-      onClick={() => onSelect?.(data.id)}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleDropTarget}
+      whileHover={{ scale: data.config?.isMiniNode ? 1.01 : 1.02 }}
+      whileDrag={{ scale: data.config?.isMiniNode ? 1.03 : 1.05, zIndex: 100 }}
     >
-      <div className={`p-4 rounded-xl shadow-lg min-w-[200px] ${
+      {/* Bordinha colorida para mini-nodes */}
+      {data.config?.isMiniNode && data.config?.borderColor && (
+        <div 
+          className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-${data.config.borderColor}-500`}
+        />
+      )}
+      
+      <div className={`${data.config?.isMiniNode ? 'p-3' : 'p-4'} rounded-xl shadow-lg ${
+        data.config?.isMiniNode 
+          ? 'min-w-[180px] max-w-[180px]'
+          : 'min-w-[200px]'
+      } ${
         isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
       }`}>
         {/* Node Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            <div className={`p-2 rounded-lg bg-${config.color}-100 text-${config.color}-600`}>
-              <config.icon className="w-4 h-4" />
+            {data.config?.isMiniNode ? (
+              <div className={`p-1.5 rounded-md bg-${data.config.borderColor}-100 text-${data.config.borderColor}-600`}>
+                <config.icon className="w-3 h-3" />
+              </div>
+            ) : (
+              <div className={`p-2 rounded-lg bg-${config.color}-100 text-${config.color}-600`}>
+                <config.icon className="w-4 h-4" />
+              </div>
+            )}
+            <div>
+              <h4 className={`${data.config?.isMiniNode ? 'text-xs' : 'text-sm'} font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {data.config?.isMiniNode && data.config?.optionTitle 
+                  ? data.config.optionTitle 
+                  : data.label}
+              </h4>
+              {data.config?.isMiniNode && (
+                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Opção {(data.config?.optionIndex || 0) + 1}
+                </p>
+              )}
             </div>
-            <h4 className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {data.label}
-            </h4>
           </div>
           
           {selected && (
@@ -927,33 +1151,189 @@ export function NodeConfigModal({
       case 'trigger-whatsapp-message':
         return (
           <div className="space-y-4">
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-                Filtrar por palavra-chave (opcional)
-              </label>
-              <input
-                type="text"
-                value={formData.keyword || ''}
-                onChange={(e) => updateField('keyword', e.target.value)}
-                placeholder="Ex: orçamento, contrato, dúvida"
-                className={`w-full px-3 py-2 rounded-lg border ${
-                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-              />
+            {/* Filtros de Origem */}
+            <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-blue-50 border-blue-200'}`}>
+              <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                🎯 Filtros de Origem (Onde o fluxo deve ser ativado)
+              </h4>
+              
+              <div className="grid grid-cols-1 gap-3">
+                {/* Filtro por Conexão */}
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Conexão WhatsApp específica
+                  </label>
+                  <select
+                    value={formData.connectionId || ''}
+                    onChange={(e) => updateField('connectionId', e.target.value)}
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  >
+                    <option value="">Qualquer conexão</option>
+                    <option value="main">Conexão Principal</option>
+                    <option value="vendas">WhatsApp Vendas</option>
+                    <option value="suporte">WhatsApp Suporte</option>
+                  </select>
+                </div>
+
+                {/* Filtro por Fila */}
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Fila de atendimento específica
+                  </label>
+                  <select
+                    value={formData.queueId || ''}
+                    onChange={(e) => updateField('queueId', e.target.value)}
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  >
+                    <option value="">Qualquer fila</option>
+                    <option value="vendas">Fila Vendas</option>
+                    <option value="suporte">Fila Suporte</option>
+                    <option value="financeiro">Fila Financeiro</option>
+                  </select>
+                </div>
+
+                {/* Filtro por Chat Específico */}
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Chat específico (ChatID)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.specificChatId || ''}
+                    onChange={(e) => updateField('specificChatId', e.target.value)}
+                    placeholder="Ex: 5519999999999@c.us"
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  />
+                </div>
+
+                {/* Filtro por Telefone */}
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Telefone específico do cliente
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.specificPhone || ''}
+                    onChange={(e) => updateField('specificPhone', e.target.value)}
+                    placeholder="Ex: 5519999999999 (apenas números)"
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.ignoreBots || false}
-                  onChange={(e) => updateField('ignoreBots', e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Ignorar mensagens de bots
-                </span>
-              </label>
+
+            {/* Filtros de Conteúdo */}
+            <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-green-50 border-green-200'}`}>
+              <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                💬 Filtros de Conteúdo (O que a mensagem deve conter)
+              </h4>
+              
+              <div className="space-y-3">
+                {/* Palavra-chave */}
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Filtrar por palavra-chave (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.keyword || ''}
+                    onChange={(e) => updateField('keyword', e.target.value)}
+                    placeholder="Ex: orçamento, contrato, dúvida"
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  />
+                </div>
+
+                {/* Tipo de chat */}
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Tipo de chat
+                  </label>
+                  <select
+                    value={formData.chatType || 'all'}
+                    onChange={(e) => updateField('chatType', e.target.value)}
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  >
+                    <option value="all">Todos (Individual + Grupos)</option>
+                    <option value="individual">Apenas Chats Individuais</option>
+                    <option value="group">Apenas Grupos</option>
+                  </select>
+                </div>
+              </div>
             </div>
+
+            {/* Opções Avançadas */}
+            <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                ⚙️ Opções Avançadas
+              </h4>
+              
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.ignoreBots || false}
+                    onChange={(e) => updateField('ignoreBots', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Ignorar mensagens de bots
+                  </span>
+                </label>
+
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.onlyFirstMessage || false}
+                    onChange={(e) => updateField('onlyFirstMessage', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Apenas primeira mensagem do contato
+                  </span>
+                </label>
+
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.ignoreForwarded || false}
+                    onChange={(e) => updateField('ignoreForwarded', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Ignorar mensagens encaminhadas
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Resumo das Configurações */}
+            {(formData.connectionId || formData.queueId || formData.specificChatId || formData.specificPhone || formData.keyword) && (
+              <div className={`p-3 rounded-lg border-l-4 border-blue-500 ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                <h5 className={`text-xs font-medium mb-2 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+                  📋 Resumo: Este fluxo será ativado quando:
+                </h5>
+                <ul className={`text-xs space-y-1 ${isDark ? 'text-blue-200' : 'text-blue-600'}`}>
+                  {formData.connectionId && <li>• Conexão: {formData.connectionId}</li>}
+                  {formData.queueId && <li>• Fila: {formData.queueId}</li>}
+                  {formData.specificChatId && <li>• Chat específico: {formData.specificChatId}</li>}
+                  {formData.specificPhone && <li>• Telefone específico: {formData.specificPhone}</li>}
+                  {formData.keyword && <li>• Mensagem contém: "{formData.keyword}"</li>}
+                  <li>• Tipo de chat: {formData.chatType === 'individual' ? 'Individual' : formData.chatType === 'group' ? 'Grupos' : 'Todos'}</li>
+                </ul>
+              </div>
+            )}
           </div>
         )
         
@@ -1194,6 +1574,151 @@ export function NodeConfigModal({
                 <option value="negociacao">Negociação</option>
                 <option value="fechado">Fechado</option>
               </select>
+            </div>
+          </div>
+        )
+
+      case 'action-whatsapp-list':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Título do Menu *
+              </label>
+              <input
+                type="text"
+                value={formData.title || ''}
+                onChange={(e) => updateField('title', e.target.value)}
+                placeholder="Ex: Menu de Atendimento"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Descrição
+              </label>
+              <input
+                type="text"
+                value={formData.description || ''}
+                onChange={(e) => updateField('description', e.target.value)}
+                placeholder="Ex: Escolha uma opção abaixo"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Texto do Botão
+              </label>
+              <input
+                type="text"
+                value={formData.buttonText || 'Escolher'}
+                onChange={(e) => updateField('buttonText', e.target.value)}
+                placeholder="Ex: Escolher, Selecionar"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Opções do Menu *
+              </label>
+              <textarea
+                value={formData.options || ''}
+                onChange={(e) => updateField('options', e.target.value)}
+                placeholder="Uma opção por linha:\nSuporte\nVendas\nAgendamento"
+                rows={4}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              />
+              <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Digite uma opção por linha
+              </p>
+            </div>
+          </div>
+        )
+
+      case 'action-whatsapp-event':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Nome do Evento *
+              </label>
+              <input
+                type="text"
+                value={formData.eventName || ''}
+                onChange={(e) => updateField('eventName', e.target.value)}
+                placeholder="Ex: Reunião de Apresentação"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                required
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Descrição do Evento
+              </label>
+              <textarea
+                value={formData.eventDescription || ''}
+                onChange={(e) => updateField('eventDescription', e.target.value)}
+                placeholder="Descreva o evento..."
+                rows={3}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Local
+              </label>
+              <input
+                type="text"
+                value={formData.location || ''}
+                onChange={(e) => updateField('location', e.target.value)}
+                placeholder="Ex: Online - Google Meet"
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                  Data/Hora Início *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.startTime || ''}
+                  onChange={(e) => updateField('startTime', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  required
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                  Data/Hora Fim
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.endTime || ''}
+                  onChange={(e) => updateField('endTime', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+              </div>
             </div>
           </div>
         )
@@ -1453,6 +1978,81 @@ export function NodeConfigModal({
               {nodeConfig.description}
             </p>
           </div>
+        </div>
+
+        {/* Node Content */}
+        <div className="p-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <config.icon className={`w-5 h-5 text-${config.color}-600 dark:text-${config.color}-400`} />
+            <h3 className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {config.label}
+            </h3>
+          </div>
+          
+          {/* Renderização especial para Menu Lista */}
+          {data.type === 'trigger-menu-list' && data.config?.menuOptions?.length > 0 ? (
+            <div className="space-y-2">
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {data.config.menuTitle || 'Menu Interativo'}
+              </p>
+              <div className="space-y-1">
+                {data.config.menuOptions.map((option: any, index: number) => (
+                  <div 
+                    key={index}
+                    className={`flex items-center justify-between p-2 rounded border ${
+                      isDark ? 'bg-gray-700 border-gray-600' : 'bg-orange-50 border-orange-200'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                        isDark ? 'bg-orange-700 text-orange-100' : 'bg-orange-200 text-orange-800'
+                      }`}>
+                        {option.key || (index + 1)}
+                      </span>
+                      <span className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {option.text || 'Opção sem nome'}
+                      </span>
+                    </div>
+                    
+                    {/* Mini output connection point para cada opção */}
+                    <div
+                      className={`w-3 h-3 rounded-full border-2 cursor-pointer transition-colors ${
+                        isDark 
+                          ? 'bg-gray-600 border-gray-500 hover:bg-orange-500 hover:border-orange-400' 
+                          : 'bg-white border-orange-300 hover:bg-orange-500 hover:border-orange-600'
+                      }`}
+                      onMouseDown={(e) => handleConnectionStart(data.id, e)}
+                      title={`Conectar opção: ${option.text}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : data.type === 'action-whatsapp-list' && data.config?.listOptions?.length > 0 ? (
+            <div className="space-y-2">
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {data.config.listTitle || 'Menu WhatsApp'}
+              </p>
+              <div className="space-y-1">
+                {data.config.listOptions.map((option: any, index: number) => (
+                  <div 
+                    key={index}
+                    className={`p-2 rounded border ${
+                      isDark ? 'bg-gray-700 border-gray-600' : 'bg-green-50 border-green-200'
+                    }`}
+                  >
+                    <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {option.title || 'Opção sem título'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {config.description}
+            </p>
+          )}
         </div>
 
         {renderConfigForm()}

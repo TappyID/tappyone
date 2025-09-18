@@ -178,9 +178,7 @@
     useInfiniteScroll = false, // Desativado por padrão até resolver o problema
     loadMoreChats,
     hasMoreChats,
-    loadingMore,
-    onOpenLigacaoModal,
-    onOpenVideoChamadaModal
+    loadingMore
   }: ConversationSidebarProps) {
     const [activeFilter, setActiveFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
@@ -196,21 +194,28 @@
     // Buscar dados reais dos contatos - OTIMIZADO: só processar se há chats
     const chatIds = chats.length > 0 ? chats.map(chat => chat.id?._serialized || chat.id || '').filter(id => id) : []
     
-    // LAZY LOADING: Carregar apenas os primeiros 7 chats visíveis inicialmente
-    const [lazyLoadedChatIds, setLazyLoadedChatIds] = useState<string[]>([])
-    
-    useEffect(() => {
-      if (chatIds.length > 0) {
-        // Carregar apenas os primeiros 7 chats para acelerar o carregamento inicial
-        setLazyLoadedChatIds(chatIds.slice(0, 7))
-        
-        // Carregar o resto gradualmente após 300ms
-        setTimeout(() => {
-          setLazyLoadedChatIds(chatIds)
-        }, 300)
+    // Estado para controlar quantos chats foram carregados
+    const [visibleChatsCount, setVisibleChatsCount] = useState<number>(5)
+  
+    // Função para carregar mais chats (sobrescrever a das props)
+    const handleLoadMoreChats = useCallback(() => {
+      setVisibleChatsCount(prev => {
+        const newCount = Math.min(prev + 10, chatIds.length)
+        console.log(`🔄 [ConversationSidebar] Carregando mais chats... ${prev} → ${newCount}`)
+        return newCount
+      })
+      
+      // Se há loadMoreChats das props, também chama ela
+      if (loadMoreChats) {
+        loadMoreChats()
       }
-    }, [chatIds.join(',')])
-    
+    }, [chatIds.length, loadMoreChats])
+  
+    // Reset apenas quando há mudança significativa nos chatIds (não rerender)
+    useEffect(() => {
+      setVisibleChatsCount(5)
+    }, [chatIds.length])
+
     // Estados do filtro em cascata
     const [selectedConexao, setSelectedConexao] = useState('todas')
     const [showConexaoDropdown, setShowConexaoDropdown] = useState(false)
@@ -683,9 +688,12 @@
     // Usar loading adequado baseado no modo
     const activeLoading = useInfiniteScroll ? loading : isLoading
     
-    // IntersectionObserver para scroll infinito
+    // IntersectionObserver para carregamento progressivo
     useEffect(() => {
-      if (!useInfiniteScroll || !loadMoreChats || !hasMoreChats || loadingMore) {
+      // Sempre usar se ainda há mais chats para carregar
+      const hasMoreToLoad = visibleChatsCount < chatIds.length
+      
+      if (!hasMoreToLoad) {
         return
       }
       
@@ -693,14 +701,10 @@
         (entries) => {
           const target = entries[0]
           if (target.isIntersecting) {
-            console.log('🔄 [ConversationSidebar] Carregando mais chats...')
-            loadMoreChats()
+            handleLoadMoreChats()
           }
         },
-        {
-          threshold: 0.1,
-          rootMargin: '50px'
-        }
+        { threshold: 0.1, rootMargin: '50px' }
       )
       
       if (loadMoreTriggerRef.current) {
@@ -712,20 +716,29 @@
           observer.unobserve(loadMoreTriggerRef.current)
         }
       }
-    }, [useInfiniteScroll, loadMoreChats, hasMoreChats, loadingMore])
+    }, [visibleChatsCount, chatIds.length, handleLoadMoreChats])
     
-    // OTIMIZAÇÃO: Carregar dados apenas dos primeiros 50 chats visíveis
-    const activeChatIds = activeChats.slice(0, 50).map(chat => chat.id?._serialized || chat.id || '')
+    // OTIMIZAÇÃO: Carregar dados apenas dos chats visíveis
+    const activeChatIds = activeChats.slice(0, visibleChatsCount).map(chat => chat.id?._serialized || chat.id || '')
     const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
     
-    // Cache de tags por chatId - igual ao ChatArea para manter consistência
+    // Cache inteligente - marca chats que não existem no CRM para evitar requisições repetidas
     const [tagsCache, setTagsCache] = useState<{[chatId: string]: any[]}>({})
+    const [processedChats, setProcessedChats] = useState<Set<string>>(new Set())
     
-    // Função para buscar tags de um chatId específico - com verificação de contato CRM
+    // Função para buscar tags de um chatId específico - com cache inteligente
     const fetchTagsForChat = useCallback(async (chatId: string) => {
+      // Se já processamos este chat, não fazer nova requisição
+      if (processedChats.has(chatId)) {
+        return
+      }
+      
       try {
         const token = localStorage.getItem('token')
         if (!token) return
+        
+        // Marcar como processado ANTES da requisição para evitar duplicatas
+        setProcessedChats(prev => new Set(prev).add(chatId))
         
         // Primeiro verificar se é um contato CRM válido
         const contatoResponse = await fetch(`/api/contatos/${chatId}/dados-completos`, {
@@ -733,6 +746,7 @@
         })
         
         if (!contatoResponse.ok) {
+          // Chat não existe no CRM - marcar com array vazio e não tentar mais
           setTagsCache(prev => ({ ...prev, [chatId]: [] }))
           return
         }
@@ -761,16 +775,24 @@
         console.error(`❌ [SIDEBAR-CACHE] Erro ao buscar tags para ${chatId}:`, error)
         setTagsCache(prev => ({ ...prev, [chatId]: [] }))
       }
-    }, [])
+    }, [processedChats])
     
-    // OTIMIZAÇÃO: Buscar tags apenas dos primeiros 20 chats visíveis
+    // OTIMIZAÇÃO: Buscar tags apenas dos chats visíveis que ainda não foram processados
     useEffect(() => {
-      activeChatIds.slice(0, 20).forEach(chatId => {
-        if (!tagsCache[chatId] && chatId.trim() !== '') {
+      activeChatIds.forEach(chatId => {
+        if (!processedChats.has(chatId) && chatId.trim() !== '') {
           fetchTagsForChat(chatId)
         }
       })
-    }, [activeChatIds, tagsCache, fetchTagsForChat])
+    }, [activeChatIds, processedChats, fetchTagsForChat])
+    
+    // Limpar cache quando chatIds mudam (novo carregamento)
+    useEffect(() => {
+      if (chatIds.length === 0) {
+        setProcessedChats(new Set())
+        setTagsCache({})
+      }
+    }, [chatIds.length])
     
     // Handler do scroll com infinite scroll ativo
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -831,8 +853,8 @@
     // DEBUG: Verificar filteredConversations
    
     
-    // OTIMIZAÇÃO CRÍTICA: Processar apenas chats visíveis (primeiros 100)
-    const conversations = useMemo(() => activeChats.slice(0, 100).map(chat => {
+    // OTIMIZAÇÃO CRÍTICA: Processar apenas chats visíveis
+    const conversations = useMemo(() => activeChats.slice(0, visibleChatsCount).map(chat => {
       const chatId = chat.id?._serialized || chat.id || ''
       const name = getContactName(chat, activeContacts)
       const lastMessage = getLastMessage(chat)
@@ -931,8 +953,8 @@
       const loadKanbanInfo = async () => {
         const newKanbanInfo: {[key: string]: any} = {}
         
-        // Carregar apenas para os primeiros 5 chats (visíveis)
-        const visibleChats = activeChats.slice(0, 5)
+        // Carregar apenas para os chats visíveis
+        const visibleChats = activeChats.slice(0, Math.min(visibleChatsCount, 5))
         
         for (const chat of visibleChats) {
           const chatId = chat.id._serialized || chat.id
@@ -963,7 +985,16 @@
     const filteredConversations = useMemo(() => {
       // Se usar infinite scroll, usar os chats do hook ao invés das props
       const sourceConversations = useInfiniteScroll ? conversations : conversations
-      return sourceConversations.filter(conv => {
+      
+      // DEDUPLIFICAR primeiro para evitar chaves duplicadas no React
+      const deduplicatedConversations = sourceConversations.reduce((acc: any[], conv) => {
+        if (!acc.find(existing => existing.id === conv.id)) {
+          acc.push(conv)
+        }
+        return acc
+      }, [])
+      
+      return deduplicatedConversations.filter(conv => {
         // Early return: Filtro de busca - mais eficiente quando há searchQuery
         if (searchQuery.trim()) {
           const searchLower = searchQuery.toLowerCase()
@@ -1315,8 +1346,9 @@
           {/* Conversations List */}
           <div 
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto scrollbar-custom"
+            className="flex-1 overflow-y-auto scrollbar-chat min-h-0"
             onScroll={handleScroll}
+            style={{ maxHeight: 'calc(100vh - 200px)' }}
           >
           {/* Skeleton Loading para primeiros carregamentos */}
           {activeLoading && filteredConversations.length === 0 && (
@@ -1741,10 +1773,43 @@
             ))}
           </AnimatePresence>
           
-          {/* Scroll Infinito - Trigger */}
-          {useInfiniteScroll && hasMoreChats && (
+          {/* Load More Trigger - Sempre ativo */}
+          {visibleChatsCount < chatIds.length && (
             <div 
               ref={loadMoreTriggerRef}
+              className="flex items-center justify-center py-4"
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-2 text-muted-foreground"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full"
+                />
+                <span className="text-sm">Carregando mais chats...</span>
+              </motion.div>
+            </div>
+          )}
+          
+          {/* Indicador de fim da lista */}
+          {visibleChatsCount >= chatIds.length && filteredConversations.length > 0 && (
+            <div className="flex items-center justify-center py-4">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 text-muted-foreground"
+              >
+                <span className="text-sm">📄 Todos os chats carregados ({chatIds.length})</span>
+              </motion.div>
+            </div>
+          )}
+          
+          {/* Scroll Infinito Original - Backup */}
+          {useInfiniteScroll && hasMoreChats && false && (
+            <div 
               className="flex items-center justify-center py-4"
             >
               {loadingMore ? (

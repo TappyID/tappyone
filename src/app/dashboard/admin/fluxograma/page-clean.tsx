@@ -135,7 +135,7 @@ export default function FluxogramaPage() {
                 Automação de Fluxos
               </h1>
               <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Gerencie fluxos de automação para WhatsApp
+                Gerencie fluxos de automação para WhatsAppss
               </p>
             </div>
           </div>

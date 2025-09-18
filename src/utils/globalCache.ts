@@ -148,6 +148,10 @@ export const cacheKeys = {
   wahaChats: (userId: string) => `waha:chats:${userId}`
 }
 
+// Cache para erros 500 - evita requests repetidos quando backend está falhando
+const serverErrorCache = new Map<string, number>()
+const SERVER_ERROR_CACHE_DURATION = 30 * 1000 // 30 segundos
+
 // Helper para fazer requisições com cache
 export async function fetchWithCache<T>(
   key: string,
@@ -155,10 +159,21 @@ export async function fetchWithCache<T>(
   options: RequestInit = {},
   cacheDuration?: number
 ): Promise<T> {
+  // Verificar se houve erro 500 recente nesta URL
+  const errorKey = `error_${url}`
+  const lastError = serverErrorCache.get(errorKey)
+  if (lastError && Date.now() - lastError < SERVER_ERROR_CACHE_DURATION) {
+    throw new Error(`HTTP 500: Server Error (cached - avoiding repeated requests)`)
+  }
+  
   return globalCache.get(
     key,
     () => fetch(url, options).then(res => {
       if (!res.ok) {
+        // Cache erros 500+ para evitar spam de requests
+        if (res.status >= 500) {
+          serverErrorCache.set(errorKey, Date.now())
+        }
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
       return res.json()

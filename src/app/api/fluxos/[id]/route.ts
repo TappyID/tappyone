@@ -8,8 +8,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const token = cookieStore.get('auth_token')?.value
+    // Try to get token from Authorization header first, then from cookie
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      const cookieStore = cookies()
+      token = cookieStore.get('auth_token')?.value
+    }
 
     if (!token) {
       return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
@@ -41,8 +47,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const token = cookieStore.get('auth_token')?.value
+    // Try to get token from Authorization header first, then from cookie
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      const cookieStore = cookies()
+      token = cookieStore.get('auth_token')?.value
+    }
 
     if (!token) {
       return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
@@ -77,8 +89,14 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const token = cookieStore.get('auth_token')?.value
+    // Try to get token from Authorization header first, then from cookie
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      const cookieStore = cookies()
+      token = cookieStore.get('auth_token')?.value
+    }
 
     if (!token) {
       return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })

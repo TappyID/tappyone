@@ -125,13 +125,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         
         onDisconnect?.()
         
-        // Auto-reconnect
+        // Não reconectar em caso de erro de autorização (1008) ou outros erros críticos
+        const shouldNotReconnect = event.code === 1008 || event.code === 1002 || event.code === 1003
+        if (shouldNotReconnect) {
+          console.log(`WebSocket: Not attempting reconnect due to authorization error (${event.code})`)
+          return
+        }
+        
+        // Auto-reconnect apenas para outros tipos de erro
         if (autoReconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++
           console.log(`WebSocket: Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`)
           
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect()
+            connect(sessionName)
           }, reconnectInterval)
         }
       }

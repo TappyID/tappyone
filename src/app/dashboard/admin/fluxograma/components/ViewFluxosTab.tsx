@@ -24,6 +24,8 @@ interface ViewFluxosTabProps {
   loading: boolean
   onToggleFluxo: (id: string, ativo: boolean) => void
   onExecuteFluxo: (id: string) => void
+  onEditFluxo: (id: string) => void
+  onDeleteFluxo: (id: string) => void
   filterStatus: 'all' | 'active' | 'inactive'
   onFilterChange: (status: 'all' | 'active' | 'inactive') => void
 }
@@ -33,6 +35,8 @@ export default function ViewFluxosTab({
   loading, 
   onToggleFluxo, 
   onExecuteFluxo,
+  onEditFluxo,
+  onDeleteFluxo,
   filterStatus,
   onFilterChange 
 }: ViewFluxosTabProps) {
@@ -107,6 +111,8 @@ export default function ViewFluxosTab({
               index={index}
               onToggle={onToggleFluxo}
               onExecute={onExecuteFluxo}
+              onEdit={onEditFluxo}
+              onDelete={onDeleteFluxo}
             />
           ))}
         </div>

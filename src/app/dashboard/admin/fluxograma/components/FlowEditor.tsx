@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Save, 
@@ -19,12 +19,26 @@ import {
   Move
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import FlowCanvas from './FlowCanvas'
-import { NodePalette } from './FluxoNodes'
-import NodeConfigModal from './NodeConfigModal'
+import { useAuth } from '@/hooks/useAuth'
 import FlowNodeComponent from './FlowNodeComponent'
-import { FlowNode, FlowConnection, NodeConfigModalState } from './types'
+import NodeConfigModal from './NodeConfigModal'
+import NodePalette from './NodePalette'
+import AiGenerateModal from './AiGenerateModal'
 import { NODE_TYPES, NodeType } from './FluxoNodes'
+
+// Types
+interface FlowNode {
+  id: string
+  type: string
+  position: { x: number; y: number }
+  config?: Record<string, any>
+}
+
+interface FlowConnection {
+  id: string
+  from: string
+  to: string
+}
 
 interface FlowEditorState {
   nodes: FlowNode[]
@@ -53,6 +67,8 @@ export default function FlowEditor({
   onExecute 
 }: FlowEditorProps) {
   const { actualTheme } = useTheme()
+  const { token } = useAuth()
+  const [availableQuadros, setAvailableQuadros] = useState<any[]>([])
   const isDark = actualTheme === 'dark'
   
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -116,7 +132,7 @@ export default function FlowEditor({
   }, [])
 
   // Edit node configuration
-  const handleConfigUpdate = useCallback((nodeId: string, config?: any) => {
+  const handleConfigEdit = useCallback((nodeId: string, config?: any) => {
     const node = state.nodes.find(n => n.id === nodeId)
     if (!node) return
 
@@ -128,7 +144,32 @@ export default function FlowEditor({
   }, [state.nodes])
 
   // Delete node
-  const handleNodeDelete = useCallback((nodeId: string) => {
+  const handleNodeDelete = useCallback(async (nodeId: string) => {
+    // Se estamos editando um fluxo existente, deletar no backend também
+    if (flowId && token) {
+      try {
+        console.log('Deletando nó do backend:', nodeId)
+        const response = await fetch(`/api/fluxos/${flowId}/nodes/${nodeId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          console.error('Erro ao deletar nó do backend:', response.status)
+          // Continua deletando do frontend mesmo se der erro no backend
+        } else {
+          console.log('Nó deletado do backend com sucesso')
+        }
+      } catch (error) {
+        console.error('Erro ao deletar nó do backend:', error)
+        // Continua deletando do frontend mesmo se der erro
+      }
+    }
+
+    // Deletar do estado local (frontend)
     setState(prev => ({
       ...prev,
       nodes: prev.nodes.filter(n => n.id !== nodeId),
@@ -137,7 +178,53 @@ export default function FlowEditor({
       ),
       selectedNodeId: prev.selectedNodeId === nodeId ? null : prev.selectedNodeId
     }))
-  }, [])
+  }, [flowId, token])
+
+  // Clear all nodes
+  const handleClearAll = useCallback(async () => {
+    if (!confirm('Tem certeza que deseja apagar todos os nós? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    // Se estamos editando um fluxo existente, deletar todos os nós no backend
+    if (flowId && token) {
+      try {
+        console.log('Apagando todos os nós do backend do fluxo:', flowId)
+        
+        // Usar o endpoint de salvamento com array vazio para deletar todos
+        const response = await fetch(`/api/fluxos/${flowId}/nodes`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ nodes: [] }) // Array vazio para deletar tudo
+        })
+
+        if (!response.ok) {
+          console.error('Erro ao apagar nós do backend:', response.status)
+          alert('Erro ao apagar nós do backend')
+          return
+        } else {
+          console.log('Todos os nós deletados do backend com sucesso')
+        }
+      } catch (error) {
+        console.error('Erro ao apagar nós do backend:', error)
+        alert('Erro ao apagar nós: ' + error.message)
+        return
+      }
+    }
+
+    // Limpar estado local (frontend)
+    setState(prev => ({
+      ...prev,
+      nodes: [],
+      connections: [],
+      selectedNodeId: null
+    }))
+
+    console.log('Todos os nós foram apagados')
+  }, [flowId, token])
 
   // Handle node drag
   const handleNodeDragStart = useCallback((nodeId: string, e: React.MouseEvent) => {
@@ -300,57 +387,544 @@ export default function FlowEditor({
     }
   }, [isConnecting, state.isDragging, handleNodeDragEnd])
 
+  // Handle node configuration
+  const handleNodeConfig = (node: FlowNode) => {
+    setSelectedConfig(node)
+    setShowConfigModal(true)
+  }
+
+  // Handle AI generation
+  const handleAiGenerate = async (type: 'template' | 'prompt', data: any) => {
+    console.log('🤖 Gerando fluxo com IA:', type, data)
+    
+    try {
+      if (type === 'template') {
+        // Generate from template
+        const templateFlows = generateTemplateFlow(data.templateId)
+        setState(prev => ({
+          ...prev,
+          nodes: templateFlows.nodes,
+          connections: templateFlows.connections
+        }))
+      } else {
+        // Generate from prompt - call AI API
+        const response = await fetch('/api/ai/generate-flow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: data.prompt })
+        })
+        
+        if (response.ok) {
+          const aiFlow = await response.json()
+          setState(prev => ({
+            ...prev,
+            nodes: aiFlow.nodes,
+            connections: aiFlow.connections
+          }))
+        }
+      }
+      
+      // Close AI modal after successful generation
+      setShowAiModal(false)
+    } catch (error) {
+      console.error('❌ Erro ao gerar fluxo:', error)
+      alert('Erro ao gerar fluxo. Tente novamente.')
+    }
+  }
+
+  // Generate predefined template flows
+  const generateTemplateFlow = (templateId: string) => {
+    const baseFlow = {
+      nodes: [] as FlowNode[],
+      connections: [] as any[]
+    }
+
+    switch (templateId) {
+      case 'atendimento-basico':
+        return {
+          nodes: [
+            { id: '1', type: 'trigger-whatsapp-message', position: { x: 150, y: 50 }, config: {} },
+            { id: '2', type: 'action-whatsapp-text', position: { x: 150, y: 200 }, config: { message: 'Olá! Bem-vindo ao nosso atendimento! 👋' } },
+            { id: '3', type: 'action-whatsapp-list', position: { x: 150, y: 350 }, config: { title: 'Como posso ajudar?', menuOptions: [
+              { id: '1', title: 'Suporte', description: 'Preciso de ajuda' },
+              { id: '2', title: 'Vendas', description: 'Quero comprar' },
+              { id: '3', title: 'Falar com humano', description: 'Atendimento pessoal' }
+            ]}},
+            { id: '4', type: 'action-fila-assign', position: { x: 150, y: 500 }, config: { filaId: 'suporte' } },
+            { id: '5', type: 'end-success', position: { x: 150, y: 650 }, config: {} }
+          ],
+          connections: [
+            { id: 'conn1', from: '1', to: '2' },
+            { id: 'conn2', from: '2', to: '3' },
+            { id: 'conn3', from: '3', to: '4' },
+            { id: 'conn4', from: '4', to: '5' }
+          ]
+        }
+      
+      case 'vendas-completo':
+        return {
+          nodes: [
+            // Trigger inicial
+            { id: '1', type: 'trigger-whatsapp-message', position: { x: 150, y: 50 }, config: {} },
+            // Mensagem de boas-vindas
+            { id: '2', type: 'action-whatsapp-text', position: { x: 150, y: 200 }, config: { message: '🎉 Olá! Que bom te ver aqui! Como posso ajudar com seus projetos?' } },
+            // Condição para detectar interesse em orçamento
+            { id: '3', type: 'condition-text-contains', position: { x: 150, y: 350 }, config: { searchText: 'orçamento,preço,valor' } },
+            
+            // Caminho SIM da condição (interessado em orçamento)
+            { id: '4', type: 'action-whatsapp-media', position: { x: 450, y: 500 }, config: { mediaType: 'image', caption: 'Aqui está nosso catálogo! 📋' } },
+            { id: '5', type: 'action-contact-create', position: { x: 450, y: 650 }, config: {} },
+            { id: '6', type: 'action-kanban-create', position: { x: 450, y: 800 }, config: {} },
+            { id: '7', type: 'end-success', position: { x: 450, y: 950 }, config: { message: 'Lead qualificado criado!' } },
+            
+            // Caminho NÃO da condição (não mencionou orçamento)
+            { id: '8', type: 'action-whatsapp-text', position: { x: -150, y: 500 }, config: { message: 'Entendi! Vou direcionar você para nosso atendimento. Em que posso ajudar?' } },
+            { id: '9', type: 'action-fila-assign', position: { x: -150, y: 650 }, config: { filaId: 'atendimento-geral' } },
+            { id: '10', type: 'end-success', position: { x: -150, y: 800 }, config: { message: 'Direcionado para atendimento' } }
+          ],
+          connections: [
+            { id: 'conn1', from: '1', to: '2' },
+            { id: 'conn2', from: '2', to: '3' },
+            // Caminho SIM (interessado em orçamento)
+            { id: 'conn3', from: '3', to: '4' },
+            { id: 'conn4', from: '4', to: '5' },
+            { id: 'conn5', from: '5', to: '6' },
+            { id: 'conn6', from: '6', to: '7' },
+            // Caminho NÃO (não mencionou orçamento)
+            { id: 'conn7', from: '3', to: '8' },
+            { id: 'conn8', from: '8', to: '9' },
+            { id: 'conn9', from: '9', to: '10' }
+          ]
+        }
+
+      case 'suporte-tecnico':
+        return {
+          nodes: [
+            // Trigger inicial
+            { id: '1', type: 'trigger-whatsapp-message', position: { x: 150, y: 50 }, config: {} },
+            // Mensagem de boas-vindas
+            { id: '2', type: 'action-whatsapp-text', position: { x: 150, y: 200 }, config: { message: '🔧 Olá! Bem-vindo ao suporte técnico. Vamos resolver seu problema!' } },
+            // Menu de opções
+            { id: '3', type: 'action-whatsapp-list', position: { x: 150, y: 350 }, config: { 
+              title: 'Selecione seu problema:', 
+              menuOptions: [
+                { id: '1', title: 'Erro no Sistema', description: 'Sistema apresentando erro' },
+                { id: '2', title: 'Dúvida sobre Funcionalidade', description: 'Como usar alguma função' },
+                { id: '3', title: 'Outro Problema', description: 'Problema não listado' }
+              ]
+            }},
+            
+            // Caminho para erros no sistema
+            { id: '4', type: 'action-whatsapp-text', position: { x: 450, y: 500 }, config: { message: 'Entendi que há um erro no sistema. Vou coletar algumas informações...' } },
+            { id: '5', type: 'action-contact-add-tag', position: { x: 450, y: 650 }, config: { tag: 'erro-sistema' } },
+            { id: '6', type: 'action-fila-assign', position: { x: 450, y: 800 }, config: { filaId: 'suporte-nivel2' } },
+            
+            // Caminho para dúvidas
+            { id: '7', type: 'action-whatsapp-text', position: { x: -150, y: 500 }, config: { message: 'Perfeito! Vou te ajudar com sua dúvida. Qual funcionalidade?' } },
+            { id: '8', type: 'action-contact-add-tag', position: { x: -150, y: 650 }, config: { tag: 'duvida-funcionalidade' } },
+            { id: '9', type: 'action-fila-assign', position: { x: -150, y: 800 }, config: { filaId: 'suporte-nivel1' } },
+            
+            // Caminho outros problemas
+            { id: '10', type: 'action-whatsapp-text', position: { x: 150, y: 650 }, config: { message: 'Sem problemas! Descreva sua situação que vamos resolver.' } },
+            { id: '11', type: 'action-fila-assign', position: { x: 150, y: 800 }, config: { filaId: 'suporte-geral' } },
+            
+            // Finalizações
+            { id: '12', type: 'end-success', position: { x: 450, y: 950 }, config: {} },
+            { id: '13', type: 'end-success', position: { x: -150, y: 950 }, config: {} },
+            { id: '14', type: 'end-success', position: { x: 150, y: 950 }, config: {} }
+          ],
+          connections: [
+            { id: 'conn1', from: '1', to: '2' },
+            { id: 'conn2', from: '2', to: '3' },
+            // Caminho erro sistema
+            { id: 'conn3', from: '3', to: '4' },
+            { id: 'conn4', from: '4', to: '5' },
+            { id: 'conn5', from: '5', to: '6' },
+            { id: 'conn6', from: '6', to: '12' },
+            // Caminho dúvidas
+            { id: 'conn7', from: '3', to: '7' },
+            { id: 'conn8', from: '7', to: '8' },
+            { id: 'conn9', from: '8', to: '9' },
+            { id: 'conn10', from: '9', to: '13' },
+            // Caminho outros
+            { id: 'conn11', from: '3', to: '10' },
+            { id: 'conn12', from: '10', to: '11' },
+            { id: 'conn13', from: '11', to: '14' }
+          ]
+        }
+
+      default:
+        return baseFlow
+    }
+  }
+
+  // Handle node configuration save - criar mini-nodes automaticamente
+  const handleConfigUpdate = useCallback((nodeId: string, config: Record<string, any>) => {
+    const node = state.nodes.find(n => n.id === nodeId)
+    if (!node) return
+
+    // Remover nodes filhos existentes primeiro
+    const childNodeIds = state.nodes
+      .filter(n => n.config?.parentNodeId === nodeId)
+      .map(n => n.id)
+    
+    let updatedNodes = state.nodes.filter(n => !childNodeIds.includes(n.id))
+    let updatedConnections = state.connections.filter(c => 
+      !childNodeIds.includes(c.to) && !childNodeIds.includes(c.from)
+    )
+
+    // Criar mini-nodes automaticamente para Menu Lista WhatsApp
+    if (node.type === 'action-whatsapp-list' && config.listOptions?.length > 0) {
+      const baseX = node.position.x + 300
+      const baseY = node.position.y - 30
+      const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'teal']
+      
+      config.listOptions.forEach((option: any, index: number) => {
+        const miniNodeId = `${nodeId}-option-${index}`
+        const color = colors[index % colors.length]
+        
+        const miniNode: FlowNode = {
+          id: miniNodeId,
+          type: 'action-whatsapp-text',
+          position: { 
+            x: baseX, 
+            y: baseY + (index * 80) 
+          },
+          config: {
+            message: `Você selecionou: ${option.title}`,
+            isMenuOption: true,
+            isMiniNode: true,
+            parentNodeId: nodeId,
+            optionIndex: index,
+            optionTitle: option.title,
+            borderColor: color
+          }
+        }
+        
+        updatedNodes.push(miniNode)
+        
+        updatedConnections.push({
+          id: `${nodeId}-to-${miniNodeId}`,
+          from: nodeId,
+          to: miniNodeId
+        })
+      })
+    }
+
+    // Criar mini-nodes automaticamente para Menu Lista Trigger
+    if (node.type === 'trigger-menu-list' && config.menuOptions?.length > 0) {
+      const baseX = node.position.x + 350
+      const baseY = node.position.y - 50
+      
+      config.menuOptions.forEach((option: any, index: number) => {
+        const miniNodeId = `${nodeId}-menu-${index}`
+        
+        const miniNode: FlowNode = {
+          id: miniNodeId,
+          type: option.actionType === 'whatsapp-text' ? 'action-whatsapp-text' :
+                option.actionType === 'add-tag' ? 'action-contact-add-tag' :
+                option.actionType === 'assign-fila' ? 'action-fila-assign' :
+                'action-whatsapp-text',
+          position: { 
+            x: baseX, 
+            y: baseY + (index * 120) 
+          },
+          config: {
+            ...(option.actionConfig || {}),
+            isMenuOption: true,
+            parentNodeId: nodeId,
+            optionIndex: index,
+            optionKey: option.key,
+            optionText: option.text
+          }
+        }
+        
+        updatedNodes.push(miniNode)
+        
+        updatedConnections.push({
+          id: `${nodeId}-to-${miniNodeId}`,
+          from: nodeId,
+          to: miniNodeId
+        })
+      })
+    }
+
+    // Atualizar o node principal com a nova configuração
+    updatedNodes = updatedNodes.map(n => 
+      n.id === nodeId ? { ...n, config } : n
+    )
+
+    setState(prev => ({
+      ...prev,
+      nodes: updatedNodes,
+      connections: updatedConnections,
+      selectedNodeId: null
+    }))
+  }, [state.nodes, state.connections])
+
   // Save node configuration
   const handleNodeConfigSave = useCallback((config: Record<string, any>) => {
     if (!showNodeConfig) return
 
-    setState(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(node =>
-        node.id === showNodeConfig.nodeId
-          ? { ...node, config }
-          : node
-      )
-    }))
+    // Usar o handleConfigUpdate para criar mini-nodes automaticamente
+    handleConfigUpdate(showNodeConfig.nodeId, config)
     setShowNodeConfig(null)
-  }, [showNodeConfig])
+  }, [showNodeConfig, handleConfigUpdate])
+
+  // Helper functions to save nodes and connections
+  const saveNodes = async (fluxoId: string, nodes: FlowNode[]) => {
+    console.log(`Salvando ${nodes.length} nós para fluxo ${fluxoId}:`, nodes)
+    
+    const nodesData = nodes.map(node => ({
+      nodeId: node.id,
+      type: node.type,
+      nome: `${NODE_TYPES[node.type as NodeType]?.label || node.type}`,
+      position: node.position,
+      config: node.config || {}
+    }))
+    
+    const response = await fetch(`/api/fluxos/${fluxoId}/nodes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ nodes: nodesData })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Erro ao salvar nós: ${response.status} ${error}`)
+    }
+
+    const result = await response.json()
+    console.log('Nós salvos com sucesso:', result)
+    return result
+  }
+
+  const saveConnections = async (fluxoId: string, connections: FlowConnection[], idMapping?: Record<string, string>) => {
+    console.log(`Salvando ${connections.length} conexões para fluxo ${fluxoId}:`, connections)
+    console.log('Mapeamento de IDs:', idMapping)
+    
+    const connectionsData = connections.map(conn => ({
+      connectionId: conn.id,
+      fromNodeId: idMapping?.[conn.from] || conn.from, // Usar novo ID se disponível
+      toNodeId: idMapping?.[conn.to] || conn.to       // Usar novo ID se disponível
+    }))
+    
+    console.log('Dados das conexões com IDs mapeados:', connectionsData)
+    
+    const response = await fetch(`/api/fluxos/${fluxoId}/connections`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ connections: connectionsData })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Erro ao salvar conexões: ${response.status} ${error}`)
+    }
+
+    const result = await response.json()
+    console.log('Conexões salvas com sucesso:', result)
+    return result
+  }
+
+  // Load available quadros
+  useEffect(() => {
+    const loadQuadros = async () => {
+      try {
+        const response = await fetch('/api/kanban/quadros', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const quadros = await response.json()
+          setAvailableQuadros(quadros)
+        } else {
+          console.error('Erro ao carregar quadros')
+        }
+      } catch (error) {
+        console.error('Erro ao carregar quadros:', error)
+      }
+    }
+
+    if (token) {
+      loadQuadros()
+    }
+  }, [token])
+
+  // Load existing flow data when editing
+  useEffect(() => {
+    const loadFlowData = async () => {
+      if (!flowId || !token) return
+
+      try {
+        console.log('Carregando dados do fluxo:', flowId)
+        const response = await fetch(`/api/fluxos/${flowId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const flowData = await response.json()
+          console.log('Dados do fluxo carregados:', flowData)
+          
+          // Convert backend nodes to frontend format
+          const nodes: FlowNode[] = (flowData.nos || []).map((node: any) => ({
+            id: node.id,
+            type: node.tipo as NodeType,
+            position: typeof node.posicao === 'object' ? node.posicao : { x: 100, y: 100 },
+            config: typeof node.configuracao === 'object' ? node.configuracao : {}
+          }))
+
+          // Convert backend connections to frontend format
+          const connections: FlowConnection[] = []
+          const processedConnectionIds = new Set<string>()
+          
+          if (flowData.nos) {
+            flowData.nos.forEach((node: any) => {
+              if (node.conexoesDe) {
+                node.conexoesDe.forEach((conn: any) => {
+                  // Only add connection if ID hasn't been processed yet
+                  if (!processedConnectionIds.has(conn.id)) {
+                    processedConnectionIds.add(conn.id)
+                    connections.push({
+                      id: conn.id,
+                      from: conn.deId,
+                      to: conn.paraId
+                    })
+                  }
+                })
+              }
+            })
+          }
+
+          console.log('Nós convertidos:', nodes)
+          console.log('Conexões convertidas:', connections)
+
+          setState(prev => ({
+            ...prev,
+            nodes,
+            connections
+          }))
+        } else {
+          console.error('Erro ao carregar dados do fluxo')
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do fluxo:', error)
+      }
+    }
+
+    loadFlowData()
+  }, [flowId, token])
 
   // Save flow
   const handleSaveFlow = async () => {
     try {
-      const flowData = {
-        name: `Fluxo ${new Date().toLocaleDateString()}`,
-        description: 'Fluxo de automação criado no editor',
-        nodes: state.nodes.map(node => ({
-          id: node.id,
-          type: node.type,
-          position: node.position,
-          config: node.config || {}
-        })),
-        connections: state.connections,
-        isActive: true,
-        createdAt: new Date().toISOString()
-      }
-
-      console.log('Saving flow:', flowData)
+      let savedFlow
       
-      // Call backend API to save flow
-      const response = await fetch('/api/fluxos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(flowData)
-      })
+      if (flowId) {
+        // ATUALIZAR fluxo existente
+        console.log('Atualizando fluxo existente:', flowId)
+        
+        const updateData = {
+          nome: `Fluxo ${new Date().toLocaleDateString()}`,
+          descricao: 'Fluxo de automação atualizado no editor',
+          ativo: true
+        }
 
-      if (response.ok) {
-        const savedFlow = await response.json()
-        console.log('Flow saved successfully:', savedFlow)
-        // Show success message
-        alert('Fluxo salvo com sucesso!')
+        const response = await fetch(`/api/fluxos/${flowId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.text()
+          throw new Error(`Erro ao atualizar fluxo: ${response.status} ${errorData}`)
+        }
+        
+        savedFlow = await response.json()
+        savedFlow.id = flowId // Garantir que o ID está correto
+        console.log('Flow updated successfully:', savedFlow)
+        
       } else {
-        throw new Error('Failed to save flow')
+        // CRIAR novo fluxo
+        console.log('Criando novo fluxo')
+        
+        // Verificar se há quadros disponíveis
+        if (availableQuadros.length === 0) {
+          alert('Nenhum quadro encontrado. Crie um quadro primeiro no Kanban.')
+          return
+        }
+
+        const quadroId = availableQuadros[0]?.id
+        console.log('Quadros disponíveis:', availableQuadros)
+        console.log('Usando quadroId:', quadroId)
+
+        const flowData = {
+          nome: `Fluxo ${new Date().toLocaleDateString()}`,
+          descricao: 'Fluxo de automação criado no editor',
+          quadroId: quadroId,
+          ativo: true
+        }
+
+        console.log('Creating flow:', flowData)
+        
+        const response = await fetch('/api/fluxos', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(flowData)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.text()
+          throw new Error(`Erro ao criar fluxo: ${response.status} ${errorData}`)
+        }
+        
+        savedFlow = await response.json()
+        console.log('Flow created successfully:', savedFlow)
       }
+
+      // Salvar nós e conexões separadamente
+      const fluxoId = savedFlow.id
+      try {
+        console.log('Salvando nós:', state.nodes)
+        console.log('Salvando conexões:', state.connections)
+        
+        let idMapping: Record<string, string> = {}
+        
+        // Sempre salvar nós (mesmo se array vazio) para deletar nós existentes
+        const nodesResult = await saveNodes(fluxoId, state.nodes)
+        idMapping = nodesResult.idMapping || {}
+        console.log('Nós salvos com sucesso! Mapeamento de IDs:', idMapping)
+        
+        // Sempre salvar conexões (mesmo se array vazio) para deletar conexões existentes  
+        await saveConnections(fluxoId, state.connections, idMapping)
+        console.log('Conexões salvas com sucesso!')
+        
+      } catch (nodeError) {
+        console.error('Erro ao salvar nós/conexões:', nodeError)
+        alert('Fluxo salvo, mas houve erro ao salvar nós/conexões: ' + nodeError.message)
+        return
+      }
+      
+      alert('Fluxo salvo com sucesso!')
     } catch (error) {
       console.error('Error saving flow:', error)
       alert('Erro ao salvar fluxo. Tente novamente.')
@@ -377,38 +951,78 @@ export default function FlowEditor({
         return
       }
 
-      const executionData = {
-        flowId: `flow_${Date.now()}`,
-        nodes: state.nodes,
-        connections: state.connections,
-        triggerNodes: triggerNodes.map(node => ({
-          id: node.id,
-          type: node.type,
-          config: node.config || {}
-        }))
+      // Verificar se temos um flowId válido (fluxo salvo)
+      if (!flowId) {
+        alert('Salve o fluxo antes de executar')
+        return
       }
 
-      // Call backend execution API
-      const response = await fetch('/api/fluxos/execute', {
+      // Formato esperado pelo backend
+      const executionData = {
+        contatoId: "test-contact-id", // Por enquanto um ID de teste
+        dados: {
+          triggerNodes: triggerNodes.map(node => ({
+            id: node.id,
+            type: node.type,
+            config: node.config || {}
+          })),
+          totalNodes: state.nodes.length,
+          totalConnections: state.connections.length
+        }
+      }
+
+      // Verificar se o token existe
+      if (!token) {
+        alert('Token de autenticação não encontrado. Faça login novamente.')
+        return
+      }
+
+      // Verificar se o token está válido tentando buscar dados do localStorage diretamente
+      const localToken = localStorage.getItem('token')
+      const tokenToUse = token || localToken
+
+      if (!tokenToUse) {
+        alert('Nenhum token encontrado. Faça login novamente.')
+        return
+      }
+
+      console.log('🔑 Token useAuth:', token ? 'Presente' : 'Ausente')
+      console.log('🔑 Token localStorage:', localToken ? 'Presente' : 'Ausente')
+      console.log('🔑 Token que será usado:', tokenToUse ? `${tokenToUse.substring(0, 20)}...` : 'Nenhum')
+      console.log('📋 Dados de execução:', executionData)
+
+      const headers = {
+        'Authorization': `Bearer ${tokenToUse}`,
+        'Content-Type': 'application/json',
+      }
+      
+      console.log('📤 Headers que serão enviados:', headers)
+      console.log('🎯 URL de destino:', `/api/fluxos/${flowId}/execute`)
+
+      // Call backend execution API com ID do fluxo
+      const response = await fetch(`/api/fluxos/${flowId}/execute`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(executionData)
       })
+
+      console.log('📥 Status da resposta:', response.status)
+      console.log('📥 Headers da resposta:', Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const result = await response.json()
         console.log('Flow execution started:', result)
-        alert('Fluxo iniciado com sucesso!')
+        alert('Fluxo executado com sucesso!')
       } else {
-        throw new Error('Failed to execute flow')
+        const errorText = await response.text()
+        console.error('Erro na execução:', errorText)
+        throw new Error(`Erro ${response.status}: ${errorText}`)
       }
     } catch (error) {
       console.error('Error executing flow:', error)
-      alert('Erro ao executar fluxo. Verifique a configuração.')
+      alert('Erro ao executar fluxo: ' + error.message)
     }
-  }, [state])
+  }, [state, flowId, token])
 
   // Handle export flow
   const handleExport = useCallback(() => {
@@ -472,7 +1086,7 @@ export default function FlowEditor({
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50' : 'h-full'} flex ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Node Palette */}
-      <NodePalette onNodeSelect={handleNodeAdd} />
+      <NodePalette onNodeSelect={handleNodeAdd} isDark={isDark} />
 
       {/* Main Editor Area */}
     <div className="flex-1 flex flex-col">
@@ -538,6 +1152,20 @@ export default function FlowEditor({
             <span>Importar</span>
           </motion.button>
 
+          {/* Clear All Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleClearAll}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+              isDark ? 'bg-red-700 hover:bg-red-600 text-red-300' : 'bg-red-100 hover:bg-red-200 text-red-600'
+            }`}
+            title="Apagar todos os nós do fluxo"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Apagar todos</span>
+          </motion.button>
+
           {/* Fullscreen Toggle */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -590,12 +1218,36 @@ export default function FlowEditor({
               <Settings className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleZoomOut}
+              className={`p-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'} transition-colors`}
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            
+            <button
+              onClick={handleZoomReset}
+              className={`px-3 py-2 text-sm font-medium ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'} rounded-lg transition-colors`}
+            >
+              {Math.round(state.zoom * 100)}%
+            </button>
+            
+            <button
+              onClick={handleZoomIn}
+              className={`p-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'} transition-colors`}
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Canvas */}
-        <div 
+        <div
           ref={canvasRef}
-          className={`flex-1 relative overflow-hidden ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}
+          className={`relative flex-1 overflow-hidden ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}
           style={{
             backgroundImage: isDark 
               ? 'radial-gradient(circle, #374151 1px, transparent 1px)'
@@ -604,6 +1256,7 @@ export default function FlowEditor({
           }}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseUp}
         >
           {/* Canvas Content */}
           <div
@@ -615,190 +1268,145 @@ export default function FlowEditor({
           >
             {/* Render Nodes */}
             {state.nodes.map(node => (
-              <FlowNodeComponent
-                key={node.id}
-                node={node}
-                isSelected={state.selectedNodeId === node.id}
-                isDark={isDark}
-                onDragStart={handleNodeDragStart}
-                onConfigOpen={(nodeId) => handleConfigUpdate(nodeId, {})}
-                onConnectionStart={handleConnectionStart}
-                onDelete={handleNodeDelete}
-              />
-            ))}
+                  <FlowNodeComponent
+                    key={node.id}
+                    node={node}
+                    isSelected={state.selectedNodeId === node.id}
+                    isDark={isDark}
+                    onDragStart={handleNodeDragStart}
+                    onConfigOpen={(nodeId) => handleConfigEdit(nodeId, {})}
+                    onConnectionStart={handleConnectionStart}
+                    onConnectionEnd={handleConnectionEnd}
+                    onDelete={handleNodeDelete}
+                  />
+                ))}
 
-            {/* Render Connections */}
-            <svg className="absolute inset-0 pointer-events-none w-full h-full">
-              {/* Existing connections */}
-              {state.connections.map(connection => {
-                const fromNode = state.nodes.find(n => n.id === connection.from)
-                const toNode = state.nodes.find(n => n.id === connection.to)
-                
-                if (!fromNode || !toNode) return null
-
-                // Calculate connection points based on actual visual elements
-                const nodeWidth = 200 // min-w-[200px] from FlowNode
-                const nodeHeight = 100 // more accurate height estimate
-                
-                // Connection points should align with the visual circles
-                // Output point (green circle on right): -right-3 (12px) + center (12px) = node + width
-                const startX = fromNode.position.x + nodeWidth
-                const startY = fromNode.position.y + nodeHeight / 2
-                
-                // Input point (blue circle on left): -left-3 (12px) + center (12px) = node position
-                const endX = toNode.position.x
-                const endY = toNode.position.y + nodeHeight / 2
-
-                const midX = (startX + endX) / 2
-
-                return (
-                  <g key={connection.id}>
-                    {/* Definir gradientes */}
-                    <defs>
-                      <linearGradient id={`gradient-${connection.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8" />
-                      </linearGradient>
-                      <marker id={`arrowhead-${connection.id}`} markerWidth="10" markerHeight="7" 
-                        refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" 
-                          fill={isDark ? '#3B82F6' : '#2563EB'} />
-                      </marker>
-                    </defs>
+                {/* Render Connections */}
+                <svg className="absolute inset-0 pointer-events-none w-full h-full">
+                  {/* Existing connections */}
+                  {state.connections.map(connection => {
+                    const fromNode = state.nodes.find(n => n.id === connection.from)
+                    const toNode = state.nodes.find(n => n.id === connection.to)
                     
-                    {/* Linha de fundo (sombra) */}
-                    <path
-                      d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
-                      stroke={isDark ? '#1F2937' : '#E5E7EB'}
-                      strokeWidth="4"
-                      fill="none"
-                      opacity="0.3"
-                    />
-                    
-                    {/* Linha principal com gradiente */}
-                    <path
-                      d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
-                      stroke={`url(#gradient-${connection.id})`}
-                      strokeWidth="2"
-                      fill="none"
-                      markerEnd={`url(#arrowhead-${connection.id})`}
-                      className="hover:stroke-opacity-100 cursor-pointer transition-all duration-200"
-                      style={{ filter: 'drop-shadow(0 0 3px rgba(59, 130, 246, 0.3))' }}
-                    />
-                    
-                    {/* Ponto de origem */}
-                    <circle
-                      cx={startX}
-                      cy={startY}
-                      r="3"
-                      fill="#10B981"
-                      className="drop-shadow-sm"
-                    />
-                  </g>
-                )
-              })}
-              
-              {/* Active connection being drawn */}
-              {isConnecting && connectionStart && (
-                <g>
-                  <defs>
-                    <filter id="active-glow">
-                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                      <feMerge> 
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/> 
-                      </feMerge>
-                    </filter>
-                    <linearGradient id="active-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#10B981" />
-                      <stop offset="50%" stopColor="#06D6A0" />
-                      <stop offset="100%" stopColor="#3B82F6" />
-                    </linearGradient>
-                    <marker id="active-arrow" markerWidth="12" markerHeight="8" 
-                      refX="10" refY="4" orient="auto">
-                      <polygon points="0 0, 12 4, 0 8" 
-                        fill="#3B82F6" />
-                    </marker>
-                  </defs>
-                  
-                  {/* Linha de fundo animada */}
-                  <path
-                    d={`M ${connectionStart.x} ${connectionStart.y} L ${mousePosition.x} ${mousePosition.y}`}
-                    stroke="rgba(16, 185, 129, 0.2)"
-                    strokeWidth="8"
-                    fill="none"
-                    className="animate-pulse"
-                  />
-                  
-                  {/* Linha principal com gradiente animado */}
-                  <path
-                    d={`M ${connectionStart.x} ${connectionStart.y} L ${mousePosition.x} ${mousePosition.y}`}
-                    stroke="url(#active-gradient)"
-                    strokeWidth="3"
-                    strokeDasharray="10,5"
-                    fill="none"
-                    markerEnd="url(#active-arrow)"
-                    filter="url(#active-glow)"
-                    className="animate-pulse"
-                    style={{
-                      animation: 'dash 1s linear infinite'
-                    }}
-                  />
-                  
-                  {/* Círculo de origem pulsante */}
-                  <circle
-                    cx={connectionStart.x}
-                    cy={connectionStart.y}
-                    r="6"
-                    fill="#10B981"
-                    className="animate-ping"
-                    fillOpacity="0.6"
-                  />
-                  <circle
-                    cx={connectionStart.x}
-                    cy={connectionStart.y}
-                    r="4"
-                    fill="#10B981"
-                  />
-                  
-                  {/* Target circle with pulse effect */}
-                  <g className="animate-ping">
-                    <circle
-                      cx={mousePosition.x}
-                      cy={mousePosition.y}
-                      r="10"
-                      fill="#3B82F6"
-                      fillOpacity="0.4"
-                    />
-                  </g>
-                  <circle
-                    cx={mousePosition.x}
-                    cy={mousePosition.y}
-                    r="5"
-                    fill="#10B981"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                </g>
-              )}
-            </svg>
+                    if (!fromNode || !toNode) return null
 
-            {/* Empty State */}
-            {state.nodes.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className={`w-24 h-24 mx-auto mb-4 rounded-full ${isDark ? 'bg-gray-800' : 'bg-gray-200'} flex items-center justify-center`}>
-                    <Move className={`w-12 h-12 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+                    // Calculate connection points based on actual visual elements
+                    const nodeWidth = 200 // min-w-[200px] from FlowNode
+                    const nodeHeight = 100 // more accurate height estimate
+                    
+                    // Connection points should align with the visual circles
+                    // Output point (green circle on right): -right-3 (12px) + center (12px) = node + width
+                    const startX = fromNode.position.x + nodeWidth
+                    const startY = fromNode.position.y + nodeHeight / 2
+                    
+                    // Input point (blue circle on left): -left-3 (12px) + center (12px) = node position
+                    const endX = toNode.position.x
+                    const endY = toNode.position.y + nodeHeight / 2
+
+                    const midX = (startX + endX) / 2
+
+                    return (
+                      <g key={connection.id}>
+                        {/* Definir gradientes */}
+                        <defs>
+                          <linearGradient id={`gradient-${connection.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8" />
+                          </linearGradient>
+                          <marker id={`arrowhead-${connection.id}`} markerWidth="10" markerHeight="7" 
+                            refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" 
+                              fill={isDark ? '#3B82F6' : '#2563EB'} />
+                          </marker>
+                        </defs>
+                        
+                        {/* Linha de fundo (sombra) */}
+                        <path
+                          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                          stroke={isDark ? '#1F2937' : '#E5E7EB'}
+                          strokeWidth="4"
+                          fill="none"
+                          opacity="0.3"
+                        />
+                        
+                        {/* Linha principal com gradiente */}
+                        <path
+                          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                          stroke={`url(#gradient-${connection.id})`}
+                          strokeWidth="2"
+                          fill="none"
+                          markerEnd={`url(#arrowhead-${connection.id})`}
+                          className="hover:stroke-opacity-100 cursor-pointer transition-all duration-200"
+                          style={{ filter: 'drop-shadow(0 0 3px rgba(59, 130, 246, 0.3))' }}
+                        />
+                        
+                        {/* Ponto de origem */}
+                        <circle
+                          cx={startX}
+                          cy={startY}
+                          r="3"
+                          fill="#10B981"
+                          className="drop-shadow-sm"
+                        />
+                      </g>
+                    )
+                  })}
+                  
+                  {/* Temporary connection line */}
+                  {isConnecting && connectionStart && (
+                    <g>
+                      <defs>
+                        <linearGradient id="temp-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d={`M ${connectionStart.x} ${connectionStart.y} Q ${(connectionStart.x + mousePosition.x) / 2} ${connectionStart.y} ${mousePosition.x} ${mousePosition.y}`}
+                        stroke="url(#temp-gradient)"
+                        strokeWidth="3"
+                        fill="none"
+                        strokeDasharray="5,5"
+                        className="animate-pulse pointer-events-none"
+                      />
+                      <circle
+                        cx={connectionStart.x}
+                        cy={connectionStart.y}
+                        r="5"
+                        fill="#10B981"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="pointer-events-none"
+                      />
+                      <circle
+                        cx={mousePosition.x}
+                        cy={mousePosition.y}
+                        r="4"
+                        fill="#3B82F6"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="pointer-events-none"
+                      />
+                    </g>
+                  )}
+                </svg>
+
+                {/* Empty State */}
+                {state.nodes.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className={`w-24 h-24 mx-auto mb-4 rounded-full ${isDark ? 'bg-gray-800' : 'bg-gray-200'} flex items-center justify-center`}>
+                        <Move className={`w-12 h-12 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+                      </div>
+                      <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Comece criando seu fluxo
+                      </h3>
+                      <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-4 max-w-md`}>
+                        Arraste componentes da paleta à esquerda para criar seu fluxo de automação
+                      </p>
+                    </div>
                   </div>
-                  <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Comece criando seu fluxo
-                  </h3>
-                  <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-4 max-w-md`}>
-                    Arraste componentes da paleta à esquerda para criar seu fluxo de automação
-                  </p>
-                </div>
-              </div>
-            )}
+                )}
           </div>
         </div>
 
@@ -826,6 +1434,15 @@ export default function FlowEditor({
           isOpen={true}
           onClose={() => setShowNodeConfig(null)}
           onSave={handleNodeConfigSave}
+        />
+      )}
+
+      {/* AI Generate Modal */}
+      {showAiModal && (
+        <AiGenerateModal
+          isOpen={showAiModal}
+          onClose={() => setShowAiModal(false)}
+          onGenerate={handleAiGenerate}
         />
       )}
     </div>

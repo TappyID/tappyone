@@ -7,6 +7,7 @@ import {
   Pause, 
   Edit3, 
   Zap,
+  Trash2,
   CheckCircle2,
   AlertTriangle,
   GitBranch,
@@ -34,13 +35,17 @@ interface FluxoCardProps {
   index: number
   onToggle: (id: string, ativo: boolean) => void
   onExecute: (id: string) => void
+  onEdit: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 export default function FluxoCard({ 
   fluxo, 
   index, 
   onToggle, 
-  onExecute 
+  onExecute,
+  onEdit,
+  onDelete
 }: FluxoCardProps) {
   const { actualTheme } = useTheme()
   const isDark = actualTheme === 'dark'
@@ -96,13 +101,14 @@ export default function FluxoCard({
         </div>
         <div className={`flex items-center space-x-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           <Clock className="w-4 h-4" />
-          <span>{new Date(fluxo.updated_at).toLocaleDateString()}</span>
+          <span>{fluxo.updated_at ? new Date(fluxo.updated_at).toLocaleDateString('pt-BR') : '-'}</span>
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          {/* Play/Pause Button */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -112,34 +118,42 @@ export default function FluxoCard({
                 ? 'bg-green-100 text-green-600 hover:bg-green-200'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
+            title={fluxo.ativo ? 'Pausar fluxo' : 'Ativar fluxo'}
           >
             {fluxo.ativo ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           </motion.button>
           
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => onExecute(fluxo.id)}
-            className={`p-2 rounded-lg bg-${primaryColor}-100 text-${primaryColor}-600 hover:bg-${primaryColor}-200 transition-colors`}
-          >
-            <Zap className="w-4 h-4" />
-          </motion.button>
 
+          {/* Edit Button */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            onClick={() => onEdit(fluxo.id)}
             className={`p-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-400 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} transition-colors`}
+            title="Editar fluxo"
           >
             <Edit3 className="w-4 h-4" />
+          </motion.button>
+
+          {/* Delete Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => onDelete(fluxo.id)}
+            className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+            title="Excluir fluxo"
+          >
+            <Trash2 className="w-4 h-4" />
           </motion.button>
         </div>
 
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={() => onEdit(fluxo.id)}
           className={`text-xs font-medium ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} flex items-center space-x-1`}
         >
-          <span>Ver detalhes</span>
+          <span>Editar fluxo</span>
           <ArrowRight className="w-3 h-3" />
         </motion.button>
       </div>

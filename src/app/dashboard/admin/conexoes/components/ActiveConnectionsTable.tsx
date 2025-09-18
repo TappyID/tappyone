@@ -293,7 +293,13 @@ export function ActiveConnectionsTable({
         const connectionData = {
           id: session.name,
           sessionName: session.name,
-          status: (session.status === 'WORKING' ? 'connected' : session.status === 'SCAN_QR_CODE' ? 'connecting' : 'disconnected') as 'connected' | 'connecting' | 'disconnected' | 'error',
+          status: (
+            session.status === 'WORKING' ? 'connected' : 
+            session.status === 'SCAN_QR_CODE' ? 'connecting' : 
+            session.status === 'STOPPING' || session.status === 'STOPPED' ? 'disconnected' :
+            session.status === 'FAILED' ? 'error' :
+            'disconnected'
+          ) as 'connected' | 'connecting' | 'disconnected' | 'error',
           platform: 'whatsapp' as const,
           stats: stats,
           assignedQueues: assignedQueues,
@@ -457,6 +463,7 @@ export function ActiveConnectionsTable({
   // Verificar se precisa de QR Code
   const checkForQRCode = async (sessionName: string) => {
     try {
+      console.log(`🔍 [QR] Verificando QR Code para sessão: ${sessionName}`)
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/whatsapp/sessions/${sessionName}/qr`, {
         headers: {
@@ -465,17 +472,35 @@ export function ActiveConnectionsTable({
         }
       })
 
+      console.log(`📱 [QR] Response status: ${response.status}`)
+      
       if (response.ok) {
         const blob = await response.blob()
+        console.log(`📱 [QR] Blob size: ${blob.size} bytes`)
         if (blob.size > 0) {
           const qrUrl = URL.createObjectURL(blob)
+          console.log(`📱 [QR] QR Code encontrado, abrindo modal`)
           setQrCode(qrUrl)
           setCurrentSessionName(sessionName)
           setShowQRModal(true)
+        } else {
+          console.log(`📱 [QR] Blob vazio, sem QR Code disponível`)
         }
+      } else if (response.status === 404) {
+        console.log(`📱 [QR] QR Code não disponível (404) - sessão pode estar em outro estado`)
+        // Forçar abertura do modal mesmo sem QR inicialmente
+        setQrCode(null)
+        setCurrentSessionName(sessionName)
+        setShowQRModal(true)
+      } else {
+        console.log(`📱 [QR] Erro ao buscar QR Code: ${response.status}`)
       }
     } catch (error) {
-      console.error('Erro ao buscar QR Code:', error)
+      console.error('❌ [QR] Erro ao buscar QR Code:', error)
+      // Em caso de erro, ainda assim abrir o modal para mostrar status
+      setQrCode(null)
+      setCurrentSessionName(sessionName)
+      setShowQRModal(true)
     }
   }
 

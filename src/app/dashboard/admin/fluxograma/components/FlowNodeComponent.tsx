@@ -2,7 +2,12 @@
 
 import { motion } from 'framer-motion'
 import { Settings, Trash2, Circle } from 'lucide-react'
-import { FlowNode } from './types'
+interface FlowNode {
+  id: string
+  type: string
+  position: { x: number; y: number }
+  config?: Record<string, any>
+}
 import { NODE_TYPES } from './FluxoNodes'
 
 interface FlowNodeComponentProps {
@@ -12,6 +17,7 @@ interface FlowNodeComponentProps {
   onDragStart: (nodeId: string, e: React.MouseEvent) => void
   onConfigOpen: (nodeId: string, nodeType: string) => void
   onConnectionStart: (nodeId: string, e: React.MouseEvent) => void
+  onConnectionEnd?: (nodeId: string) => void
   onDelete: (nodeId: string) => void
 }
 
@@ -22,6 +28,7 @@ export default function FlowNodeComponent({
   onDragStart,
   onConfigOpen,
   onConnectionStart,
+  onConnectionEnd,
   onDelete
 }: FlowNodeComponentProps) {
   const nodeInfo = NODE_TYPES[node.type]
@@ -71,6 +78,7 @@ export default function FlowNodeComponent({
         height: 100,
       }}
       onMouseDown={(e) => onDragStart(node.id, e)}
+      onMouseUp={() => onConnectionEnd && onConnectionEnd(node.id)}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
@@ -78,9 +86,9 @@ export default function FlowNodeComponent({
       <div className={`p-3 h-full flex flex-col ${isDark ? 'text-white' : 'text-gray-900'}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            <nodeInfo.icon className={`w-4 h-4 ${getIconColorClass(nodeInfo.color)}`} />
-            <span className="text-sm font-medium truncate">{nodeInfo.label}</span>
+          <div className="flex items-center space-x-2 flex-1 min-w-0">
+            <nodeInfo.icon className={`w-3 h-3 flex-shrink-0 ${getIconColorClass(nodeInfo.color)}`} />
+            <span className="text-xs font-medium truncate">{nodeInfo.label}</span>
           </div>
           
           {/* Action Buttons */}
@@ -111,13 +119,13 @@ export default function FlowNodeComponent({
         </div>
 
         {/* Description */}
-        <p className={`text-xs flex-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+        <p className={`text-xs leading-tight line-clamp-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           {nodeInfo.description}
         </p>
 
         {/* Configuration Preview */}
         {node.config && Object.keys(node.config).length > 0 && (
-          <div className={`text-xs mt-2 p-1 rounded ${
+          <div className={`text-xs mt-1 p-1 rounded truncate ${
             isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'
           }`}>
             {getConfigPreview(node.type, node.config)}
@@ -131,18 +139,20 @@ export default function FlowNodeComponent({
         <div
           className={`absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2
             w-3 h-3 rounded-full border-2 ${
-            isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
+            isDark ? 'bg-blue-600 border-blue-400' : 'bg-blue-500 border-blue-400'
           }`}
+          onMouseUp={() => onConnectionEnd && onConnectionEnd(node.id)}
         />
       )}
 
       {/* Output (right side) */}
       <div
         className={`absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2
-          w-3 h-3 rounded-full border-2 cursor-crosshair ${
-          isDark ? 'bg-gray-800 border-gray-600 hover:border-blue-400' : 'bg-white border-gray-300 hover:border-blue-500'
-        }`}
-        onMouseDown={(e) => onConnectionStart(node.id, e)}
+          w-3 h-3 rounded-full border-2 cursor-crosshair bg-green-500 border-green-400 hover:border-green-600`}
+        onMouseDown={(e) => {
+          e.stopPropagation()
+          onConnectionStart(node.id, e)
+        }}
       />
     </motion.div>
   )

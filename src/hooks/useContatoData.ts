@@ -52,12 +52,20 @@ export function useContatoData(chatIds: string[]) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Cache global com TTL de 2 minutos
-  const CACHE_TTL = 2 * 60 * 1000
+  // Cache global com TTL de 5 minutos
+  const CACHE_TTL = 5 * 60 * 1000
   const [cache, setCache] = useState<{ [key: string]: { data: ContatoData | null, timestamp: number } }>({})
+  
+  // Cache de chats que não existem no CRM (para evitar requests repetidas)
+  const [notFoundChats, setNotFoundChats] = useState<Set<string>>(new Set())
 
   const fetchContatoData = async (chatId: string) => {
     if (!chatId || chatId.trim() === '') {
+      return null
+    }
+
+    // Se já sabemos que este chat não existe no CRM, não tentar novamente
+    if (notFoundChats.has(chatId)) {
       return null
     }
 
@@ -92,6 +100,15 @@ export function useContatoData(chatIds: string[]) {
       }
 
       if (!contatoData) {
+        // Marcar como não encontrado para evitar requests futuros
+        setNotFoundChats(prev => new Set(prev).add(chatId))
+        
+        // Salvar no cache também (null com timestamp)
+        setCache(prev => ({
+          ...prev,
+          [chatId]: { data: null, timestamp: Date.now() }
+        }))
+        
         return null
       }
 
@@ -227,6 +244,15 @@ export function useContatoData(chatIds: string[]) {
 
       return result
     } catch (err) {
+      // Em caso de erro, também marcar como não encontrado temporariamente
+      setNotFoundChats(prev => new Set(prev).add(chatId))
+      
+      // Salvar no cache com timestamp menor (retry mais rápido em caso de erro)
+      setCache(prev => ({
+        ...prev,
+        [chatId]: { data: null, timestamp: Date.now() - (CACHE_TTL * 0.8) }
+      }))
+      
       return null
     }
   }

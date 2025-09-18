@@ -34,8 +34,8 @@ interface Atendente {
 }
 
 interface CreateFluxoTabProps {
-  activeTab: 'list' | 'create'
-  setActiveTab: (tab: 'list' | 'create') => void
+  activeTab: 'list' | 'create' | 'edit'
+  setActiveTab: (tab: 'list' | 'create' | 'edit') => void
 }
 
 export default function CreateFluxoTab({ activeTab, setActiveTab }: CreateFluxoTabProps) {
