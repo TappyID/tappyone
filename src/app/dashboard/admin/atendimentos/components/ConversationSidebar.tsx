@@ -42,6 +42,7 @@
   import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
   import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
   import { useInfiniteChats } from '@/hooks/useInfiniteChats'
+  import '@/styles/scrollbar.css'
 
   interface ConversationSidebarProps {
     chats: any[]
@@ -950,8 +951,8 @@
       const loadKanbanInfo = async () => {
         const newKanbanInfo: {[key: string]: any} = {}
         
-        // Carregar apenas para os chats visíveis
-        const visibleChats = activeChats.slice(0, Math.min(visibleChatsCount, 5))
+        // Carregar apenas para os chats visíveis (removido limite de 5)
+        const visibleChats = activeChats.slice(0, Math.min(visibleChatsCount, 20))
         
         for (const chat of visibleChats) {
           const chatId = chat.id._serialized || chat.id
@@ -1123,6 +1124,10 @@
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="bg-background/95 backdrop-blur-xl border-r border-border flex flex-col h-full overflow-hidden relative shadow-2xl"
+        style={{
+          '--scrollbar-thumb': 'linear-gradient(45deg, #0070f3, #00c9ff)',
+          '--scrollbar-track': 'rgba(148, 163, 184, 0.1)'
+        } as React.CSSProperties}
       >
         {/* Collapsed State - Floating Expand Button */}
         {isCollapsed && (
@@ -1361,7 +1366,7 @@
           {/* Conversations List */}
           <div 
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto scrollbar-chat min-h-0"
+            className="flex-1 overflow-y-auto scrollbar-paypal min-h-0"
             onScroll={handleScroll}
             style={{ maxHeight: 'calc(100vh - 200px)' }}
           >
@@ -1661,7 +1666,8 @@
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white rounded-full shadow-lg"
+                              className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-white rounded-full shadow-lg"
+                              style={{ backgroundColor: '#273155' }}
                               title={`${unreadCount} mensagens não lidas`}
                             >
                               <span className="text-xs font-bold">

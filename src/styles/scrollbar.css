@@ -1,0 +1,84 @@
+/* Scrollbar customizado - Cor personalizada #273155 */
+.scrollbar-paypal {
+  /* Para navegadores Webkit (Chrome, Safari, Edge) */
+  scrollbar-width: thin;
+  scrollbar-color: #273155 rgba(148, 163, 184, 0.1);
+}
+
+.scrollbar-paypal::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-paypal::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
+.scrollbar-paypal::-webkit-scrollbar-thumb {
+  background: #273155;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.scrollbar-paypal::-webkit-scrollbar-thumb:hover {
+  background: #1f2844;
+  box-shadow: 0 2px 8px rgba(39, 49, 85, 0.3);
+  transform: scale(1.1);
+}
+
+.scrollbar-paypal::-webkit-scrollbar-thumb:active {
+  background: #151d33;
+}
+
+.scrollbar-paypal::-webkit-scrollbar-corner {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+/* Para Firefox */
+@supports (scrollbar-width: thin) {
+  .scrollbar-paypal {
+    scrollbar-width: thin;
+    scrollbar-color: #0070f3 rgba(148, 163, 184, 0.1);
+  }
+}
+
+/* Versão dark theme */
+.dark .scrollbar-paypal::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.dark .scrollbar-paypal::-webkit-scrollbar-thumb {
+  background: #60a5fa;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .scrollbar-paypal::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+}
+
+.dark .scrollbar-paypal::-webkit-scrollbar-thumb:active {
+  background: #2563eb;
+}
+
+.dark .scrollbar-paypal {
+  scrollbar-color: #60a5fa rgba(51, 65, 85, 0.3);
+}
+
+/* Animação suave no hover */
+.scrollbar-paypal::-webkit-scrollbar-thumb {
+  animation-duration: 0.2s;
+  animation-fill-mode: forwards;
+}
+
+@keyframes scrollbar-glow {
+  0% { box-shadow: 0 0 0 rgba(39, 49, 85, 0); }
+  100% { box-shadow: 0 2px 12px rgba(39, 49, 85, 0.4); }
+}
+
+.scrollbar-paypal::-webkit-scrollbar-thumb:hover {
+  animation: scrollbar-glow 0.2s ease forwards;
+}
