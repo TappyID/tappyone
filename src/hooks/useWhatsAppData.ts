@@ -649,42 +649,102 @@ export function useWhatsAppData() {
       const currentCount = chats.length
       const BATCH_SIZE = 50
       
+      debugLogger.log(`🔄 [useWhatsAppData] Tentando carregar mais chats - offset: ${currentCount}`)
+      
       const [chatsResponse, groupsResponse] = await Promise.all([
         fetch(`/api/whatsapp/chats?limit=${BATCH_SIZE}&offset=${currentCount}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
+        }).catch(err => {
+          debugLogger.error(`❌ Erro na requisição de chats (offset ${currentCount}):`, err)
+          return { ok: false, status: 500 }
         }),
         fetch(`/api/whatsapp/groups?limit=${BATCH_SIZE}&offset=${currentCount}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
+        }).catch(err => {
+          debugLogger.error(`❌ Erro na requisição de grupos (offset ${currentCount}):`, err)
+          return { ok: false, status: 500 }
         })
       ])
 
       let newChats = []
+      let hasAnySuccess = false
       
-      if (chatsResponse.ok) {
-        const chatsData = await chatsResponse.json()
-        newChats = [...newChats, ...chatsData]
+      // Verificar resposta de chats
+      if (chatsResponse.ok && 'json' in chatsResponse) {
+        try {
+          const chatsData = await chatsResponse.json()
+          if (Array.isArray(chatsData)) {
+            newChats = [...newChats, ...chatsData]
+            hasAnySuccess = true
+            debugLogger.log(`✅ Carregados ${chatsData.length} chats individuais`)
+          }
+        } catch (parseError) {
+          debugLogger.error('❌ Erro ao parsear resposta de chats:', parseError)
+        }
+      } else {
+        debugLogger.log(`⚠️ Falha na requisição de chats: status ${chatsResponse.status}`)
+        // Se erro 500, parar tentativas futuras para evitar loop
+        if (chatsResponse.status === 500) {
+          debugLogger.log(`🚫 Erro 500 detectado - interrompendo carregamento adicional`)
+          setHasMoreChats(false)
+          return
+        }
       }
       
-      if (groupsResponse.ok) {
-        const groupsData = await groupsResponse.json()
-        newChats = [...newChats, ...groupsData]
+      // Verificar resposta de grupos
+      if (groupsResponse.ok && 'json' in groupsResponse) {
+        try {
+          const groupsData = await groupsResponse.json()
+          if (Array.isArray(groupsData)) {
+            newChats = [...newChats, ...groupsData]
+            hasAnySuccess = true
+            debugLogger.log(`✅ Carregados ${groupsData.length} grupos`)
+          }
+        } catch (parseError) {
+          debugLogger.error('❌ Erro ao parsear resposta de grupos:', parseError)
+        }
+      } else {
+        debugLogger.log(`⚠️ Falha na requisição de grupos: status ${groupsResponse.status}`)
+        // Se erro 500, parar tentativas futuras para evitar loop
+        if (groupsResponse.status === 500) {
+          debugLogger.log(`🚫 Erro 500 detectado - interrompendo carregamento adicional`)
+          setHasMoreChats(false)
+          return
+        }
       }
 
+      // Se nenhuma requisição teve sucesso, não atualizar estado
+      if (!hasAnySuccess) {
+        debugLogger.log('⚠️ Nenhuma requisição teve sucesso - mantendo estado atual')
+        setHasMoreChats(false)
+        return
+      }
+
+      // Se retornou menos itens que o esperado, não há mais chats
       if (newChats.length < BATCH_SIZE) {
+        debugLogger.log(`🏁 Fim dos chats: recebidos ${newChats.length}/${BATCH_SIZE}`)
         setHasMoreChats(false)
       }
 
-      setChats(prev => [...prev, ...newChats])
-      debugLogger.log(`Loaded ${newChats.length} more chats. Total: ${chats.length + newChats.length}`)
+      // Atualizar estado apenas se tiver novos chats
+      if (newChats.length > 0) {
+        setChats(prev => {
+          const updated = [...prev, ...newChats]
+          debugLogger.log(`📊 Total de chats após carregamento: ${updated.length}`)
+          return updated
+        })
+      }
       
     } catch (error) {
-      debugLogger.error('Error loading more chats:', error)
+      debugLogger.error('❌ Erro crítico ao carregar mais chats:', error)
+      // Em caso de erro crítico, parar tentativas futuras
+      setHasMoreChats(false)
     } finally {
       setLoadingMore(false)
     }
