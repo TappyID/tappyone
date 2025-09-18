@@ -25,6 +25,10 @@ export default function AtendimentosPage() {
   const [ticketsCount, setTicketsCount] = useState(0)
   const [contactStatus, setContactStatus] = useState<'synced' | 'error'>('error')
   
+  // Estados para indicador de nova mensagem
+  const [newMessageReceived, setNewMessageReceived] = useState(false)
+  const [lastMessageCount, setLastMessageCount] = useState(0)
+  
   // Funções para buscar contagens
   const fetchNotesCount = async (chatId: string) => {
     try {
@@ -209,6 +213,34 @@ export default function AtendimentosPage() {
     }
   }, [selectedConversation, loadChatMessages])
 
+  // Detectar nova mensagem
+  useEffect(() => {
+    if (!selectedConversation) return
+    
+    const chatId = extractChatId(selectedConversation)
+    if (!chatId) return
+    
+    const currentMessages = messages[chatId] || []
+    const currentCount = currentMessages.length
+    
+    // Se houve aumento no número de mensagens, detectar nova mensagem
+    if (lastMessageCount > 0 && currentCount > lastMessageCount) {
+      const newMessage = currentMessages[currentCount - 1]
+      
+      // Verificar se a nova mensagem não é nossa (fromMe = false)
+      if (newMessage && !newMessage.fromMe) {
+        console.log('📩 Nova mensagem recebida!', newMessage)
+        setNewMessageReceived(true)
+        
+        // Reproduzir som de notificação (opcional)
+        const audio = new Audio('/sounds/notification.mp3')
+        audio.play().catch(e => console.log('Erro ao reproduzir som:', e))
+      }
+    }
+    
+    setLastMessageCount(currentCount)
+  }, [messages, selectedConversation, lastMessageCount])
+
   // Polling em tempo real para mensagens do chat ativo (a cada 3 segundos)
   useEffect(() => {
     if (!selectedConversation) return
@@ -290,6 +322,8 @@ export default function AtendimentosPage() {
           agendamentosCount={agendamentosCount}
           assinaturasCount={assinaturasCount}
           contactStatus={contactStatus}
+          newMessageReceived={newMessageReceived}
+          onNewMessageSeen={() => setNewMessageReceived(false)}
         />
       </div>
       

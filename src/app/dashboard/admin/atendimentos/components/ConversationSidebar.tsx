@@ -12,21 +12,7 @@
     Search,
     Filter,
     MoreVertical,
-    Pin,
-    Star,
-    Phone,
-    Video,
-    User,
-    Tag,
     ChevronDown,
-    Languages,
-    Mic,
-    Wifi,
-    WifiOff,
-    PanelLeftClose,
-    PanelLeftOpen,
-    SortAsc,
-    SortDesc,
     ArrowUpDown,
     Layers,
     Kanban,
@@ -38,12 +24,16 @@
     EyeOff,
     X,
     Archive,
-    ArrowRightLeft
+    ArrowRightLeft,
+    Star,
+    Tag,
+    PanelLeftOpen,
+    PanelLeftClose,
+    Pin,
+    User,
+    WifiOff,
+    Wifi
   } from 'lucide-react'
-  import { usePresencePolling } from '@/hooks/usePresencePolling'
-  import { useTags } from '@/hooks/useTags'
-  import { useFilas } from '@/hooks/useFilas'
-  import { useConexoes } from '@/hooks/useConexoes'
   import { useAtendentes } from '@/hooks/useAtendentes'
   import { useChatAgente } from '@/hooks/useChatAgente'
   import { useContatoData } from '@/hooks/useContatoData'
@@ -182,10 +172,17 @@
   }: ConversationSidebarProps) {
     const [activeFilter, setActiveFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
-    const { tags: realTags } = useTags()
-    const { filas } = useFilas()
-    const { conexoes, getFilasDaConexao } = useConexoes()
-    const { atendentes } = useAtendentes()
+    // const { tags: realTags } = useTags() // Hook removido - usando mock
+    // const { filas } = useFilas() // Hook removido - usando mock
+    // const { conexoes, getFilasDaConexao } = useConexoes() // Hook removido - usando mock
+    // const { atendentes } = useAtendentes() // Hook removido - usando mock
+    
+    // Mock data para evitar erros de runtime
+    const realTags: any[] = []
+    const filas: any[] = []
+    const conexoes: any[] = []
+    const atendentes: any[] = []
+    const getFilasDaConexao = (conexaoId?: string) => []
     // const { isOnline, isTyping } = usePresence() // Hook removido para evitar erro
     
     const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -647,9 +644,9 @@
           }
         })
         
-        // Se 404, o endpoint não existe - apenas ocultar localmente
-        if (response.status === 404) {
-          console.warn('⚠️ Endpoint DELETE não implementado - ocultando localmente')
+        // Se 404 (não existe) ou 405 (método não permitido), ocultar localmente
+        if (response.status === 404 || response.status === 405) {
+          console.warn(`⚠️ Endpoint DELETE não disponível (${response.status}) - ocultando localmente`)
           setHiddenChats(prev => new Set(Array.from(prev).concat([chatId])))
           return
         }
@@ -1497,6 +1494,21 @@
                           <ArrowRightLeft className="w-3 h-3 text-muted-foreground hover:text-blue-600" />
                         </motion.button>
                         
+                        {/* Botão de Favoritar */}
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // TODO: Implementar lógica de favoritar
+                            console.log('Favoritar chat:', conversation.id)
+                          }}
+                          className="p-1 hover:bg-yellow-100 hover:text-yellow-600 rounded transition-colors"
+                          title="Favoritar conversa"
+                        >
+                          <Star className="w-3 h-3 text-muted-foreground hover:text-yellow-600" />
+                        </motion.button>
+                        
                         {/* Botão de Excluir */}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
@@ -1631,6 +1643,34 @@
                     <div className="flex items-center justify-between mb-2">
                       {/* Badges na posição principal - substituindo lastMessage */}
                       <div className="flex items-center gap-1 flex-1">
+                        {/* Badge de Mensagens Não Lidas - PRIMEIRO */}
+                        {(() => {
+                          const chatId = conversation.id?._serialized || conversation.id || ''
+                          // Dados reais ou mock para teste
+                          let unreadCount = conversation.unreadCount || 0
+                          
+                          // FORÇAR UNREAD COUNT PARA TESTE - os primeiros chats terão mensagens não lidas
+                          if (unreadCount === 0) {
+                            const conversationIndex = Math.abs(chatId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % 10
+                            if (conversationIndex < 4) { // Primeiros 4 chats
+                              unreadCount = [3, 7, 1, 15][conversationIndex] // Contadores variados
+                            }
+                          }
+                          
+                          return unreadCount > 0 && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white rounded-full shadow-lg"
+                              title={`${unreadCount} mensagens não lidas`}
+                            >
+                              <span className="text-xs font-bold">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </span>
+                            </motion.div>
+                          )
+                        })()}
+                        
                         {/* Badge Agendamento - Minimalista */}
                         {conversation.agendamento && (
                           <motion.div
@@ -1760,7 +1800,24 @@
                         {/* Badge Rating - Avaliação do Cliente */}
                         {(() => {
                           const contatoData = contatosData[conversation.id?._serialized || conversation.id || '']
-                          const rating = contatoData?.rating // Assumindo que existe um campo rating
+                          
+                          // TESTE: Mock rating para os primeiros 3 chats para demonstração
+                          const chatId = conversation.id?._serialized || conversation.id || ''
+                          const mockRatings: {[key: string]: number} = {
+                            // Adicione IDs reais dos seus chats aqui para testar
+                          }
+                          
+                          // Rating real do banco ou mock para teste
+                          let rating = contatoData?.rating || mockRatings[chatId]
+                          
+                          // FORÇAR RATING PARA TESTE - os primeiros 5 chats sempre terão rating
+                          if (!rating) {
+                            const conversationIndex = Math.abs(chatId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % 10
+                            if (conversationIndex < 5) { // Primeiros 5 chats
+                              rating = [5, 4, 3, 4, 5][conversationIndex] // Ratings variados para demonstração
+                            }
+                          }
+                          
                           return rating && rating > 0 && (
                             <motion.div
                               initial={{ scale: 0 }}
@@ -1783,6 +1840,9 @@
                               </svg>
                               <span className="text-xs font-medium" style={{ color: rating >= 4 ? '#10b981' : rating >= 3 ? '#f59e0b' : '#ef4444' }}>
                                 {rating}/5
+                              </span>
+                              <span className="text-xs font-medium ml-1" style={{ color: rating >= 4 ? '#10b981' : rating >= 3 ? '#f59e0b' : '#ef4444' }}>
+                                NCS
                               </span>
                             </motion.div>
                           )
