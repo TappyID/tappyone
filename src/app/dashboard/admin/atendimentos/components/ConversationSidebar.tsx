@@ -1757,6 +1757,37 @@
                           </motion.div>
                         )}
                         
+                        {/* Badge Rating - Avaliação do Cliente */}
+                        {(() => {
+                          const contatoData = contatosData[conversation.id?._serialized || conversation.id || '']
+                          const rating = contatoData?.rating // Assumindo que existe um campo rating
+                          return rating && rating > 0 && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                              style={{
+                                backgroundColor: rating >= 4 ? '#10b98120' : rating >= 3 ? '#f59e0b20' : '#ef444420',
+                                borderColor: rating >= 4 ? '#10b98140' : rating >= 3 ? '#f59e0b40' : '#ef444440'
+                              }}
+                              title={`Avaliação: ${rating}/5 estrelas`}
+                              onClick={() => {}}
+                            >
+                              <svg 
+                                className="w-3 h-3" 
+                                style={{ color: rating >= 4 ? '#10b981' : rating >= 3 ? '#f59e0b' : '#ef4444' }} 
+                                fill="currentColor" 
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              <span className="text-xs font-medium" style={{ color: rating >= 4 ? '#10b981' : rating >= 3 ? '#f59e0b' : '#ef4444' }}>
+                                {rating}/5
+                              </span>
+                            </motion.div>
+                          )
+                        })()}
+
                         {/* Badge do Kanban */}
                         {conversation.badge && (
                           <motion.span

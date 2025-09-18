@@ -38,6 +38,7 @@ interface ContatoData {
     status: string
     prioridade: string
   }[]
+  rating?: number // Avaliação do cliente de 1 a 5 estrelas
 }
 
 interface UseContatoDataReturn {

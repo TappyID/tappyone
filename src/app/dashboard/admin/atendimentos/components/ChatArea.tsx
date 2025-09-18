@@ -128,6 +128,9 @@ interface ChatAreaProps {
   agendamentosCount?: number,
   assinaturasCount?: number,
   contactStatus?: 'synced' | 'error'
+  // Indicador de nova mensagem
+  newMessageReceived?: boolean
+  onNewMessageSeen?: () => void
 }
 
 
@@ -166,7 +169,9 @@ export default function ChatArea({
   orcamentosCount = 0,
   agendamentosCount = 0,
   assinaturasCount = 0,
-  contactStatus = 'error'
+  contactStatus,
+  newMessageReceived = false,
+  onNewMessageSeen
 }: ChatAreaProps) {
   const [message, setMessage] = useState('')
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -1544,6 +1549,33 @@ export default function ChatArea({
 
         {/* Header Actions */}
         <div className="flex items-center gap-2">
+          {/* Indicador de Nova Mensagem */}
+          {newMessageReceived && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 rounded-full cursor-pointer transition-colors"
+              onClick={() => {
+                onNewMessageSeen?.()
+                // Scroll para a última mensagem
+                const messagesContainer = document.querySelector('[data-messages-container]')
+                if (messagesContainer) {
+                  messagesContainer.scrollTop = messagesContainer.scrollHeight
+                }
+              }}
+              title="Nova mensagem recebida - Clique para ver"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="w-2 h-2 bg-white rounded-full"
+              />
+              <span className="text-xs font-medium text-white">Nova mensagem</span>
+              <MessageCircle className="w-3 h-3 text-white" />
+            </motion.div>
+          )}
+
           {/* Buscar Mensagens */}
           <motion.button
             whileHover={{ scale: 1.1 }}
