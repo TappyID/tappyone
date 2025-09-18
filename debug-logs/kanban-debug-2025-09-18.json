@@ -1,10 +1,10 @@
 [
   {
-    "timestamp": "2025-09-18T01:50:23.453Z",
+    "timestamp": "2025-09-18T21:57:44.684Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
-      "cardId": "demo-1",
+      "cardId": "5511978423433@c.us",
       "notesCount": 0,
       "assinaturasCount": 0,
       "contactStatus": "synced"
@@ -12,55 +12,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:23.504Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_cards_mapped",
-    "data": {
-      "totalCards": 12,
-      "uniqueCardIds": 12,
-      "sampleCardIds": [
-        "5518996064455@c.us",
-        "15147260960@c.us",
-        "5518981248008@c.us",
-        "554396159222@c.us",
-        "2349162389789@c.us"
-      ],
-      "allCardIds": [
-        "5518996064455@c.us",
-        "15147260960@c.us",
-        "5518981248008@c.us",
-        "554396159222@c.us",
-        "2349162389789@c.us",
-        "5518997402648@c.us",
-        "593993695740@c.us",
-        "5518997200106@c.us",
-        "558004940140@c.us",
-        "5518991161341@c.us",
-        "5518991222983@c.us",
-        "5518997974883@c.us"
-      ]
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-18T01:50:23.518Z",
-    "component": "Kanban",
-    "action": "loadAllCounts_final_data",
-    "data": {
-      "notesCounts": {
-        "demo-1": 0
-      },
-      "orcamentosCounts": "usando dados otimizados do hook",
-      "agendamentosCounts": "usando dados otimizados do hook",
-      "assinaturasCounts": {
-        "demo-1": 0
-      },
-      "totalOptimizedCards": 0
-    },
-    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
-  },
-  {
-    "timestamp": "2025-09-18T01:50:24.368Z",
+    "timestamp": "2025-09-18T21:57:45.328Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -72,7 +24,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:25.190Z",
+    "timestamp": "2025-09-18T21:57:45.899Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -84,7 +36,19 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:25.711Z",
+    "timestamp": "2025-09-18T21:57:46.429Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "554499444498@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
+  },
+  {
+    "timestamp": "2025-09-18T21:57:46.960Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -96,7 +60,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:26.061Z",
+    "timestamp": "2025-09-18T21:57:47.325Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -108,7 +72,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:26.562Z",
+    "timestamp": "2025-09-18T21:57:47.855Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -120,7 +84,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:27.081Z",
+    "timestamp": "2025-09-18T21:57:48.432Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -132,7 +96,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:27.432Z",
+    "timestamp": "2025-09-18T21:57:49.044Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -144,7 +108,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:27.778Z",
+    "timestamp": "2025-09-18T21:57:49.417Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -156,7 +120,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:28.295Z",
+    "timestamp": "2025-09-18T21:57:49.945Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -168,7 +132,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:28.802Z",
+    "timestamp": "2025-09-18T21:57:50.464Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -180,7 +144,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:29.154Z",
+    "timestamp": "2025-09-18T21:57:50.835Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -192,7 +156,7 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:29.654Z",
+    "timestamp": "2025-09-18T21:57:51.412Z",
     "component": "Kanban",
     "action": "loadAllCounts_card_processed",
     "data": {
@@ -204,13 +168,15 @@
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   },
   {
-    "timestamp": "2025-09-18T01:50:29.680Z",
+    "timestamp": "2025-09-18T21:57:51.466Z",
     "component": "Kanban",
     "action": "loadAllCounts_final_data",
     "data": {
       "notesCounts": {
+        "5511978423433@c.us": 0,
         "5518996064455@c.us": 0,
         "15147260960@c.us": 0,
+        "554499444498@c.us": 0,
         "5518981248008@c.us": 0,
         "554396159222@c.us": 1,
         "2349162389789@c.us": 2,
@@ -225,8 +191,10 @@
       "orcamentosCounts": "usando dados otimizados do hook",
       "agendamentosCounts": "usando dados otimizados do hook",
       "assinaturasCounts": {
+        "5511978423433@c.us": 0,
         "5518996064455@c.us": 0,
         "15147260960@c.us": 0,
+        "554499444498@c.us": 0,
         "5518981248008@c.us": 1,
         "554396159222@c.us": 2,
         "2349162389789@c.us": 2,
@@ -238,7 +206,7 @@
         "5518991222983@c.us": 4,
         "5518997974883@c.us": 1
       },
-      "totalOptimizedCards": 12
+      "totalOptimizedCards": 14
     },
     "userId": "3a24ed72-c9e2-460f-9ebd-9f02c4aa7d18"
   }

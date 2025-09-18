@@ -8,7 +8,7 @@ interface Fila {
   cor?: string
   icone?: string
   ativa: boolean
-  ordem: number
+  ordenacao: number  // Corrigido: era 'ordem', agora é 'ordenacao'
   maxContatos?: number
   atribuicaoAutomatica: boolean
   criadoEm: string
@@ -220,7 +220,7 @@ export function useFilas() {
   }, [fetchFilas])
 
   return { 
-    filas: filas.sort((a, b) => a.ordem - b.ordem), 
+    filas: filas.sort((a, b) => a.ordenacao - b.ordenacao), 
     loading, 
     error, 
     refresh: fetchFilas,

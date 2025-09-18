@@ -39,6 +39,9 @@
   import { useContatoData } from '@/hooks/useContatoData'
   import { useContatoTags } from '@/hooks/useContatoTags'
   import { useConexaoFila } from '@/hooks/useConexaoFila'
+  import { useFilas } from '@/hooks/useFilas'
+  import { useTags } from '@/hooks/useTags'
+  import { useKanban } from '@/hooks/useKanban'
   import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
   import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
   import { useInfiniteChats } from '@/hooks/useInfiniteChats'
@@ -112,32 +115,82 @@
   }
 
   // Função para extrair nome do contato
-  const getContactName = (chat: any, contacts: any[]) => {
+  const getContactName = (chat: any, contacts: any[], contatosDataParam?: any) => {
     // Diferentes formatos de ID dependendo do engine WAHA
     const chatId = chat.id?._serialized || chat.id || chat.chatId || ''
     
-    // Tentar encontrar o contato na lista
+    // Extrair número para verificar se é canal
+    const phoneNumber = chatId.includes('@') ? chatId.split('@')[0] : chatId.replace(/\D/g, '')
+    
+    // FILTRO: Detectar canais do WhatsApp (números muito longos) e chats especiais
+    const isWhatsAppChannel = phoneNumber && phoneNumber.length > 15
+    const isStatusChat = chatId.includes('status') || chat.name === '+status' || (chat.name && chat.name.toLowerCase().includes('status'))
+    
+    // DEBUG: Log para verificar dados do chat
+    console.log(`🔍 [DEBUG] Buscando nome para chat ${chatId}:`, {
+      pushName: chat.pushName,
+      name: chat.name,
+      hasContatoData: !!contatosDataParam?.[chatId],
+      contatoDataNome: contatosDataParam?.[chatId]?.nome,
+      isWhatsAppChannel,
+      phoneNumber
+    })
+    
+    // 1. Prioridade: Nome direto do chat (pushName do WhatsApp)
+    if (chat.pushName && chat.pushName.trim() && chat.pushName !== chatId) {
+      console.log(`✅ [DEBUG] Usando pushName: ${chat.pushName.trim()}`)
+      return chat.pushName.trim()
+    }
+    
+    // 2. Nome do chat object
+    if (chat.name && chat.name.trim() && chat.name !== chatId && !chat.name.includes('@')) {
+      console.log(`✅ [DEBUG] Usando chat.name: ${chat.name.trim()}`)
+      return chat.name.trim()
+    }
+    
+    // 3. Tentar encontrar o contato na lista de contatos
     const contact = contacts.find(c => c.id === chatId)
-    if (contact && contact.name && contact.name !== contact.id) {
-      return contact.name
+    if (contact && contact.name && contact.name.trim() && contact.name !== contact.id) {
+      console.log(`✅ [DEBUG] Usando contact.name: ${contact.name.trim()}`)
+      return contact.name.trim()
     }
     
-    // Se tem nome no chat, usar
-    if (chat.name && chat.name !== chatId) {
-      return chat.name
+    // 4. Buscar pelo número de telefone nos contatos do backend
+    if (phoneNumber && contatosDataParam) {
+      // Buscar contato no backend por número
+      const contatoData = contatosDataParam[chatId]
+      if (contatoData && contatoData.nome && contatoData.nome.trim()) {
+        console.log(`✅ [DEBUG] Usando contatoData.nome: ${contatoData.nome.trim()}`)
+        return contatoData.nome.trim()
+      }
     }
     
-    // Extrair número do telefone de diferentes formatos
-    let phoneNumber = ''
-    if (chat.id?.user) {
-      phoneNumber = chat.id.user
-    } else if (chatId && chatId.includes('@')) {
-      phoneNumber = chatId.split('@')[0]
-    } else if (chatId) {
-      phoneNumber = chatId.replace(/\D/g, '') // Remove tudo que não é dígito
+    // 5. Tratamento especial para chats de status
+    if (isStatusChat) {
+      console.log(`📊 [DEBUG] Detectado chat de status`)
+      return `📊 Status WhatsApp`
     }
     
-    return phoneNumber ? `+${phoneNumber}` : 'Contato'
+    // 6. Tratamento especial para canais do WhatsApp
+    if (isWhatsAppChannel) {
+      console.log(`📺 [DEBUG] Detectado canal do WhatsApp`)
+      return `📺 Canal WhatsApp`
+    }
+    
+    // 7. Como último recurso, extrair e formatar o número 
+    if (phoneNumber) {
+      // Formatação mais amigável do número
+      if (phoneNumber.length >= 10 && phoneNumber.length <= 15) {
+        const formatted = phoneNumber.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3')
+        console.log(`⚠️ [DEBUG] Usando número formatado: ${formatted}`)
+        return formatted
+      }
+      console.log(`⚠️ [DEBUG] Usando número com +: +${phoneNumber}`)
+      return `+${phoneNumber}`
+    }
+    
+    console.log(`❌ [DEBUG] Nenhum nome encontrado, usando fallback`)
+    return 'Contato Sem Nome'
   }
 
   // Função para extrair última mensagem
@@ -173,16 +226,15 @@
   }: ConversationSidebarProps) {
     const [activeFilter, setActiveFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
-    // const { tags: realTags } = useTags() // Hook removido - usando mock
-    // const { filas } = useFilas() // Hook removido - usando mock
-    // const { conexoes, getFilasDaConexao } = useConexoes() // Hook removido - usando mock
-    // const { atendentes } = useAtendentes() // Hook removido - usando mock
+    // Hooks reais para dados
+    const { filas } = useFilas()
+    const { atendentes } = useAtendentes()
+    const { tags: realTags } = useTags()
+    const { quadros } = useKanban()
     
-    // Mock data para evitar erros de runtime
-    const realTags: any[] = []
-    const filas: any[] = []
+    
+    // Mock data temporário para hooks não implementados
     const conexoes: any[] = []
-    const atendentes: any[] = []
     const getFilasDaConexao = (conexaoId?: string) => []
     // const { isOnline, isTyping } = usePresence() // Hook removido para evitar erro
     
@@ -250,8 +302,11 @@
     const [hiddenChats, setHiddenChats] = useState<Set<string>>(new Set())
     const [showFilterModal, setShowFilterModal] = useState(false)
     const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set())
+    const [favoriteChats, setFavoriteChats] = useState<Set<string>>(new Set()) // NOVO: Estado de favoritos
     const [advancedFilters, setAdvancedFilters] = useState({
       showHidden: false,
+      showFavorites: false,  // NOVO: Filtro de favoritos
+      showChannels: false,   // NOVO: Filtro de canais WhatsApp
       selectedQueues: [] as string[],
       selectedTags: [] as string[],
       selectedKanbans: [] as string[],
@@ -418,7 +473,11 @@
       { value: 'budget_high', label: 'Orçamento Maior', icon: DollarSign },
       { value: 'budget_low', label: 'Orçamento Menor', icon: DollarSign },
       { value: 'tag', label: 'Por Tag', icon: Tag },
-      { value: 'name', label: 'Por Nome', icon: Hash }
+      { value: 'tag_asc', label: 'Por Tag (A-Z)', icon: Tag },
+      { value: 'name', label: 'Por Nome', icon: Hash },
+      { value: 'name_asc', label: 'Por Nome (A-Z)', icon: Hash },
+      { value: 'ticket', label: 'Por Ticket', icon: MessageCircle },
+      { value: 'ticket_asc', label: 'Por Ticket (A-Z)', icon: MessageCircle }
     ]
     
     // Cache para dados de agentes por chat
@@ -617,13 +676,26 @@
     // Funções para ações de chat
 
     // Função para arquivar chat
-    const handleArchiveChat = (chatId: string) => {
+    const toggleArchiveConversation = (chatId: string) => {
       setArchivedChats(prev => {
         const newSet = new Set(prev)
         if (newSet.has(chatId)) {
-          newSet.delete(chatId) // Desarquivar se já estava arquivado
+          newSet.delete(chatId)
         } else {
-          newSet.add(chatId) // Arquivar
+          newSet.add(chatId)
+        }
+        return newSet
+      })
+    }
+    
+    // NOVO: Função para toggle de favorito
+    const toggleFavoriteConversation = (chatId: string) => {
+      setFavoriteChats(prev => {
+        const newSet = new Set(prev)
+        if (newSet.has(chatId)) {
+          newSet.delete(chatId)
+        } else {
+          newSet.add(chatId)
         }
         return newSet
       })
@@ -837,6 +909,12 @@
       const contatoData = contatosData[chatId] || null
       const filaFallback = contatoData?.fila || null
       
+      // Se ainda não encontrou, tentar usar a primeira fila disponível como fallback temporário
+      if (!filaFallback && filas.length > 0) {
+        console.log(`🔄 [DEBUG] Usando primeira fila como fallback para chat ${chatId}`)
+        return filas[0] // Fallback temporário para debug
+      }
+      
       return filaFallback
     }, [conexoes, filas, contatosData])
 
@@ -854,7 +932,7 @@
     // OTIMIZAÇÃO CRÍTICA: Processar todos os chats (limitação será feita na renderização)
     const conversations = useMemo(() => activeChats.map(chat => {
       const chatId = chat.id?._serialized || chat.id || ''
-      const name = getContactName(chat, activeContacts)
+      const name = getContactName(chat, activeContacts, contatosData)
       const lastMessage = getLastMessage(chat)
       
       // Buscar dados do backend para este chat
@@ -862,6 +940,7 @@
       
       // Aplicar fallback da fila usando a nova lógica que considera conexões
       const chatQueue = getChatQueue(chatId)
+      
       
       // Buscar tags do cache - igual ao ChatArea
       const contatoTags = tagsCache[chatId] || []
@@ -1001,6 +1080,24 @@
           if (!matchesSearch) return false
         }
         
+        // NOVO: Filtrar canais do WhatsApp e chats especiais
+        const chatId = conv.originalChat?.id?._serialized || conv.originalChat?.id || ''
+        const phoneNumber = chatId.includes('@') ? chatId.split('@')[0] : chatId.replace(/\D/g, '')
+        const isWhatsAppChannel = phoneNumber && phoneNumber.length > 15
+        
+        // Filtrar chat de status (+status)
+        const isStatusChat = chatId.includes('status') || conv.name === '+status' || conv.name.toLowerCase().includes('status')
+        
+        if (isStatusChat) {
+          console.log(`🚫 [DEBUG] Filtrando chat de status: ${chatId}`)
+          return false // Remove chats de status
+        }
+        
+        if (isWhatsAppChannel && !advancedFilters.showChannels) {
+          console.log(`🚫 [DEBUG] Filtrando canal do WhatsApp: ${chatId}`)
+          return false // Remove canais da lista apenas se showChannels estiver false
+        }
+        
         // Early return: Filtros básicos - otimizados com condições específicas
         switch (activeFilter) {
           case 'all':
@@ -1045,6 +1142,11 @@
           if (hiddenChats.has(conv.id)) return false
         }
         
+        // Filtro de favoritos
+        if (advancedFilters.showFavorites) {
+          if (!favoriteChats.has(conv.id)) return false
+        }
+        
         if (advancedFilters.selectedQueues.length > 0) {
           if (!conv.queue || !advancedFilters.selectedQueues.includes(conv.queue.id)) return false
         }
@@ -1054,7 +1156,13 @@
         }
         
         if (advancedFilters.selectedKanbans.length > 0) {
-          if (!conv.kanbanBoard || !advancedFilters.selectedKanbans.includes(conv.kanbanBoard)) return false
+          if (!conv.kanbanBoard) return false
+          // O kanbanBoard é string "Quadro • Coluna", extrair o nome do quadro
+          const quadroNome = conv.kanbanBoard.split(' • ')[0]
+          const selectedQuadroNames = advancedFilters.selectedKanbans.map(id => 
+            quadros.find(q => q.id === id)?.nome
+          ).filter(Boolean)
+          if (!selectedQuadroNames.includes(quadroNome)) return false
         }
         
         if (advancedFilters.selectedAtendentes.length > 0) {
@@ -1073,10 +1181,34 @@
             const timestampA2 = new Date(a.originalChat?.timestamp || 0).getTime()
             const timestampB2 = new Date(b.originalChat?.timestamp || 0).getTime()
             return timestampA2 - timestampB2
+          case 'budget_high':
+            const budgetB = parseFloat(b.orcamento?.valor || '0')
+            const budgetA = parseFloat(a.orcamento?.valor || '0')
+            return budgetB - budgetA
+          case 'budget_low':
+            const budgetA3 = parseFloat(a.orcamento?.valor || '0')
+            const budgetB3 = parseFloat(b.orcamento?.valor || '0')
+            return budgetA3 - budgetB3
           case 'name':
-            return a.name.localeCompare(b.name)
+            return b.name.localeCompare(a.name) // Z-A (decrescente)
+          case 'name_asc':
+            return a.name.localeCompare(b.name) // A-Z (crescente)
           case 'tag':
-            return (a.badge?.text || '').localeCompare(b.badge?.text || '')
+            const tagA = a.tags?.[0]?.nome || ''
+            const tagB = b.tags?.[0]?.nome || ''
+            return tagB.localeCompare(tagA) // Z-A (decrescente)
+          case 'tag_asc':
+            const tagA2 = a.tags?.[0]?.nome || ''
+            const tagB2 = b.tags?.[0]?.nome || ''
+            return tagA2.localeCompare(tagB2) // A-Z (crescente)
+          case 'ticket':
+            const ticketA = a.originalChat?.id || ''
+            const ticketB = b.originalChat?.id || ''
+            return ticketB.localeCompare(ticketA) // Z-A (decrescente)
+          case 'ticket_asc':
+            const ticketA2 = a.originalChat?.id || ''
+            const ticketB2 = b.originalChat?.id || ''
+            return ticketA2.localeCompare(ticketB2) // A-Z (crescente)
           default:
             return 0
         }
@@ -1279,7 +1411,9 @@
                   advancedFilters.selectedTags.length > 0 || 
                   advancedFilters.selectedKanbans.length > 0 || 
                   advancedFilters.selectedAtendentes.length > 0 ||
-                  advancedFilters.showHidden) && (
+                  advancedFilters.showHidden ||
+                  advancedFilters.showFavorites ||
+                  advancedFilters.showChannels) && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full" />
                 )}
               </motion.button>
@@ -1476,7 +1610,7 @@
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleArchiveChat(conversation.id)
+                            toggleArchiveConversation(conversation.id)
                           }}
                           className="p-1 hover:bg-accent rounded transition-colors"
                           title="Arquivar conversa"
@@ -1505,13 +1639,16 @@
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation()
-                            // TODO: Implementar lógica de favoritar
-                            console.log('Favoritar chat:', conversation.id)
+                            toggleFavoriteConversation(conversation.id)
                           }}
                           className="p-1 hover:bg-yellow-100 hover:text-yellow-600 rounded transition-colors"
-                          title="Favoritar conversa"
+                          title={favoriteChats.has(conversation.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                         >
-                          <Star className="w-3 h-3 text-muted-foreground hover:text-yellow-600" />
+                          <Star className={`w-3 h-3 transition-colors ${
+                            favoriteChats.has(conversation.id) 
+                              ? 'text-yellow-500 fill-yellow-500' 
+                              : 'text-muted-foreground hover:text-yellow-600'
+                          }`} />
                         </motion.button>
                         
                         {/* Botão de Excluir */}
@@ -1604,6 +1741,8 @@
 
                       {/* Tag Principal */}
                       {(() => {
+                        // DEBUG: Log para verificar estrutura das tags
+                        console.log(`🔍 [DEBUG] Chat ${conversation.id} - Tags:`, conversation.tags, 'Array?', Array.isArray(conversation.tags))
                         
                         if (Array.isArray(conversation.tags) && conversation.tags.length > 0) {
                           return (
@@ -2304,6 +2443,28 @@
                       </motion.button>
                     </div>
 
+                    {/* Filtro de Favoritos */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setAdvancedFilters(prev => ({ ...prev, showFavorites: !prev.showFavorites }))}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                        advancedFilters.showFavorites
+                          ? 'bg-yellow-500/20 border-yellow-400/50 text-yellow-300' 
+                          : 'bg-slate-700/30 border-slate-600/50 text-slate-300 hover:bg-slate-600/30'
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${
+                        advancedFilters.showFavorites ? 'bg-yellow-400' : 'bg-slate-500'
+                      }`} />
+                      <span className="flex-1 text-left">
+                        {advancedFilters.showFavorites ? 'Mostrando apenas favoritos' : 'Filtrar por favoritos'}
+                      </span>
+                      <Star className={`w-4 h-4 ${
+                        advancedFilters.showFavorites ? 'text-yellow-400 fill-yellow-400' : 'text-slate-400'
+                      }`} />
+                    </motion.button>
+
                     {/* Filtro por Filas */}
                     <div className="space-y-3">
                       <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
@@ -2381,29 +2542,34 @@
                         Kanbans ({advancedFilters.selectedKanbans.length} selecionados)
                       </h3>
                       <div className="space-y-2">
-                        {(realTags.length > 0 ? realTags.map(tag => tag.nome) : ['vip', 'urgente', 'pendente', 'resolvido']).map((tag) => (
+                        {quadros.filter(quadro => quadro.ativo).map((quadro) => (
                           <motion.button
-                            key={tag}
+                            key={quadro.id}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => {
                               setAdvancedFilters(prev => ({
                                 ...prev,
-                                selectedTags: prev.selectedTags.includes(tag)
-                                  ? prev.selectedTags.filter(t => t !== tag)
-                                  : [...prev.selectedTags, tag]
+                                selectedKanbans: prev.selectedKanbans.includes(quadro.id)
+                                  ? prev.selectedKanbans.filter(k => k !== quadro.id)
+                                  : [...prev.selectedKanbans, quadro.id]
                               }))
                             }}
                             className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                              advancedFilters.selectedTags.includes(tag)
+                              advancedFilters.selectedKanbans.includes(quadro.id)
                                 ? 'bg-orange-500/20 border-orange-400/50 text-orange-300' 
                                 : 'bg-slate-700/30 border-slate-600/50 text-slate-300 hover:bg-slate-600/30'
                             }`}
                           >
-                            <div className={`w-2 h-2 rounded-full ${
-                              advancedFilters.selectedTags.includes(tag) ? 'bg-orange-400' : 'bg-slate-500'
-                            }`} />
-                            <span className="flex-1 text-left">{tag}</span>
+                            <div 
+                              className={`w-2 h-2 rounded-full`}
+                              style={{ 
+                                backgroundColor: advancedFilters.selectedKanbans.includes(quadro.id) 
+                                  ? quadro.cor || '#fb923c' 
+                                  : '#64748b' 
+                              }}
+                            />
+                            <span className="flex-1 text-left">{quadro.nome}</span>
                           </motion.button>
                         ))}
                       </div>
@@ -2416,29 +2582,29 @@
                         Atendentes ({advancedFilters.selectedAtendentes.length} selecionados)
                       </h3>
                       <div className="space-y-2">
-                        {['Ana Silva', 'João Santos', 'Maria Oliveira', 'Pedro Costa'].map((atendente) => (
+                        {atendentes.filter(atendente => atendente.ativo).map((atendente) => (
                           <motion.button
-                            key={atendente}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
+                            key={atendente.id}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => {
                               setAdvancedFilters(prev => ({
                                 ...prev,
-                                selectedAtendentes: prev.selectedAtendentes.includes(atendente)
-                                  ? prev.selectedAtendentes.filter(a => a !== atendente)
-                                  : [...prev.selectedAtendentes, atendente]
+                                selectedAtendentes: prev.selectedAtendentes.includes(atendente.id)
+                                  ? prev.selectedAtendentes.filter(a => a !== atendente.id)
+                                  : [...prev.selectedAtendentes, atendente.id]
                               }))
                             }}
                             className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                              advancedFilters.selectedAtendentes.includes(atendente)
+                              advancedFilters.selectedAtendentes.includes(atendente.id)
                                 ? 'bg-green-500/20 border-green-400/50 text-green-300' 
                                 : 'bg-slate-700/30 border-slate-600/50 text-slate-300 hover:bg-slate-600/30'
                             }`}
                           >
                             <div className={`w-2 h-2 rounded-full ${
-                              advancedFilters.selectedAtendentes.includes(atendente) ? 'bg-green-400' : 'bg-slate-500'
+                              advancedFilters.selectedAtendentes.includes(atendente.id) ? 'bg-green-400' : 'bg-slate-500'
                             }`} />
-                            <span className="flex-1 text-left">{atendente}</span>
+                            <span className="flex-1 text-left">{atendente.nome}</span>
                           </motion.button>
                         ))}
                       </div>
@@ -2454,6 +2620,8 @@
                         onClick={() => {
                           setAdvancedFilters({
                             showHidden: false,
+                            showFavorites: false,
+                            showChannels: false,
                             selectedQueues: [],
                             selectedTags: [],
                             selectedKanbans: [],

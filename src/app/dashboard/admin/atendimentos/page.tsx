@@ -15,6 +15,8 @@ export default function AtendimentosPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isQuickActionsSidebarOpen, setIsQuickActionsSidebarOpen] = useState(false)
   const [isAnotacoesSidebarOpen, setIsAnotacoesSidebarOpen] = useState(false)
+  const [selectedFila, setSelectedFila] = useState<string>('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const { actualTheme } = useTheme()
   
   // Estados para contadores de badges

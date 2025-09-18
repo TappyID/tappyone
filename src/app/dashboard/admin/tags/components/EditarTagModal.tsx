@@ -229,8 +229,8 @@ export default function EditarTagModal({
   }
 
   const filteredContatos = contatos.filter(contato => 
-    contato.nome.toLowerCase().includes(searchContatos.toLowerCase()) ||
-    contato.numeroTelefone.includes(searchContatos)
+    (contato.nome?.toLowerCase() || '').includes(searchContatos.toLowerCase()) ||
+    (contato.numeroTelefone || '').includes(searchContatos)
   )
 
   const formatDate = (dateString: string) => {

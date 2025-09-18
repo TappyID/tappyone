@@ -979,6 +979,7 @@ export function FlowNode({
     <motion.div
       key={data.id}
       drag
+      
       dragMomentum={false}
       onDragStart={(e, info) => onDragStart?.(data.id, e, info)}
       className={`

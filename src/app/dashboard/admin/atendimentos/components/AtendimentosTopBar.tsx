@@ -11,7 +11,6 @@ import {
   ArrowLeft, 
   Users, 
   Clock,
-  Filter,
   MoreHorizontal,
   Zap,
   Languages,
@@ -30,7 +29,6 @@ import {
   Bot,
   Expand,
   FileText,
-  Tag,
   Ticket,
   Calendar,
   Receipt
@@ -50,7 +48,10 @@ interface AtendimentosTopBarProps {
   onSearchChange: (query: string) => void
 }
 
-export default function AtendimentosTopBar({ searchQuery, onSearchChange }: AtendimentosTopBarProps) {
+export default function AtendimentosTopBar({ 
+  searchQuery, 
+  onSearchChange
+}: AtendimentosTopBarProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -224,24 +225,27 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
           </div>
         </div>
 
-        {/* Center Section - Search */}
-        <div className="flex-1 max-w-2xl mx-8">
-          <motion.div 
-            className="relative"
-            whileFocus={{ scale: 1.02 }}
-          >
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-white/60" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Buscar conversas, contatos ou mensagens..."
-              className="w-full pl-12 pr-4 h-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm transition-all duration-300"
-            />
-          
-          </motion.div>
+        {/* Center Section - Search & Filters */}
+        <div className="flex-1 max-w-3xl mx-8">
+          <div className="flex items-center gap-3">
+            {/* Search Input */}
+            <motion.div 
+              className="relative flex-1"
+              whileFocus={{ scale: 1.02 }}
+            >
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-white/60" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Buscar conversas, contatos ou mensagens..."
+                className="w-full pl-12 pr-4 h-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm transition-all duration-300"
+              />
+            </motion.div>
+
+          </div>
         </div>
 
         {/* Right Section - Actions & Profile */}
@@ -348,12 +352,12 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
                 title="Tags"
               >
-                <Tag className="w-4 h-4 text-white" />
+                <FileText className="w-4 h-4 text-white" />
               </motion.button>
               
               {/* Badge Tags - Rosa */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-pink-300/30">
-                <Tag className="w-3 h-3 text-white drop-shadow-sm" />
+                <FileText className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
             </motion.div>
             
