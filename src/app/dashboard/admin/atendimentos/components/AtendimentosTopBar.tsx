@@ -29,7 +29,9 @@ import {
   Moon,
   Bot,
   Expand,
-  FileText
+  FileText,
+  Tag,
+  Ticket
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import ReactCountryFlag from 'react-country-flag'
@@ -344,6 +346,40 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               {/* Badge IA - Ciano */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-cyan-300/30">
                 <span className="text-[10px] font-bold text-white drop-shadow-sm">🤖</span>
+              </div>
+            </motion.div>
+            
+            <motion.div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/dashboard/admin/tags')}
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                title="Tags"
+              >
+                <Tag className="w-4 h-4 text-white" />
+              </motion.button>
+              
+              {/* Badge Tags - Rosa */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-pink-300/30">
+                <Tag className="w-3 h-3 text-white drop-shadow-sm" />
+              </div>
+            </motion.div>
+            
+            <motion.div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/dashboard/admin/tickets')}
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                title="Tickets"
+              >
+                <Ticket className="w-4 h-4 text-white" />
+              </motion.button>
+              
+              {/* Badge Tickets - Violeta */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
+                <Ticket className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
             </motion.div>
             
