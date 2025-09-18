@@ -197,19 +197,8 @@
     // Estado para controlar quantos chats foram carregados
     const [visibleChatsCount, setVisibleChatsCount] = useState<number>(5)
   
-    // Função para carregar mais chats (sobrescrever a das props)
-    const handleLoadMoreChats = useCallback(() => {
-      setVisibleChatsCount(prev => {
-        const newCount = Math.min(prev + 10, chatIds.length)
-        console.log(`🔄 [ConversationSidebar] Carregando mais chats... ${prev} → ${newCount}`)
-        return newCount
-      })
-      
-      // Se há loadMoreChats das props, também chama ela
-      if (loadMoreChats) {
-        loadMoreChats()
-      }
-    }, [chatIds.length, loadMoreChats])
+    // Função para carregar mais chats (sobrescrever a das props) - será redefinida após filteredConversations
+    const [handleLoadMoreChats, setHandleLoadMoreChats] = useState<() => void>(() => () => {})
   
     // Reset apenas quando há mudança significativa nos chatIds (não rerender)
     useEffect(() => {
@@ -716,7 +705,7 @@
           observer.unobserve(loadMoreTriggerRef.current)
         }
       }
-    }, [visibleChatsCount, chatIds.length, handleLoadMoreChats])
+    }, [visibleChatsCount, handleLoadMoreChats])
     
     // OTIMIZAÇÃO: Carregar dados apenas dos chats visíveis
     const activeChatIds = activeChats.slice(0, visibleChatsCount).map(chat => chat.id?._serialized || chat.id || '')
@@ -853,8 +842,8 @@
     // DEBUG: Verificar filteredConversations
    
     
-    // OTIMIZAÇÃO CRÍTICA: Processar apenas chats visíveis
-    const conversations = useMemo(() => activeChats.slice(0, visibleChatsCount).map(chat => {
+    // OTIMIZAÇÃO CRÍTICA: Processar todos os chats (limitação será feita na renderização)
+    const conversations = useMemo(() => activeChats.map(chat => {
       const chatId = chat.id?._serialized || chat.id || ''
       const name = getContactName(chat, activeContacts)
       const lastMessage = getLastMessage(chat)
@@ -1087,6 +1076,24 @@
     
     // DEBUG: Log conversas filtradas
    
+    // Redefinir handleLoadMoreChats após filteredConversations estar disponível
+    useEffect(() => {
+      const newHandleLoadMoreChats = () => {
+        setVisibleChatsCount(prev => {
+          const totalFiltered = filteredConversations.length
+          const newCount = Math.min(prev + 10, totalFiltered)
+          console.log(`🔄 [ConversationSidebar] Carregando mais chats... ${prev} → ${newCount} (total: ${totalFiltered})`)
+          return newCount
+        })
+        
+        // Se há loadMoreChats das props, também chama ela
+        if (loadMoreChats) {
+          loadMoreChats()
+        }
+      }
+      
+      setHandleLoadMoreChats(() => newHandleLoadMoreChats)
+    }, [filteredConversations.length, loadMoreChats])
 
     // OTIMIZAÇÃO: Polling de presença TOTALMENTE DESABILITADO com 800+ chats
     // const pollingChatIds = filteredConversations.slice(0, 5).map(conv => conv.id)
@@ -1356,7 +1363,7 @@
           )}
           
           <AnimatePresence mode="popLayout">
-            {filteredConversations.map((conversation, index) => (
+            {filteredConversations.slice(0, visibleChatsCount).map((conversation, index) => (
               <motion.div
                 key={conversation.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -1774,7 +1781,7 @@
           </AnimatePresence>
           
           {/* Load More Trigger - Sempre ativo */}
-          {visibleChatsCount < chatIds.length && (
+          {visibleChatsCount < filteredConversations.length && (
             <div 
               ref={loadMoreTriggerRef}
               className="flex items-center justify-center py-4"
@@ -1795,14 +1802,14 @@
           )}
           
           {/* Indicador de fim da lista */}
-          {visibleChatsCount >= chatIds.length && filteredConversations.length > 0 && (
+          {visibleChatsCount >= filteredConversations.length && filteredConversations.length > 0 && (
             <div className="flex items-center justify-center py-4">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 text-muted-foreground"
               >
-                <span className="text-sm">📄 Todos os chats carregados ({chatIds.length})</span>
+                <span className="text-sm">📄 Todos os chats carregados ({filteredConversations.length})</span>
               </motion.div>
             </div>
           )}
