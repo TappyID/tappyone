@@ -31,7 +31,9 @@ import {
   Expand,
   FileText,
   Tag,
-  Ticket
+  Ticket,
+  Calendar,
+  Receipt
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import ReactCountryFlag from 'react-country-flag'
@@ -206,17 +208,6 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               </span>
             </motion.div>
             
-            <motion.div 
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              title={`Atendentes ativos: ${atendentesAtivos}`}
-            >
-              <Users className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-sm text-white font-medium">
-                {loading ? '...' : `${atendentesAtivos} Ativos`}
-              </span>
-            </motion.div>
-            
             {/* Fullscreen Button */}
             <motion.div 
               className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 cursor-pointer"
@@ -380,6 +371,40 @@ export default function AtendimentosTopBar({ searchQuery, onSearchChange }: Aten
               {/* Badge Tickets - Violeta */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
                 <Ticket className="w-3 h-3 text-white drop-shadow-sm" />
+              </div>
+            </motion.div>
+            
+            <motion.div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/dashboard/admin/agendamentos')}
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                title="Agendamentos"
+              >
+                <Calendar className="w-4 h-4 text-white" />
+              </motion.button>
+              
+              {/* Badge Agendamentos - Verde */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30">
+                <Calendar className="w-3 h-3 text-white drop-shadow-sm" />
+              </div>
+            </motion.div>
+            
+            <motion.div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/dashboard/admin/orcamentos')}
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                title="Orçamentos"
+              >
+                <Receipt className="w-4 h-4 text-white" />
+              </motion.button>
+              
+              {/* Badge Orçamentos - Azul */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-blue-300/30">
+                <Receipt className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
             </motion.div>
             
