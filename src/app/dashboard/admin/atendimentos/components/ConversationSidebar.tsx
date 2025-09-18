@@ -200,10 +200,21 @@
     // Função para carregar mais chats (sobrescrever a das props) - será redefinida após filteredConversations
     const [handleLoadMoreChats, setHandleLoadMoreChats] = useState<() => void>(() => () => {})
   
-    // Reset apenas quando há mudança significativa nos chatIds (não rerender)
+    // Reset apenas quando há mudança REALMENTE significativa (não pequenas variações)
+    const [lastChatCount, setLastChatCount] = useState(chatIds.length)
     useEffect(() => {
-      setVisibleChatsCount(5)
-    }, [chatIds.length])
+      const currentCount = chatIds.length
+      const diff = Math.abs(currentCount - lastChatCount)
+      
+      // Só reseta se houve mudança de mais de 10% ou diferença > 50 chats
+      const shouldReset = diff > Math.max(50, currentCount * 0.1)
+      
+      if (shouldReset) {
+        console.log(`🔄 [ConversationSidebar] Reset significativo: ${lastChatCount} → ${currentCount} chats`)
+        setVisibleChatsCount(5)
+        setLastChatCount(currentCount)
+      }
+    }, [chatIds.length, lastChatCount])
 
     // Estados do filtro em cascata
     const [selectedConexao, setSelectedConexao] = useState('todas')
