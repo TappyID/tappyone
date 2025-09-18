@@ -1,51 +1,63 @@
   'use client'
 
-  import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
-  import { createPortal } from 'react-dom'
-  import { motion, AnimatePresence } from 'framer-motion'
-  import { 
-    MessageCircle, 
-    Users, 
-    Clock, 
-    CheckCircle2, 
-    Circle,
-    Search,
-    Filter,
-    MoreVertical,
-    ChevronDown,
-    ArrowUpDown,
-    Layers,
-    Kanban,
-    Trash2,
-    DollarSign,
-    Calendar,
-    Hash,
-    Eye,
-    EyeOff,
-    X,
-    Archive,
-    ArrowRightLeft,
-    Star,
-    Tag,
-    PanelLeftOpen,
-    PanelLeftClose,
-    Pin,
-    User,
-    WifiOff,
-    Wifi
-  } from 'lucide-react'
-  import { useAtendentes } from '@/hooks/useAtendentes'
-  import { useChatAgente } from '@/hooks/useChatAgente'
-  import { useContatoData } from '@/hooks/useContatoData'
-  import { useContatoTags } from '@/hooks/useContatoTags'
-  import { useConexaoFila } from '@/hooks/useConexaoFila'
-  import { useFilas } from '@/hooks/useFilas'
-  import { useTags } from '@/hooks/useTags'
-  import { useKanban } from '@/hooks/useKanban'
-  import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
-  import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
-  import { useInfiniteChats } from '@/hooks/useInfiniteChats'
-  import '@/styles/scrollbar.css'
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  MessageCircle, 
+  Circle, 
+  CheckCircle2, 
+  Clock, 
+  Archive, 
+  Star, 
+  MoreVertical,
+  Eye,
+  EyeOff,
+  X,
+  Search,
+  Filter,
+  ChevronDown,
+  Users,
+  Tag,
+  Hash,
+  Calendar,
+  DollarSign,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Heart,
+  UserPlus,
+  Copy,
+  Trash2,
+  CornerDownRight,
+  ChevronRight,
+  ChevronLeft,
+  ArrowDown,
+  ArrowUp,
+  Plus,
+  Settings,
+  Wifi,
+  Ticket,
+  ArrowUpDown,
+  Pin,
+  User,
+  WifiOff,
+  ArrowRightLeft,
+  Layers,
+  Kanban
+} from 'lucide-react'
+import { useAtendentes } from '@/hooks/useAtendentes'
+import { useChatAgente } from '@/hooks/useChatAgente'
+import { useContatoData } from '@/hooks/useContatoData'
+import { useContatoTags } from '@/hooks/useContatoTags'
+import { useConexaoFila } from '@/hooks/useConexaoFila'
+import { useFilas } from '@/hooks/useFilas'
+import { useTags } from '@/hooks/useTags'
+import { useKanban } from '@/hooks/useKanban'
+import { useTickets } from '@/hooks/useTickets'
+import { ConversationListSkeleton } from '@/components/shared/SkeletonLoader'
+import TransferirAtendimentoModal from './modals/TransferirAtendimentoModal'
+import { useInfiniteChats } from '@/hooks/useInfiniteChats'
+import '@/styles/scrollbar.css'
 
   interface ConversationSidebarProps {
     chats: any[]
@@ -231,6 +243,7 @@
     const { atendentes } = useAtendentes()
     const { tags: realTags } = useTags()
     const { quadros } = useKanban()
+    const { tickets } = useTickets()
     
     
     // Mock data temporário para hooks não implementados
@@ -292,6 +305,8 @@
     const [showQueueDropdown, setShowQueueDropdown] = useState(false)
     const [selectedTag, setSelectedTag] = useState('todas')
     const [showTagDropdown, setShowTagDropdown] = useState(false)
+    const [selectedTicket, setSelectedTicket] = useState('todos')
+    const [showTicketDropdown, setShowTicketDropdown] = useState(false)
     const [sortBy, setSortBy] = useState('recent')
     const [showSortDropdown, setShowSortDropdown] = useState(false)
     const [connectionModulation, setConnectionModulation] = useState<any>(null)
@@ -371,9 +386,11 @@
     // Refs for dropdown positioning
     const queueButtonRef = useRef<HTMLButtonElement>(null)
     const tagButtonRef = useRef<HTMLButtonElement>(null)
+    const ticketButtonRef = useRef<HTMLButtonElement>(null)
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [queueDropdownPosition, setQueueDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
     const [tagDropdownPosition, setTagDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+    const [ticketDropdownPosition, setTicketDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
     const [sortDropdownPosition, setSortDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
     
     // Calculate dropdown positions
@@ -398,6 +415,10 @@
     }, [showTagDropdown])
     
     useEffect(() => {
+      if (showTicketDropdown) updateDropdownPosition(ticketButtonRef, setTicketDropdownPosition)
+    }, [showTicketDropdown])
+    
+    useEffect(() => {
       if (showSortDropdown) updateDropdownPosition(sortButtonRef, setSortDropdownPosition)
     }, [showSortDropdown])
     
@@ -412,29 +433,33 @@
       }
     }, [selectedQueue])
 
-    // Fechar dropdowns ao clicar fora
+    // Close dropdowns when clicking outside
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        const target = event.target as HTMLElement
-        if (!target.closest('[data-conexao-dropdown]')) {
+        const target = event.target as Element
+        
+        if (!target.closest('[data-conexao-dropdown]') && showConexaoDropdown) {
           setShowConexaoDropdown(false)
         }
-        if (!target.closest('[data-queue-dropdown]')) {
+        if (!target.closest('[data-queue-dropdown]') && showQueueDropdown) {
           setShowQueueDropdown(false)
         }
-        if (!target.closest('[data-tag-dropdown]')) {
+        if (!target.closest('[data-tag-dropdown]') && showTagDropdown) {
           setShowTagDropdown(false)
         }
-        if (!target.closest('[data-sort-dropdown]')) {
+        if (!target.closest('[data-ticket-dropdown]') && showTicketDropdown) {
+          setShowTicketDropdown(false)
+        }
+        if (!target.closest('[data-sort-dropdown]') && showSortDropdown) {
           setShowSortDropdown(false)
         }
       }
       
-      if (showConexaoDropdown || showQueueDropdown || showTagDropdown || showSortDropdown) {
+      if (showConexaoDropdown || showQueueDropdown || showTagDropdown || showTicketDropdown || showSortDropdown) {
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
       }
-    }, [showConexaoDropdown, showQueueDropdown, showTagDropdown, showSortDropdown])
+    }, [showConexaoDropdown, showQueueDropdown, showTagDropdown, showTicketDropdown, showSortDropdown])
 
     
     // Opções de conexões
@@ -464,6 +489,11 @@
     const tagOptions = [
       { value: 'todas', label: 'Tags' },
       ...realTags.map(tag => ({ value: tag.id, label: tag.nome }))
+    ]
+    
+    const ticketOptions = [
+      { value: 'todos', label: 'Tickets' },
+      ...(tickets || []).map(ticket => ({ value: ticket.id, label: `#${ticket.id.slice(0, 8)}` }))
     ]
     
     // Opções de ordenação
@@ -1135,6 +1165,14 @@
           }
         }
         
+        // Early return: Filtro por ticket
+        if (selectedTicket !== 'todos') {
+          // Verifica se a conversa tem um ticket associado com o ID selecionado
+          if (!conv.ticketId || conv.ticketId !== selectedTicket) {
+            return false
+          }
+        }
+        
         // Early return: Filtros avançados - só verifica se necessário
         if (advancedFilters.showHidden) {
           if (!hiddenChats.has(conv.id)) return false
@@ -1298,7 +1336,35 @@
           {/* Filters Header */}
           <div className="p-4 pb-2 border-b border-border bg-card/30 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-semibold text-foreground mr-[10px]">Chats</h2>
+              {/* Filtro de Tickets */}
+              <motion.div 
+                className="relative mr-3"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                data-ticket-dropdown
+              >
+                <div className="relative bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-[1px] rounded-lg shadow-lg">
+                  <motion.button
+                    ref={ticketButtonRef}
+                    onClick={() => {
+                      setShowTicketDropdown(!showTicketDropdown)
+                      if (!showTicketDropdown) updateDropdownPosition(ticketButtonRef, setTicketDropdownPosition)
+                    }}
+                    className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[120px] hover:bg-accent transition-colors border border-border"
+                  >
+                    <Ticket className="w-3 h-3 text-purple-400" />
+                    <span className="text-sm font-medium text-foreground flex-1 text-left">
+                      {ticketOptions.find(t => t.value === selectedTicket)?.label}
+                    </span>
+                    <motion.div
+                      animate={{ rotate: showTicketDropdown ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </motion.div>
+                  </motion.button>
+                </div>
+              </motion.div>
               <div className="flex items-center gap-3">
               {/* Select Conexão Elegante - OCULTO por enquanto */}
               <motion.div 
@@ -2316,6 +2382,45 @@
                         <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-full" />
                       )}
                       {selectedTag !== option.value && <div className="w-2" />}
+                      {option.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+        {typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {showTicketDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="fixed z-[9999] bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl overflow-hidden"
+                style={{
+                  top: ticketDropdownPosition.top,
+                  left: ticketDropdownPosition.left,
+                  minWidth: ticketDropdownPosition.width
+                }}
+              >
+                <div className="max-h-64 overflow-y-auto">
+                  {ticketOptions.map((option) => (
+                    <motion.button
+                      key={option.value}
+                      whileHover={{ backgroundColor: 'hsl(var(--accent))' }}
+                      onClick={() => {
+                        setSelectedTicket(option.value)
+                        setShowTicketDropdown(false)
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                        selectedTicket === option.value ? 'bg-accent text-accent-foreground' : 'hover:bg-accent'
+                      }`}
+                    >
+                      <Ticket className="w-3 h-3 text-purple-400" />
                       {option.label}
                     </motion.button>
                   ))}
