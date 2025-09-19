@@ -213,63 +213,21 @@ export default function ChatArea({
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
   const { user } = useAuth() // Para pegar o nome do atendente
   
-  // Sistema de tags igual ao ConversationSidebar
-  const [contatoTags, setContatoTags] = useState<any[]>([])
-  const [tagsLoading, setTagsLoading] = useState(false)
-  
-  // Função para buscar tags (igual aos tickets)
-  const fetchContatoTags = useCallback(async () => {
-    if (!chatId) return
-    
-    try {
-      setTagsLoading(true)
-      const token = localStorage.getItem('token')
-      if (!token) return
-      
-      // Usar mesmo formato que os tickets: remover @c.us
-      const numeroTelefone = chatId.replace('@c.us', '')
-      
-      console.log('🏷️ [CHATAREA] Buscando dados completos para:', { chatId, numeroTelefone })
-      
-      // Usar mesma API que a sidebar: dados completos do contato
-      const response = await fetch(`/api/contatos/${numeroTelefone}/dados-completos`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (response.ok) {
-        const contatoData = await response.json()
-        const tags = contatoData.tags || []
-        console.log('🏷️ [CHATAREA] Tags recebidas dos dados completos:', tags)
-        setContatoTags(Array.isArray(tags) ? tags : [])
-      } else {
-        // Se não encontrar, não é erro - apenas não tem tags ainda
-        setContatoTags([])
-      }
-    } catch (error) {
-      console.error('❌ [CHATAREA] Erro ao buscar tags:', error)
-      setContatoTags([])
-    } finally {
-      setTagsLoading(false)
-    }
-  }, [chatId])
-  
-  // Função para atualizar tags (igual aos tickets)
+  // Sistema de tags - agora usa conversation.tags da sidebar
   const updateContatoTags = useCallback(async (selectedTags: any[]) => {
     if (!chatId) return
     
     try {
-      setTagsLoading(true)
       const token = localStorage.getItem('token')
       if (!token) throw new Error('Token não encontrado')
       
-      // Usar mesmo formato que os tickets: remover @c.us e usar contato_id como parâmetro
       const numeroTelefone = chatId.replace('@c.us', '')
       const tagIds = selectedTags.map(tag => tag.id)
       
-      console.log('🏷️ [CHATAREA] Atualizando tags:', { numeroTelefone, tagIds })
+      console.log('🏷️ [CHATAREA] Salvando tags via API correta:', { numeroTelefone, tagIds })
       
-      // Usar API consistente para salvar tags
-      const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
+      // Usar API que realmente existe (igual ao kanban)
+      const response = await fetch(`/api/tags?contato_id=${encodeURIComponent(numeroTelefone)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,37 +240,13 @@ export default function ChatArea({
         throw new Error(`HTTP ${response.status}`)
       }
       
-      console.log('✅ [CHATAREA] Tags atualizadas com sucesso')
-      setContatoTags(selectedTags)
-      return true
+      console.log('✅ [CHATAREA] Tags salvas! Sidebar será atualizada automaticamente.')
+      
     } catch (error) {
-      console.error('❌ [CHATAREA] Erro ao atualizar tags:', error)
+      console.error('❌ [CHATAREA] Erro ao salvar tags:', error)
       throw error
-    } finally {
-      setTagsLoading(false)
     }
   }, [chatId])
-  
-  // Carregar tags quando chatId mudar
-  useEffect(() => {
-    fetchContatoTags()
-  }, [fetchContatoTags])
-  
-  // Debug: monitorar mudanças nas tags
-  useEffect(() => {
-    console.log('🏷️ [CHATAREA] Estado contatoTags alterado:', contatoTags)
-  }, [contatoTags])
-  
-  // Debug: Expor função no window para troubleshooting
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).refreshChatAreaTags = () => {
-        console.log('🔄 [CHATAREA] Refreshing tags manually...')
-        fetchContatoTags()
-      }
-    }
-  }, [fetchContatoTags])
-  
   
   // Hook para auto-resposta com DeepSeek
   const { isGenerating, processNewMessage } = useDeepSeekAutoResponse({
@@ -1730,9 +1664,9 @@ export default function ChatArea({
           >
             <Tag className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge - mostrar número de tags */}
-            {contatoTags && contatoTags.length > 0 && (
+            {conversation?.tags && conversation.tags.length > 0 && (
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border border-background flex items-center justify-center">
-                <span className="text-xs font-bold text-white">{contatoTags.length}</span>
+                <span className="text-xs font-bold text-white">{conversation.tags.length}</span>
               </div>
             )}
           </motion.button>
@@ -3306,7 +3240,7 @@ export default function ChatArea({
         onClose={() => setShowTagsModal(false)}
         onSave={handleTagsSave}
         contactData={getContactData()}
-        currentTags={contatoTags || []}
+        currentTags={conversation?.tags || []}
       />
       
       <VideoChamadaModal
