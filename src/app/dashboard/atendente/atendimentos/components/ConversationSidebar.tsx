@@ -656,8 +656,9 @@ import '@/styles/scrollbar.css'
     const [agentesCache, setAgentesCache] = useState<{[chatId: string]: any}>({})
     const [loadingAgentes, setLoadingAgentes] = useState<{[chatId: string]: boolean}>({})
     
-    // Cache para evitar requests desnecessários do Kanban
+    // Cache para evitar requests desnecessários do Kanban - com melhor controle
     const [kanbanCache, setKanbanCache] = useState<{[key: string]: any}>({})
+    const [kanbanCacheTimestamps, setKanbanCacheTimestamps] = useState<{[key: string]: number}>({})
     const [lastKanbanFetch, setLastKanbanFetch] = useState(0)
     
     // Cache para dados de conexão/fila por chat
@@ -758,13 +759,13 @@ import '@/styles/scrollbar.css'
       }
     }
     
-    // Função para buscar informações do quadro e coluna (com cache)
+    // Função para buscar informações do Kanban para um chat específico - cache otimizado
     const getKanbanInfo = async (chatId: string) => {
-      // Cache por 5 minutos
-      const CACHE_DURATION = 5 * 60 * 1000
+      const CACHE_DURATION = 3 * 60 * 1000 // 3 minutos - mais agressivo
       const now = Date.now()
       
-      if (kanbanCache[chatId] && (now - lastKanbanFetch) < CACHE_DURATION) {
+      // Cache por chat individual, não global
+      if (kanbanCache[chatId] && kanbanCacheTimestamps[chatId] && (now - kanbanCacheTimestamps[chatId]) < CACHE_DURATION) {
         return kanbanCache[chatId]
       }
       
@@ -822,6 +823,7 @@ import '@/styles/scrollbar.css'
                     color: coluna?.cor || '#d1d5db' // Usar a cor exata da coluna
                   }
                   setKanbanCache(prev => ({ ...prev, [chatId]: result }))
+                  setKanbanCacheTimestamps(prev => ({ ...prev, [chatId]: now }))
                   return result
                 }
               }
@@ -832,11 +834,13 @@ import '@/styles/scrollbar.css'
         
         const fallback = { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
         setKanbanCache(prev => ({ ...prev, [chatId]: fallback }))
+        setKanbanCacheTimestamps(prev => ({ ...prev, [chatId]: now }))
         return fallback
       } catch (error) {
         console.error('Erro ao buscar informações do Kanban:', error)
         const fallback = { quadro: 'Sem quadro', coluna: 'Sem coluna', color: '#d1d5db' }
         setKanbanCache(prev => ({ ...prev, [chatId]: fallback }))
+        setKanbanCacheTimestamps(prev => ({ ...prev, [chatId]: now }))
         return fallback
       }
     }
@@ -1244,27 +1248,63 @@ import '@/styles/scrollbar.css'
       }
     }, [activeChats])
 
-    // OTIMIZAÇÃO: Carregar informações do Kanban apenas para 5 chats visíveis
+    // OTIMIZAÇÃO: Carregar informações do Kanban com carregamento paralelo otimizado
     useEffect(() => {
       const loadKanbanInfo = async () => {
-        const newKanbanInfo: {[key: string]: any} = {}
+        // Carregar mais chats + buffer de performance
+        const chatsToLoad = activeChats.slice(0, Math.min(visibleChatsCount + 30, 100))
         
-        // Carregar apenas para os chats visíveis (removido limite de 5)
-        const visibleChats = activeChats.slice(0, Math.min(visibleChatsCount, 20))
-        
-        for (const chat of visibleChats) {
+        // Carregamento PARALELO dos primeiros 20 (mais rápido)
+        const immediateChats = chatsToLoad.slice(0, 20)
+        const immediatePromises = immediateChats.map(async (chat) => {
           const chatId = chat.id._serialized || chat.id
           const info = await getKanbanInfo(chatId)
-          newKanbanInfo[chatId] = info
-        }
+          return { chatId, info }
+        })
+        
+        // Executar todos em paralelo
+        const immediateResults = await Promise.allSettled(immediatePromises)
+        const newKanbanInfo: {[key: string]: any} = {}
+        
+        immediateResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            const { chatId, info } = result.value
+            newKanbanInfo[chatId] = info
+          }
+        })
         
         setKanbanInfo(newKanbanInfo)
+        
+        // Carregar restante após delay (não bloqueia UI)
+        const remainingChats = chatsToLoad.slice(20)
+        if (remainingChats.length > 0) {
+          setTimeout(async () => {
+            const remainingPromises = remainingChats.map(async (chat) => {
+              const chatId = chat.id._serialized || chat.id
+              const info = await getKanbanInfo(chatId)
+              return { chatId, info }
+            })
+            
+            const remainingResults = await Promise.allSettled(remainingPromises)
+            const additionalKanbanInfo: {[key: string]: any} = {}
+            
+            remainingResults.forEach((result) => {
+              if (result.status === 'fulfilled') {
+                const { chatId, info } = result.value
+                additionalKanbanInfo[chatId] = info
+              }
+            })
+            
+            // Merge com dados existentes
+            setKanbanInfo(prev => ({ ...prev, ...additionalKanbanInfo }))
+          }, 1500) // 1.5s delay
+        }
       }
       
       if (activeChats.length > 0) {
         loadKanbanInfo()
       }
-    }, [activeChats])
+    }, [activeChats, visibleChatsCount])
 
     // Memoizar cálculo dos filtros para evitar recálculos custosos
     const filters = useMemo(() => [
