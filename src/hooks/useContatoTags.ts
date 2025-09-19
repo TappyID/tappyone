@@ -41,25 +41,23 @@ export const useContatoTags = (chatId: string | null) => {
     try {
       setLoading(true)
       setError(null)
-      console.log('🏷️ [HOOK] Verificando se é contato CRM:', chatId)
+      console.log('🏷️ [HOOK] Buscando tags para chatId:', chatId)
       
-      // Primeiro verificar se é um contato CRM válido
-      const contatoData = await makeAuthenticatedRequest(`/contatos/${chatId}/dados-completos`)
-      
-      if (contatoData.isWhatsAppChat) {
-        console.log('ℹ️ [HOOK] Chat WAHA sem contato CRM, sem tags para buscar:', chatId)
-        setTags([])
-        return
-      }
-      
-      console.log('🏷️ [HOOK] Buscando tags do contato CRM:', chatId)
+      // Buscar diretamente as tags - se não existir contato CRM, retornará vazio
       const data = await makeAuthenticatedRequest(`/contatos/${chatId}/tags`)
       console.log('🏷️ [HOOK] Tags do contato carregadas:', data?.length || 0)
       setTags(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('❌ [HOOK] Erro ao buscar tags do contato:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar tags do contato')
-      setTags([])
+      // Se der erro 404, significa que não é um contato CRM ou não tem tags
+      if (err instanceof Error && err.message.includes('404')) {
+        console.log('ℹ️ [HOOK] Chat sem tags ou não é contato CRM:', chatId)
+        setTags([])
+        setError(null) // Não consideramos 404 como erro
+      } else {
+        setError(err instanceof Error ? err.message : 'Erro ao carregar tags do contato')
+        setTags([])
+      }
     } finally {
       setLoading(false)
     }

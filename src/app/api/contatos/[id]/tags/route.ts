@@ -81,6 +81,8 @@ export async function GET(
   try {
     const { id: contatoId } = params
     
+    console.log('🏷️ [API TAGS GET] ContatoId recebido:', contatoId)
+    
     const token = request.headers.get('Authorization')?.replace('Bearer ', '')
     if (!token) {
       return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
@@ -88,19 +90,26 @@ export async function GET(
 
     // Buscar tags do contato no backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
-    const response = await fetch(`${backendUrl}/api/contatos/${contatoId}/tags`, {
+    const url = `${backendUrl}/api/contatos/${contatoId}/tags`
+    console.log('🏷️ [API TAGS GET] URL do backend:', url)
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
 
+    console.log('🏷️ [API TAGS GET] Status da resposta:', response.status)
+
     if (!response.ok) {
       const errorText = await response.text()
+      console.log('🏷️ [API TAGS GET] Erro:', errorText)
       return NextResponse.json({ error: errorText }, { status: response.status })
     }
 
     const result = await response.json()
+    console.log('🏷️ [API TAGS GET] Tags encontradas:', result?.length || 0)
     return NextResponse.json(result)
   } catch (error) {
     console.error('Erro ao buscar tags:', error)

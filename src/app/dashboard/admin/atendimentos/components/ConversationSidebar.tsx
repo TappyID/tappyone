@@ -841,6 +841,11 @@ import '@/styles/scrollbar.css'
     
     // Função para buscar tags de um chatId específico - com cache inteligente
     const fetchTagsForChat = useCallback(async (chatId: string) => {
+      // Debug para comparar com ChatArea
+      if (chatId === 'Parceiros FloriculturaWeb' || chatId.includes('Parceiros') || chatId.includes('Floricultura')) {
+        console.log('🔍 [SIDEBAR DEBUG] Buscando tags para Parceiros FloriculturaWeb:', chatId)
+      }
+      
       // Se já processamos este chat, não fazer nova requisição
       if (processedChats.has(chatId)) {
         return

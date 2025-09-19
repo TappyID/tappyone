@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFavorites } from '@/hooks/useFavorites'
 import { createPortal } from 'react-dom'
@@ -106,7 +106,6 @@ import QuickActionsSidebar from './QuickActionsSidebar'
 import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
 import { useChatAgente } from '@/hooks/useChatAgente'
-import { useContatoTags } from '@/hooks/useContatoTags'
 import { useDeepSeekAutoResponse } from '@/hooks/useDeepSeekAutoResponse'
 import CreateContactModal from '../../contatos/components/CreateContactModal'
 
@@ -190,12 +189,149 @@ export default function ChatArea({
   }
   
   // Extrair chatId primeiro
-  const chatId = useMemo(() => extractChatId(conversation), [conversation])
+  const chatId = useMemo(() => {
+    const id = extractChatId(conversation)
+    // Transformar chatId para o formato usado no sistema de tags
+    if (id) {
+      // Se contém @c.us, remove para usar como contato_id
+      if (id.includes('@c.us')) {
+        return id.replace('@c.us', '')
+      }
+      return id
+    }
+    return null
+  }, [conversation])
   
   
   const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
-  const { tags: contatoTags, updateContatoTags, fetchContatoTags } = useContatoTags(chatId)
+  
+  // Sistema de tags igual ao ConversationSidebar
+  const [contatoTags, setContatoTags] = useState<any[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+  
+  // Função para buscar tags (igual ao ConversationSidebar)
+  const fetchContatoTags = useCallback(async () => {
+    if (!chatId) return
+    
+    try {
+      setTagsLoading(true)
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      console.log('🏷️ [CHATAREA] Buscando tags para:', chatId)
+      
+      // Tentar ambos os formatos: com e sem @c.us
+      const chatIdOriginal = extractChatId(conversation)
+      const chatIdSemSufixo = chatId
+      
+      console.log('🏷️ [CHATAREA] Tentando chatIdOriginal:', chatIdOriginal)
+      console.log('🏷️ [CHATAREA] Tentando chatIdSemSufixo:', chatIdSemSufixo)
+      
+      // Tentar primeiro com chatId original (com @c.us se tiver)
+      let contatoResponse = await fetch(`/api/contatos/${encodeURIComponent(chatIdOriginal)}/dados-completos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      let chatIdParaUsar = chatIdOriginal
+      
+      // Se não encontrou, tentar sem @c.us
+      if (!contatoResponse.ok && chatIdOriginal !== chatIdSemSufixo) {
+        console.log('🏷️ [CHATAREA] Tentando sem @c.us...')
+        contatoResponse = await fetch(`/api/contatos/${encodeURIComponent(chatIdSemSufixo)}/dados-completos`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        chatIdParaUsar = chatIdSemSufixo
+      }
+      
+      if (!contatoResponse.ok) {
+        console.log('🏷️ [CHATAREA] Chat não existe no CRM com nenhum formato:', { chatIdOriginal, chatIdSemSufixo })
+        setContatoTags([])
+        return
+      }
+      
+      const contatoData = await contatoResponse.json()
+      
+      if (contatoData.isWhatsAppChat) {
+        console.log('🏷️ [CHATAREA] Chat WAHA sem contato CRM:', chatIdParaUsar)
+        setContatoTags([])
+        return
+      }
+      
+      console.log('🏷️ [CHATAREA] Encontrou contato CRM! Usando chatId:', chatIdParaUsar)
+      
+      // Buscar tags do contato CRM
+      const response = await fetch(`/api/contatos/${encodeURIComponent(chatIdParaUsar)}/tags`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const tags = data.data || data || []
+        console.log('🏷️ [CHATAREA] Tags encontradas:', tags?.length || 0, tags)
+        setContatoTags(Array.isArray(tags) ? tags : [])
+      } else {
+        console.log('🏷️ [CHATAREA] Erro ao buscar tags:', response.status)
+        setContatoTags([])
+      }
+    } catch (error) {
+      console.error('❌ [CHATAREA] Erro ao buscar tags:', error)
+      setContatoTags([])
+    } finally {
+      setTagsLoading(false)
+    }
+  }, [chatId, conversation])
+  
+  // Função para atualizar tags
+  const updateContatoTags = useCallback(async (selectedTags: any[]) => {
+    if (!chatId) return
+    
+    try {
+      setTagsLoading(true)
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+      
+      const tagIds = selectedTags.map(tag => tag.id)
+      console.log('🏷️ [CHATAREA] Atualizando tags:', { chatId, tagIds })
+      
+      const response = await fetch(`/api/contatos/${chatId}/tags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tagIds })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      console.log('✅ [CHATAREA] Tags atualizadas com sucesso')
+      setContatoTags(selectedTags)
+      return true
+    } catch (error) {
+      console.error('❌ [CHATAREA] Erro ao atualizar tags:', error)
+      throw error
+    } finally {
+      setTagsLoading(false)
+    }
+  }, [chatId])
+  
+  // Carregar tags quando chatId mudar
+  useEffect(() => {
+    fetchContatoTags()
+  }, [fetchContatoTags])
+  
+  // Debug: Comparar chatId do ChatArea vs ConversationSidebar
+  useEffect(() => {
+    console.log('🔍 [CHATAREA DEBUG] ==================')
+    console.log('🔍 [CHATAREA DEBUG] conversation objeto completo:', conversation)
+    console.log('🔍 [CHATAREA DEBUG] conversation.id original:', conversation?.id)
+    console.log('🔍 [CHATAREA DEBUG] chatId processado:', chatId)
+    console.log('🔍 [CHATAREA DEBUG] contatoTags encontradas:', contatoTags)
+    console.log('🔍 [CHATAREA DEBUG] ==================')
+  }, [conversation, chatId, contatoTags])
   
   // Hook para auto-resposta com DeepSeek
   const { isGenerating, processNewMessage } = useDeepSeekAutoResponse({
@@ -1068,22 +1204,15 @@ export default function ChatArea({
 
   const handleTagsSave = async (tags: any[]) => {
     try {
-      console.log('🏷️ Salvando tags:', tags)
-      console.log('🔍 Debug conversation:', conversation)
-      console.log('🔍 Debug chatId extraído:', chatId)
-      console.log('🔍 Debug conversation.id:', conversation?.id)
-      console.log('🔍 Debug conversation.id type:', typeof conversation?.id)
+      console.log('🏷️ [CHATAREA] Salvando tags:', tags)
+      console.log('🔍 [CHATAREA] chatId usado:', chatId)
       
       await updateContatoTags(tags)
-      console.log('✅ Tags salvas com sucesso!')
+      console.log('✅ [CHATAREA] Tags salvas com sucesso!')
       setShowTagsModal(false)
       
-      // Recarregar dados do contato se necessário
-      if (onMarkAsRead && chatId) {
-        onMarkAsRead(chatId)
-      }
     } catch (error) {
-      console.error('❌ Erro ao salvar tags:', error)
+      console.error('❌ [CHATAREA] Erro ao salvar tags:', error)
       alert('Erro ao salvar tags. Tente novamente.')
     }
   }
@@ -1602,6 +1731,35 @@ export default function ChatArea({
           >
             <ArrowRightLeft className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-600" />
           </motion.button>
+
+          {/* Tags */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTagsModal(true)}
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
+            title="Gerenciar Tags"
+          >
+            <Tag className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            {/* Badge - mostrar número de tags */}
+            {contatoTags && contatoTags.length > 0 && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border border-background flex items-center justify-center">
+                <span className="text-xs font-bold text-white">{contatoTags.length}</span>
+              </div>
+            )}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTicketModal(true)}
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
+            title="Gerenciar Tickets"
+          >
+            <Ticket className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
+          </motion.button>
           
           {/* Agenda */}
           <motion.button
@@ -1726,17 +1884,7 @@ export default function ChatArea({
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-background"></div>
           </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowTicketModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
-            title="Gerenciar Tickets"
-          >
-            <Ticket className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
-          </motion.button>
+        
 
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -3170,7 +3318,7 @@ export default function ChatArea({
         onClose={() => setShowTagsModal(false)}
         onSave={handleTagsSave}
         contactData={getContactData()}
-        currentTags={conversation?.tags || []}
+        currentTags={contatoTags || []}
       />
       
       <VideoChamadaModal
