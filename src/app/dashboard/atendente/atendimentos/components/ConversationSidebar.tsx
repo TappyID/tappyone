@@ -1007,9 +1007,19 @@ import '@/styles/scrollbar.css'
         
         const contatoData = await contatoResponse.json()
         
+        console.log('🏷️ [SIDEBAR] contatoData recebido:', contatoData)
+        console.log('🏷️ [SIDEBAR] contatoData.tags:', contatoData.tags)
+        
         if (contatoData.isWhatsAppChat) {
           // Chat WAHA sem contato CRM, sem tags
           setTagsCache(prev => ({ ...prev, [chatId]: [] }))
+          return
+        }
+        
+        // Verificar se as tags já vêm nos dados do contato
+        if (contatoData.tags && Array.isArray(contatoData.tags)) {
+          console.log('✅ [SIDEBAR] Tags encontradas nos dados do contato!')
+          setTagsCache(prev => ({ ...prev, [chatId]: contatoData.tags }))
           return
         }
         
