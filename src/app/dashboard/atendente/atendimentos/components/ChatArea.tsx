@@ -229,6 +229,8 @@ export default function ChatArea({
       // Usar mesmo formato que os tickets: remover @c.us
       const numeroTelefone = chatId.replace('@c.us', '')
       
+      console.log('🏷️ [CHATAREA] Buscando tags para:', { chatId, numeroTelefone })
+      
       // Buscar tags usando contato_id como parâmetro (igual aos tickets)
       const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -237,6 +239,7 @@ export default function ChatArea({
       if (response.ok) {
         const data = await response.json()
         const tags = data.data || data || []
+        console.log('🏷️ [CHATAREA] Tags recebidas:', tags)
         setContatoTags(Array.isArray(tags) ? tags : [])
       } else {
         // Se não encontrar, não é erro - apenas não tem tags ainda
@@ -293,6 +296,21 @@ export default function ChatArea({
   // Carregar tags quando chatId mudar
   useEffect(() => {
     fetchContatoTags()
+  }, [fetchContatoTags])
+  
+  // Debug: monitorar mudanças nas tags
+  useEffect(() => {
+    console.log('🏷️ [CHATAREA] Estado contatoTags alterado:', contatoTags)
+  }, [contatoTags])
+  
+  // Debug: Expor função no window para troubleshooting
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).refreshChatAreaTags = () => {
+        console.log('🔄 [CHATAREA] Refreshing tags manually...')
+        fetchContatoTags()
+      }
+    }
   }, [fetchContatoTags])
   
   
