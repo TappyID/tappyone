@@ -77,7 +77,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
       const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsUrl = wahaUrl.replace(/^https?:/, wsProtocol) + `/ws?session=${sessionName}&apikey=${encodeURIComponent(wahaApiKey)}`
+      const wsUrl = wahaUrl.replace(/^https?:/, wsProtocol) + `/ws?session=${sessionName}&x-api-key=${encodeURIComponent(wahaApiKey)}`
       
       console.log('WebSocket: Connecting to', wsUrl)
       
