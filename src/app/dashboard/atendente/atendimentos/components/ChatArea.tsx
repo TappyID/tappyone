@@ -229,17 +229,17 @@ export default function ChatArea({
       // Usar mesmo formato que os tickets: remover @c.us
       const numeroTelefone = chatId.replace('@c.us', '')
       
-      console.log('🏷️ [CHATAREA] Buscando tags para:', { chatId, numeroTelefone })
+      console.log('🏷️ [CHATAREA] Buscando dados completos para:', { chatId, numeroTelefone })
       
-      // Buscar tags usando contato_id como parâmetro (igual aos tickets)
-      const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
+      // Usar mesma API que a sidebar: dados completos do contato
+      const response = await fetch(`/api/contatos/${numeroTelefone}/dados-completos`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (response.ok) {
-        const data = await response.json()
-        const tags = data.data || data || []
-        console.log('🏷️ [CHATAREA] Tags recebidas:', tags)
+        const contatoData = await response.json()
+        const tags = contatoData.tags || []
+        console.log('🏷️ [CHATAREA] Tags recebidas dos dados completos:', tags)
         setContatoTags(Array.isArray(tags) ? tags : [])
       } else {
         // Se não encontrar, não é erro - apenas não tem tags ainda
@@ -268,7 +268,7 @@ export default function ChatArea({
       
       console.log('🏷️ [CHATAREA] Atualizando tags:', { numeroTelefone, tagIds })
       
-      // Salvar tags usando contato_id como parâmetro (igual aos tickets)
+      // Usar API consistente para salvar tags
       const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
         method: 'POST',
         headers: {
