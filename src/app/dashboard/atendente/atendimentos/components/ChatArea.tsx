@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useAuth } from '@/hooks/useAuth'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import MediaSendModal from '@/components/ui/MediaSendModal'
 import SpecialMediaModal from '@/components/ui/SpecialMediaModal'
 import AudioMessageComponent from '@/components/AudioMessageComponent'
-import ChatBlurOverlay from '@/components/ui/ChatBlurOverlay'
 import EditTextModal from './EditTextModal'
 import {
   MessageCircle, 
@@ -81,7 +81,9 @@ import {
   Contact,
   Square,
   Expand,
-  Ticket
+  Ticket,
+  Users2,
+  Lock
 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/useMediaUpload'
 import { useAudioRecorder, formatDuration, blobToFile } from '@/hooks/useAudioRecorder'
@@ -106,13 +108,15 @@ import QuickActionsSidebar from './QuickActionsSidebar'
 import AnotacoesSidebar from './AnotacoesSidebar'
 import AgenteSelectionModal from './modals/AgenteSelectionModal'
 import { useChatAgente } from '@/hooks/useChatAgente'
-import { useContatoTags } from '@/hooks/useContatoTags'
-import { useTickets } from '@/hooks/useTickets'
+import { useDeepSeekAutoResponse } from '@/hooks/useDeepSeekAutoResponse'
+import CreateContactModal from '../../contatos/components/CreateContactModal'
 
 interface ChatAreaProps {
   conversation: any
   messages: any[]
   onSendMessage: (message: string) => void
+  isChatAccepted?: boolean // Para controle de blur no atendente
+  onAcceptChat?: (chatId: string) => void // Callback para aceitar chat
   onTyping?: (chatId: string, isTyping: boolean) => void
   onMarkAsRead?: (chatId: string) => void
   isLoading?: boolean
@@ -127,6 +131,9 @@ interface ChatAreaProps {
   agendamentosCount?: number,
   assinaturasCount?: number,
   contactStatus?: 'synced' | 'error'
+  // Indicador de nova mensagem
+  newMessageReceived?: boolean
+  onNewMessageSeen?: () => void
 }
 
 
@@ -153,6 +160,8 @@ export default function ChatArea({
   conversation,
   messages,
   onSendMessage,
+  isChatAccepted = true,
+  onAcceptChat,
   onTyping,
   onMarkAsRead,
   isLoading = false,
@@ -165,294 +174,15 @@ export default function ChatArea({
   orcamentosCount = 0,
   agendamentosCount = 0,
   assinaturasCount = 0,
-  contactStatus = 'error'
+  contactStatus,
+  newMessageReceived = false,
+  onNewMessageSeen
 }: ChatAreaProps) {
   const [message, setMessage] = useState('')
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const [kanbanInfo, setKanbanInfo] = useState<{quadro: string, coluna: string, color: string} | null>(null)
+  const [conexaoFilaInfo, setConexaoFilaInfo] = useState<any>(null)
   const [showAgenteModal, setShowAgenteModal] = useState(false)
-  
-  // Estados do sistema de tickets - controle individual por atendente
-  const [showBlurOverlay, setShowBlurOverlay] = useState(false)
-  const [showTicketSelectionModal, setShowTicketSelectionModal] = useState(false)
-  const [chatAccepted, setChatAccepted] = useState(false)
-  const [currentTicket, setCurrentTicket] = useState<any>(null)
-  const [ticketTimeLeft, setTicketTimeLeft] = useState<number | null>(null)
-
-  // Verificar status do chat para este atendente específico
-  useEffect(() => {
-    const checkChatStatus = async () => {
-      if (!conversation) return
-
-      const currentChatId = extractChatId(conversation)
-      if (!currentChatId) return
-
-      try {
-        const token = localStorage.getItem('token')
-        const userDataStr = localStorage.getItem('user')
-        
-        if (!token || !userDataStr) return
-        
-        const userData = JSON.parse(userDataStr)
-        const atendenteId = userData.id
-
-        // Chave única para este atendente + chat
-        const localKey = `chat_${currentChatId}_attendant_${atendenteId}`
-        const localDecision = localStorage.getItem(localKey)
-        
-        // Se já rejeitou, não mostrar mais
-        if (localDecision === 'rejected') {
-          setChatAccepted(false)
-          setShowBlurOverlay(false)
-          return
-        }
-
-        // Verificar se já tem ticket ativo no backend
-        const response = await fetch(`/api/tickets?contato_id=${currentChatId.replace('@c.us', '')}&status=ANDAMENTO`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (response.ok) {
-          const tickets = await response.json()
-          const activeTicket = tickets.find((t: any) => t.status === 'ANDAMENTO')
-          
-          if (activeTicket && activeTicket.atendenteId === atendenteId) {
-            // Este atendente já tem ticket ativo - chat aceito
-            setChatAccepted(true)
-            setCurrentTicket(activeTicket)
-            setShowBlurOverlay(false)
-            localStorage.setItem(localKey, 'accepted')
-          } else if (activeTicket && activeTicket.atendenteId !== atendenteId) {
-            // Outro atendente já aceitou - não mostrar
-            setChatAccepted(false)  
-            setShowBlurOverlay(false)
-          } else if (localDecision === 'accepted') {
-            // Havia aceitado localmente mas sem ticket - mostrar para recriar
-            setChatAccepted(true)
-            setShowBlurOverlay(false)
-          } else {
-            // Chat novo - mostrar blur para aceitar
-            setChatAccepted(false)
-            setShowBlurOverlay(true)
-          }
-        } else {
-          // Erro na API - mostrar blur por segurança
-          setChatAccepted(false)
-          setShowBlurOverlay(true)
-        }
-
-      } catch (error) {
-        console.error('❌ [ChatArea] Erro ao verificar status:', error)
-        setChatAccepted(false)
-        setShowBlurOverlay(true)
-      }
-    }
-
-    checkChatStatus()
-  }, [conversation])
-
-  // Função para aceitar conversa
-  const handleAcceptChat = async () => {
-    if (!conversation) return
-
-    const currentChatId = extractChatId(conversation)
-    if (!currentChatId) return
-
-    try {
-      const token = localStorage.getItem('token')
-      const userDataStr = localStorage.getItem('user')
-      
-      if (!token || !userDataStr) return
-      
-      const userData = JSON.parse(userDataStr)
-      const atendenteId = userData.id
-
-      // Marcar como aceito no localStorage
-      const localKey = `chat_${currentChatId}_attendant_${atendenteId}`
-      localStorage.setItem(localKey, 'accepted')
-      
-      setChatAccepted(true)
-      setShowBlurOverlay(false)
-      
-      // Abrir modal de ticket para vincular atendente
-      setShowTicketSelectionModal(true)
-      
-      console.log('✅ [TICKET] Conversa aceita pelo atendente', atendenteId, 'para chat', currentChatId)
-    } catch (error) {
-      console.error('❌ [TICKET] Erro ao aceitar conversa:', error)
-    }
-  }
-
-  // Função para recusar conversa
-  const handleDeclineChat = async () => {
-    if (!conversation) return
-
-    const currentChatId = extractChatId(conversation)
-    if (!currentChatId) return
-
-    try {
-      const token = localStorage.getItem('token')
-      const userDataStr = localStorage.getItem('user')
-      
-      if (!token || !userDataStr) return
-      
-      const userData = JSON.parse(userDataStr)
-      const atendenteId = userData.id
-
-      // Marcar como rejeitado no localStorage para este atendente
-      const localKey = `chat_${currentChatId}_attendant_${atendenteId}`
-      localStorage.setItem(localKey, 'rejected')
-      
-      setShowBlurOverlay(false)
-      setChatAccepted(false)
-      
-      console.log('🚫 [TICKET] Conversa recusada pelo atendente', atendenteId, 'para chat', currentChatId)
-      
-      // Notificar backend sobre a rejeição (opcional - para analytics)
-      try {
-        await fetch('/api/chat-rejections', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            chatId: currentChatId,
-            atendenteId: atendenteId,
-            timestamp: new Date().toISOString()
-          })
-        })
-      } catch (apiError) {
-        console.log('ℹ️ [TICKET] Falha ao registrar rejeição no backend (não crítico):', apiError)
-      }
-      
-    } catch (error) {
-      console.error('❌ [TICKET] Erro ao recusar conversa:', error)
-    }
-  }
-
-  // Função para criar ticket usando o hook
-  const handleCreateTicket = async (ticketData: any) => {
-    try {
-      const token = localStorage.getItem('token')
-      const userDataStr = localStorage.getItem('user')
-      
-      if (!token || !userDataStr) return
-      
-      const userData = JSON.parse(userDataStr)
-      const atendenteId = userData.id
-
-      const newTicket = await createTicketHook({
-        titulo: ticketData.titulo,
-        descricao: ticketData.descricao,
-        contato_id: chatId?.replace('@c.us', '') || '',
-        prioridade: ticketData.prioridade === 'baixa' ? 3 : 
-                   ticketData.prioridade === 'media' ? 2 : 
-                   ticketData.prioridade === 'alta' ? 1 : 1,
-        status: 'ANDAMENTO'  // Status em andamento quando atendente aceita
-      })
-      
-      if (newTicket) {
-        setCurrentTicket(newTicket)
-        setShowTicketSelectionModal(false) // Fechar modal após criar
-        
-        // Iniciar timer se fornecido
-        if (ticketData.prazoResolucao) {
-          setTicketTimeLeft(ticketData.prazoResolucao * 60) // converter para segundos
-          startTicketTimer(ticketData.prazoResolucao * 60)
-        }
-        
-        console.log('✅ [TICKET] Ticket criado e vinculado ao atendente:', {
-          ticketId: newTicket.id,
-          atendenteId: atendenteId,
-          chatId: chatId
-        })
-      }
-    } catch (error) {
-      console.error('❌ [TICKET] Erro ao criar ticket:', error)
-    }
-  }
-
-  // Função para selecionar ticket existente
-  const handleSelectTicket = async (ticket: any) => {
-    try {
-      setCurrentTicket(ticket)
-      
-      // Calcular tempo restante baseado no prazo original
-      const createdAt = new Date(ticket.criadoEm).getTime()
-      const now = Date.now()
-      const elapsedMinutes = Math.floor((now - createdAt) / (1000 * 60))
-      const remainingMinutes = Math.max(0, ticket.prazoResolucao - elapsedMinutes)
-      
-      setTicketTimeLeft(remainingMinutes * 60)
-      startTicketTimer(remainingMinutes * 60)
-      
-      console.log('🎫 [TICKET] Ticket selecionado:', ticket)
-    } catch (error) {
-      console.error('❌ [TICKET] Erro ao selecionar ticket:', error)
-    }
-  }
-
-  // Função para iniciar timer do ticket
-  const startTicketTimer = (seconds: number) => {
-    const interval = setInterval(() => {
-      setTicketTimeLeft(prev => {
-        if (prev === null || prev <= 0) {
-          clearInterval(interval)
-          handleTicketTimeout()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
-  // Função chamada quando ticket expira
-  const handleTicketTimeout = async () => {
-    console.log('⏰ [TICKET] Ticket expirou! Transferindo para próximo atendente...')
-    
-    try {
-      await transferToNextAttendant()
-      
-      // Reset estados
-      setCurrentTicket(null)
-      setTicketTimeLeft(null)
-      setShowBlurOverlay(true)
-      setChatAccepted(false)
-      
-    } catch (error) {
-      console.error('❌ [TICKET] Erro na transferência automática:', error)
-    }
-  }
-
-  // Função para transferir para próximo atendente
-  const transferToNextAttendant = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      
-      const response = await fetch('/api/tickets/transfer', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          chatId: chatId,
-          ticketId: currentTicket?.id,
-          reason: 'timeout'
-        })
-      })
-      
-      if (response.ok) {
-        console.log('🔄 [TICKET] Transferência realizada com sucesso')
-      }
-    } catch (error) {
-      console.error('❌ [TICKET] Erro na transferência:', error)
-    }
-  }
   
   // Função para extrair chatId
   const extractChatId = (conversation: any): string | null => {
@@ -465,19 +195,114 @@ export default function ChatArea({
   }
   
   // Extrair chatId primeiro
-  const chatId = useMemo(() => extractChatId(conversation), [conversation])
+  const chatId = useMemo(() => {
+    const id = extractChatId(conversation)
+    // Transformar chatId para o formato usado no sistema de tags
+    if (id) {
+      // Se contém @c.us, remove para usar como contato_id
+      if (id.includes('@c.us')) {
+        return id.replace('@c.us', '')
+      }
+      return id
+    }
+    return null
+  }, [conversation])
+  
   
   const { startTyping, stopTyping, isOnline, isTyping: isContactTyping, getChatPresence } = usePresence()
   const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(conversation?.id)
-  const { tags: contatoTags, updateContatoTags, fetchContatoTags } = useContatoTags(chatId)
+  const { user } = useAuth() // Para pegar o nome do atendente
   
-  // Hook para gerenciar tickets
-  const { 
-    tickets: existingTickets, 
-    createTicket: createTicketHook, 
-    fetchTicketsByContact, 
-    loading: ticketsLoading 
-  } = useTickets({ contactId: chatId, autoFetch: false })
+  // Sistema de tags igual ao ConversationSidebar
+  const [contatoTags, setContatoTags] = useState<any[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+  
+  // Função para buscar tags (igual aos tickets)
+  const fetchContatoTags = useCallback(async () => {
+    if (!chatId) return
+    
+    try {
+      setTagsLoading(true)
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      // Usar mesmo formato que os tickets: remover @c.us
+      const numeroTelefone = chatId.replace('@c.us', '')
+      
+      // Buscar tags usando contato_id como parâmetro (igual aos tickets)
+      const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const tags = data.data || data || []
+        setContatoTags(Array.isArray(tags) ? tags : [])
+      } else {
+        // Se não encontrar, não é erro - apenas não tem tags ainda
+        setContatoTags([])
+      }
+    } catch (error) {
+      console.error('❌ [CHATAREA] Erro ao buscar tags:', error)
+      setContatoTags([])
+    } finally {
+      setTagsLoading(false)
+    }
+  }, [chatId])
+  
+  // Função para atualizar tags (igual aos tickets)
+  const updateContatoTags = useCallback(async (selectedTags: any[]) => {
+    if (!chatId) return
+    
+    try {
+      setTagsLoading(true)
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+      
+      // Usar mesmo formato que os tickets: remover @c.us e usar contato_id como parâmetro
+      const numeroTelefone = chatId.replace('@c.us', '')
+      const tagIds = selectedTags.map(tag => tag.id)
+      
+      console.log('🏷️ [CHATAREA] Atualizando tags:', { numeroTelefone, tagIds })
+      
+      // Salvar tags usando contato_id como parâmetro (igual aos tickets)
+      const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tagIds })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      console.log('✅ [CHATAREA] Tags atualizadas com sucesso')
+      setContatoTags(selectedTags)
+      return true
+    } catch (error) {
+      console.error('❌ [CHATAREA] Erro ao atualizar tags:', error)
+      throw error
+    } finally {
+      setTagsLoading(false)
+    }
+  }, [chatId])
+  
+  // Carregar tags quando chatId mudar
+  useEffect(() => {
+    fetchContatoTags()
+  }, [fetchContatoTags])
+  
+  
+  // Hook para auto-resposta com DeepSeek
+  const { isGenerating, processNewMessage } = useDeepSeekAutoResponse({
+    agenteAtivo,
+    agenteAtual,
+    chatId,
+    onSendMessage
+  })
   
   // Função para buscar informações do quadro e coluna
   const getKanbanInfo = async (chatId: string) => {
@@ -535,7 +360,6 @@ export default function ChatArea({
             }
           }
         } catch (error) {
-          console.log('Erro ao buscar metadados do quadro:', quadro.id, error)
         }
       }
       
@@ -561,6 +385,52 @@ export default function ChatArea({
     
     loadKanbanInfo()
   }, [conversation])
+
+  // Carregar informações de conexão/fila quando a conversa mudar
+  useEffect(() => {
+    const loadConexaoFilaInfo = async () => {
+      if (conversation && chatId) {
+        try {
+          const token = localStorage.getItem('token')
+          if (!token) return
+
+          // Usar o número limpo para a busca (sem @c.us)
+          const contatoId = chatId.replace('@c.us', '')
+          
+          const response = await fetch(`/api/conexoes/contato/${contatoId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            setConexaoFilaInfo({
+              hasConnection: !!result.conexao,
+              isConnected: result.conexao?.status === 'connected',
+              conexao: result.conexao ? {
+                id: result.conexao.id,
+                sessionName: result.conexao.session_name,
+                status: result.conexao.status
+              } : null,
+              fila: result.fila ? {
+                id: result.fila.id,
+                nome: result.fila.nome,
+                cor: result.fila.cor
+              } : null,
+              atendentes: result.atendentes || []
+            })
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados de conexão/fila:', error)
+        }
+      }
+    }
+    
+    loadConexaoFilaInfo()
+  }, [conversation, chatId])
   
   // Hook de tradução
   const { translateMessage, translateMessages, selectedLanguage, setSelectedLanguage, isTranslating } = useTranslation()
@@ -573,6 +443,57 @@ export default function ChatArea({
   
   // Transformar mensagens da WAHA API para o formato do componente
   const transformedMessages = transformMessages(messages || [])
+  
+  // DEBUG: Limpar console após 20s e mostrar apenas dados relevantes
+  useEffect(() => {
+    const debugTimer = setTimeout(() => {
+      console.clear()
+      console.log('🔍 ANÁLISE APÓS 20s - DETECÇÃO DE TIPOS:')
+      console.log('═══════════════════════════════════════════')
+      
+      if (messages && messages.length > 0) {
+        messages.slice(0, 10).forEach((m, i) => {
+          const hasMediaUrl = !!(m as any).mediaUrl
+          const isDocument = hasMediaUrl && (
+            (m as any).mediaUrl?.includes('.pdf') || 
+            (m as any).mediaUrl?.includes('.doc') || 
+            (m as any).mediaUrl?.includes('.docx') ||
+            (m as any).mediaUrl?.includes('.txt') ||
+            (m as any).mediaUrl?.includes('.xls')
+          )
+          const isLocation = !!(m.type === 'location' || (m as any).location)
+          const isPoll = !!(m.type === 'poll' || (m as any).poll)
+          const hasLocationKeywords = m.content && (
+            m.content.toLowerCase().includes('latitude') || 
+            m.content.toLowerCase().includes('localização') ||
+            m.content.toLowerCase().includes('location')
+          )
+          const hasPollKeywords = m.content && m.content.toLowerCase().includes('enquete')
+          
+          // Só mostrar mensagens interessantes
+          if (hasMediaUrl || isLocation || isPoll || hasLocationKeywords || hasPollKeywords) {
+            console.log(`📝 MSG ${i + 1}:`, {
+              type: m.type,
+              mediaUrl: hasMediaUrl ? (m as any).mediaUrl.substring(0, 50) + '...' : null,
+              content: m.content ? m.content.substring(0, 40) + '...' : null,
+              location: (m as any).location,
+              poll: (m as any).poll,
+              filename: (m as any).filename || (m as any).fileName,
+              isDocument,
+              isLocation, 
+              isPoll,
+              hasLocationKeywords,
+              hasPollKeywords,
+              DEVERIA_RENDERIZAR_ESPECIAL: isDocument || isLocation || isPoll || hasLocationKeywords || hasPollKeywords
+            })
+          }
+        })
+      }
+      console.log('═══════════════════════════════════════════')
+    }, 20000)
+    
+    return () => clearTimeout(debugTimer)
+  }, [messages])
   
   // Usar mensagens traduzidas se disponíveis, senão usar originais
   const displayMessages = translatedMessages.length > 0 ? translatedMessages : transformedMessages
@@ -662,6 +583,7 @@ export default function ChatArea({
   const [showTransferirModal, setShowTransferirModal] = useState(false)
   const [showCompartilharTelaModal, setShowCompartilharTelaModal] = useState(false)
   const [showTicketModal, setShowTicketModal] = useState(false)
+  const [showCreateContactModal, setShowCreateContactModal] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   
   // Função para toggle fullscreen
@@ -684,7 +606,6 @@ export default function ChatArea({
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
     
-   
     
     const filtered = messages.filter(message => {
       const body = message.body?.toLowerCase() || ''
@@ -769,16 +690,11 @@ export default function ChatArea({
       if (!chatId) return
       
       // Buscar nas mensagens carregadas (usar displayMessages para incluir traduzidas)
-      const filtered = displayMessages.filter(msg => 
-        msg.content.toLowerCase().includes(query.toLowerCase()) ||
-        (msg as any).caption?.toLowerCase().includes(query.toLowerCase())
-      )
-      
-      setSearchResults(filtered)
+      // Busca é feita via useMemo searchResults baseado em searchQuery
+      // Não precisamos de setSearchResults aqui
       
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error)
-      setSearchResults([])
     } finally {
       setIsSearching(false)
     }
@@ -840,25 +756,25 @@ export default function ChatArea({
     }
   }, [messages, isUserScrolling])
 
-  // Marcar mensagens como vistas quando o chat é aberto ou mensagens mudam
-  useEffect(() => {
-    if (messages && messages.length > 0 && conversation) {
-      // Filtrar mensagens não vistas do contato (não do agente)
-      const unseenMessages = messages
-        .filter(msg => msg.sender !== 'agent' && !(msg as any).seen)
-        .map(msg => msg.id || (msg as any)._data?.id?.id)
-        .filter(Boolean)
+  // TEMPORARIAMENTE DESABILITADO - Marcar mensagens como vistas quando o chat é aberto ou mensagens mudam
+  // useEffect(() => {
+  //   if (messages && messages.length > 0 && conversation) {
+  //     // Filtrar mensagens não vistas do contato (não do agente)
+  //     const unseenMessages = messages
+  //       .filter(msg => msg.sender !== 'agent' && !(msg as any).seen)
+  //       .map(msg => msg.id || (msg as any)._data?.id?.id)
+  //       .filter(Boolean)
       
-      if (unseenMessages.length > 0) {
-        // Aguardar um pouco antes de marcar como visto para simular leitura
-        const timer = setTimeout(() => {
-          markMessagesAsSeen(unseenMessages)
-        }, 1000)
+  //     if (unseenMessages.length > 0) {
+  //       // Aguardar um pouco antes de marcar como visto para simular leitura
+  //       const timer = setTimeout(() => {
+  //         markMessagesAsSeen(unseenMessages)
+  //       }, 1000)
         
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [messages, conversation])
+  //       return () => clearTimeout(timer)
+  //     }
+  //   }
+  // }, [messages, conversation])
 
   // Scroll inicial para o final quando conversa carrega
   useEffect(() => {
@@ -869,6 +785,29 @@ export default function ChatArea({
       }, 100)
     }
   }, [conversation?.id])
+
+  // Monitorar novas mensagens para auto-resposta com IA
+  useEffect(() => {
+    if (!agenteAtivo || !messages || messages.length === 0) return
+
+    // Pegar a última mensagem
+    const lastMessage = messages[messages.length - 1]
+    
+    // Se a última mensagem não é nossa (fromMe = false ou sender !== 'agent') e tem conteúdo
+    if (lastMessage && lastMessage.sender !== 'agent' && lastMessage.content && lastMessage.content.trim().length > 0) {
+      
+      // Processar mensagem para auto-resposta (usando mensagens transformadas)
+      const messageForProcessing = {
+        fromMe: false,
+        body: lastMessage.content,
+        id: lastMessage.id,
+        timestamp: new Date().getTime()
+      }
+      
+      // Passar histórico de mensagens também
+      processNewMessage(messageForProcessing, messages)
+    }
+  }, [messages, agenteAtivo, processNewMessage])
 
   // Detectar quando usuário está fazendo scroll manual
   useEffect(() => {
@@ -941,6 +880,7 @@ export default function ChatArea({
     const isCurrentlyStarred = starredMessages.has(messageId)
     const action = isCurrentlyStarred ? 'unstar' : 'star'
     
+    console.log(`⭐ FAVORITOS - ${action} mensagem:`, messageId)
     
     try {
       // Atualizar estado local imediatamente para feedback visual
@@ -987,6 +927,7 @@ export default function ChatArea({
           return revertStarred
         })
       } else {
+        console.log(`✅ FAVORITOS - ${action} realizado com sucesso`)
       }
       
     } catch (error) {
@@ -1006,8 +947,10 @@ export default function ChatArea({
 
   // Handler para envio de mídia com legenda
   const handleMediaSend = async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
+    console.log('🚀 handleMediaSend chamado:', { file: file?.name, caption, mediaType, chatId })
     
     if (!file || !chatId) {
+      console.log('❌ Arquivo ou chatId não encontrado:', { file: !!file, chatId })
       return
     }
 
@@ -1224,22 +1167,15 @@ export default function ChatArea({
 
   const handleTagsSave = async (tags: any[]) => {
     try {
-      console.log('🏷️ Salvando tags:', tags)
-      console.log('🔍 Debug conversation:', conversation)
-      console.log('🔍 Debug chatId extraído:', chatId)
-      console.log('🔍 Debug conversation.id:', conversation?.id)
-      console.log('🔍 Debug conversation.id type:', typeof conversation?.id)
+      console.log('🏷️ [CHATAREA] Salvando tags:', tags)
+      console.log('🔍 [CHATAREA] chatId usado:', chatId)
       
       await updateContatoTags(tags)
-      console.log('✅ Tags salvas com sucesso!')
+      console.log('✅ [CHATAREA] Tags salvas com sucesso!')
       setShowTagsModal(false)
       
-      // Recarregar dados do contato se necessário
-      if (onMarkAsRead && chatId) {
-        onMarkAsRead(chatId)
-      }
     } catch (error) {
-      console.error('❌ Erro ao salvar tags:', error)
+      console.error('❌ [CHATAREA] Erro ao salvar tags:', error)
       alert('Erro ao salvar tags. Tente novamente.')
     }
   }
@@ -1271,7 +1207,7 @@ export default function ChatArea({
       if (!token) return
       
       // Chamar backend direto
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
       await fetch(`${backendUrl}/api/whatsapp/chats/${chatId}/seen`, {
         method: 'POST',
         headers: {
@@ -1541,12 +1477,18 @@ export default function ChatArea({
     }
   }
 
-  // Função para enviar mensagem
+  // Função para enviar mensagem com nome do atendente
   const sendMessage = async () => {
     if (!message.trim()) return
     
-    const messageToSend = message.trim()
+    let messageToSend = message.trim()
     const chatId = extractChatId(conversation)
+    
+    // ADICIONAR NOME DO ATENDENTE automaticamente (apenas no dashboard atendente)
+    if (window.location.pathname.includes('/dashboard/atendente/') && user) {
+      const nomeAtendente = user.nome || user.email?.split('@')[0] || 'Atendente'
+      messageToSend = `*[${nomeAtendente}]*\n${messageToSend}`
+    }
     
     try {
       const token = localStorage.getItem('token')
@@ -1619,6 +1561,7 @@ export default function ChatArea({
 
   return (
     <div className="flex-1 flex flex-col bg-background relative">
+      <div className={`flex-1 flex flex-col ${!isChatAccepted ? 'blur-sm pointer-events-none' : ''}`}>
 
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -1667,33 +1610,26 @@ export default function ChatArea({
             <div className="flex items-center gap-3">
               <h3 className="font-semibold text-gray-900 dark:text-slate-100">{conversation.name}</h3>
               
-              {/* Tags do contato - Debug */}
-              {(() => {
-                console.log(`🏷️ [CHATAREA] Conversa selecionada:`, conversation?.name, 'Tags:', conversation?.tags)
-                if (conversation?.tags && conversation.tags.length > 0) {
-                  console.log(`🏷️ [CHATAREA] Exibindo ${conversation.tags.length} tags para ${conversation.name}`)
-                  return (
-                    <div className="flex items-center gap-1">
-                      {conversation.tags.slice(0, 2).map((tag: any) => (
-                        <div
-                          key={tag.id}
-                          className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
-                          style={{ backgroundColor: tag.cor || '#6b7280' }}
-                          title={tag.nome}
-                        >
-                          #{tag.nome}
-                        </div>
-                      ))}
-                      {conversation.tags.length > 2 && (
-                        <div className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">
-                          +{conversation.tags.length - 2}
-                        </div>
-                      )}
+              {/* Tags do contato */}
+              {conversation?.tags && conversation.tags.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {conversation.tags.slice(0, 2).map((tag: any) => (
+                    <div
+                      key={tag.id}
+                      className="px-2 py-1 rounded-md text-xs font-medium text-white shadow-sm"
+                      style={{ backgroundColor: tag.cor || '#6b7280' }}
+                      title={tag.nome}
+                    >
+                      #{tag.nome}
                     </div>
-                  )
-                }
-                return null
-              })()}
+                  ))}
+                  {conversation.tags.length > 2 && (
+                    <div className="px-2 py-1 rounded-md text-xs font-medium bg-slate-500 text-white shadow-sm">
+                      +{conversation.tags.length - 2}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -1712,6 +1648,33 @@ export default function ChatArea({
 
         {/* Header Actions */}
         <div className="flex items-center gap-2">
+          {/* Indicador de Nova Mensagem */}
+          {newMessageReceived && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 rounded-full cursor-pointer transition-colors"
+              onClick={() => {
+                onNewMessageSeen?.()
+                // Scroll para a última mensagem
+                const messagesContainer = document.querySelector('[data-messages-container]')
+                if (messagesContainer) {
+                  messagesContainer.scrollTop = messagesContainer.scrollHeight
+                }
+              }}
+              title="Nova mensagem recebida - Clique para ver"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="w-2 h-2 bg-white rounded-full"
+              />
+              <span className="text-xs font-medium text-white">Nova mensagem</span>
+              <MessageCircle className="w-3 h-3 text-white" />
+            </motion.div>
+          )}
+
           {/* Buscar Mensagens */}
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -1737,6 +1700,35 @@ export default function ChatArea({
             title="Transferir Atendimento"
           >
             <ArrowRightLeft className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-600" />
+          </motion.button>
+
+          {/* Tags */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTagsModal(true)}
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
+            title="Gerenciar Tags"
+          >
+            <Tag className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            {/* Badge - mostrar número de tags */}
+            {contatoTags && contatoTags.length > 0 && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border border-background flex items-center justify-center">
+                <span className="text-xs font-bold text-white">{contatoTags.length}</span>
+              </div>
+            )}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowTicketModal(true)}
+            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
+            title="Gerenciar Tickets"
+          >
+            <Ticket className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            {/* Badge */}
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
           </motion.button>
           
           {/* Agenda */}
@@ -1789,13 +1781,11 @@ export default function ChatArea({
 
           <button
             onClick={() => {
-              // Navegar para página de contatos com filtro
-              if (conversation?.id) {
-                window.open(`/dashboard/admin/contatos?search=${encodeURIComponent(conversation.id)}`, '_blank')
-              }
+              // Abrir modal de criação de contato
+              setShowCreateContactModal(true)
             }}
             className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
-            title="Contato"
+            title="Contato / Lead"
           >
             <UserCheck className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             {/* Badge de status do contato */}
@@ -1864,17 +1854,7 @@ export default function ChatArea({
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-background"></div>
           </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowTicketModal(true)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
-            title="Gerenciar Tickets"
-          >
-            <Ticket className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            {/* Badge */}
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-background"></div>
-          </motion.button>
+        
 
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -1910,6 +1890,22 @@ export default function ChatArea({
             >
               <Tag className="w-3 h-3 mr-1" />
               Carregando...
+            </motion.span>
+          )}
+
+
+
+          {/* Badge de Atendentes */}
+          {conexaoFilaInfo?.atendentes && conexaoFilaInfo.atendentes.length > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              className="inline-flex items-center px-3 py-1 text-xs text-white bg-blue-500 rounded-full font-medium shadow-sm ml-2 flex-shrink-0 cursor-help"
+              title={`Atendentes: ${conexaoFilaInfo.atendentes.map((atendente: any) => atendente.nome || atendente.name || 'Sem nome').join(', ')}`}
+            >
+              <Users2 className="w-3 h-3 mr-1" />
+              {conexaoFilaInfo.atendentes.length} Atendente{conexaoFilaInfo.atendentes.length > 1 ? 's' : ''}
             </motion.span>
           )}
         </div>
@@ -1959,9 +1955,46 @@ export default function ChatArea({
                 >
                   {/* Renderizar conteúdo da mensagem com mídia */}
                   
+               
                   {/* Verificar se é localização */}
-                  {msg.type === 'location' || (msg as any).location ? (
+                  {(() => {
+                    const isLocation = msg.type === 'location' || (msg as any).location || 
+                     (msg.content && (
+                       msg.content.toLowerCase().includes('latitude') || 
+                       msg.content.toLowerCase().includes('localização') ||
+                       msg.content.toLowerCase().includes('location')
+                     ))
+                    
+                    // 🔍 DEBUG APENAS PARA LOCATION REAL
+                    if (msg.type === 'location' || (msg as any).latitude || (msg as any).longitude || (msg as any).location || 
+                        (msg.content && msg.content.includes('Rua Isaltino'))) {
+                      console.log('🗺️ LOCATION ENCONTRADA!:', {
+                        ...msg,
+                        allKeys: Object.keys(msg as any),
+                        hasLatitude: !!(msg as any).latitude,
+                        hasLongitude: !!(msg as any).longitude,
+                        body: (msg as any).body,
+                        lat: (msg as any).lat,
+                        lng: (msg as any).lng
+                      })
+                    }
+                    
+                    return isLocation
+                  })() ? (
                     <div className="mb-2">
+                      {/* 🔍 DEBUG VISUAL - Indicador LOCATION na mensagem */}
+                      <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded text-xs">
+                        <div className="font-bold text-green-800">📍 LOCATION DEBUG:</div>
+                        <div>Type: {msg.type} → isLocation: {String(msg.type === 'location' || (msg as any).location || 
+                         (msg.content && (
+                           msg.content.toLowerCase().includes('latitude') || 
+                           msg.content.toLowerCase().includes('localização') ||
+                           msg.content.toLowerCase().includes('location')
+                         )))}</div>
+                        <div>Has .location: {String(!!(msg as any).location)}</div>
+                        <div>Has .latitude: {String(!!(msg as any).latitude)}</div>
+                        <div>Content: {msg.content?.substring(0, 50)}...</div>
+                      </div>
                       <div className={`flex items-center gap-3 p-3 rounded-lg ${
                         msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-gray-100 dark:bg-gray-200 border border-gray-300'
                       }`}>
@@ -2008,6 +2041,108 @@ export default function ChatArea({
                         </button>
                       </div>
                     </div>
+                  ) : (() => {
+                    const isPoll = msg.type === 'poll' || (msg as any).poll || 
+                     (msg.content && (
+                       msg.content.toLowerCase().includes('enquete') ||
+                       // 📊 Detectar listas numeradas com emojis
+                       (msg.content.includes('1️⃣') && msg.content.includes('2️⃣')) ||
+                       // 📋 Padrões de formulário/questionário
+                       (msg.content.includes('Me conte:') && msg.content.includes('?')) ||
+                       (msg.content.includes('Qual ') && msg.content.includes('?') && msg.content.includes('\n'))
+                     ))
+                    
+                    // 🔍 DEBUG APENAS PARA POLL REAL
+                    if (msg.type === 'poll' || (msg as any).poll || (msg as any).pollData || 
+                        (msg.content && (msg.content.includes('?') || msg.content.toLowerCase().includes('enquete')))) {
+                    
+                    }
+                    
+                    return isPoll
+                  })() ? (
+                    <div className="mb-2">
+                      {/* 🔍 DEBUG VISUAL - Indicador POLL na mensagem */}
+                      <div className="mb-2 p-2 bg-purple-100 border border-purple-300 rounded text-xs">
+                        <div className="font-bold text-purple-800">📊 POLL DEBUG:</div>
+                        <div>Type: {msg.type} → isPoll: {String(msg.type === 'poll' || (msg as any).poll || 
+                         (msg.content && (
+                           msg.content.toLowerCase().includes('enquete') ||
+                           (msg.content.includes('1️⃣') && msg.content.includes('2️⃣')) ||
+                           (msg.content.includes('Me conte:') && msg.content.includes('?')) ||
+                           (msg.content.includes('Qual ') && msg.content.includes('?') && msg.content.includes('\n'))
+                         )))}</div>
+                        <div>Content: {msg.content?.substring(0, 50)}...</div>
+                      </div>
+                      <div className={`p-3 rounded-lg ${
+                        msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-slate-600/30' : 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/30'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className={`p-2 rounded-full ${
+                            msg.sender === 'agent' ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-800'
+                          }`}>
+                            <svg className={`w-4 h-4 ${msg.sender === 'agent' ? 'text-white' : 'text-purple-600 dark:text-purple-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                          </div>
+                          <div className={`font-medium text-sm ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-purple-800 dark:text-purple-200'
+                          }`}>
+                            📊 {(() => {
+                              // Extrair título da enquete do conteúdo
+                              if ((msg as any).poll?.name) return (msg as any).poll.name;
+                              if (msg.content) {
+                                const firstLine = msg.content.split('\n')[0];
+                                return firstLine.length > 50 ? 'Formulário/Questionário' : firstLine;
+                              }
+                              return 'Enquete';
+                            })()}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {(() => {
+                            // 📊 Extrair opções do conteúdo se for poll manual
+                            const pollOptions = (msg as any).poll?.options || [];
+                            
+                            if (pollOptions.length === 0 && msg.content) {
+                              // Extrair linhas que começam com emojis numerados
+                              const lines = msg.content.split('\n');
+                              const extractedOptions: string[] = [];
+                              
+                              lines.forEach(line => {
+                                const trimmed = line.trim();
+                                if (trimmed.match(/^[1-9]️⃣|^[1-9]\.|^[1-9]\)/)) {
+                                  extractedOptions.push(trimmed);
+                                }
+                              });
+                              
+                              return extractedOptions.length > 0 ? extractedOptions : ['📋 ' + msg.content];
+                            }
+                            
+                            return pollOptions;
+                          })().map((option: any, index: number) => (
+                            <div key={index} className={`flex items-center gap-2 p-2 rounded ${
+                              msg.sender === 'agent' ? 'bg-white/10' : 'bg-white dark:bg-purple-800/30'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                msg.sender === 'agent' ? 'bg-white/60' : 'bg-purple-400'
+                              }`} />
+                              <span className={`text-sm ${
+                                msg.sender === 'agent' ? 'text-white/90' : 'text-purple-700 dark:text-purple-200'
+                              }`}>
+                                {typeof option === 'string' ? option : (option.name || option)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {(msg as any).poll?.multipleAnswers && (
+                          <div className={`text-xs mt-2 ${
+                            msg.sender === 'agent' ? 'text-white/70' : 'text-purple-600 dark:text-purple-400'
+                          }`}>
+                            ✓ Múltiplas respostas permitidas
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ) : (msg as any).mediaUrl && (
                     (msg as any).mediaUrl.includes('.jpeg') ||
                     (msg as any).mediaUrl.includes('.jpg') ||
@@ -2016,6 +2151,11 @@ export default function ChatArea({
                     (msg as any).mediaUrl.includes('.webp') ||
                     msg.type === 'image' || 
                     (msg as any).mimetype?.includes('image')
+                  ) && !(
+                    (msg as any).mediaUrl.includes('.webm') ||
+                    (msg as any).mediaUrl.includes('.mp4') ||
+                    (msg as any).mediaUrl.includes('.mov') ||
+                    (msg as any).mediaUrl.includes('.avi')
                   ) ? (
                     <div className="mb-2">
                       <div className="relative">
@@ -2036,36 +2176,21 @@ export default function ChatArea({
                       )}
                     </div>
                   ) : (() => {
-                    // Log para debug de mensagens de áudio
-                    if (msg.type === 'audio' || (msg as any).mimetype?.includes('audio') || 
-                        ((msg as any).mediaUrl && (
-                          (msg as any).mediaUrl.includes('.oga') ||
-                          (msg as any).mediaUrl.includes('.ogg') ||
-                          (msg as any).mediaUrl.includes('.mp3') ||
-                          (msg as any).mediaUrl.includes('.wav') ||
-                          (msg as any).mediaUrl.includes('.webm') ||
-                          (msg as any).mediaUrl.includes('.bin')
-                        ))) {
-                      console.log('🎵 ÁUDIO DETECTADO:', {
-                        id: msg.id,
-                        type: msg.type,
-                        mediaUrl: (msg as any).mediaUrl,
-                        mimetype: (msg as any).mimetype,
-                        hasMedia: !!(msg as any).media,
-                        hasMediaData: !!(msg as any).media?.data
-                      })
-                    }
-                    
-                    return (msg as any).mediaUrl && (
+                    const isAudio = (msg as any).mediaUrl && (
                       (msg as any).mediaUrl.includes('.oga') ||
                       (msg as any).mediaUrl.includes('.ogg') ||
                       (msg as any).mediaUrl.includes('.mp3') ||
+                      (msg as any).mediaUrl.includes('.mpga') || // 🎤 FIX: Extensão .mpga (MPEG Audio)
                       (msg as any).mediaUrl.includes('.wav') ||
                       (msg as any).mediaUrl.includes('.webm') ||
                       (msg as any).mediaUrl.includes('.bin') ||
+                      (msg as any).mediaUrl.includes('.mp4') || // 🎤 FIX: Arquivos de áudio podem ter extensão .mp4
                       msg.type === 'audio' || 
+                      msg.type === 'ptt' || // 🎤 FIX: Adicionar detecção por type ptt
+                      (msg as any).processedType === 'audio' || // 🎤 FIX: Usar processedType do backend
                       (msg as any).mimetype?.includes('audio')
-                    )
+                    );
+                    return isAudio;
                   })() ? (
                     <div className="mb-2">
                       {/* Usar dados base64 se disponíveis, senão usar URL */}
@@ -2094,40 +2219,54 @@ export default function ChatArea({
                           </div>
                         </div>
                       ) : (msg as any).mediaUrl ? (
-                        <AudioMessageComponent 
-                          message={{
-                            mediaUrl: (msg as any).mediaUrl,
-                            body: msg.content,
-                            caption: (msg as any).caption
-                          }}
-                          onTranscribe={(text) => {
-                            // Transcrição recebida
-                          }}
-                        />
+                        <>
+                         
+                          <AudioMessageComponent 
+                            message={{
+                              mediaUrl: (msg as any).mediaUrl,
+                              body: msg.content,
+                              caption: (msg as any).caption
+                            }}
+                            onTranscribe={(text) => {
+                              console.log('🎤 Transcrição recebida:', { messageId: msg.id, text });
+                            }}
+                          />
+                        </>
                       ) : (
-                        <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
-                          msg.sender === 'agent' ? 'bg-orange-50/10 dark:bg-orange-900/20 border-orange-300/50 dark:border-orange-600/40 backdrop-blur-sm' : 'bg-orange-50 dark:bg-orange-100 border-orange-200 dark:border-orange-300'
-                        }`}>
-                          <div className={`p-2 rounded-full ${
-                            msg.sender === 'agent' ? 'bg-orange-200/20 dark:bg-orange-800/40' : 'bg-orange-100 dark:bg-orange-200'
+                        <>
+                          {console.log('❌ AUDIO FALLBACK RENDER:', {
+                            id: msg.id,
+                            reason: 'No mediaUrl and no media.data',
+                            hasMediaUrl: !!(msg as any).mediaUrl,
+                            hasMediaData: !!(msg as any).media?.data,
+                            type: msg.type,
+                            mimetype: (msg as any).mimetype,
+                            content: msg.content?.substring(0, 50)
+                          })}
+                          <div className={`flex items-center gap-3 p-3 rounded-lg border-2 border-dashed ${
+                            msg.sender === 'agent' ? 'bg-orange-50/10 dark:bg-orange-900/20 border-orange-300/50 dark:border-orange-600/40 backdrop-blur-sm' : 'bg-orange-50 dark:bg-orange-100 border-orange-200 dark:border-orange-300'
                           }`}>
-                            <AudioLines className={`w-4 h-4 ${
-                              msg.sender === 'agent' ? 'text-orange-300' : 'text-orange-600'
-                            }`} />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                              msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700 dark:text-orange-800'
+                            <div className={`p-2 rounded-full ${
+                              msg.sender === 'agent' ? 'bg-orange-200/20 dark:bg-orange-800/40' : 'bg-orange-100 dark:bg-orange-200'
                             }`}>
-                              🎤 Mensagem de Áudio
-                            </p>
-                            <p className={`text-xs ${
-                              msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600 dark:text-orange-700'
-                            }`}>
-                              Arquivo não disponível
-                            </p>
+                              <AudioLines className={`w-4 h-4 ${
+                                msg.sender === 'agent' ? 'text-orange-300' : 'text-orange-600'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${
+                                msg.sender === 'agent' ? 'text-orange-200' : 'text-orange-700 dark:text-orange-800'
+                              }`}>
+                                🎤 Mensagem de Áudio
+                              </p>
+                              <p className={`text-xs ${
+                                msg.sender === 'agent' ? 'text-orange-300/80' : 'text-orange-600 dark:text-orange-700'
+                              }`}>
+                                Arquivo não disponível
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                       {(msg.content || (msg as any).caption) && (
                         <p className={`text-sm mt-2 ${msg.sender === 'agent' ? 'text-white/90' : 'text-gray-700'}`}>
@@ -2136,22 +2275,32 @@ export default function ChatArea({
                       )}
                     </div>
                   ) : (() => {
-                    // Debug para vídeos
-                    if (msg.type === 'video' || (msg as any).mimetype?.includes('video') || 
-                        (msg as any).mediaUrl?.includes('.mp4') || (msg as any).mediaUrl?.includes('.webm') ||
-                        (msg as any).mediaUrl?.includes('.mov') || (msg as any).mediaUrl?.includes('.avi')) {
-                      console.log('🎥 VÍDEO DEBUG:', {
-                        id: msg.id,
-                        type: msg.type,
-                        processedType: (msg as any).processedType,
-                        mediaUrl: (msg as any).mediaUrl,
-                        mimetype: (msg as any).mimetype,
-                        hasMedia: !!(msg as any).media,
-                        hasMediaData: !!(msg as any).media?.data
-                      })
-                      return true
-                    }
-                    return false
+                    // 🎬 DETECÇÃO DE VÍDEO - Excluir arquivos que já foram detectados como áudio
+                    const isAudioFile = (msg as any).mediaUrl && (
+                      (msg as any).mediaUrl.includes('.oga') ||
+                      (msg as any).mediaUrl.includes('.ogg') ||
+                      (msg as any).mediaUrl.includes('.mp3') ||
+                      (msg as any).mediaUrl.includes('.mpga') || // 🎤 FIX: Extensão .mpga (MPEG Audio)
+                      (msg as any).mediaUrl.includes('.wav') ||
+                      (msg as any).mediaUrl.includes('.webm') ||
+                      (msg as any).mediaUrl.includes('.bin') ||
+                      msg.type === 'audio' || 
+                      msg.type === 'ptt' || 
+                      (msg as any).processedType === 'audio' || 
+                      (msg as any).mimetype?.includes('audio')
+                    );
+                    
+                    const isVideoFile = (msg as any).mediaUrl && (
+                      (msg as any).mediaUrl.includes('.mp4') ||
+                      (msg as any).mediaUrl.includes('.webm') ||
+                      (msg as any).mediaUrl.includes('.mov') ||
+                      (msg as any).mediaUrl.includes('.avi') ||
+                      msg.type === 'video' || 
+                      (msg as any).mimetype?.includes('video')
+                    );
+                    
+                    // 🚨 SÓ é vídeo se NÃO for áudio
+                    return isVideoFile && !isAudioFile;
                   })() ? (
                     <div className="mb-2">
                       <div className={`p-3 rounded-lg ${
@@ -2182,23 +2331,38 @@ export default function ChatArea({
                       </div>
                     </div>
                   ) : (() => {
-                    // Debug para documentos
-                    if ((msg.type === 'document' || msg.type === 'file') || 
+                    const isDocument = (msg.type === 'document' || msg.type === 'file') || 
                         (msg as any).mimetype?.includes('application/') || 
                         (msg as any).mimetype?.includes('text/') ||
-                        (msg as any).mediaUrl?.includes('.pdf') || (msg as any).mediaUrl?.includes('.doc') ||
-                        (msg as any).mediaUrl?.includes('.txt') || (msg as any).mediaUrl?.includes('.xlsx')) {
-                      console.log('📄 DOCUMENTO DEBUG:', {
+                        // 📎 Documentos
+                        (msg as any).mediaUrl?.includes('.pdf') || (msg as any).mediaUrl?.includes('.doc') || (msg as any).mediaUrl?.includes('.docx') ||
+                        (msg as any).mediaUrl?.includes('.txt') || (msg as any).mediaUrl?.includes('.rtf') ||
+                        // 📊 Planilhas
+                        (msg as any).mediaUrl?.includes('.xlsx') || (msg as any).mediaUrl?.includes('.xls') || (msg as any).mediaUrl?.includes('.csv') ||
+                        // 📋 Apresentações
+                        (msg as any).mediaUrl?.includes('.ppt') || (msg as any).mediaUrl?.includes('.pptx') ||
+                        // 🗂️ Arquivos Compactados
+                        (msg as any).mediaUrl?.includes('.zip') || (msg as any).mediaUrl?.includes('.rar') || (msg as any).mediaUrl?.includes('.7z') ||
+                        // 🔧 Código & Dados
+                        (msg as any).mediaUrl?.includes('.json') || (msg as any).mediaUrl?.includes('.xml') || (msg as any).mediaUrl?.includes('.md') ||
+                        (msg as any).mediaUrl?.includes('.js') || (msg as any).mediaUrl?.includes('.ts') || (msg as any).mediaUrl?.includes('.html') ||
+                        (msg as any).mediaUrl?.includes('.css') || (msg as any).mediaUrl?.includes('.py') || (msg as any).mediaUrl?.includes('.java') ||
+                        // 📄 Outros formatos comuns
+                        (msg as any).mediaUrl?.includes('.epub') || (msg as any).mediaUrl?.includes('.mobi');
+                    
+                    const hasMediaUrl = !!(msg as any).mediaUrl;
+                    const shouldRender = isDocument && hasMediaUrl;
+                    
+                   
+                    if (isDocument && !hasMediaUrl) {
+                      console.log('❌ DOCUMENT SKIPPED - No mediaUrl:', {
                         id: msg.id,
                         type: msg.type,
-                        processedType: (msg as any).processedType,
-                        mediaUrl: (msg as any).mediaUrl,
-                        mimetype: (msg as any).mimetype,
-                        filename: (msg as any).filename || (msg as any).fileName
-                      })
-                      return !!(msg as any).mediaUrl
+                        mimetype: (msg as any).mimetype
+                      });
                     }
-                    return false
+                    
+                    return shouldRender;
                   })() ? (
                     <div className="mb-2">
                       <div className={`p-4 rounded-xl backdrop-blur-md border ${
@@ -2214,25 +2378,58 @@ export default function ChatArea({
                             {(() => {
                               const filename = (msg as any).fileName || (msg as any).filename || 'documento'
                               const ext = filename.toLowerCase().split('.').pop()
+                              // 📄 Documentos
                               if (ext === 'pdf') return <FileText className="w-5 h-5 text-red-600" />
-                              if (['doc', 'docx'].includes(ext)) return <FileText className="w-5 h-5 text-blue-600" />
-                              if (['xls', 'xlsx'].includes(ext)) return <FileText className="w-5 h-5 text-green-600" />
-                              if (['txt'].includes(ext)) return <FileText className="w-5 h-5 text-gray-600" />
-                              return <File className={`w-5 h-5 ${msg.sender === 'agent' ? 'text-white' : 'text-gray-600'}`} />
+                              if (['doc', 'docx', 'rtf'].includes(ext)) return <FileText className="w-5 h-5 text-blue-600" />
+                              if (['txt', 'md'].includes(ext)) return <FileText className="w-5 h-5 text-gray-600" />
+                              // 📊 Planilhas
+                              if (['xls', 'xlsx', 'csv'].includes(ext)) return <FileText className="w-5 h-5 text-green-600" />
+                              // 📋 Apresentações
+                              if (['ppt', 'pptx'].includes(ext)) return <FileText className="w-5 h-5 text-orange-600" />
+                              // 🗂️ Compactados
+                              if (['zip', 'rar', '7z'].includes(ext)) return <FileText className="w-5 h-5 text-yellow-600" />
+                              // 🔧 Código
+                              if (['js', 'ts', 'html', 'css', 'py', 'java', 'json', 'xml'].includes(ext)) return <FileText className="w-5 h-5 text-purple-600" />
+                              // 📚 E-books
+                              if (['epub', 'mobi'].includes(ext)) return <FileText className="w-5 h-5 text-indigo-600" />
+                              return <FileText className={`w-5 h-5 ${msg.sender === 'agent' ? 'text-white' : 'text-gray-600'}`} />
                             })()}
                           </div>
                           <div className="flex-1">
                             <p className={`text-sm font-semibold ${
                               msg.sender === 'agent' ? 'text-white' : 'text-gray-900 dark:text-gray-900'
                             }`}>
-                              📄 {(() => {
+                              {(() => {
                                 const filename = (msg as any).fileName || (msg as any).filename || 'documento'
                                 const ext = filename.toLowerCase().split('.').pop()
-                                if (ext === 'pdf') return 'Documento PDF'
-                                if (['doc', 'docx'].includes(ext)) return 'Documento Word'
-                                if (['xls', 'xlsx'].includes(ext)) return 'Planilha Excel'
-                                if (['txt'].includes(ext)) return 'Arquivo de Texto'
-                                return 'Documento'
+                                // 📄 Documentos
+                                if (ext === 'pdf') return '📄 Documento PDF'
+                                if (['doc', 'docx'].includes(ext)) return '📝 Documento Word'
+                                if (ext === 'rtf') return '📝 Documento RTF'
+                                if (ext === 'txt') return '📋 Arquivo de Texto'
+                                if (ext === 'md') return '📋 Markdown'
+                                // 📊 Planilhas
+                                if (['xls', 'xlsx'].includes(ext)) return '📊 Planilha Excel'
+                                if (ext === 'csv') return '📊 Planilha CSV'
+                                // 📋 Apresentações
+                                if (['ppt', 'pptx'].includes(ext)) return '📋 Apresentação PowerPoint'
+                                // 🗂️ Compactados
+                                if (ext === 'zip') return '🗂️ Arquivo ZIP'
+                                if (ext === 'rar') return '🗂️ Arquivo RAR'
+                                if (ext === '7z') return '🗂️ Arquivo 7-Zip'
+                                // 🔧 Código
+                                if (ext === 'js') return '🔧 JavaScript'
+                                if (ext === 'ts') return '🔧 TypeScript'
+                                if (ext === 'html') return '🔧 HTML'
+                                if (ext === 'css') return '🔧 CSS'
+                                if (ext === 'py') return '🔧 Python'
+                                if (ext === 'java') return '🔧 Java'
+                                if (ext === 'json') return '🔧 JSON'
+                                if (ext === 'xml') return '🔧 XML'
+                                // 📚 E-books
+                                if (ext === 'epub') return '📚 E-book EPUB'
+                                if (ext === 'mobi') return '📚 E-book Mobi'
+                                return '📁 Documento'
                               })()}
                             </p>
                             <p className={`text-xs ${
@@ -2254,10 +2451,29 @@ export default function ChatArea({
                               {(() => {
                                 const filename = (msg as any).fileName || (msg as any).filename || 'documento'
                                 const ext = filename.toLowerCase().split('.').pop()
+                                // 📄 Documentos
                                 if (ext === 'pdf') return <div className="text-2xl">📄</div>
                                 if (['doc', 'docx'].includes(ext)) return <div className="text-2xl">📝</div>
+                                if (ext === 'rtf') return <div className="text-2xl">📝</div>
+                                if (ext === 'txt') return <div className="text-2xl">📋</div>
+                                if (ext === 'md') return <div className="text-2xl">📝</div>
+                                // 📊 Planilhas
                                 if (['xls', 'xlsx'].includes(ext)) return <div className="text-2xl">📊</div>
-                                if (['txt'].includes(ext)) return <div className="text-2xl">📋</div>
+                                if (ext === 'csv') return <div className="text-2xl">📈</div>
+                                // 📋 Apresentações
+                                if (['ppt', 'pptx'].includes(ext)) return <div className="text-2xl">📊</div>
+                                // 🗂️ Compactados
+                                if (['zip', 'rar', '7z'].includes(ext)) return <div className="text-2xl">🗜️</div>
+                                // 🔧 Código
+                                if (['js', 'ts'].includes(ext)) return <div className="text-2xl">🔧</div>
+                                if (ext === 'html') return <div className="text-2xl">🌐</div>
+                                if (ext === 'css') return <div className="text-2xl">🎨</div>
+                                if (ext === 'py') return <div className="text-2xl">🐍</div>
+                                if (ext === 'java') return <div className="text-2xl">☕</div>
+                                if (ext === 'json') return <div className="text-2xl">📋</div>
+                                if (ext === 'xml') return <div className="text-2xl">📄</div>
+                                // 📚 E-books
+                                if (['epub', 'mobi'].includes(ext)) return <div className="text-2xl">📚</div>
                                 return <div className="text-2xl">📁</div>
                               })()}
                             </div>
@@ -2314,10 +2530,29 @@ export default function ChatArea({
                       </div>
                     </div>
                   ) : (
-                    <MessageContent 
-                      content={msg.content} 
-                      className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-900 dark:text-gray-900'}
-                    />
+                    <div>
+                      {/* 🔍 DEBUG VISUAL - Só mostra se mensagem tem dados de mídia mas caiu no fallback */}
+                      {((msg as any).mediaUrl || (msg as any).poll || (msg as any).location || msg.type !== 'text' || (msg as any).processedType) && (
+                        <div className="mb-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
+                          <div className="font-bold text-yellow-800">⚠️ FALLBACK DEBUG:</div>
+                          <div>Type: <span className="font-mono">{msg.type}</span> → <span className="font-mono">{(msg as any).processedType || 'N/A'}</span></div>
+                          <div>MediaURL: {(msg as any).mediaUrl ? '✅ SIM' : '❌ NÃO'}</div>
+                          {(msg as any).mediaUrl && (
+                            <div className="text-xs bg-gray-200 p-1 rounded mt-1">
+                              <strong>URL:</strong> <span className="font-mono break-all">{(msg as any).mediaUrl}</span>
+                            </div>
+                          )}
+                          <div>Poll: {(msg as any).poll ? '✅ SIM' : '❌ NÃO'}</div>
+                          <div>Location: {(msg as any).location ? '✅ SIM' : '❌ NÃO'}</div>
+                          <div>Mimetype: <span className="font-mono">{(msg as any).mimetype || 'N/A'}</span></div>
+                          <div className="text-red-600 font-bold mt-1">↑ Deveria renderizar como mídia!</div>
+                        </div>
+                      )}
+                      <MessageContent 
+                        content={msg.content} 
+                        className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-900 dark:text-gray-900'}
+                      />
+                    </div>
                   )}
                   
                   {/* Linha com timestamp e ícones */}
@@ -2693,7 +2928,7 @@ export default function ChatArea({
               value={message}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
+              placeholder="Digite sua mensagem (será enviado com seu nome)..."
               className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-foreground placeholder:text-muted-foreground"
             />
             
@@ -2791,16 +3026,16 @@ export default function ChatArea({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
-                          setShowMediaModal('contact')
+                          setShowCreateContactModal(true)
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Contact className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Contato</span>
-                        <span className="text-xs text-muted-foreground">Enviar vCard</span>
+                        <span className="text-xs text-muted-foreground">Criar no Kanban</span>
                       </motion.button>
                       
                       {/* Localização */}
@@ -2986,13 +3221,27 @@ export default function ChatArea({
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAgenteModal(true)}
             className="p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all duration-300 relative"
-            title={agenteAtivo ? `Agente ativo: ${agenteAtual?.nome}` : "Selecionar agente IA"}
+            title={
+              isGenerating 
+                ? `Gerando resposta... (${agenteAtual?.nome})` 
+                : agenteAtivo 
+                  ? `Agente ativo: ${agenteAtual?.nome}` 
+                  : "Selecionar agente IA"
+            }
           >
             <Bot className="w-5 h-5 text-blue-500" />
-            {/* Badge - Verde se ativo, vermelho se inativo */}
-            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
-              agenteAtivo ? 'bg-green-500' : 'bg-red-500'
+            {/* Badge - Amarelo pulsando se gerando, verde se ativo, vermelho se inativo */}
+            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background transition-all duration-300 ${
+              isGenerating 
+                ? 'bg-yellow-500 animate-pulse' 
+                : agenteAtivo 
+                  ? 'bg-green-500' 
+                  : 'bg-red-500'
             }`}></div>
+            {/* Indicador adicional quando gerando */}
+            {isGenerating && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 animate-ping"></div>
+            )}
           </motion.button>
 
           {/* Send Button */}
@@ -3039,7 +3288,7 @@ export default function ChatArea({
         onClose={() => setShowTagsModal(false)}
         onSave={handleTagsSave}
         contactData={getContactData()}
-        currentTags={conversation?.tags || []}
+        currentTags={contatoTags || []}
       />
       
       <VideoChamadaModal
@@ -3157,8 +3406,36 @@ export default function ChatArea({
         isOpen={isQuickActionsSidebarOpen}
         onClose={() => onToggleQuickActionsSidebar?.()}
         activeChatId={conversation?.id || conversation?.jid}
-        onSelectAction={(action) => {
-          // Abre modal de edição para permitir edição antes do envio
+        onSelectAction={async (action) => {
+          // Se há ações editadas, executar diretamente
+          if (action.editedActions && action.editedActions.length > 0) {
+            console.log('🎯 Executando resposta rápida com ações editadas:', action.editedActions)
+            
+            try {
+              const response = await fetch(`/api/respostas-rapidas/${action.originalData?.id}/executar`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                  chat_id: conversation?.id || conversation?.jid,
+                  acoes_customizadas: action.editedActions // Enviar ações editadas
+                })
+              })
+              
+              if (response.ok) {
+                console.log('✅ Resposta rápida executada com sucesso!')
+              } else {
+                console.error('❌ Erro ao executar resposta rápida:', await response.text())
+              }
+            } catch (error) {
+              console.error('❌ Erro ao executar resposta rápida:', error)
+            }
+            return
+          }
+          
+          // Fluxo normal: abre modal de edição para permitir edição antes do envio
           const textContent = action.originalData?.acoes?.find(a => a.tipo === 'texto')?.conteudo?.texto || action.content
           setEditingText(textContent)
           setEditingAction(action)
@@ -3193,6 +3470,25 @@ export default function ChatArea({
         selectedContact={conversation}
       />
 
+      {/* Ticket Modal */}
+      <TicketModal
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        contactId={conversation?.id || ''}
+        contactName={conversation?.name || conversation?.pushname}
+      />
+
+      {/* Create Contact Modal */}
+      <CreateContactModal
+        isOpen={showCreateContactModal}
+        onClose={() => setShowCreateContactModal(false)}
+        preFilledChatId={chatId}
+        autoAddToKanban={true}
+        onContactCreated={(contactData) => {
+          console.log('✅ [ChatArea] Contato criado e vinculado ao kanban:', contactData)
+          setShowCreateContactModal(false)
+        }}
+      />
 
       {/* Edit Text Modal */}
       <EditTextModal
@@ -3211,45 +3507,48 @@ export default function ChatArea({
         contactName={conversation?.name || conversation?.pushname}
         actionTitle={editingAction?.title}
       />
-
-      {/* Chat Blur Overlay para sistema de tickets */}
-      <ChatBlurOverlay
-        isVisible={showBlurOverlay && !chatAccepted}
-        chatName={conversation?.name || conversation?.pushname || 'Usuário'}
-        onAccept={handleAcceptChat}
-        onDecline={handleDeclineChat}
-      />
-
-      {/* Ticket Selection Modal (opens when accepting chat) */}
-      <TicketModal
-        isOpen={showTicketSelectionModal}
-        onClose={() => setShowTicketSelectionModal(false)}
-        onCreateTicket={handleCreateTicket}
-        onSelectTicket={handleSelectTicket}
-        contactId={chatId || ''}
-        contactName={conversation?.name || 'Contato'}
-        existingTickets={existingTickets}
-      />
-
-      {/* Ticket Management Modal (opens from button) */}
-      <TicketModal
-        isOpen={showTicketModal}
-        onClose={() => setShowTicketModal(false)}
-        contactId={chatId || ''}
-        contactName={conversation?.name || 'Contato'}
-        existingTickets={existingTickets}
-      />
-
-      {/* Timer do Ticket Ativo */}
-      {currentTicket && ticketTimeLeft !== null && (
-        <div className="fixed top-4 right-4 z-40 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          <span className="font-semibold">
-            {Math.floor(ticketTimeLeft / 60)}:{String(ticketTimeLeft % 60).padStart(2, '0')}
-          </span>
-          <span className="text-xs opacity-80">restante</span>
+      </div>
+      
+      {/* Overlay para chats não aceitos */}
+      {!isChatAccepted && conversation && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-xl shadow-2xl p-6 text-center max-w-sm mx-4">
+            <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-orange-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              Chat em Aberto
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Chat <strong>{conversation.name}</strong> precisa ser aceito para iniciar o atendimento.
+            </p>
+            <p className="text-sm text-orange-500 mb-6">
+              Status: EM ABERTO (sem tag/ticket)
+            </p>
+            
+            {/* Botão para aceitar */}
+            <button
+              onClick={() => {
+                if (conversation?.id && onAcceptChat) {
+                  console.log('🎯 Aceitando chat diretamente da ChatArea:', conversation.name)
+                  onAcceptChat(conversation.id)
+                } else {
+                  console.warn('❌ Não foi possível aceitar: callback não disponível ou ID inválido')
+                }
+              }}
+              className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              Aceitar Atendimento
+            </button>
+            
+            <p className="text-xs text-muted-foreground mt-3">
+              Ao aceitar, você terá 30 minutos para resolver
+            </p>
+          </div>
         </div>
       )}
+      
     </div>
   )
 }

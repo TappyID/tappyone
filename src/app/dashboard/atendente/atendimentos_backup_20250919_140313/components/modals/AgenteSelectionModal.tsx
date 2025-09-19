@@ -58,12 +58,12 @@ export default function AgenteSelectionModal({
     
     try {
       setIsActivating(true)
-      await activateAgent(agenteId)
+      const result = await activateAgent(agenteId)
       
       // Buscar dados do agente ativado
       const agenteAtivado = agentes.find(agente => agente.id === agenteId)
       
-      console.log('🤖 [MODAL ADMIN] Agente ativado:', agenteAtivado)
+      console.log('🤖 [MODAL] Agente ativado:', agenteAtivado)
       onAgentActivated?.(agenteAtivado)
       onClose()
     } catch (error) {
@@ -75,31 +75,35 @@ export default function AgenteSelectionModal({
   }
 
   const handleDeactivateAgent = async () => {
-    if (!chatId) return
-    
     try {
       setIsActivating(true)
       await deactivateAgent()
       
-      console.log('🤖 [MODAL ADMIN] Agente desativado para chat:', chatId)
+      console.log('🤖 [MODAL] Agente desativado para chat:', chatId)
       onAgentActivated?.(null) // Passar null para indicar desativação
       onClose()
     } catch (error) {
       console.error('Erro ao desativar agente:', error)
-      alert('Erro ao desativar agente')
     } finally {
       setIsActivating(false)
     }
   }
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      console.log(`🤖 MODAL ABRIU! chatId: ${chatId}, callback: ${typeof onAgentActivated}`)
+    } else {
       setSearchQuery('')
       setSelectedCategoria('')
     }
-  }, [isOpen])
+  }, [isOpen, chatId, onAgentActivated])
 
-  if (!isOpen) return null
+  if (!isOpen) {
+    console.log(`🚫 MODAL FECHADO - isOpen: ${isOpen}`)
+    return null
+  }
+  
+  console.log(`✅ MODAL DEVE ABRIR - isOpen: ${isOpen}`)
 
   return createPortal(
     <AnimatePresence>

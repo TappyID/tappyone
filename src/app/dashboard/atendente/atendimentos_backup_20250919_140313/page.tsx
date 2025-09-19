@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import AtendimentosTopBar from './components/AtendimentosTopBar'
 import ConversationSidebar from './components/ConversationSidebar'
 import ChatArea from './components/ChatArea'
-import { useWhatsAppData, WhatsAppChat } from '@/hooks/useWhatsAppData'
+import { useWhatsAppDataFiltered } from '@/hooks/useWhatsAppDataFiltered'
+import { WhatsAppChat } from '@/hooks/useWhatsAppData'
 import { debugLogger } from '@/utils/debugLogger'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -15,9 +16,6 @@ export default function AtendimentosPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isQuickActionsSidebarOpen, setIsQuickActionsSidebarOpen] = useState(false)
   const [isAnotacoesSidebarOpen, setIsAnotacoesSidebarOpen] = useState(false)
-  const [selectedFila, setSelectedFila] = useState<string>('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const { theme } = useTheme()
   const { actualTheme } = useTheme()
   
   // Estados para contadores de badges
@@ -27,19 +25,6 @@ export default function AtendimentosPage() {
   const [assinaturasCount, setAssinaturasCount] = useState(0)
   const [ticketsCount, setTicketsCount] = useState(0)
   const [contactStatus, setContactStatus] = useState<'synced' | 'error'>('error')
-  
-  // Estado para chats aceitos (compartilhado com ConversationSidebar)
-  const [acceptedChats, setAcceptedChats] = useState<Set<string>>(new Set())
-  
-  // Função para verificar se chat está aceito
-  const isChatAccepted = (chatId: string) => {
-    if (!window.location.pathname.includes('/dashboard/atendente/')) return true // Admin sempre aceito
-    return acceptedChats.has(chatId)
-  }
-  
-  // Estados para indicador de nova mensagem
-  const [newMessageReceived, setNewMessageReceived] = useState(false)
-  const [lastMessageCount, setLastMessageCount] = useState(0)
   
   // Funções para buscar contagens
   const fetchNotesCount = async (chatId: string) => {
@@ -158,7 +143,7 @@ export default function AtendimentosPage() {
     return null
   }
   
-  // Hook para dados do WhatsApp
+  // Hook para dados do WhatsApp filtrados por fila
   const {
     chats,
     contacts,
@@ -176,43 +161,50 @@ export default function AtendimentosPage() {
     getPresence,
     resetRetry,
     retryCount,
-    loadMoreChats,
-    hasMoreChats,
-    loadingMore
-  } = useWhatsAppData()
+    filas,
+    filaContatos
+  } = useWhatsAppDataFiltered()
 
-  // Função para buscar todas as contagens
-  const fetchBadgeCounts = async (chatId: string) => {
-    try {
-      const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, ticketsCountResult, contactStatusResult] = await Promise.all([
-        fetchNotesCount(chatId),
-        fetchOrcamentosCount(chatId),
-        fetchAgendamentosCount(chatId),
-        fetchAssinaturasCount(chatId),
-        fetchTicketsCount(chatId),
-        checkContactStatus(chatId)
-      ])
-      
-      setNotesCount(notesCountResult)
-      setOrcamentosCount(orcamentosCountResult)
-      setAgendamentosCount(agendamentosCountResult)
-      setAssinaturasCount(assinaturasCountResult)
-      setTicketsCount(ticketsCountResult)
-      setContactStatus(contactStatusResult)
-      
-    } catch (error) {
-      console.error('Erro ao buscar contagens:', error)
-    }
-  }
-
-  // Carregar mensagens quando conversation muda
+  // Carregar mensagens quando uma conversa for selecionada
   useEffect(() => {
     if (selectedConversation) {
       const chatId = extractChatId(selectedConversation)
-      if (chatId) {
-        loadChatMessages(chatId)
-        fetchBadgeCounts(chatId)
+  
+      
+      if (!chatId) {
+        console.error('❌ [DEBUG] Não foi possível extrair chatId da conversa')
+        return
       }
+      
+      console.log('📨 [DEBUG] Carregando mensagens para chatId:', chatId)
+      loadChatMessages(chatId)
+      
+      // Buscar contagens dos badges
+      const fetchBadgeCounts = async () => {
+        try {
+          const [notesCountResult, orcamentosCountResult, agendamentosCountResult, assinaturasCountResult, ticketsCountResult, contactStatusResult] = await Promise.all([
+            fetchNotesCount(chatId),
+            fetchOrcamentosCount(chatId),
+            fetchAgendamentosCount(chatId),
+            fetchAssinaturasCount(chatId),
+            fetchTicketsCount(chatId),
+            checkContactStatus(chatId)
+          ])
+          
+          setNotesCount(notesCountResult)
+          setOrcamentosCount(orcamentosCountResult)
+          setAgendamentosCount(agendamentosCountResult)
+          setAssinaturasCount(assinaturasCountResult)
+          setTicketsCount(ticketsCountResult)
+          setContactStatus(contactStatusResult)
+          
+          console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, ${ticketsCountResult} tickets, status: ${contactStatusResult}`)
+        } catch (error) {
+          console.error('Erro ao buscar contagens:', error)
+        }
+      }
+      
+      fetchBadgeCounts()
     } else {
       // Reset contadores quando não há conversa selecionada
       setNotesCount(0)
@@ -224,45 +216,17 @@ export default function AtendimentosPage() {
     }
   }, [selectedConversation, loadChatMessages])
 
-  // Detectar nova mensagem
+  // Polling para recarregar mensagens do chat ativo a cada 5 segundos
   useEffect(() => {
     if (!selectedConversation) return
     
     const chatId = extractChatId(selectedConversation)
     if (!chatId) return
     
-    const currentMessages = messages[chatId] || []
-    const currentCount = currentMessages.length
-    
-    // Se houve aumento no número de mensagens, detectar nova mensagem
-    if (lastMessageCount > 0 && currentCount > lastMessageCount) {
-      const newMessage = currentMessages[currentCount - 1]
-      
-      // Verificar se a nova mensagem não é nossa (fromMe = false)
-      if (newMessage && !newMessage.fromMe) {
-        console.log('📩 Nova mensagem recebida!', newMessage)
-        setNewMessageReceived(true)
-        
-        // Reproduzir som de notificação (opcional)
-        const audio = new Audio('/sounds/notification.mp3')
-        audio.play().catch(e => console.log('Erro ao reproduzir som:', e))
-      }
-    }
-    
-    setLastMessageCount(currentCount)
-  }, [messages, selectedConversation, lastMessageCount])
-
-  // Polling em tempo real para mensagens do chat ativo (a cada 3 segundos)
-  useEffect(() => {
-    if (!selectedConversation) return
-    
-    const chatId = extractChatId(selectedConversation)
-    if (!chatId) return
-    
-    // Polling a cada 3 segundos para o chat ativo
     const interval = setInterval(() => {
+      // Usar reloadChatMessages para forçar o reload
       reloadChatMessages(chatId)
-    }, 3000) // 3 segundos para tempo real
+    }, 60000) // 60 segundos - otimizado
     
     return () => clearInterval(interval)
   }, [selectedConversation, reloadChatMessages])
@@ -282,30 +246,17 @@ export default function AtendimentosPage() {
       {/* Layout Principal */}
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar de Conversas */}
-        <ConversationSidebar
+        <ConversationSidebar 
           chats={chats}
           contacts={contacts}
+          selectedConversation={selectedConversation}
+          onSelectConversation={setSelectedConversation}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          onSelectConversation={setSelectedConversation}
-          selectedConversation={selectedConversation}
+          isLoading={loading}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          selectedFila={selectedFila}
-          onFilaChange={setSelectedFila}
-          selectedTags={selectedTags}
-          onTagsChange={setSelectedTags}
-          notesCount={notesCount}
-          orcamentosCount={orcamentosCount}
-          agendamentosCount={agendamentosCount}
-          assinaturasCount={assinaturasCount}
-          ticketsCount={ticketsCount}
-          contactStatus={contactStatus}
-          loadingMore={loadingMore}
-          acceptedChats={acceptedChats}
-          onChatAccepted={(chatId: string) => {
-            setAcceptedChats(prev => new Set([...Array.from(prev), chatId]))
-          }}
+          isQuickActionsSidebarOpen={isQuickActionsSidebarOpen}
         />
         
         {/* Área do Chat */}
@@ -313,13 +264,15 @@ export default function AtendimentosPage() {
           conversation={selectedConversation}
           messages={selectedConversation ? (() => {
             const chatId = extractChatId(selectedConversation)
-            return chatId ? messages[chatId] || [] : []
+            const chatMessages = chatId ? messages[chatId] || [] : []
+            console.log('💬 [DEBUG] Mensagens sendo passadas para ChatArea:', {
+              chatId: chatId,
+              messageCount: chatMessages.length,
+              messages: chatMessages,
+              allMessages: messages
+            })
+            return chatMessages
           })() : []}
-          isChatAccepted={selectedConversation ? isChatAccepted(extractChatId(selectedConversation) || '') : true}
-          onAcceptChat={(chatId: string) => {
-            console.log('🎯 Aceitando chat da página principal:', chatId)
-            setAcceptedChats(prev => new Set([...Array.from(prev), chatId]))
-          }}
           onSendMessage={(message: string) => {
             if (selectedConversation) {
               const chatId = extractChatId(selectedConversation)
@@ -348,8 +301,6 @@ export default function AtendimentosPage() {
           agendamentosCount={agendamentosCount}
           assinaturasCount={assinaturasCount}
           contactStatus={contactStatus}
-          newMessageReceived={newMessageReceived}
-          onNewMessageSeen={() => setNewMessageReceived(false)}
         />
       </div>
       

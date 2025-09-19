@@ -88,7 +88,7 @@ export default function OptimizedAtendimentosPage() {
       {/* Layout Principal */}
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar de Conversas Otimizada */}
-        <ConversationSidebar
+        <ConversationSidebar 
           chats={chats}
           contacts={contacts}
           selectedConversation={selectedConversation}

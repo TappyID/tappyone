@@ -11,6 +11,7 @@ import {
   ArrowLeft, 
   Users, 
   Clock,
+  Filter,
   MoreHorizontal,
   Zap,
   Languages,
@@ -28,44 +29,32 @@ import {
   Moon,
   Bot,
   Expand,
-  FileText,
-  Ticket,
-  Calendar,
-  Receipt
+  FileText
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import ReactCountryFlag from 'react-country-flag'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useAtendentes } from '@/hooks/useAtendentes'
-import { useTickets } from '@/hooks/useTickets'
-// Removidos hooks do WhatsApp para evitar ERR_INSUFFICIENT_RESOURCES
-// import { useWhatsAppData } from '@/hooks/useWhatsAppData'
-// import { useContatoData } from '@/hooks/useContatoData'
+import { useWhatsAppData } from '@/hooks/useWhatsAppData'
+import { useAtendimentoStats } from '@/hooks/useAtendimentoStats'
+import { useContatoData } from '@/hooks/useContatoData'
 
 interface AtendimentosTopBarProps {
   searchQuery: string
   onSearchChange: (query: string) => void
 }
 
-export default function AtendimentosTopBar({ 
-  searchQuery, 
-  onSearchChange
-}: AtendimentosTopBarProps) {
+export default function AtendimentosTopBar({ searchQuery, onSearchChange }: AtendimentosTopBarProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const { atendentes, loading: atendentesLoading } = useAtendentes({ tipo: 'atendente', status: 'ativo' })
-  const { tickets, loading: ticketsLoading } = useTickets()
-  // Hooks do WhatsApp removidos - usando apenas dados do banco
-  // const { chats } = useWhatsAppData()
-  // const chatIds = chats?.map(chat => {
-  //   if (!chat?.id) return ''
-  //   const chatId = chat.id as string | { _serialized?: string }
-  //   return (typeof chatId === 'object' ? chatId._serialized : chatId) || ''
-  // }).filter(id => id) || []
-  // const { contatos, loading: contatosLoading } = useContatoData(chatIds)
-  const contatosLoading = false // Placeholder
+  const { chats } = useWhatsAppData()
+  const { stats, loading, error } = useAtendimentoStats()
+  const chatIds = chats?.map(chat => {
+    if (!chat.id) return ''
+    return (typeof chat.id === 'object' && chat.id?._serialized) || chat.id || ''
+  }).filter(id => id) || []
+  const { contatos } = useContatoData(chatIds)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showTranslation, setShowTranslation] = useState(false)
@@ -115,12 +104,16 @@ export default function AtendimentosTopBar({
   // Detectar se está na página do Kanban
   const isKanbanPage = pathname?.includes('/kanban')
   
-  // Contadores baseados no banco de dados
-  const totalTickets = tickets?.length || 0
-  const totalLeads = 0 // Placeholder - dados vêm do Kanban otimizado agora
-  const atendentesAtivos = atendentes?.filter(a => a.ativo)?.length || 0
+  // Contar conversas ativas do WhatsApp
+  const activeChatsCount = chats?.length || 0
   
-  const loading = atendentesLoading || ticketsLoading
+  // Contar conversas "Em aberto" (sem tags)
+  const emAbertoCount = chats?.filter(chat => {
+    if (!chat.id) return false
+    const chatId = (typeof chat.id === 'object' && chat.id._serialized) || chat.id || ''
+    const contatoData = contatos[chatId]
+    return !contatoData?.tags || contatoData.tags.length === 0
+  }).length || 0
   
   // Função para toggle fullscreen
   const toggleFullscreen = () => {
@@ -190,22 +183,33 @@ export default function AtendimentosTopBar({
             <motion.div 
               className="flex items-center gap-2 px-3.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              title={`Total de tickets no sistema: ${totalTickets}`}
+              title={`Chats ativos da API WAHA: ${activeChatsCount}`}
             >
-              <FileText className="w-3.5 h-3.5 text-white/80" />
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               <span className="text-sm text-white font-medium">
-                {loading ? '...' : `${totalTickets} Tickets`}
+                {activeChatsCount} Ativos
               </span>
             </motion.div>
             
             <motion.div 
               className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              title={`Leads sem tags: ${totalLeads}`}
+              title={`Atendentes online: ${stats?.atendentes_online || 0}`}
             >
-              <MessageCircle className="w-3.5 h-3.5 text-white/80" />
+              <Users className="w-3.5 h-3.5 text-white/80" />
               <span className="text-sm text-white font-medium">
-                {loading ? '...' : `${totalLeads} Leads`}
+                {loading ? '...' : `${stats?.atendentes_online || 0} Online`}
+              </span>
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20"
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
+              title={`Conversas em aberto (sem tags): ${emAbertoCount}`}
+            >
+              <FileText className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-sm text-white font-medium">
+                {emAbertoCount} Em aberto
               </span>
             </motion.div>
             
@@ -225,27 +229,24 @@ export default function AtendimentosTopBar({
           </div>
         </div>
 
-        {/* Center Section - Search & Filters */}
-        <div className="flex-1 max-w-3xl mx-8">
-          <div className="flex items-center gap-3">
-            {/* Search Input */}
-            <motion.div 
-              className="relative flex-1"
-              whileFocus={{ scale: 1.02 }}
-            >
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-white/60" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Buscar conversas, contatos ou mensagens..."
-                className="w-full pl-12 pr-4 h-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm transition-all duration-300"
-              />
-            </motion.div>
-
-          </div>
+        {/* Center Section - Search */}
+        <div className="flex-1 max-w-2xl mx-8">
+          <motion.div 
+            className="relative"
+            whileFocus={{ scale: 1.02 }}
+          >
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-white/60" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Buscar conversas, contatos ou mensagens..."
+              className="w-full pl-12 pr-4 h-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm transition-all duration-300"
+            />
+          
+          </motion.div>
         </div>
 
         {/* Right Section - Actions & Profile */}
@@ -277,11 +278,11 @@ export default function AtendimentosTopBar({
               
               {/* Badge Dinâmica */}
               {isKanbanPage ? (
-                /* Badge de Leads - Verde */
-                totalLeads > 0 && (
+                /* Badge de Conversas Ativas - Verde */
+                activeChatsCount > 0 && (
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30">
                     <span className="text-[10px] font-bold text-white drop-shadow-sm">
-                      {totalLeads > 99 ? '99+' : totalLeads}
+                      {activeChatsCount > 99 ? '99+' : activeChatsCount}
                     </span>
                   </div>
                 )
@@ -341,74 +342,6 @@ export default function AtendimentosTopBar({
               {/* Badge IA - Ciano */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-cyan-300/30">
                 <span className="text-[10px] font-bold text-white drop-shadow-sm">🤖</span>
-              </div>
-            </motion.div>
-            
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/tags')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Tags"
-              >
-                <FileText className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge Tags - Rosa */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-pink-300/30">
-                <FileText className="w-3 h-3 text-white drop-shadow-sm" />
-              </div>
-            </motion.div>
-            
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/tickets')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Tickets"
-              >
-                <Ticket className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge Tickets - Violeta */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
-                <Ticket className="w-3 h-3 text-white drop-shadow-sm" />
-              </div>
-            </motion.div>
-            
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/agendamentos')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Agendamentos"
-              >
-                <Calendar className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge Agendamentos - Verde */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-green-300/30">
-                <Calendar className="w-3 h-3 text-white drop-shadow-sm" />
-              </div>
-            </motion.div>
-            
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/orcamentos')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Orçamentos"
-              >
-                <Receipt className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge Orçamentos - Azul */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-blue-300/30">
-                <Receipt className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
             </motion.div>
             
