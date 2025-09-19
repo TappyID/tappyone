@@ -84,13 +84,19 @@ export default function TicketsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
   const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState('')
+  const [contatos, setContatos] = useState<any[]>([])
+  const [atendentes, setAtendentes] = useState<any[]>([])
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
     status: 'ABERTO' as Ticket['status'],
     prioridade: 2,
     contatoId: '',
-    atendenteId: ''
+    atendenteId: [] as string[]
   })
 
   // Buscar todos os tickets
@@ -120,89 +126,118 @@ export default function TicketsPage() {
 
   // Criar novo ticket
   const createTicket = async () => {
+    setSaveLoading(true)
     try {
       const token = localStorage.getItem('token')
+      const ticketData = {
+        ...formData,
+        atendenteId: formData.atendenteId.length > 0 ? formData.atendenteId[0] : null // Por enquanto, enviamos apenas o primeiro
+      }
       const response = await fetch('/api/tickets', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(ticketData)
       })
 
       if (response.ok) {
         fetchTickets()
         setShowCreateModal(false)
-        setFormData({
-          titulo: '',
-          descricao: '',
-          status: 'ABERTO',
-          prioridade: 2,
-          contatoId: '',
-          atendenteId: ''
-        })
+        resetForm()
+        alert('✅ Ticket criado com sucesso!')
       } else {
+        const errorData = await response.json()
         console.error('Erro ao criar ticket:', response.statusText)
+        alert(`❌ Erro ao criar ticket: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       console.error('Erro ao criar ticket:', error)
+      alert('❌ Erro de conexão ao criar ticket')
+    } finally {
+      setSaveLoading(false)
     }
+  }
+
+  // Reset form function
+  const resetForm = () => {
+    setFormData({
+      titulo: '',
+      descricao: '',
+      status: 'ABERTO',
+      prioridade: 2,
+      contatoId: '',
+      atendenteId: []
+    })
+    setEditingTicket(null)
+    setShowCreateModal(false)
   }
 
   // Editar ticket
   const updateTicket = async () => {
     if (!editingTicket) return
+    setSaveLoading(true)
 
     try {
       const token = localStorage.getItem('token')
+      const ticketData = {
+        ...formData,
+        atendenteId: formData.atendenteId.length > 0 ? formData.atendenteId[0] : null // Por enquanto, enviamos apenas o primeiro
+      }
       const response = await fetch(`/api/tickets/${editingTicket.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(ticketData)
       })
 
       if (response.ok) {
         fetchTickets()
-        setEditingTicket(null)
-        setFormData({
-          titulo: '',
-          descricao: '',
-          status: 'ABERTO',
-          prioridade: 2,
-          contatoId: '',
-          atendenteId: ''
-        })
+        resetForm()
+        alert('✅ Ticket atualizado com sucesso!')
       } else {
-        console.error('Erro ao editar ticket:', response.statusText)
+        const errorData = await response.json()
+        console.error('Erro ao atualizar ticket:', response.statusText)
+        alert(`❌ Erro ao atualizar ticket: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
-      console.error('Erro ao editar ticket:', error)
+      console.error('Erro ao atualizar ticket:', error)
+      alert('❌ Erro de conexão ao atualizar ticket')
+    } finally {
+      setSaveLoading(false)
     }
   }
 
   // Deletar ticket
-  const deleteTicket = async (id: number) => {
+  const deleteTicket = async (id: string) => {
+    if (!confirm('⚠️ Tem certeza que deseja excluir este ticket?\n\nEsta ação não pode ser desfeita.')) return
+    
+    setDeleteLoading(id)
     try {
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/tickets/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       })
 
       if (response.ok) {
         fetchTickets()
+        alert('✅ Ticket excluído com sucesso!')
       } else {
+        const errorData = await response.json()
         console.error('Erro ao deletar ticket:', response.statusText)
+        alert(`❌ Erro ao deletar ticket: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       console.error('Erro ao deletar ticket:', error)
+      alert('❌ Erro de conexão ao deletar ticket')
+    } finally {
+      setDeleteLoading('')
     }
   }
 
@@ -243,24 +278,14 @@ export default function TicketsPage() {
       status: ticket.status,
       prioridade: ticket.prioridade,
       contatoId: ticket.contatoId?.toString() || '',
-      atendenteId: ticket.atendenteId?.toString() || ''
+      atendenteId: ticket.atendenteId ? [ticket.atendenteId.toString()] : []
     })
+    setShowCreateModal(true)
   }
 
   const handleDelete = (id: string | number) => {
-    const numericId = typeof id === 'string' ? parseInt(id) : id
-    deleteTicket(numericId)
-  }
-
-  const resetForm = () => {
-    setFormData({
-      titulo: '',
-      descricao: '',
-      status: 'ABERTO',
-      prioridade: 2,
-      contatoId: '',
-      atendenteId: ''
-    })
+    const stringId = typeof id === 'number' ? id.toString() : id
+    deleteTicket(stringId)
   }
 
   const handleSubmit = () => {
@@ -271,6 +296,70 @@ export default function TicketsPage() {
     }
   }
 
+  // Filtrar e paginar tickets
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (ticket.descricao && ticket.descricao.toLowerCase().includes(searchQuery.toLowerCase()))
+    
+    const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter
+    const matchesPrioridade = prioridadeFilter === 'ALL' || ticket.prioridade === prioridadeFilter
+    
+    return matchesSearch && matchesStatus && matchesPrioridade
+  })
+
+  // Paginação
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Buscar contatos
+  const fetchContatos = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/contatos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setContatos(data)
+      } else {
+        console.error('Erro ao buscar contatos:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contatos:', error)
+    }
+  }
+
+  // Buscar atendentes (usuários)
+  const fetchAtendentes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/usuarios', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAtendentes(data)
+      } else {
+        console.error('Erro ao buscar atendentes:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar atendentes:', error)
+    }
+  }
+
   // Carregar tickets na inicialização
   useEffect(() => {
     if (!authLoading && user) {
@@ -278,18 +367,13 @@ export default function TicketsPage() {
     }
   }, [authLoading, user])
 
-  // Filtrar tickets
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.descricao?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.contato?.nome?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.contato?.numeroTelefone?.includes(searchQuery)
-
-    const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter
-    const matchesPrioridade = prioridadeFilter === 'ALL' || ticket.prioridade === prioridadeFilter
-
-    return matchesSearch && matchesStatus && matchesPrioridade
-  })
+  // Carregar contatos e atendentes quando abrir modal
+  useEffect(() => {
+    if (showCreateModal) {
+      fetchContatos()
+      fetchAtendentes()
+    }
+  }, [showCreateModal])
 
   if (authLoading) {
     return (
@@ -379,9 +463,10 @@ export default function TicketsPage() {
 
       {/* Content */}
       <div className="p-6">
+        {/* Tickets Grid */}
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="text-center py-12">
@@ -405,8 +490,9 @@ export default function TicketsPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4">
-            {filteredTickets.map((ticket) => {
+          <>
+            <div className="grid gap-4">
+            {paginatedTickets.map((ticket) => {
               const StatusIcon = statusIcons[ticket.status]
               
               return (
@@ -443,8 +529,20 @@ export default function TicketsPage() {
                           </span>
                           <span className="flex items-center gap-1">
                             <User className="w-3 h-3" />
-                            {ticket.contato?.nome || ticket.contato?.numeroTelefone || 'Sem contato'}
+                            {ticket.contato?.nome || ticket.contato?.numeroTelefone || `Contato ID: ${ticket.contatoId}`}
                           </span>
+                          {ticket.atendente && (
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3 text-blue-500" />
+                              Atendente: {ticket.atendente.nome}
+                            </span>
+                          )}
+                          {!ticket.atendente && ticket.atendenteId && (
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3 text-gray-400" />
+                              ID Atendente: {ticket.atendenteId}
+                            </span>
+                          )}
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {new Date(ticket.criadoEm).toLocaleDateString('pt-BR')}
@@ -483,17 +581,69 @@ export default function TicketsPage() {
                       
                       <button
                         onClick={() => handleDelete(ticket.id)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={deleteLoading === ticket.id}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
                         title="Excluir"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        {deleteLoading === ticket.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                        ) : (
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        )}
                       </button>
                     </div>
                   </div>
                 </motion.div>
               )
             })}
-          </div>
+            </div>
+
+            {/* Paginação */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 px-6 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredTickets.length)} de {filteredTickets.length} tickets
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
+                  >
+                    Anterior
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const page = i + 1
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-2 text-sm font-medium rounded-md ${
+                            currentPage === page
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -517,7 +667,10 @@ export default function TicketsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              handleSubmit()
+            }} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Título *
@@ -546,16 +699,65 @@ export default function TicketsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ID do Contato *
+                  Contato *
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.contatoId}
                   onChange={(e) => setFormData(prev => ({ ...prev, contatoId: e.target.value }))}
                   className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Número do telefone ou ID do contato"
                   required
-                />
+                >
+                  <option value="">Selecione um contato</option>
+                  {contatos.map((contato) => (
+                    <option key={contato.id} value={contato.numeroTelefone || contato.id}>
+                      {contato.nome} {contato.numeroTelefone ? `(${contato.numeroTelefone})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Atendentes (múltipla seleção)
+                </label>
+                <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-40 overflow-y-auto">
+                  {atendentes.map((atendente) => (
+                    <label key={atendente.id} className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.atendenteId.includes(atendente.id.toString())}
+                        onChange={(e) => {
+                          const atendenteId = atendente.id.toString()
+                          if (e.target.checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              atendenteId: [...prev.atendenteId, atendenteId]
+                            }))
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              atendenteId: prev.atendenteId.filter(id => id !== atendenteId)
+                            }))
+                          }
+                        }}
+                        className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-gray-900 dark:text-white">
+                        {atendente.nome} ({atendente.email})
+                      </span>
+                    </label>
+                  ))}
+                  {atendentes.length === 0 && (
+                    <div className="p-3 text-gray-500 dark:text-gray-400 text-center">
+                      Nenhum atendente disponível
+                    </div>
+                  )}
+                </div>
+                {formData.atendenteId.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    {formData.atendenteId.length} atendente(s) selecionado(s)
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -593,14 +795,19 @@ export default function TicketsPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  disabled={saveLoading}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
+                  {saveLoading && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
                   {editingTicket ? 'Atualizar' : 'Criar'} Ticket
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  disabled={saveLoading}
                 >
                   Cancelar
                 </button>
@@ -660,16 +867,19 @@ export default function TicketsPage() {
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-white mb-2">Informações</h4>
                   <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div>ID: {viewingTicket.id}</div>
-                    <div>Contato: {viewingTicket.contato?.nome || viewingTicket.contato?.numeroTelefone || viewingTicket.contatoId}</div>
-                    <div>Criado em: {new Date(viewingTicket.criadoEm).toLocaleDateString('pt-BR', {
+                    <div><strong>ID:</strong> {viewingTicket.id}</div>
+                    <div><strong>Contato:</strong> {viewingTicket.contato?.nome || viewingTicket.contato?.numeroTelefone || `ID: ${viewingTicket.contatoId}`}</div>
+                    {viewingTicket.atendente && (
+                      <div><strong>Atendente:</strong> {viewingTicket.atendente.nome} ({viewingTicket.atendente.email})</div>
+                    )}
+                    <div><strong>Criado em:</strong> {new Date(viewingTicket.criadoEm).toLocaleDateString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit', 
                       year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit'
                     })}</div>
-                    <div>Atualizado em: {new Date(viewingTicket.atualizadoEm).toLocaleDateString('pt-BR', {
+                    <div><strong>Atualizado em:</strong> {new Date(viewingTicket.atualizadoEm).toLocaleDateString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric', 

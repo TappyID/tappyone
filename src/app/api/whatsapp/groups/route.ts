@@ -43,11 +43,11 @@ export async function GET(request: NextRequest) {
     const limit = url.searchParams.get('limit') || '50'
     const offset = url.searchParams.get('offset') || '0'
     
-    // Usar backend Go em vez de WAHA direto
-    const response = await fetch(`${backendUrl}/api/whatsapp/groups?limit=${limit}&offset=${offset}`, {
-      method: 'GET',
+    // TEMPORÁRIO: Chamar WAHA diretamente devido a timeout do backend Go
+    const response = await fetch(`${wahaUrl}/api/${sessionName}/groups`, {
+      method: 'GET', 
       headers: {
-        'Authorization': authHeader,
+        'X-API-Key': 'tappyone-waha-2024-secretkey',
         'Content-Type': 'application/json'
       }
     })

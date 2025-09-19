@@ -169,11 +169,7 @@ export default function AtendimentosPage() {
   useEffect(() => {
     if (selectedConversation) {
       const chatId = extractChatId(selectedConversation)
-      console.log('🔍 [DEBUG] Chat selecionado:', {
-        conversation: selectedConversation,
-        extractedChatId: chatId,
-        conversationId: selectedConversation.id
-      })
+  
       
       if (!chatId) {
         console.error('❌ [DEBUG] Não foi possível extrair chatId da conversa')

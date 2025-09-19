@@ -138,32 +138,20 @@ import '@/styles/scrollbar.css'
     const isWhatsAppChannel = phoneNumber && phoneNumber.length > 15
     const isStatusChat = chatId.includes('status') || chat.name === '+status' || (chat.name && chat.name.toLowerCase().includes('status'))
     
-    // DEBUG: Log para verificar dados do chat
-    console.log(`🔍 [DEBUG] Buscando nome para chat ${chatId}:`, {
-      pushName: chat.pushName,
-      name: chat.name,
-      hasContatoData: !!contatosDataParam?.[chatId],
-      contatoDataNome: contatosDataParam?.[chatId]?.nome,
-      isWhatsAppChannel,
-      phoneNumber
-    })
     
     // 1. Prioridade: Nome direto do chat (pushName do WhatsApp)
     if (chat.pushName && chat.pushName.trim() && chat.pushName !== chatId) {
-      console.log(`✅ [DEBUG] Usando pushName: ${chat.pushName.trim()}`)
       return chat.pushName.trim()
     }
     
     // 2. Nome do chat object
     if (chat.name && chat.name.trim() && chat.name !== chatId && !chat.name.includes('@')) {
-      console.log(`✅ [DEBUG] Usando chat.name: ${chat.name.trim()}`)
       return chat.name.trim()
     }
     
     // 3. Tentar encontrar o contato na lista de contatos
     const contact = contacts.find(c => c.id === chatId)
     if (contact && contact.name && contact.name.trim() && contact.name !== contact.id) {
-      console.log(`✅ [DEBUG] Usando contact.name: ${contact.name.trim()}`)
       return contact.name.trim()
     }
     
@@ -172,20 +160,17 @@ import '@/styles/scrollbar.css'
       // Buscar contato no backend por número
       const contatoData = contatosDataParam[chatId]
       if (contatoData && contatoData.nome && contatoData.nome.trim()) {
-        console.log(`✅ [DEBUG] Usando contatoData.nome: ${contatoData.nome.trim()}`)
         return contatoData.nome.trim()
       }
     }
     
     // 5. Tratamento especial para chats de status
     if (isStatusChat) {
-      console.log(`📊 [DEBUG] Detectado chat de status`)
       return `📊 Status WhatsApp`
     }
     
     // 6. Tratamento especial para canais do WhatsApp
     if (isWhatsAppChannel) {
-      console.log(`📺 [DEBUG] Detectado canal do WhatsApp`)
       return `📺 Canal WhatsApp`
     }
     
@@ -194,14 +179,11 @@ import '@/styles/scrollbar.css'
       // Formatação mais amigável do número
       if (phoneNumber.length >= 10 && phoneNumber.length <= 15) {
         const formatted = phoneNumber.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3')
-        console.log(`⚠️ [DEBUG] Usando número formatado: ${formatted}`)
         return formatted
       }
-      console.log(`⚠️ [DEBUG] Usando número com +: +${phoneNumber}`)
       return `+${phoneNumber}`
     }
     
-    console.log(`❌ [DEBUG] Nenhum nome encontrado, usando fallback`)
     return 'Contato Sem Nome'
   }
 
@@ -438,19 +420,29 @@ import '@/styles/scrollbar.css'
       const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as Element
         
-        if (!target.closest('[data-conexao-dropdown]') && showConexaoDropdown) {
+        // Verifica se o clique foi dentro de qualquer dropdown (incluindo scroll interno)
+        const isInsideDropdown = target.closest('.dropdown-portal') || 
+                                target.closest('[data-conexao-dropdown]') ||
+                                target.closest('[data-queue-dropdown]') ||
+                                target.closest('[data-tag-dropdown]') ||
+                                target.closest('[data-ticket-dropdown]') ||
+                                target.closest('[data-sort-dropdown]')
+        
+        if (isInsideDropdown) return // Não fecha se clicou dentro do dropdown
+        
+        if (showConexaoDropdown) {
           setShowConexaoDropdown(false)
         }
-        if (!target.closest('[data-queue-dropdown]') && showQueueDropdown) {
+        if (showQueueDropdown) {
           setShowQueueDropdown(false)
         }
-        if (!target.closest('[data-tag-dropdown]') && showTagDropdown) {
+        if (showTagDropdown) {
           setShowTagDropdown(false)
         }
-        if (!target.closest('[data-ticket-dropdown]') && showTicketDropdown) {
+        if (showTicketDropdown) {
           setShowTicketDropdown(false)
         }
-        if (!target.closest('[data-sort-dropdown]') && showSortDropdown) {
+        if (showSortDropdown) {
           setShowSortDropdown(false)
         }
       }
@@ -941,7 +933,6 @@ import '@/styles/scrollbar.css'
       
       // Se ainda não encontrou, tentar usar a primeira fila disponível como fallback temporário
       if (!filaFallback && filas.length > 0) {
-        console.log(`🔄 [DEBUG] Usando primeira fila como fallback para chat ${chatId}`)
         return filas[0] // Fallback temporário para debug
       }
       
@@ -1119,12 +1110,10 @@ import '@/styles/scrollbar.css'
         const isStatusChat = chatId.includes('status') || conv.name === '+status' || conv.name.toLowerCase().includes('status')
         
         if (isStatusChat) {
-          console.log(`🚫 [DEBUG] Filtrando chat de status: ${chatId}`)
           return false // Remove chats de status
         }
         
         if (isWhatsAppChannel && !advancedFilters.showChannels) {
-          console.log(`🚫 [DEBUG] Filtrando canal do WhatsApp: ${chatId}`)
           return false // Remove canais da lista apenas se showChannels estiver false
         }
         
@@ -1808,7 +1797,6 @@ import '@/styles/scrollbar.css'
                       {/* Tag Principal */}
                       {(() => {
                         // DEBUG: Log para verificar estrutura das tags
-                        console.log(`🔍 [DEBUG] Chat ${conversation.id} - Tags:`, conversation.tags, 'Array?', Array.isArray(conversation.tags))
                         
                         if (Array.isArray(conversation.tags) && conversation.tags.length > 0) {
                           return (
@@ -2355,7 +2343,7 @@ import '@/styles/scrollbar.css'
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="fixed bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-slate-700/50 overflow-hidden z-[999999]"
+                className="fixed bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-slate-700/50 overflow-hidden z-[999999] dropdown-portal"
                 style={{
                   top: tagDropdownPosition.top,
                   left: tagDropdownPosition.left,
@@ -2363,7 +2351,10 @@ import '@/styles/scrollbar.css'
                 }}
                 data-tag-dropdown
               >
-                <div className="py-1">
+                <div 
+                  className="py-1 max-h-64 overflow-y-auto"
+                  onWheel={(e) => e.stopPropagation()}
+                >
                   {tagOptions.map((option, index) => (
                     <motion.button
                       key={option.value}
@@ -2400,14 +2391,17 @@ import '@/styles/scrollbar.css'
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="fixed z-[9999] bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl overflow-hidden"
+                className="fixed z-[9999] bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl overflow-hidden dropdown-portal"
                 style={{
                   top: ticketDropdownPosition.top,
                   left: ticketDropdownPosition.left,
                   minWidth: ticketDropdownPosition.width
                 }}
               >
-                <div className="max-h-64 overflow-y-auto">
+                <div 
+                  className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-transparent"
+                  onWheel={(e) => e.stopPropagation()} // Previne propagação do scroll
+                >
                   {ticketOptions.map((option) => (
                     <motion.button
                       key={option.value}

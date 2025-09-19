@@ -190,7 +190,6 @@ export default function AtendimentosPage() {
       setTicketsCount(ticketsCountResult)
       setContactStatus(contactStatusResult)
       
-      console.log(`📊 Chat ${chatId}: ${notesCountResult} anotações, ${orcamentosCountResult} orçamentos, ${agendamentosCountResult} agendamentos, ${assinaturasCountResult} assinaturas, ${ticketsCountResult} tickets, status: ${contactStatusResult}`)
     } catch (error) {
       console.error('Erro ao buscar contagens:', error)
     }
