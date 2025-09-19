@@ -239,12 +239,12 @@ import '@/styles/scrollbar.css'
     // Buscar dados reais dos contatos - OTIMIZADO: só processar se há chats
     const chatIds = chats.length > 0 ? chats.map(chat => chat.id?._serialized || chat.id || '').filter(id => id) : []
     
-    // Estado para controlar quantos chats foram carregados
-    const [visibleChatsCount, setVisibleChatsCount] = useState<number>(5)
-  
-    // Função para carregar mais chats (sobrescrever a das props) - será redefinida após filteredConversations
-    const [handleLoadMoreChats, setHandleLoadMoreChats] = useState<() => void>(() => () => {})
-  
+    // Estados para scroll infinito
+    const [visibleChatsCount, setVisibleChatsCount] = useState(15)
+    const [handleLoadMoreChats, setHandleLoadMoreChats] = useState<(() => void) | null>(null)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const [lastScrollPosition, setLastScrollPosition] = useState(0)
+    
     // Reset apenas quando há mudança REALMENTE significativa (não pequenas variações)
     const [lastChatCount, setLastChatCount] = useState(chatIds.length)
     useEffect(() => {
@@ -254,12 +254,30 @@ import '@/styles/scrollbar.css'
       // Só reseta se houve mudança de mais de 10% ou diferença > 50 chats
       const shouldReset = diff > Math.max(50, currentCount * 0.1)
       
-      if (shouldReset) {
+      if (shouldReset && !isLoadingMore) {
         console.log(`🔄 [ConversationSidebar] Reset significativo: ${lastChatCount} → ${currentCount} chats`)
-        setVisibleChatsCount(5)
+        // Salvar posição atual do scroll
+        if (scrollContainerRef.current) {
+          setLastScrollPosition(scrollContainerRef.current.scrollTop)
+        }
+        // Preservar pelo menos 15 chats visíveis após reset
+        setVisibleChatsCount(Math.max(15, Math.min(visibleChatsCount, currentCount)))
         setLastChatCount(currentCount)
       }
-    }, [chatIds.length, lastChatCount])
+    }, [chatIds.length, lastChatCount, isLoadingMore, visibleChatsCount, scrollContainerRef])
+
+    // Restaurar posição do scroll após reset
+    useEffect(() => {
+      if (lastScrollPosition > 0 && scrollContainerRef.current) {
+        const timer = setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = lastScrollPosition
+            setLastScrollPosition(0) // Reset após aplicar
+          }
+        }, 100)
+        return () => clearTimeout(timer)
+      }
+    }, [lastScrollPosition, visibleChatsCount])
 
     // Estados do filtro em cascata
     const [selectedConexao, setSelectedConexao] = useState('todas')
@@ -792,8 +810,11 @@ import '@/styles/scrollbar.css'
       const observer = new IntersectionObserver(
         (entries) => {
           const target = entries[0]
-          if (target.isIntersecting) {
+          if (target.isIntersecting && !isLoadingMore) {
+            setIsLoadingMore(true)
             handleLoadMoreChats()
+            // Reset loading após pequeno delay
+            setTimeout(() => setIsLoadingMore(false), 1000)
           }
         },
         { threshold: 0.1, rootMargin: '50px' }

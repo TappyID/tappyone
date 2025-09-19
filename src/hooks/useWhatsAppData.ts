@@ -138,7 +138,10 @@ export function useWhatsAppData() {
       if (response.ok) {
         const result = await response.json()
         const connections = result.connections || result.data || result
-        const whatsappConnection = Array.isArray(connections) ? connections.find((conn: any) => conn.platform === 'whatsapp') : null
+        // CRITICAL: Filtrar conexão WhatsApp do usuário ATUAL, não primeira disponível
+        const whatsappConnection = Array.isArray(connections) ? connections.find((conn: any) => 
+          conn.platform === 'whatsapp' && conn.user_id === user?.id
+        ) : null
         
         if (whatsappConnection?.session_name) {
           debugLogger.log('WebSocket WAHA: Connecting with session', whatsappConnection.session_name)
@@ -735,9 +738,18 @@ export function useWhatsAppData() {
       // Atualizar estado apenas se tiver novos chats
       if (newChats.length > 0) {
         setChats(prev => {
-          const updated = [...prev, ...newChats]
-          debugLogger.log(`📊 Total de chats após carregamento: ${updated.length}`)
-          return updated
+          // Evitar duplicatas usando Set com ID único
+          const existingIds = new Set(prev.map(chat => chat.id))
+          const uniqueNewChats = newChats.filter(chat => !existingIds.has(chat.id))
+          
+          if (uniqueNewChats.length > 0) {
+            const updated = [...prev, ...uniqueNewChats]
+            debugLogger.log(`📊 Total de chats após carregamento: ${updated.length} (${uniqueNewChats.length} novos)`)
+            return updated
+          } else {
+            debugLogger.log(`⚠️ Nenhum chat novo (${newChats.length} já existiam)`)
+            return prev
+          }
         })
       }
       
