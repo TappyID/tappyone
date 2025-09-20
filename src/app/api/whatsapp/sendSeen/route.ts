@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       chatId,
       messageIds,
       participant: null,
-      session: `user_${token.replace('Bearer ', '')}`
+      session: 'user_fb8da1d7_1758158816675'
     }
 
     const response = await fetch(`${backendUrl}/api/whatsapp/sendSeen`, {

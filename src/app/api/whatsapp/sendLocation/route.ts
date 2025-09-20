@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       chatId: chatId as string,
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
-      session: 'user_3a24ed72_1757773035131'
+      session: 'user_fb8da1d7_1758158816675'
     }
 
     // Adicionar título e endereço se fornecidos

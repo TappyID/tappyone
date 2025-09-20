@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         options: options as string[],
         multipleAnswers: Boolean(multipleAnswers)
       },
-      session: 'user_3a24ed72_1757773035131'
+      session: 'user_fb8da1d7_1758158816675'
     }
 
     console.log('🌐 [sendPoll] Payload WAHA:', payload)

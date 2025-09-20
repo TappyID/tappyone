@@ -118,7 +118,7 @@ export default function LinkPreview({ url, className = '' }: LinkPreviewProps) {
             }}
           />
           <ExternalLink className="w-4 h-4 hidden" />
-          <span className="text-sm font-medium truncate">{url}</span>
+          <span className="text-sm font-medium truncate break-all">{url}</span>
         </div>
       </div>
     )
@@ -127,7 +127,7 @@ export default function LinkPreview({ url, className = '' }: LinkPreviewProps) {
   return (
     <div 
       onClick={handleClick}
-      className={`border border-gray-200 rounded-lg overflow-hidden bg-white hover:bg-gray-50 cursor-pointer transition-colors ${className}`}
+      className={`border border-gray-200 rounded-lg overflow-hidden bg-white hover:bg-gray-50 cursor-pointer transition-colors max-w-full ${className}`}
     >
       <div className="flex">
         {preview.image && (

@@ -1042,7 +1042,10 @@ export default function ChatArea({
       const formData = new FormData()
       formData.append('file', file)
       formData.append('chatId', chatId)
-      formData.append('session', `user_${conversation?.userId || 'default'}`)
+      // Fallback para sessão válida conhecida
+    const sessionName = conversation?.userId ? `user_${conversation.userId}` : 'user_fb8da1d7_1758158816675'
+    formData.append('session', sessionName)
+    console.log('📱 Usando sessão:', sessionName)
       
       if (caption?.trim()) {
         formData.append('caption', caption.trim())
@@ -1278,6 +1281,7 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
+
   // Função para marcar mensagens como vistas (usando nova rota anti-bloqueio)
   const markMessagesAsSeen = async (messageIds: string[]) => {
     if (!messageIds.length) return
@@ -1396,7 +1400,24 @@ export default function ChatArea({
     try {
       // 1. Enviar o conteúdo especial
       if (showMediaModal === 'contact') {
-        await messageActions.sendContact(data.contactId, data.name)
+        console.log('📞 Enviando contatos via sendContactVcard:', data)
+        // Usar nova API sendContactVcard
+        const response = await fetch('/api/whatsapp/sendContactVcard', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chatId,
+            contacts: data.contacts
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Erro ao enviar contato')
+        }
+        
+        console.log('✅ Contatos enviados com sucesso!')
       } else if (showMediaModal === 'location') {
         await messageActions.sendLocation(data.latitude, data.longitude, data.title, data.address)
       } else if (showMediaModal === 'poll') {
@@ -3161,16 +3182,16 @@ export default function ChatArea({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
-                          setShowCreateContactModal(true)
+                          setShowMediaModal('contact')
                           setShowAttachmentMenu(false)
                         }}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-green-400 hover:bg-green-500/10 transition-all duration-300 group"
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-blue-400 hover:bg-blue-500/10 transition-all duration-300 group"
                       >
-                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Contact className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-foreground">Contato</span>
-                        <span className="text-xs text-muted-foreground">Criar no Kanban</span>
+                        <span className="text-xs text-muted-foreground">Compartilhar</span>
                       </motion.button>
                       
                       {/* Localização */}
@@ -3298,51 +3319,7 @@ export default function ChatArea({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                
-                // Criar log detalhado para download
-                const debugLog = {
-                  timestamp: new Date().toISOString(),
-                  event: 'Audio Button Click',
-                  audioRecorder: {
-                    isRecording: audioRecorder?.isRecording,
-                    isPaused: audioRecorder?.isPaused,
-                    duration: audioRecorder?.duration,
-                    error: audioRecorder?.error,
-                    audioBlob: audioRecorder?.audioBlob ? 'exists' : 'null',
-                    audioUrl: audioRecorder?.audioUrl ? 'exists' : 'null'
-                  },
-                  browser: {
-                    userAgent: navigator.userAgent,
-                    hasGetUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-                    hasMediaRecorder: typeof MediaRecorder !== 'undefined'
-                  },
-                  permissions: 'checking...'
-                }
-                
-                // Baixar arquivo de log
-                const logText = JSON.stringify(debugLog, null, 2)
-                const blob = new Blob([logText], { type: 'application/json' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `audio-debug-${Date.now()}.json`
-                document.body.appendChild(a)
-                a.click()
-                document.body.removeChild(a)
-                URL.revokeObjectURL(url)
-                
-                alert('Log baixado! Agora testando gravação...')
-                
-                try {
-                  handleAudioRecord()
-                } catch (error) {
-                  console.error('🎤 ERRO no handleAudioRecord:', error)
-                  alert('ERRO: ' + error)
-                }
-              }}
+              onClick={handleAudioRecord}
               className="p-3 bg-accent hover:bg-accent/80 rounded-xl transition-all duration-300"
               title="Gravar áudio"
             >

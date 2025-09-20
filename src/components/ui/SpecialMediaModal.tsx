@@ -62,21 +62,24 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
   const fetchContacts = async () => {
     setContactsLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      console.log('📞 Buscamdo contatos do WAHA...')
       
-      const response = await fetch(`${backendUrl}/api/whatsapp/contacts`, {
+      const response = await fetch('/api/whatsapp/getContacts', {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         }
       })
 
       if (response.ok) {
         const data = await response.json()
-        setContacts(data || [])
+        console.log('✅ Contatos recebidos:', data.contacts?.length)
+        setContacts(data.contacts || [])
+      } else {
+        console.error('❌ Erro ao buscar contatos:', response.status)
       }
     } catch (error) {
-      console.error('Erro ao buscar contatos:', error)
+      console.error('💥 Erro ao buscar contatos:', error)
     } finally {
       setContactsLoading(false)
     }
@@ -168,11 +171,21 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
     let data: any = {}
 
     if (type === 'contact') {
-      if (!contactId.trim() || !contactName.trim()) {
-        alert('Preencha o ID e nome do contato')
+      if (!selectedContact) {
+        alert('Selecione um contato para enviar')
         return
       }
-      data = { contactId: contactId.trim(), name: contactName.trim() }
+      
+      // Formato para API sendContactVcard
+      data = {
+        contacts: [{
+          fullName: selectedContact.name,
+          organization: '',
+          phoneNumber: selectedContact.phone,
+          whatsappId: selectedContact.whatsappId,
+          vcard: null
+        }]
+      }
     } else if (type === 'location') {
       if (!latitude.trim() || !longitude.trim()) {
         alert('Informe a latitude e longitude')

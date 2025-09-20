@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         filename: file.name,
         url: blob.url
       },
-      session: 'user_3a24ed72_1757773035131'
+      session: 'user_fb8da1d7_1758158816675'
     }
 
     if (caption) {

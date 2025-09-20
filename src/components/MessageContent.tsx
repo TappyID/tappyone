@@ -11,7 +11,7 @@ interface MessageContentProps {
 export default function MessageContent({ content, className = '' }: MessageContentProps) {
   // Se não há links, renderizar texto simples
   if (!hasLinks(content)) {
-    return <p className={`text-sm leading-relaxed mb-1 ${className}`}>{content}</p>
+    return <p className={`text-sm leading-relaxed mb-1 break-words overflow-wrap-anywhere ${className}`}>{content}</p>
   }
 
   const links = detectLinks(content)
@@ -19,7 +19,7 @@ export default function MessageContent({ content, className = '' }: MessageConte
   // Se há apenas um link e é o conteúdo inteiro, mostrar apenas o preview
   if (links.length === 1 && links[0].start === 0 && links[0].end >= content.trim().length) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 max-w-full overflow-hidden">
         <LinkPreview url={links[0].url} />
       </div>
     )
@@ -27,8 +27,8 @@ export default function MessageContent({ content, className = '' }: MessageConte
 
   // Se há links misturados com texto, renderizar texto + previews
   return (
-    <div className="space-y-2">
-      <p className={`text-sm leading-relaxed mb-1 ${className}`}>{content}</p>
+    <div className="space-y-2 max-w-full overflow-hidden">
+      <p className={`text-sm leading-relaxed mb-1 break-words overflow-wrap-anywhere ${className}`}>{content}</p>
       {links.map((link, index) => (
         <LinkPreview key={`${link.url}-${index}`} url={link.url} />
       ))}
