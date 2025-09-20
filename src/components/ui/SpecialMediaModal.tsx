@@ -24,6 +24,9 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
   const [searchTerm, setSearchTerm] = useState('')
   const [contactsLoading, setContactsLoading] = useState(false)
   const [showContactsList, setShowContactsList] = useState(true)
+  const [contactsPage, setContactsPage] = useState(1)
+  const [hasMoreContacts, setHasMoreContacts] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   
   // Estados para localização
   const [latitude, setLatitude] = useState('')
@@ -59,12 +62,17 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
     }
   }, [isOpen, type])
 
-  const fetchContacts = async () => {
-    setContactsLoading(true)
+  const fetchContacts = async (page = 1, append = false) => {
+    if (page === 1) {
+      setContactsLoading(true)
+    } else {
+      setLoadingMore(true)
+    }
+    
     try {
-      console.log('📞 Buscamdo contatos do WAHA...')
+      console.log('📞 Buscando contatos do WAHA...', { page, append })
       
-      const response = await fetch('/api/whatsapp/getContacts', {
+      const response = await fetch(`/api/whatsapp/getContacts?page=${page}&limit=12`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -73,8 +81,16 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
 
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Contatos recebidos:', data.contacts?.length)
-        setContacts(data.contacts || [])
+        console.log('✅ Contatos recebidos:', data.contacts?.length, 'página:', page)
+        
+        if (append) {
+          setContacts(prev => [...prev, ...(data.contacts || [])])
+        } else {
+          setContacts(data.contacts || [])
+        }
+        
+        setHasMoreContacts(data.hasMore || false)
+        setContactsPage(page)
       } else {
         console.error('❌ Erro ao buscar contatos:', response.status)
       }
@@ -82,6 +98,13 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
       console.error('💥 Erro ao buscar contatos:', error)
     } finally {
       setContactsLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  const loadMoreContacts = () => {
+    if (!loadingMore && hasMoreContacts) {
+      fetchContacts(contactsPage + 1, true)
     }
   }
 
@@ -218,6 +241,12 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
       setCaption('')
       setContactId('')
       setContactName('')
+      setSelectedContact(null)
+      setShowContactsList(true)
+      setContacts([])
+      setContactsPage(1)
+      setHasMoreContacts(true)
+      setSearchTerm('')
       setLatitude('')
       setLongitude('')
       setLocationTitle('')
@@ -314,42 +343,72 @@ export default function SpecialMediaModal({ isOpen, onClose, type, chatId, onSen
                           />
                         </div>
 
-                        {/* Lista de contatos */}
-                        <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                        {/* Lista de contatos com scroll infinito */}
+                        <div 
+                          className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg"
+                          onScroll={(e) => {
+                            const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+                            if (scrollHeight - scrollTop === clientHeight && hasMoreContacts && !loadingMore) {
+                              loadMoreContacts()
+                            }
+                          }}
+                        >
                           {contactsLoading ? (
                             <div className="flex items-center justify-center py-8">
                               <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
                               <span className="ml-2 text-gray-500">Carregando contatos...</span>
                             </div>
                           ) : filteredContacts.length > 0 ? (
-                            filteredContacts.map((contact, index) => (
-                              <div
-                                key={contact.id || index}
-                                onClick={() => handleContactSelect(contact)}
-                                className="flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
-                              >
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                  {contact.profilePictureUrl ? (
-                                    <img 
-                                      src={contact.profilePictureUrl} 
-                                      alt={contact.name || contact.phone}
-                                      className="w-10 h-10 rounded-full object-cover"
-                                    />
-                                  ) : (
-                                    <User className="w-5 h-5 text-blue-600" />
-                                  )}
+                            <>
+                              {filteredContacts.map((contact, index) => (
+                                <div
+                                  key={contact.id || index}
+                                  onClick={() => handleContactSelect(contact)}
+                                  className="flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                                >
+                                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    {contact.profilePicture ? (
+                                      <img 
+                                        src={contact.profilePicture} 
+                                        alt={contact.name || contact.phone}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <User className="w-5 h-5 text-blue-600" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 truncate">
+                                      {contact.name || contact.phone}
+                                    </p>
+                                    <p className="text-sm text-gray-500 truncate">
+                                      {contact.phone}
+                                    </p>
+                                    {contact.pushname && contact.pushname !== contact.name && (
+                                      <p className="text-xs text-gray-400 truncate">
+                                        {contact.pushname}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <ChevronDown className="w-4 h-4 text-gray-400 transform -rotate-90" />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-gray-900 truncate">
-                                    {contact.name || contact.phone}
-                                  </p>
-                                  <p className="text-sm text-gray-500 truncate">
-                                    {contact.phone}
-                                  </p>
+                              ))}
+                              
+                              {/* Loading mais contatos */}
+                              {loadingMore && (
+                                <div className="flex items-center justify-center py-3">
+                                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                                  <span className="ml-2 text-sm text-gray-500">Carregando mais...</span>
                                 </div>
-                                <ChevronDown className="w-4 h-4 text-gray-400 transform -rotate-90" />
-                              </div>
-                            ))
+                              )}
+                              
+                              {/* Fim da lista */}
+                              {!hasMoreContacts && filteredContacts.length > 12 && (
+                                <div className="text-center py-3 text-sm text-gray-400">
+                                  • • •
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                               <User className="w-8 h-8 mb-2" />
