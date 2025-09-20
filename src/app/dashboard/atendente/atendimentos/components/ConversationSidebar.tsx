@@ -1617,12 +1617,12 @@ import '@/styles/scrollbar.css'
                       <span className="text-sm font-medium text-foreground flex-1 text-left">
                         {conexaoOptions.find(c => c.value === selectedConexao)?.label}
                       </span>
-                    <motion.div
-                      animate={{ rotate: showConexaoDropdown ? 180 : 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    </motion.div>
+                      <motion.div
+                        animate={{ rotate: showConexaoDropdown ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </motion.div>
                   </motion.button>
                 </div>
               </motion.div>
