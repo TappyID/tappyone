@@ -1598,8 +1598,9 @@ import '@/styles/scrollbar.css'
                   </motion.button>
                 </div>
               </motion.div>
+              
               <div className="flex items-center gap-3">
-              {/* Select Conexão Elegante - OCULTO por enquanto */}
+                {/* Select Conexão Elegante - OCULTO por enquanto */}
               <motion.div 
                 className="relative hidden"
                 whileHover={{ scale: 1.02 }}
@@ -1611,7 +1612,8 @@ import '@/styles/scrollbar.css'
                       ref={conexaoButtonRef}
                       onClick={() => setShowConexaoDropdown(!showConexaoDropdown)}
                       className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[140px] hover:bg-accent transition-colors border border-border"
-                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full" />
+                    >
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full" />
                     <span className="text-sm font-medium text-foreground flex-1 text-left">
                       {conexaoOptions.find(c => c.value === selectedConexao)?.label}
                     </span>
