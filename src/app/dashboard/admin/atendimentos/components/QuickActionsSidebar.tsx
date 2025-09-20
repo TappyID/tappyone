@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
@@ -43,6 +43,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import CriarRespostaModal from '../../respostas-rapidas/components/CriarRespostaModal'
 import CriarFluxoIAModal from './CriarFluxoIAModal'
+import EditTextModal from './EditTextModal'
 import { useRespostasRapidas } from '@/hooks/useRespostasRapidas'
 import { AudioRecorder } from '@/components/shared/AudioRecorder'
 import MediaUpload from '@/components/shared/MediaUpload'
@@ -154,7 +155,11 @@ export default function QuickActionsSidebar({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all']))
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set())
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createModalWithAI, setCreateModalWithAI] = useState(false) // Flag para indicar que deve abrir com IA
   const [showFluxoIAModal, setShowFluxoIAModal] = useState(false)
+  const [showEditTextModal, setShowEditTextModal] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [selectedActionToSchedule, setSelectedActionToSchedule] = useState<QuickAction | null>(null)
   const [editingActions, setEditingActions] = useState<{[key: string]: any[]}>({})
   const [textareaHeights, setTextareaHeights] = useState<{[key: string]: number}>({}) // Controla altura das textareas
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({}) // Controla loading da IA
@@ -336,26 +341,90 @@ export default function QuickActionsSidebar({
     console.log('=== FIM DEBUG handleActionSelect ===')
   }
 
-  const handleToggleAutomatic = async (action: QuickAction, e: React.MouseEvent) => {
+  const handleToggleAutomatic = useCallback(async (action: QuickAction, e: React.MouseEvent) => {
     e.stopPropagation()
+    
     try {
-      await togglePauseResposta(action.id, !action.isPaused)
+      console.log('🤖 Alterando status automático:', action.title)
+      
+      // Se está ativo (automático), pausar. Se pausado, ativar
+      const novoPausado = action.isAutomatic ? true : false
+      await togglePauseResposta(action.id, novoPausado)
+      
+      console.log(`✅ Resposta ${novoPausado ? 'pausada' : 'ativada'} com sucesso`)
+      
       // Recarregar dados
       fetchRespostas()
     } catch (error) {
-      console.error('Erro ao alterar status da resposta:', error)
+      console.error('❌ Erro ao alterar status da resposta:', error)
+      alert('Erro ao alterar status da resposta rápida')
     }
-  }
+  }, [togglePauseResposta, fetchRespostas])
+
+  const handleScheduleAction = useCallback((action: QuickAction, e: React.MouseEvent) => {
+    e.stopPropagation()
+    console.log('📅 Abrindo modal de agendamento para:', action.title)
+    setSelectedActionToSchedule(action)
+    setShowScheduleModal(true)
+  }, [])
+
+  const handleConfirmSchedule = useCallback(async (data: {
+    chatId: string
+    date: string
+    time: string
+  }) => {
+    if (!selectedActionToSchedule) return
+    
+    try {
+      console.log('📅 Confirmando agendamento:', data)
+      
+      // Combinar data e hora
+      const dateTime = new Date(`${data.date}T${data.time}`)
+      const token = localStorage.getItem('token')
+      
+      // Criar agendamento via API
+      const response = await fetch('/api/respostas-rapidas/agendamentos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          resposta_rapida_id: selectedActionToSchedule.id,
+          chat_id: data.chatId,
+          proxima_execucao: dateTime.toISOString(),
+          trigger_tipo: 'horario',
+          max_execucoes: 1,
+          ativo: true
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Agendamento criado:', result)
+        alert(`📅 Resposta "${selectedActionToSchedule.title}" agendada para:\n🗓️ ${dateTime.toLocaleString()}\n💬 Chat: ${data.chatId}`)
+        setShowScheduleModal(false)
+        setSelectedActionToSchedule(null)
+      } else {
+        throw new Error('Erro na API de agendamento')
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao agendar resposta:', error)
+      alert('❌ Erro ao agendar resposta. Verifique se a API está implementada.')
+    }
+  }, [selectedActionToSchedule])
 
   const handleCreateWithAI = () => {
     console.log('🤖 Botão "Criar com IA" clicado!')
     console.log('onCreateWithAI disponível:', !!onCreateWithAI)
     
-    // Se a prop não está funcionando, abrir modal diretamente
-    if (!onCreateWithAI) {
-      console.log('⚡ Abrindo modal CriarFluxoIAModal diretamente...')
-      setShowFluxoIAModal(true)
-    } else {
+    // CORRETO: Abrir EditTextModal para criar com IA
+    console.log('⚡ Abrindo EditTextModal para criação com IA...')
+    setShowEditTextModal(true)
+    
+    // Opcional: também chama a prop se existir
+    if (onCreateWithAI) {
       onCreateWithAI()
     }
   }
@@ -413,7 +482,9 @@ export default function QuickActionsSidebar({
   }
 
   const handleCreateNow = () => {
-    setShowCreateModal(true)
+    console.log('➕ Botão "Criar Agora" clicado!')
+    setCreateModalWithAI(false) // ← SEM IA
+    setShowCreateModal(true)     // ← Abre o modal normal
   }
 
   const toggleActionExpansion = (actionId: string) => {
@@ -716,17 +787,9 @@ export default function QuickActionsSidebar({
                                   <Edit className="w-2.5 h-2.5" />
                                 </button>
                                 <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const dataInt = parseInt(prompt('Em quantos minutos agendar? (ex: 30)') || '0')
-                                    if (dataInt > 0) {
-                                      const agendamento = new Date(Date.now() + dataInt * 60000)
-                                      alert(`Resposta agendada para: ${agendamento.toLocaleString()}`)
-                                      // TODO: Implementar API de agendamento
-                                    }
-                                  }}
+                                  onClick={(e) => handleScheduleAction(action, e)}
                                   className="p-1 bg-purple-500/20 text-purple-600 hover:bg-purple-500/30 dark:bg-purple-500/30 dark:text-purple-400 rounded-md transition-colors"
-                                  title="Agendar"
+                                  title="Agendar resposta"
                                 >
                                   <Calendar className="w-2.5 h-2.5" />
                                 </button>
@@ -889,7 +952,7 @@ export default function QuickActionsSidebar({
                                                 <div className="flex items-center justify-between">
                                                   <span className="text-xs text-muted-foreground">Texto da mensagem</span>
                                                   <div className="flex items-center gap-1">
-                                                    {/* Botão DeepSeek IA */}
+                                                    {/* Botão AI - Geração Real */}
                                                     <button
                                                       onClick={async (e) => {
                                                         e.stopPropagation()
@@ -897,18 +960,43 @@ export default function QuickActionsSidebar({
                                                         setIsGeneratingAI(prev => ({ ...prev, [textareaKey]: true }))
                                                         
                                                         try {
-                                                          // Simular geração de IA (substitua pela API real do DeepSeek)
-                                                          await new Promise(resolve => setTimeout(resolve, 2000))
-                                                          const generatedText = `🎯 Mensagem otimizada com IA:\n\nOlá! Como posso ajudar você hoje? Nosso atendimento está disponível para esclarecer suas dúvidas e oferecer as melhores soluções.\n\n✨ Resposta criada automaticamente`
-                                                          updateEditingAction(action.id, index, 'texto', generatedText)
+                                                          console.log('🤖 Gerando texto com IA para resposta rápida...')
+                                                          
+                                                          // Gerar prompt baseado no título da ação
+                                                          const prompt = `Crie uma resposta rápida profissional para "${action.title}". 
+                                                          Deve ser: amigável, clara, útil e adequada para atendimento ao cliente via WhatsApp.
+                                                          Máximo 200 palavras.`
+                                                          
+                                                          const response = await fetch('/api/ai/generate', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                              'Content-Type': 'application/json',
+                                                            },
+                                                            body: JSON.stringify({
+                                                              prompt,
+                                                              context: `Resposta Rápida: ${action.title}`,
+                                                              type: 'response'
+                                                            })
+                                                          })
+
+                                                          if (response.ok) {
+                                                            const data = await response.json()
+                                                            const generatedText = data.text || 'Texto gerado com IA'
+                                                            updateEditingAction(action.id, index, 'texto', generatedText)
+                                                            console.log('✅ Texto gerado com sucesso!')
+                                                          } else {
+                                                            console.error('❌ Erro na API de IA:', response.status)
+                                                            alert('Erro ao gerar conteúdo com IA. Tente novamente.')
+                                                          }
                                                         } catch (error) {
-                                                          console.error('Erro ao gerar conteúdo:', error)
+                                                          console.error('❌ Erro ao gerar conteúdo:', error)
+                                                          alert('Erro de conexão com a IA. Verifique sua internet.')
                                                         } finally {
                                                           setIsGeneratingAI(prev => ({ ...prev, [textareaKey]: false }))
                                                         }
                                                       }}
                                                       className="p-1 hover:bg-accent rounded transition-colors"
-                                                      title="Gerar conteúdo com IA (DeepSeek)"
+                                                      title="Gerar texto automaticamente com IA"
                                                       disabled={isGeneratingAI[`${action.id}-${index}`]}
                                                     >
                                                       {isGeneratingAI[`${action.id}-${index}`] ? (
@@ -1616,8 +1704,12 @@ export default function QuickActionsSidebar({
           {showCreateModal && (
             <CriarRespostaModal
               isOpen={showCreateModal}
-              onClose={() => setShowCreateModal(false)}
+              onClose={() => {
+                setShowCreateModal(false)
+                setCreateModalWithAI(false) // Reset flag IA
+              }}
               categorias={categorias}
+              // TODO: Adicionar funcionalidade IA ao CriarRespostaModal
               onSave={async (data) => {
                 try {
                   const token = localStorage.getItem('token')
@@ -1663,6 +1755,65 @@ export default function QuickActionsSidebar({
             }}
             onCreateFluxo={handleCreateFluxo}
           />
+
+          {/* Modal EditText com IA */}
+          <EditTextModal
+            isOpen={showEditTextModal}
+            onClose={() => {
+              console.log('🔒 Fechando EditTextModal')
+              setShowEditTextModal(false)
+            }}
+            onSend={(text) => {
+              console.log('✅ Texto criado com IA:', text)
+              // TODO: Salvar como resposta rápida
+              setShowEditTextModal(false)
+            }}
+            initialText=""
+            contactName="IA Assistant"
+            actionTitle="Criar Resposta com IA"
+          />
+
+          {/* Modal de Agendamento */}
+          {showScheduleModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-background rounded-xl p-6 w-96 mx-4">
+                <h3 className="font-bold mb-4">📅 Agendar: {selectedActionToSchedule?.title}</h3>
+                <form onSubmit={(e) => {
+                  e.preventDefault()
+                  const form = new FormData(e.target as HTMLFormElement)
+                  handleConfirmSchedule({
+                    chatId: activeChatId || form.get('chatId') as string,
+                    date: form.get('date') as string,
+                    time: form.get('time') as string,
+                  })
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Chat</label>
+                    <Input 
+                      name="chatId" 
+                      value={activeChatId || ''}
+                      placeholder="Chat ID (ex: 5519999999999@c.us)" 
+                      required 
+                      disabled={!!activeChatId}
+                      className={activeChatId ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Data</label>
+                    <Input name="date" type="date" required min={new Date().toISOString().split('T')[0]} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Horário</label>
+                    <Input name="time" type="time" required />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => setShowScheduleModal(false)} className="flex-1">Cancelar</Button>
+                    <Button type="submit" className="flex-1">Agendar</Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
