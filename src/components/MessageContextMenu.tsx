@@ -10,7 +10,8 @@ import {
   Star, 
   Copy,
   Download,
-  Smile
+  Smile,
+  Languages
 } from 'lucide-react'
 import { WhatsAppMessage } from '@/hooks/useInfiniteMessages'
 import { DeleteConfirmTooltip } from './DeleteConfirmTooltip'
@@ -23,6 +24,7 @@ interface MessageContextMenuProps {
   onDelete: (message: WhatsAppMessage) => void
   onStar: (message: WhatsAppMessage) => void
   onCopy: (text: string) => void
+  onTranslate: (message: WhatsAppMessage) => void
   isStarred?: boolean
 }
 
@@ -34,6 +36,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onDelete,
   onStar,
   onCopy,
+  onTranslate,
   isStarred = false
 }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -145,6 +148,17 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
               <Reply className="w-4 h-4 text-blue-600" />
               Responder
             </button>
+
+            {/* Só mostrar traduzir se a mensagem tem texto */}
+            {message.type === 'text' && message.body && (
+              <button
+                onClick={() => handleAction(() => onTranslate(message))}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-green-50 flex items-center gap-3 text-gray-700"
+              >
+                <Languages className="w-4 h-4 text-green-600" />
+                Traduzir
+              </button>
+            )}
 
             <button
               onClick={() => handleAction(() => onForward(message))}

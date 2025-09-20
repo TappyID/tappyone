@@ -1281,6 +1281,57 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
+  // Função para traduzir mensagem usando OpenAI
+  const handleTranslateMessage = async (message: any) => {
+    try {
+      console.log('🌍 Traduzindo mensagem:', message.body?.substring(0, 50) + '...')
+      
+      // Detectar se texto está em português e escolher idioma de destino
+      const isPortuguese = /[àáâãäéêëíîïóôõöúûüç]/i.test(message.body) || 
+                           /\b(de|da|do|para|com|sem|sobre|entre|por|em|no|na)\b/i.test(message.body)
+      
+      const targetLanguage = isPortuguese ? 'en' : 'pt'
+      
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: message.body,
+          targetLanguage,
+          sourceLanguage: isPortuguese ? 'pt' : 'auto'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao traduzir mensagem')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Mostrar tradução em uma notificação ou modal
+        const translatedText = data.translatedText
+        const sourceLang = isPortuguese ? 'Português' : 'Detectado'
+        const targetLang = targetLanguage === 'pt' ? 'Português' : 'Inglês'
+        
+        // Por enquanto, vou mostrar no console e como toast
+        console.log('✅ Tradução:', {
+          original: message.body,
+          translated: translatedText,
+          from: sourceLang,
+          to: targetLang
+        })
+        
+        // TODO: Implementar toast ou modal para mostrar tradução
+        alert(`📝 Texto original: ${message.body}\n\n🌍 Tradução (${sourceLang} → ${targetLang}):\n${translatedText}`)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao traduzir:', error)
+      alert('Erro ao traduzir mensagem. Tente novamente.')
+    }
+  }
 
   // Função para marcar mensagens como vistas (usando nova rota anti-bloqueio)
   const markMessagesAsSeen = async (messageIds: string[]) => {
@@ -2802,6 +2853,7 @@ export default function ChatArea({
                             }
                           }}
                           onCopy={(text) => messageActions.copyToClipboard(text)}
+                          onTranslate={(message) => handleTranslateMessage(message)}
                         />
                       )}
                     </div>
