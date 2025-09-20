@@ -16,19 +16,33 @@ export async function POST(request: NextRequest) {
       to: targetLanguage
     })
 
-    // Usar OpenAI para tradução
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Usar DeepSeek (mais barato) ou OpenAI como fallback
+    const useDeepSeek = true // Ativar DeepSeek
+    
+    const apiUrl = useDeepSeek 
+      ? 'https://api.deepseek.com/v1/chat/completions'
+      : 'https://api.openai.com/v1/chat/completions'
+    
+    const apiKey = useDeepSeek 
+      ? process.env.DEEPSEEK_API_KEY 
+      : process.env.OPENAI_API_KEY
+    
+    const model = useDeepSeek ? 'deepseek-chat' : 'gpt-4o-mini'
+
+    console.log('🤖 Usando API:', useDeepSeek ? 'DeepSeek' : 'OpenAI')
+
+    const openaiResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model,
         messages: [
           {
             role: 'system',
-            content: `You are a professional translator. Translate the following text from ${sourceLanguage} to ${targetLanguage}. Return ONLY the translated text, no explanations or additional content. Maintain the original formatting and tone.`
+            content: `You are a professional translator. Translate the following text from ${sourceLanguage} to ${targetLanguage === 'pt' ? 'Brazilian Portuguese (pt-BR)' : targetLanguage}. Return ONLY the translated text in ${targetLanguage === 'pt' ? 'natural Brazilian Portuguese' : 'natural ' + targetLanguage}, no explanations or additional content. Maintain the original formatting and tone.`
           },
           {
             role: 'user',

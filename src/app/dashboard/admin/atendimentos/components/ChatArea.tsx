@@ -432,7 +432,8 @@ export default function ChatArea({
   const { isStarred, toggleStar, loading: favoritesLoading } = useFavorites(chatId)
 
   // Estado para mensagens traduzidas
-  const [translatedMessages, setTranslatedMessages] = useState<any[]>([])
+  const [translatedMessages, setTranslatedMessages] = useState<{[messageId: string]: string}>({})
+  const [translatingMessages, setTranslatingMessages] = useState<Set<string>>(new Set())
   
   // Transformar mensagens da WAHA API para o formato do componente
   const transformedMessages = transformMessages(messages || [])
@@ -1281,16 +1282,54 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
-  // Função para traduzir mensagem usando OpenAI
+  // Função para traduzir mensagem dinamicamente (inline)
   const handleTranslateMessage = async (message: any) => {
+    const messageId = message.id
+    
+    // Se já está traduzindo, não fazer nada
+    if (translatingMessages.has(messageId)) return
+    
+    // Se já tem tradução, remover (toggle)
+    if (translatedMessages[messageId]) {
+      setTranslatedMessages(prev => {
+        const newState = { ...prev }
+        delete newState[messageId]
+        return newState
+      })
+      return
+    }
+    
     try {
       console.log('🌍 Traduzindo mensagem:', message.body?.substring(0, 50) + '...')
       
-      // Detectar se texto está em português e escolher idioma de destino
-      const isPortuguese = /[àáâãäéêëíîïóôõöúûüç]/i.test(message.body) || 
-                           /\b(de|da|do|para|com|sem|sobre|entre|por|em|no|na)\b/i.test(message.body)
+      // Marcar como traduzindo
+      setTranslatingMessages(prev => new Set(Array.from(prev).concat([messageId])))
+      
+      // Detectar idioma de forma mais precisa
+      const hasPortugueseAccents = /[àáâãäéêëíîïóôõöúûüç]/i.test(message.body)
+      const hasPortugueseWords = /\b(de|da|do|para|com|sem|sobre|entre|por|em|no|na|que|não|sim|está|ser|ter|fazer|como|muito|mais|quando|onde|porque|já|ainda|então|assim|bem|mas|só|seu|sua|seus|suas)\b/i.test(message.body)
+      const hasEnglishWords = /\b(the|and|you|are|how|need|help|your|what|when|where|why|have|with|this|that|they|them|from|would|could|should|will|can|get|make|time|know|think|see|come|take|look|use|way|work|life|day|hand|eye|back|part|right|left|good|great|first|last|long|little|big|small|high|low|new|old|young|next|same|different|important|every|much|many|most|few|other|another|each|some|all|any|both|neither|either)\b/i.test(message.body)
+      
+      // Lógica de detecção melhorada
+      let isPortuguese = hasPortugueseAccents || hasPortugueseWords
+      let isEnglish = hasEnglishWords && !hasPortugueseAccents && !hasPortugueseWords
+      
+      // Se não detectar claramente, assume que texto sem acentos é inglês
+      if (!isPortuguese && !isEnglish) {
+        isEnglish = true
+      }
       
       const targetLanguage = isPortuguese ? 'en' : 'pt'
+      
+      console.log('🔍 Detecção de idioma:', {
+        text: message.body.substring(0, 50),
+        hasPortugueseAccents,
+        hasPortugueseWords, 
+        hasEnglishWords,
+        isPortuguese,
+        isEnglish,
+        targetLanguage: targetLanguage === 'pt' ? 'Português BR' : 'Inglês'
+      })
       
       const response = await fetch('/api/translate', {
         method: 'POST',
@@ -1311,25 +1350,37 @@ export default function ChatArea({
       const data = await response.json()
       
       if (data.success) {
-        // Mostrar tradução em uma notificação ou modal
-        const translatedText = data.translatedText
-        const sourceLang = isPortuguese ? 'Português' : 'Detectado'
-        const targetLang = targetLanguage === 'pt' ? 'Português' : 'Inglês'
+        // Salvar tradução no estado
+        setTranslatedMessages(prev => ({
+          ...prev,
+          [messageId]: data.translatedText
+        }))
         
-        // Por enquanto, vou mostrar no console e como toast
-        console.log('✅ Tradução:', {
-          original: message.body,
-          translated: translatedText,
-          from: sourceLang,
-          to: targetLang
-        })
-        
-        // TODO: Implementar toast ou modal para mostrar tradução
-        alert(`📝 Texto original: ${message.body}\n\n🌍 Tradução (${sourceLang} → ${targetLang}):\n${translatedText}`)
+        console.log('✅ Tradução salva para mensagem:', messageId)
       }
     } catch (error) {
       console.error('❌ Erro ao traduzir:', error)
-      alert('Erro ao traduzir mensagem. Tente novamente.')
+      // Mostrar erro brevemente
+      setTranslatedMessages(prev => ({
+        ...prev,
+        [messageId]: '❌ Erro na tradução'
+      }))
+      
+      // Remover erro após 3 segundos
+      setTimeout(() => {
+        setTranslatedMessages(prev => {
+          const newState = { ...prev }
+          delete newState[messageId]
+          return newState
+        })
+      }, 3000)
+    } finally {
+      // Remover do estado de traduzindo
+      setTranslatingMessages(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(messageId)
+        return newSet
+      })
     }
   }
 
@@ -2737,6 +2788,36 @@ export default function ChatArea({
                         content={msg.content} 
                         className={msg.sender === 'agent' ? 'text-white/90' : 'text-gray-900 dark:text-gray-900'}
                       />
+
+                      {/* Tradução dinâmica inline */}
+                      {translatingMessages.has(msg.id) && (
+                        <div className={`mt-2 p-2 rounded-md border-l-2 ${
+                          msg.sender === 'agent' 
+                            ? 'bg-white/10 border-white/30 text-white/80' 
+                            : 'bg-blue-50 border-blue-200 text-gray-600'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-xs">Traduzindo...</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {translatedMessages[msg.id] && !translatingMessages.has(msg.id) && (
+                        <div className={`mt-2 p-2 rounded-md border-l-2 ${
+                          msg.sender === 'agent' 
+                            ? 'bg-white/10 border-green-300 text-white/90' 
+                            : 'bg-green-50 border-green-300 text-green-800'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            <Languages className="w-3 h-3 mt-0.5 text-green-600" />
+                            <div>
+                              <span className="text-xs font-medium block mb-1">Tradução:</span>
+                              <span className="text-sm">{translatedMessages[msg.id]}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   
