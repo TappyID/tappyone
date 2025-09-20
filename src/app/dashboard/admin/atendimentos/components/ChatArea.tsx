@@ -94,6 +94,8 @@ import MessageContent from '@/components/MessageContent'
 import InputLinkPreview from '@/components/InputLinkPreview'
 import { useMessageActions } from '@/hooks/useMessageActions'
 import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamentoData } from '@/components/shared/UniversalAgendamentoModal'
+import MessageRenderer from '@/components/messages/MessageRenderer'
+import MessageDebugger from '@/components/debug/MessageDebugger'
 import CriarOrcamentoModal from '../../orcamentos/components/CriarOrcamentoModal'
 import AssinaturaModal from './modals/AssinaturaModal'
 import TagsModal from './modals/TagsModal'
@@ -136,20 +138,60 @@ interface ChatAreaProps {
 
 // Função para transformar mensagens da WAHA API para o formato do componente
 const transformMessages = (wahaMessages: any[]) => {
-  return wahaMessages.map(msg => ({
-    id: msg.id,
-    content: msg.body || '',
-    timestamp: new Date(msg.timestamp).toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }),
-    sender: msg.fromMe ? 'agent' : 'user',
-    status: msg.status || 'sent',
-    type: msg.processedType || msg.type || 'text', // Usar processedType do backend primeiro
-    mediaUrl: msg.mediaUrl || msg.url || null,
-    filename: msg.filename || msg.name || null,
-    mimetype: msg.mimetype || null
-  }))
+  return wahaMessages
+    .filter(msg => {
+      // 🚫 FILTRAR mensagens vazias sem conteúdo útil
+      const hasContent = msg.body || msg.text || msg.caption
+      const hasMedia = msg.mediaUrl || msg.url || msg.media
+      const hasLocation = msg.location || msg.latitude || msg.longitude
+      const hasPoll = msg.poll || msg.pollData
+      const hasContact = msg.contact || msg.vcard
+      
+      // Manter apenas mensagens com pelo menos um tipo de conteúdo
+      return hasContent || hasMedia || hasLocation || hasPoll || hasContact
+    })
+    .map(msg => {
+    console.log('🔍 TRANSFORMING MESSAGE:', {
+      id: msg.id,
+      type: msg.type,
+      processedType: msg.processedType,
+      hasMediaUrl: !!(msg.mediaUrl || msg.url),
+      hasMedia: !!msg.media,
+      mimetype: msg.mimetype,
+      allKeys: Object.keys(msg)
+    })
+
+    return {
+      id: msg.id,
+      content: msg.body || msg.text || '',
+      timestamp: new Date(msg.timestamp).toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      sender: msg.fromMe ? 'agent' : 'user',
+      status: msg.status || 'sent',
+      type: msg.processedType || msg.type || 'text',
+      // 📸 MÍDIA - Incluir TODOS os campos possíveis
+      mediaUrl: msg.mediaUrl || msg.url || msg.media?.url || null,
+      filename: msg.filename || msg.name || msg.media?.filename || null,
+      mimetype: msg.mimetype || msg.media?.mimetype || null,
+      // 📱 CAMPOS EXTRAS da WAHA
+      media: msg.media || null, // Dados base64 se disponíveis
+      caption: msg.caption || null,
+      // 📍 LOCALIZAÇÃO
+      location: msg.location || null,
+      latitude: msg.latitude || null,
+      longitude: msg.longitude || null,
+      // 📊 POLL
+      poll: msg.poll || null,
+      pollData: msg.pollData || null,
+      // 👤 CONTATO
+      contact: msg.contact || null,
+      vcard: msg.vcard || null,
+      // 🔄 DADOS RAW para debug
+      _raw: msg
+    }
+  })
 }
 
 export default function ChatArea({
@@ -2237,7 +2279,12 @@ export default function ChatArea({
                 >
                   {/* Renderizar conteúdo da mensagem com mídia */}
                   
-               
+                  {/* 🐛 DEBUG VISUAL */}
+                  <MessageDebugger message={msg} sender={msg.sender} />
+
+                  {/* 🎯 NOVO SISTEMA DE RENDERIZAÇÃO COM MICRO COMPONENTES */}
+                  <MessageRenderer message={msg} sender={msg.sender} />
+
                   {/* Verificar se é localização */}
                   {(() => {
                     const isLocation = msg.type === 'location' || (msg as any).location || 
@@ -2906,8 +2953,10 @@ export default function ChatArea({
                     </div>
                   ) : (
                     <div>
-                      {/* 🔍 DEBUG VISUAL - Só mostra se mensagem tem dados de mídia mas caiu no fallback */}
-                      {((msg as any).mediaUrl || (msg as any).poll || (msg as any).location || msg.type !== 'text' || (msg as any).processedType) && (
+                      {/* 🔍 DEBUG VISUAL MELHORADO - TODAS as mensagens de mídia que caem aqui */}
+                      {((msg as any).mediaUrl || (msg as any).media || (msg as any).poll || (msg as any).location || 
+                        msg.type !== 'text' || (msg as any).processedType || (msg as any).mimetype || 
+                        (msg as any).caption || (msg as any).filename) && (
                         <div className="mb-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
                           <div className="font-bold text-yellow-800">⚠️ FALLBACK DEBUG:</div>
                           <div>Type: <span className="font-mono">{msg.type}</span> → <span className="font-mono">{(msg as any).processedType || 'N/A'}</span></div>
@@ -2917,9 +2966,18 @@ export default function ChatArea({
                               <strong>URL:</strong> <span className="font-mono break-all">{(msg as any).mediaUrl}</span>
                             </div>
                           )}
+                          <div>Media: {(msg as any).media ? '✅ SIM' : '❌ NÃO'}</div>
                           <div>Poll: {(msg as any).poll ? '✅ SIM' : '❌ NÃO'}</div>
                           <div>Location: {(msg as any).location ? '✅ SIM' : '❌ NÃO'}</div>
+                          <div>Contact: {(msg as any).contact ? '✅ SIM' : '❌ NÃO'}</div>
+                          <div>VCard: {(msg as any).vcard ? '✅ SIM' : '❌ NÃO'}</div>
                           <div>Mimetype: <span className="font-mono">{(msg as any).mimetype || 'N/A'}</span></div>
+                          <div>Caption: <span className="font-mono">{(msg as any).caption || 'N/A'}</span></div>
+                          <div>Filename: <span className="font-mono">{(msg as any).filename || 'N/A'}</span></div>
+                          <div className="text-xs bg-red-100 p-1 rounded mt-1 max-h-20 overflow-y-auto">
+                            <strong>DADOS RAW:</strong> 
+                            <pre className="text-xs">{JSON.stringify((msg as any)._raw || msg, null, 1).substring(0, 300)}...</pre>
+                          </div>
                           <div className="text-red-600 font-bold mt-1">↑ Deveria renderizar como mídia!</div>
                         </div>
                       )}
