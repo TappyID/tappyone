@@ -18,43 +18,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
     }
 
-    // Fazer proxy para o backend Go para obter sessão ativa
-    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8081'
-    
-    // Primeiro obter a sessão ativa do usuário via backend
-    const sessionsResponse = await fetch(`${BACKEND_URL}/api/whatsapp/sessions`, {
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!sessionsResponse.ok) {
-      console.error('❌ REPLY - Erro ao obter sessões:', sessionsResponse.status)
-      return NextResponse.json({ error: 'Erro ao obter sessão ativa' }, { status: 500 })
-    }
-
-    const sessionsData = await sessionsResponse.json()
-    let activeSession = null
-
-    // Encontrar sessão ativa (WORKING)
-    if (sessionsData.sessions && Array.isArray(sessionsData.sessions)) {
-      activeSession = sessionsData.sessions.find((session: any) => session.status === 'WORKING')
-    }
-
-    if (!activeSession) {
-      console.error('❌ REPLY - Nenhuma sessão ativa encontrada')
-      return NextResponse.json({ error: 'Nenhuma sessão ativa encontrada' }, { status: 404 })
-    }
-
-    console.log('💬 REPLY - Sessão ativa encontrada:', activeSession.name)
+    // Usar sessão fixa conhecida (mais estável)
+    const sessionName = 'user_fb8da1d7_1758158816675'
+    console.log('💬 REPLY - Usando sessão:', sessionName)
     
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
     const payload = {
       chatId,
       text,
       replyTo,
-      session: activeSession.name
+      session: sessionName
     }
 
     const response = await fetch(`${backendUrl}/api/whatsapp/reply`, {
