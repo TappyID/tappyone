@@ -40,18 +40,31 @@ export default function ForwardMessageModal({
   const fetchContacts = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+      console.log('📞 [ForwardModal] Buscando contatos...')
       
-      const response = await fetch(`${backendUrl}/api/whatsapp/contacts`, {
+      const response = await fetch('/api/whatsapp/getContacts?limit=50', {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         }
       })
 
       if (response.ok) {
         const data = await response.json()
-        setContacts(data || [])
+        console.log('✅ [ForwardModal] Contatos recebidos:', data.contacts?.length)
+        
+        // Mapear contatos para formato esperado
+        const mappedContacts = (data.contacts || []).map((contact: any) => ({
+          id: contact.id,
+          name: contact.name || contact.phone,
+          phone: contact.phone,
+          avatar: contact.profilePicture,
+          isGroup: false
+        }))
+        
+        setContacts(mappedContacts)
+      } else {
+        console.error('❌ [ForwardModal] Erro:', response.status)
       }
     } catch (error) {
       console.error('Erro ao buscar contatos:', error)

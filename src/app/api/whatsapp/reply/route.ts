@@ -21,14 +21,17 @@ export async function POST(request: NextRequest) {
     // Usar sessão fixa conhecida (mais estável)
     const sessionName = 'user_fb8da1d7_1758158816675'
     console.log('💬 REPLY - Usando sessão:', sessionName)
+    console.log('💬 REPLY - Dados recebidos:', { chatId, text, replyTo })
     
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081'
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
     const payload = {
       chatId,
       text,
       replyTo,
       session: sessionName
     }
+    
+    console.log('💬 REPLY - Enviando para backend:', backendUrl, payload)
 
     const response = await fetch(`${backendUrl}/api/whatsapp/reply`, {
       method: 'POST',
@@ -41,12 +44,14 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Backend reply error:', errorText)
+      console.error('❌ REPLY - Backend error:', response.status, errorText)
       return NextResponse.json(
-        { error: 'Erro ao enviar reply' },
+        { error: 'Erro ao enviar reply', details: errorText },
         { status: response.status }
       )
     }
+    
+    console.log('✅ REPLY - Sucesso no backend')
 
     const result = await response.json().catch(() => ({}))
     return NextResponse.json(result)
