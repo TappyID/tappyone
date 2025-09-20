@@ -295,16 +295,26 @@ export default function CriarFluxoIAModal({
     }
   }
 
+  // DEBUG: Log do estado isOpen
+  console.log('🔍 [CriarFluxoIAModal] isOpen:', isOpen)
+
   if (!isOpen) return null
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        onClick={onClose}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           className="bg-background rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-4"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="p-6 border-b border-border bg-gradient-to-r from-violet-500 to-purple-600">
@@ -472,7 +482,7 @@ export default function CriarFluxoIAModal({
             </div>
           )}
         </motion.div>
-      </div>
+      </motion.div>
     </AnimatePresence>
   )
 }

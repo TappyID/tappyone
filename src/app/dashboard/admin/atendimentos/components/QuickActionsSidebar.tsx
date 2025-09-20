@@ -36,7 +36,8 @@ import {
   ChevronUp,
   Upload,
   Music,
-  File
+  File,
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -155,8 +156,15 @@ export default function QuickActionsSidebar({
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFluxoIAModal, setShowFluxoIAModal] = useState(false)
   const [editingActions, setEditingActions] = useState<{[key: string]: any[]}>({})
+  const [textareaHeights, setTextareaHeights] = useState<{[key: string]: number}>({}) // Controla altura das textareas
+  const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({}) // Controla loading da IA
   
   const { respostas, categorias, fetchRespostas, fetchCategorias, togglePauseResposta, executeResposta } = useRespostasRapidas()
+
+  // Debug do estado do modal
+  useEffect(() => {
+    console.log('📋 [DEBUG] showFluxoIAModal estado:', showFluxoIAModal)
+  }, [showFluxoIAModal])
 
   useEffect(() => {
     if (isOpen) {
@@ -340,7 +348,16 @@ export default function QuickActionsSidebar({
   }
 
   const handleCreateWithAI = () => {
-    onCreateWithAI?.()
+    console.log('🤖 Botão "Criar com IA" clicado!')
+    console.log('onCreateWithAI disponível:', !!onCreateWithAI)
+    
+    // Se a prop não está funcionando, abrir modal diretamente
+    if (!onCreateWithAI) {
+      console.log('⚡ Abrindo modal CriarFluxoIAModal diretamente...')
+      setShowFluxoIAModal(true)
+    } else {
+      onCreateWithAI()
+    }
   }
 
   const handleCreateFlowWithAI = () => {
@@ -691,10 +708,10 @@ export default function QuickActionsSidebar({
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    onEditAction?.(action)
+                                    toggleActionExpansion(action.id)
                                   }}
                                   className="p-1 bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 dark:bg-blue-500/30 dark:text-blue-400 rounded-md transition-colors"
-                                  title="Editar"
+                                  title={isExpanded ? 'Recolher edição' : 'Expandir para editar'}
                                 >
                                   <Edit className="w-2.5 h-2.5" />
                                 </button>
@@ -867,14 +884,73 @@ export default function QuickActionsSidebar({
                                             </div>
                                             
                                             {acao.tipo === 'texto' && (
-                                              <textarea
-                                                className="w-full p-2 text-xs border border-border rounded bg-background text-foreground resize-none focus:ring-1 focus:ring-primary"
-                                                rows={2}
-                                                value={conteudoAcao?.texto || conteudoAcao?.mensagem || ''}
-                                                onChange={(e) => updateEditingAction(action.id, index, 'texto', e.target.value)}
-                                                placeholder="Texto da mensagem..."
-                                                onClick={(e) => e.stopPropagation()}
-                                              />
+                                              <div className="space-y-2">
+                                                {/* Header com controles */}
+                                                <div className="flex items-center justify-between">
+                                                  <span className="text-xs text-muted-foreground">Texto da mensagem</span>
+                                                  <div className="flex items-center gap-1">
+                                                    {/* Botão DeepSeek IA */}
+                                                    <button
+                                                      onClick={async (e) => {
+                                                        e.stopPropagation()
+                                                        const textareaKey = `${action.id}-${index}`
+                                                        setIsGeneratingAI(prev => ({ ...prev, [textareaKey]: true }))
+                                                        
+                                                        try {
+                                                          // Simular geração de IA (substitua pela API real do DeepSeek)
+                                                          await new Promise(resolve => setTimeout(resolve, 2000))
+                                                          const generatedText = `🎯 Mensagem otimizada com IA:\n\nOlá! Como posso ajudar você hoje? Nosso atendimento está disponível para esclarecer suas dúvidas e oferecer as melhores soluções.\n\n✨ Resposta criada automaticamente`
+                                                          updateEditingAction(action.id, index, 'texto', generatedText)
+                                                        } catch (error) {
+                                                          console.error('Erro ao gerar conteúdo:', error)
+                                                        } finally {
+                                                          setIsGeneratingAI(prev => ({ ...prev, [textareaKey]: false }))
+                                                        }
+                                                      }}
+                                                      className="p-1 hover:bg-accent rounded transition-colors"
+                                                      title="Gerar conteúdo com IA (DeepSeek)"
+                                                      disabled={isGeneratingAI[`${action.id}-${index}`]}
+                                                    >
+                                                      {isGeneratingAI[`${action.id}-${index}`] ? (
+                                                        <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                                      ) : (
+                                                        <Sparkles className="w-3 h-3 text-blue-500" />
+                                                      )}
+                                                    </button>
+                                                    
+                                                  </div>
+                                                </div>
+                                                
+                                                {/* Textarea com auto-resize */}
+                                                <textarea
+                                                  ref={(textarea) => {
+                                                    if (textarea) {
+                                                      // Auto-resize baseado no conteúdo
+                                                      const autoResize = () => {
+                                                        textarea.style.height = 'auto'
+                                                        const scrollHeight = textarea.scrollHeight
+                                                        const lineHeight = 16 // Aproximadamente para text-xs
+                                                        const minHeight = lineHeight * 4 // Mínimo 4 linhas
+                                                        const maxHeight = lineHeight * 12 // Máximo 12 linhas
+                                                        const newHeight = Math.max(minHeight, Math.min(maxHeight, scrollHeight))
+                                                        textarea.style.height = `${newHeight}px`
+                                                      }
+                                                      
+                                                      // Auto-resize imediato
+                                                      setTimeout(autoResize, 0)
+                                                      
+                                                      // Auto-resize no input
+                                                      textarea.addEventListener('input', autoResize)
+                                                    }
+                                                  }}
+                                                  className="w-full p-2 text-xs border border-border rounded bg-background text-foreground resize-none focus:ring-1 focus:ring-primary transition-all overflow-hidden"
+                                                  style={{ minHeight: '64px' }} // 4 linhas mínimo
+                                                  value={conteudoAcao?.texto || conteudoAcao?.mensagem || ''}
+                                                  onChange={(e) => updateEditingAction(action.id, index, 'texto', e.target.value)}
+                                                  placeholder="Digite o texto da mensagem ou use a IA para gerar..."
+                                                  onClick={(e) => e.stopPropagation()}
+                                                />
+                                              </div>
                                             )}
                                             
                                             {acao.tipo === 'imagem' && (
@@ -1581,7 +1657,10 @@ export default function QuickActionsSidebar({
           {/* Modal Criar Fluxo com IA */}
           <CriarFluxoIAModal
             isOpen={showFluxoIAModal}
-            onClose={() => setShowFluxoIAModal(false)}
+            onClose={() => {
+              console.log('🔒 Fechando modal CriarFluxoIAModal')
+              setShowFluxoIAModal(false)
+            }}
             onCreateFluxo={handleCreateFluxo}
           />
         </motion.div>
