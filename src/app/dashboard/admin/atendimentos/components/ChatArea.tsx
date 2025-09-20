@@ -1282,11 +1282,50 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
-  // Função para responder com IA (antiga função de traduzir)
+  // Função para responder com IA 
   const handleAIResponse = async (message: any) => {
-    console.log('🤖 Gerando resposta com IA para:', message.body?.substring(0, 50))
-    // TODO: Implementar resposta com IA
-    alert('🤖 Resposta com IA ainda não implementada')
+    try {
+      console.log('🤖 Gerando resposta com IA para:', message.body?.substring(0, 50))
+      
+      // Mostrar loading na interface
+      setMessage('🤖 Gerando resposta...')
+      
+      // Chamar API de IA existente (DeepSeek + OpenAI)
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: message.body,
+          context: 'Contexto: Você está gerando uma resposta para um atendimento via WhatsApp. A mensagem do cliente foi: "' + message.body + '". Gere uma resposta profissional, amigável e útil.',
+          type: 'response'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao gerar resposta com IA')
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.text) {
+        // Colocar a resposta gerada no campo de texto
+        setMessage(data.text)
+        
+        // Opcional: enviar automaticamente (comentado por segurança)
+        // await sendMessage(data.text)
+        
+        console.log('✅ Resposta IA gerada:', data.text)
+      } else {
+        throw new Error('Resposta inválida da IA')
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro na resposta IA:', error)
+      setMessage('') // Limpar loading
+      alert('Erro ao gerar resposta com IA. Tente novamente.')
+    }
   }
 
   // Função para traduzir mensagem dinamicamente (inline) - REAL
