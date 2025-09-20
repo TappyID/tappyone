@@ -11,7 +11,8 @@ import {
   Copy,
   Download,
   Smile,
-  Languages
+  Languages,
+  Bot
 } from 'lucide-react'
 import { WhatsAppMessage } from '@/hooks/useInfiniteMessages'
 import { DeleteConfirmTooltip } from './DeleteConfirmTooltip'
@@ -24,7 +25,8 @@ interface MessageContextMenuProps {
   onDelete: (message: WhatsAppMessage) => void
   onStar: (message: WhatsAppMessage) => void
   onCopy: (text: string) => void
-  onTranslate: (message: WhatsAppMessage) => void
+  onTranslate: (message: WhatsAppMessage) => void // Responder com IA
+  onTranslateReal: (message: WhatsAppMessage) => void // Traduzir de verdade
   isStarred?: boolean
 }
 
@@ -37,6 +39,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onStar,
   onCopy,
   onTranslate,
+  onTranslateReal,
   isStarred = false
 }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -149,10 +152,21 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
               Responder
             </button>
 
-            {/* Só mostrar traduzir se a mensagem tem texto */}
+            {/* Só mostrar responder com IA se a mensagem tem texto */}
             {message.type === 'text' && message.body && (
               <button
                 onClick={() => handleAction(() => onTranslate(message))}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-purple-50 flex items-center gap-3 text-gray-700"
+              >
+                <Bot className="w-4 h-4 text-purple-600" />
+                Responder com IA
+              </button>
+            )}
+
+            {/* Novo botão traduzir de verdade */}
+            {message.type === 'text' && message.body && (
+              <button
+                onClick={() => handleAction(() => onTranslateReal(message))}
                 className="w-full px-4 py-2 text-left text-sm hover:bg-green-50 flex items-center gap-3 text-gray-700"
               >
                 <Languages className="w-4 h-4 text-green-600" />

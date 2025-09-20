@@ -1282,7 +1282,14 @@ export default function ChatArea({
     // TODO: Implementar integração com plataforma de compartilhamento
   }
 
-  // Função para traduzir mensagem dinamicamente (inline)
+  // Função para responder com IA (antiga função de traduzir)
+  const handleAIResponse = async (message: any) => {
+    console.log('🤖 Gerando resposta com IA para:', message.body?.substring(0, 50))
+    // TODO: Implementar resposta com IA
+    alert('🤖 Resposta com IA ainda não implementada')
+  }
+
+  // Função para traduzir mensagem dinamicamente (inline) - REAL
   const handleTranslateMessage = async (message: any) => {
     const messageId = message.id
     
@@ -2934,7 +2941,8 @@ export default function ChatArea({
                             }
                           }}
                           onCopy={(text) => messageActions.copyToClipboard(text)}
-                          onTranslate={(message) => handleTranslateMessage(message)}
+                          onTranslate={(message) => handleAIResponse(message)}
+                          onTranslateReal={(message) => handleTranslateMessage(message)}
                         />
                       )}
                     </div>

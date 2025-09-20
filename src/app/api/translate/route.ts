@@ -16,29 +16,17 @@ export async function POST(request: NextRequest) {
       to: targetLanguage
     })
 
-    // Usar DeepSeek (mais barato) ou OpenAI como fallback
-    const useDeepSeek = true // Ativar DeepSeek
-    
-    const apiUrl = useDeepSeek 
-      ? 'https://api.deepseek.com/v1/chat/completions'
-      : 'https://api.openai.com/v1/chat/completions'
-    
-    const apiKey = useDeepSeek 
-      ? process.env.DEEPSEEK_API_KEY 
-      : process.env.OPENAI_API_KEY
-    
-    const model = useDeepSeek ? 'deepseek-chat' : 'gpt-4o-mini'
+    // Usar OpenAI direto (mesma config do transcribe)
+    console.log('🤖 Usando OpenAI para tradução')
 
-    console.log('🤖 Usando API:', useDeepSeek ? 'DeepSeek' : 'OpenAI')
-
-    const openaiResponse = await fetch(apiUrl, {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model,
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
