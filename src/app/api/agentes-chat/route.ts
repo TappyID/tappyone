@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('🤖 [API] Agente ativo recebido:', data)
 
     return NextResponse.json(data)
 

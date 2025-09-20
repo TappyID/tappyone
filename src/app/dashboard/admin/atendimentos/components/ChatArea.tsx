@@ -2557,6 +2557,99 @@ export default function ChatArea({
                       )}
                     </div>
                   ) : (() => {
+                    // 👤 DETECÇÃO DE CONTATO/VCARD
+                    const isContact = msg.type === 'contact' || msg.type === 'vcard' || 
+                      (msg as any).contact || (msg as any).vcard || 
+                      (msg as any).mediaUrl?.includes('.vcf') ||
+                      (msg as any).mimetype?.includes('text/vcard') ||
+                      (msg.content && (
+                        msg.content.includes('BEGIN:VCARD') || 
+                        msg.content.includes('FN:') ||
+                        msg.content.includes('TEL:')
+                      ))
+                    
+                    return isContact
+                  })() ? (
+                    <div className="mb-2">
+                      {/* 🔍 DEBUG VISUAL - Indicador CONTACT na mensagem */}
+                      <div className="mb-2 p-2 bg-blue-100 border border-blue-300 rounded text-xs">
+                        <div className="font-bold text-blue-800">👤 CONTACT DEBUG:</div>
+                        <div>Type: {msg.type} → isContact: {String(msg.type === 'contact' || msg.type === 'vcard')}</div>
+                        <div>Has .contact: {String(!!(msg as any).contact)}</div>
+                        <div>Has .vcard: {String(!!(msg as any).vcard)}</div>
+                        <div>Content preview: {msg.content?.substring(0, 100)}...</div>
+                      </div>
+                      <div className={`flex items-center gap-3 p-4 rounded-lg border ${
+                        msg.sender === 'agent' ? 'bg-white/10 dark:bg-black/30 backdrop-blur-sm border-white/20 dark:border-slate-600/30' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700/30'
+                      }`}>
+                        <div className={`p-3 rounded-full ${
+                          msg.sender === 'agent' ? 'bg-white/20 dark:bg-slate-700/60 backdrop-blur-sm' : 'bg-blue-100 dark:bg-blue-800'
+                        }`}>
+                          <svg className={`w-6 h-6 ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600 dark:text-blue-300'
+                          }`} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <div className={`font-medium text-sm ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-blue-800 dark:text-blue-200'
+                          }`}>
+                            👤 {(() => {
+                              // Extrair nome do contato
+                              if ((msg as any).contact?.formattedName) return (msg as any).contact.formattedName;
+                              if ((msg as any).vcard?.fn) return (msg as any).vcard.fn;
+                              if (msg.content?.includes('FN:')) {
+                                const fnMatch = msg.content.match(/FN:(.+)/);
+                                return fnMatch ? fnMatch[1].trim() : 'Contato';
+                              }
+                              return 'Contato Compartilhado';
+                            })()}
+                          </div>
+                          <div className={`text-xs mt-1 ${
+                            msg.sender === 'agent' ? 'text-white/70' : 'text-blue-600 dark:text-blue-400'
+                          }`}>
+                            {(() => {
+                              // Extrair telefone do contato
+                              if ((msg as any).contact?.phoneNumbers?.[0]) return (msg as any).contact.phoneNumbers[0];
+                              if ((msg as any).vcard?.tel) return (msg as any).vcard.tel;
+                              if (msg.content?.includes('TEL:')) {
+                                const telMatch = msg.content.match(/TEL:(.+)/);
+                                return telMatch ? telMatch[1].trim() : 'Telefone não disponível';
+                              }
+                              return 'Informações de contato';
+                            })()}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // Tentar baixar ou abrir vCard se disponível
+                            if ((msg as any).mediaUrl) {
+                              window.open((msg as any).mediaUrl, '_blank')
+                            } else if (msg.content?.includes('BEGIN:VCARD')) {
+                              // Criar blob do vCard e baixar
+                              const blob = new Blob([msg.content], { type: 'text/vcard' })
+                              const url = URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = 'contato.vcf'
+                              a.click()
+                              URL.revokeObjectURL(url)
+                            }
+                          }}
+                          className={`p-2 rounded-full hover:bg-opacity-80 transition-colors ${
+                            msg.sender === 'agent' ? 'bg-white/20 hover:bg-white/30' : 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700'
+                          }`}
+                        >
+                          <svg className={`w-4 h-4 ${
+                            msg.sender === 'agent' ? 'text-white' : 'text-blue-600 dark:text-blue-300'
+                          }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (() => {
                     // 🎬 DETECÇÃO DE VÍDEO - Excluir arquivos que já foram detectados como áudio
                     const isAudioFile = (msg as any).mediaUrl && (
                       (msg as any).mediaUrl.includes('.oga') ||

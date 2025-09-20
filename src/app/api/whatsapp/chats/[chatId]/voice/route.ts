@@ -44,30 +44,49 @@ export async function POST(
 
     // Upload concluído
 
-    // Enviar URL pública para o backend Go
-    const backendUrl = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
-    const token = request.headers.get('authorization')
-
-    const response = await fetch(`${backendUrl}/api/whatsapp/chats/${params.chatId}/voice`, {
-      method: 'POST',
-      headers: {
-        'Authorization': token || '',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        audioUrl: blob.url
-      })
+    console.log('🎙️ Enviando áudio para WAHA:', {
+      chatId: params.chatId,
+      audioUrl: blob.url,
+      fileType: finalFile.type
     })
 
-    // Resposta do backend Go
+    // Usar WAHA API diretamente (igual sendImage)
+    const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
+    const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
+
+    // Payload no formato WAHA
+    const payload = {
+      chatId: params.chatId,
+      file: {
+        mimetype: finalFile.type || 'audio/ogg',
+        filename: finalFile.name,
+        url: blob.url
+      },
+      session: 'user_fb8da1d7_1758158816675'
+    }
+
+    // Fazer requisição direta para WAHA
+    const response = await fetch(`${wahaUrl}/api/sendVoice`, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': wahaApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Erro do backend:', response.status, errorText)
-      return NextResponse.json({ error: 'Erro ao enviar áudio' }, { status: response.status })
+      console.error('❌ Erro do WAHA:', response.status, errorText)
+      return NextResponse.json({ 
+        error: 'Erro ao enviar áudio', 
+        details: errorText 
+      }, { status: response.status })
     }
 
     const result = await response.json()
+    console.log('✅ Áudio enviado com sucesso via WAHA')
+    
     return NextResponse.json({
       success: true,
       blobUrl: blob.url,
