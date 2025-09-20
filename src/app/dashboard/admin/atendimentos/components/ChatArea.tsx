@@ -596,6 +596,11 @@ export default function ChatArea({
   const [searchQuery, setSearchQuery] = useState('')
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
   
+  // 🚀 LAZY LOADING DE MENSAGENS (igual WhatsApp Web)
+  const [visibleMessagesCount, setVisibleMessagesCount] = useState(5) // Começar com 5 mensagens
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false)
+  const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false)
+  
   // Filtrar mensagens baseado na busca
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
@@ -620,6 +625,90 @@ export default function ChatArea({
     
     return filtered
   }, [messages, searchQuery])
+  
+  // 🚀 LAZY LOADING: Mostrar apenas as últimas N mensagens (igual WhatsApp Web)
+  const lazyDisplayMessages = useMemo(() => {
+    if (!displayMessages || displayMessages.length === 0) return []
+    
+    // Pegar apenas as últimas visibleMessagesCount mensagens
+    const messagesToShow = displayMessages.slice(-visibleMessagesCount)
+    
+    console.log(`📱 [LAZY LOADING] Mostrando ${messagesToShow.length} de ${displayMessages.length} mensagens`)
+    
+    return messagesToShow
+  }, [displayMessages, visibleMessagesCount])
+  
+  // Reset visibleMessagesCount quando trocar de chat
+  useEffect(() => {
+    setVisibleMessagesCount(5) // Reset para 5 mensagens iniciais
+    setShowNewMessageIndicator(false)
+  }, [conversation?.id])
+  
+  // Função para carregar mais mensagens (scroll para cima)
+  const loadMoreMessages = useCallback(() => {
+    if (isLoadingMoreMessages || visibleMessagesCount >= messages.length) return
+    
+    setIsLoadingMoreMessages(true)
+    
+    // Simular loading (em produção, seria uma API call)
+    setTimeout(() => {
+      setVisibleMessagesCount(prev => Math.min(prev + 20, messages.length))
+      setIsLoadingMoreMessages(false)
+      console.log(`📱 [LAZY LOADING] Carregadas mais mensagens. Total visível: ${Math.min(visibleMessagesCount + 20, messages.length)}`)
+    }, 300)
+  }, [isLoadingMoreMessages, visibleMessagesCount, messages.length])
+  
+  // 🔄 AUTO-SCROLL para novas mensagens + Lazy Loading no scroll up
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current
+    if (!chatContainer) return
+    
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer
+      
+      // Se scroll está no topo (carregamento de mensagens antigas)
+      if (scrollTop === 0 && visibleMessagesCount < displayMessages.length) {
+        console.log(`📱 [LAZY LOADING] Usuário no topo, carregando mais mensagens...`)
+        loadMoreMessages()
+      }
+      
+      // Se usuário não está no final, mostrar indicador de nova mensagem
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+      if (!isAtBottom && showNewMessageIndicator) {
+        setShowNewMessageIndicator(true)
+      } else if (isAtBottom) {
+        setShowNewMessageIndicator(false)
+      }
+    }
+    
+    chatContainer.addEventListener('scroll', handleScroll, { passive: true })
+    return () => chatContainer.removeEventListener('scroll', handleScroll)
+  }, [loadMoreMessages, visibleMessagesCount, displayMessages.length, showNewMessageIndicator])
+  
+  // 🔄 AUTO-SCROLL quando nova mensagem chega
+  useEffect(() => {
+    if (!messages || messages.length === 0) return
+    
+    const chatContainer = chatContainerRef.current
+    if (!chatContainer) return
+    
+    // Se está no final da conversa, fazer scroll automático
+    const { scrollTop, scrollHeight, clientHeight } = chatContainer
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+    
+    if (isAtBottom) {
+      // Auto-scroll suave para nova mensagem
+      setTimeout(() => {
+        chatContainer.scrollTo({
+          top: chatContainer.scrollHeight,
+          behavior: 'smooth'
+        })
+      }, 100)
+    } else {
+      // Mostrar indicador de nova mensagem
+      setShowNewMessageIndicator(true)
+    }
+  }, [messages.length]) // Trigger quando nova mensagem chega
   
   // Navegar entre resultados
   const navigateToMatch = (direction: 'next' | 'prev') => {
@@ -1926,10 +2015,33 @@ export default function ChatArea({
 
       {/* Messages Area */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-background scrollbar-chat">
+        {/* 📱 Loading indicator para mensagens antigas (top) */}
+        {isLoadingMoreMessages && (
+          <div className="flex justify-center py-4">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+              Carregando mensagens antigas...
+            </div>
+          </div>
+        )}
+        
+        {/* 📱 Indicador de mensagens não carregadas */}
+        {visibleMessagesCount < displayMessages.length && !isLoadingMoreMessages && (
+          <div className="flex justify-center py-2">
+            <button
+              onClick={loadMoreMessages}
+              className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-full transition-colors"
+            >
+              ↑ {displayMessages.length - visibleMessagesCount} mensagens mais antigas
+            </button>
+          </div>
+        )}
+        
         <AnimatePresence>
-          {displayMessages.map((msg, index) => (
+          {lazyDisplayMessages.map((msg, index) => (
             <motion.div
               key={msg.id}
+              id={`message-${msg.id}`}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -2736,6 +2848,28 @@ export default function ChatArea({
         </AnimatePresence>
 
         <div ref={messagesEndRef} />
+        
+        {/* 🔔 Botão flutuante "Nova mensagem" */}
+        <AnimatePresence>
+          {showNewMessageIndicator && (
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              onClick={() => {
+                chatContainerRef.current?.scrollTo({
+                  top: chatContainerRef.current.scrollHeight,
+                  behavior: 'smooth'
+                })
+                setShowNewMessageIndicator(false)
+              }}
+              className="absolute bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium transition-colors z-10"
+            >
+              <ChevronDown className="w-4 h-4" />
+              Nova mensagem
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
 

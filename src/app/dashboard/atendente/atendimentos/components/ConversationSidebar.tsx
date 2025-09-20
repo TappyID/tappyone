@@ -1016,25 +1016,10 @@ import '@/styles/scrollbar.css'
           return
         }
         
-        // Verificar se as tags já vêm nos dados do contato
-        if (contatoData.tags && Array.isArray(contatoData.tags)) {
-          console.log('✅ [SIDEBAR] Tags encontradas nos dados do contato!')
-          setTagsCache(prev => ({ ...prev, [chatId]: contatoData.tags }))
-          return
-        }
-        
-        // Só buscar tags se for um contato CRM válido
-        const response = await fetch(`/api/contatos/${chatId}/tags`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          const tags = data.data || data || []
-          setTagsCache(prev => ({ ...prev, [chatId]: tags }))
-        } else {
-          setTagsCache(prev => ({ ...prev, [chatId]: [] }))
-        }
+        // As tags vêm diretamente nos dados-completos!
+        const tags = contatoData.tags || []
+        console.log('✅ [SIDEBAR] Tags encontradas nos dados-completos:', tags)
+        setTagsCache(prev => ({ ...prev, [chatId]: tags }))
       } catch (error) {
         console.error(`❌ [SIDEBAR-CACHE] Erro ao buscar tags para ${chatId}:`, error)
         setTagsCache(prev => ({ ...prev, [chatId]: [] }))
@@ -1536,6 +1521,17 @@ import '@/styles/scrollbar.css'
           '--scrollbar-track': 'rgba(148, 163, 184, 0.1)'
         } as React.CSSProperties}
       >
+        {/* 🔍 DEBUG PANEL - SIDEBAR */}
+        {!isCollapsed && (
+          <div className="bg-green-100 dark:bg-green-900/20 p-2 text-xs border-b font-mono">
+            <div>🔍 <strong>Sidebar Debug:</strong></div>
+            <div>📊 <strong>Total Chats:</strong> {conversations.length}</div>
+            <div>🏷️ <strong>Tags Cache:</strong> {Object.keys(tagsCache).length} chats</div>
+            <div className="truncate">
+              <strong>Sample Tags:</strong> {JSON.stringify(Object.entries(tagsCache).slice(0, 1))}
+            </div>
+          </div>
+        )}
         {/* Collapsed State - Floating Expand Button */}
         {isCollapsed && (
           <div className="absolute inset-0 flex flex-col items-center justify-start pt-6 bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-sm z-10">
@@ -1610,12 +1606,11 @@ import '@/styles/scrollbar.css'
                 whileTap={{ scale: 0.98 }}
                 data-conexao-dropdown
               >
-                <div className="relative bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 p-[1px] rounded-lg shadow-lg">
-                  <motion.button
-                    ref={conexaoButtonRef}
-                    onClick={() => setShowConexaoDropdown(!showConexaoDropdown)}
-                    className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[140px] hover:bg-accent transition-colors border border-border"
-                  >
+                  <div className="relative bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-600 p-[1px] rounded-lg shadow-lg">
+                    <motion.button
+                      ref={conexaoButtonRef}
+                      onClick={() => setShowConexaoDropdown(!showConexaoDropdown)}
+                      className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[140px] hover:bg-accent transition-colors border border-border"
                     <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full" />
                     <span className="text-sm font-medium text-foreground flex-1 text-left">
                       {conexaoOptions.find(c => c.value === selectedConexao)?.label}

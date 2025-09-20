@@ -226,8 +226,21 @@ export default function ChatArea({
       
       console.log('🏷️ [CHATAREA] Salvando tags via API correta:', { numeroTelefone, tagIds })
       
-      // Usar API que realmente existe (igual ao kanban)
-      const response = await fetch(`/api/tags?contato_id=${encodeURIComponent(numeroTelefone)}`, {
+      // Usar API de contatos com ID do contato (não chatId)
+      // Primeiro buscar o ID do contato
+      const contatoResponse = await fetch(`/api/contatos/${numeroTelefone}/dados-completos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!contatoResponse.ok) {
+        throw new Error('Contato não encontrado no CRM')
+      }
+      
+      const contatoData = await contatoResponse.json()
+      console.log('🔍 [CHATAREA] ID do contato encontrado:', contatoData.id)
+      
+      // Usar API com ID do contato (não chatId)
+      const response = await fetch(`/api/contatos/${contatoData.id}/tags`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1513,6 +1526,17 @@ export default function ChatArea({
 
   return (
     <div className="flex-1 flex flex-col bg-background relative">
+      {/* 🔍 DEBUG PANEL - CHATAREA */}
+      <div className="bg-red-100 dark:bg-red-900/20 p-2 text-xs border-b font-mono">
+        <div>🎯 <strong>ChatArea Debug:</strong></div>
+        <div>📞 <strong>Chat ID:</strong> {conversation?.id}</div>
+        <div>🏷️ <strong>Tags Count:</strong> {conversation?.tags?.length || 0}</div>
+        <div className="truncate">
+          <strong>Tags:</strong> {JSON.stringify(conversation?.tags?.map(t => t.nome) || [])}
+        </div>
+        <div>👤 <strong>Contact Status:</strong> {contactStatus}</div>
+      </div>
+
       <div className={`flex-1 flex flex-col ${!isChatAccepted ? 'blur-sm pointer-events-none' : ''}`}>
 
       <motion.div 
