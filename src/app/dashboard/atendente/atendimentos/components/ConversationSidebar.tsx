@@ -1614,9 +1614,9 @@ import '@/styles/scrollbar.css'
                       className="bg-card/80 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 min-w-[140px] hover:bg-accent transition-colors border border-border"
                     >
                       <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full" />
-                    <span className="text-sm font-medium text-foreground flex-1 text-left">
-                      {conexaoOptions.find(c => c.value === selectedConexao)?.label}
-                    </span>
+                      <span className="text-sm font-medium text-foreground flex-1 text-left">
+                        {conexaoOptions.find(c => c.value === selectedConexao)?.label}
+                      </span>
                     <motion.div
                       animate={{ rotate: showConexaoDropdown ? 180 : 0 }}
                       transition={{ duration: 0.2 }}
