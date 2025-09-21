@@ -2,14 +2,51 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Send, 
-  Paperclip, 
-  Image, 
+import {
   Smile,
-  Mic,
-  Camera
+  X,
+  Tag,
+  Ticket,
+  Users,
+  Calendar,
+  DollarSign,
+  Settings,
+  Menu,
+  BarChart3,
+  MapPin,
+  User,
+  Paperclip,
+  Video,
+  FileSignature,
+  UserCheck,
+  Mic
 } from 'lucide-react'
+
+import {
+  AnexoMenuButton,
+  AudioButton,
+  AgenteButton,
+  IAButton,
+  RespostaRapidaButton,
+  EnviarButton
+} from './InputActions'
+
+import {
+  TabButton,
+  MenuButton,
+  EnqueteButton,
+  LocalizacaoButton,
+  ContatoButton,
+  AnexoWhatsappButton,
+  VideoButton,
+  AgendamentoButton,
+  OrcamentoButton,
+  AssinaturaButton,
+  TagButton,
+  TicketButton,
+  FilaButton,
+  AtendenteButton
+} from './TabComponents'
 
 interface MessageInputProps {
   onSendMessage: (content: string, type?: 'text') => void
@@ -18,6 +55,10 @@ interface MessageInputProps {
   onSendAudio?: () => void
   onOpenCamera?: () => void
   onOpenEmojis?: () => void
+  onAgentClick?: () => void
+  onAcoesRapidasClick?: () => void
+  onIAClick?: () => void
+  onRespostaRapidaClick?: () => void
   placeholder?: string
   disabled?: boolean
   isTyping?: boolean
@@ -30,12 +71,17 @@ export default function MessageInput({
   onSendAudio,
   onOpenCamera,
   onOpenEmojis,
-  placeholder = "Digite uma mensagem...",
+  onAgentClick,
+  onAcoesRapidasClick,
+  onIAClick,
+  onRespostaRapidaClick,
+  placeholder = "Digite sua mensagem...",
   disabled = false,
-  isTyping = false
+  isTyping = false 
 }: MessageInputProps) {
   const [message, setMessage] = useState('')
   const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'sistema'>('whatsapp')
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
@@ -51,11 +97,76 @@ export default function MessageInput({
     }
   }
 
+
   return (
     <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-end gap-2">
-        {/* Botão de Anexos */}
-        <div className="relative">
+      {/* Menu Expansível com Tabs */}
+      {showAttachMenu && (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+          className="mb-4 p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl border border-blue-200 dark:border-blue-700"
+        >
+          {/* Header com botão fechar */}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              Anexos & Ações
+            </h3>
+            <button
+              onClick={() => setShowAttachMenu(false)}
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4">
+            <TabButton 
+              active={activeTab === 'whatsapp'} 
+              onClick={() => setActiveTab('whatsapp')}
+            >
+              WhatsApp
+            </TabButton>
+            <TabButton 
+              active={activeTab === 'sistema'} 
+              onClick={() => setActiveTab('sistema')}
+            >
+              Sistema
+            </TabButton>
+          </div>
+          
+          {/* Conteúdo das Tabs */}
+          <div className="grid grid-cols-3 gap-3">
+            {activeTab === 'whatsapp' ? (
+              <>
+                <MenuButton onClick={() => { console.log('🔗 Menu'); setShowAttachMenu(false) }} />
+                <EnqueteButton onClick={() => { console.log('📊 Enquete'); setShowAttachMenu(false) }} />
+                <LocalizacaoButton onClick={() => { console.log('📍 Localização'); setShowAttachMenu(false) }} />
+                <ContatoButton onClick={() => { console.log('👤 Contato'); setShowAttachMenu(false) }} />
+                <AnexoWhatsappButton onClick={() => { console.log('📎 Anexo'); setShowAttachMenu(false) }} />
+                <VideoButton onClick={() => { console.log('🎥 Vídeo'); setShowAttachMenu(false) }} />
+              </>
+            ) : (
+              <>
+                <AgendamentoButton onClick={() => { console.log('📅 Agendamento'); setShowAttachMenu(false) }} />
+                <OrcamentoButton onClick={() => { console.log('💰 Orçamento'); setShowAttachMenu(false) }} />
+                <AssinaturaButton onClick={() => { console.log('✍️ Assinatura'); setShowAttachMenu(false) }} />
+                <TagButton onClick={() => { console.log('🏷️ Tag'); setShowAttachMenu(false) }} />
+                <TicketButton onClick={() => { console.log('🎫 Ticket'); setShowAttachMenu(false) }} />
+                <FilaButton onClick={() => { console.log('👥 Fila'); setShowAttachMenu(false) }} />
+                <AtendenteButton onClick={() => { console.log('👨‍💼 Atendente'); setShowAttachMenu(false) }} />
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      <div className="flex items-center gap-2">
+        {/* Botões de Ação Otimizados */}
+        <div className="flex items-center gap-1">
+          {/* Botão Anexo (abre painel) */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -63,60 +174,15 @@ export default function MessageInput({
             className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
                        dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 
                        dark:hover:bg-gray-800 transition-colors"
-            title="Anexar arquivo"
+            title="Anexos & Ações"
           >
-            <Paperclip className="w-5 h-5" />
+            📎
           </motion.button>
-
-          {/* Menu de anexos */}
-          {showAttachMenu && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className="absolute bottom-full mb-2 left-0 bg-white dark:bg-gray-800 
-                         border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg 
-                         py-2 min-w-48 z-10"
-            >
-              <button
-                onClick={() => {
-                  onSendImage?.()
-                  setShowAttachMenu(false)
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
-                           flex items-center gap-2 text-sm"
-              >
-                <Image className="w-4 h-4 text-green-500" />
-                <span>Enviar imagem</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  onOpenCamera?.()
-                  setShowAttachMenu(false)
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
-                           flex items-center gap-2 text-sm"
-              >
-                <Camera className="w-4 h-4 text-blue-500" />
-                <span>Tirar foto</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  onAttachFile?.()
-                  setShowAttachMenu(false)
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
-                           flex items-center gap-2 text-sm"
-              >
-                <Paperclip className="w-4 h-4 text-gray-500" />
-                <span>Anexar arquivo</span>
-              </button>
-            </motion.div>
-          )}
+          
+          {/* Botões principais */}
+          <RespostaRapidaButton onClick={onRespostaRapidaClick} />
+          <IAButton onClick={onIAClick} />
         </div>
-
         {/* Input de mensagem */}
         <div className="flex-1 relative">
           <textarea
@@ -126,7 +192,7 @@ export default function MessageInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
-            className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 
                        rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        placeholder-gray-500 dark:placeholder-gray-400 resize-none
@@ -136,47 +202,38 @@ export default function MessageInput({
               minHeight: '48px'
             }}
           />
-          
-          {/* Botão de Emojis */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onOpenEmojis}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-600 
-                       hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 
-                       rounded transition-colors"
-            title="Emojis"
-          >
-            <Smile className="w-5 h-5" />
-          </motion.button>
         </div>
 
-        {/* Botão de Áudio ou Enviar */}
-        {message.trim() ? (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleSend}
-            disabled={disabled}
-            className="p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 
-                       text-white rounded-full transition-colors"
-            title="Enviar mensagem"
-          >
-            <Send className="w-5 h-5" />
-          </motion.button>
-        ) : (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onSendAudio}
-            className="p-3 text-gray-600 hover:text-gray-800 dark:text-gray-400 
-                       dark:hover:text-gray-200 rounded-full hover:bg-gray-100 
-                       dark:hover:bg-gray-800 transition-colors"
-            title="Gravar áudio"
-          >
-            <Mic className="w-5 h-5" />
-          </motion.button>
-        )}
+        {/* Botão de Emojis (fora do input) */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onOpenEmojis}
+          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
+                     dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 
+                     dark:hover:bg-gray-800 transition-colors"
+          title="Emojis"
+        >
+          <Smile className="w-5 h-5" />
+        </motion.button>
+
+        {/* Botão Agente antes do enviar */}
+        <AgenteButton onClick={onAgentClick} />
+        
+        {/* Botão de Áudio */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onSendAudio}
+          className="p-3 bg-blue-500/80 hover:bg-blue-600 text-white rounded-full 
+                     shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm"
+          title="Gravar áudio"
+        >
+          <Mic className="w-5 h-5" />
+        </motion.button>
+        
+        {/* Botão de Enviar sempre visível */}
+        <EnviarButton onClick={handleSend} disabled={disabled || !message.trim()} />
       </div>
 
       {/* Indicador de digitação */}

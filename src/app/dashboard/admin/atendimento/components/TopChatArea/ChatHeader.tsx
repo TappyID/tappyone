@@ -11,6 +11,18 @@ import {
   MapPin
 } from 'lucide-react'
 
+import {
+  TagsIndicator,
+  KanbanIndicator,
+  TicketsIndicator,
+  AgendamentosIndicator,
+  OrcamentosIndicator,
+  AgenteIndicator,
+  RespostaRapidaIndicator,
+  FilaIndicator,
+  AtendimentoIndicator
+} from './StatusIndicators'
+
 interface ChatHeaderProps {
   chat?: {
     id: string
@@ -107,8 +119,51 @@ export default function ChatHeader({
         </div>
       </div>
 
-      {/* Botões de Ação */}
+      {/* Indicadores + Botões de Ação */}
       <div className="flex items-center gap-2">
+        {/* Indicadores de Status */}
+        {chat && (
+          <div className="flex items-center gap-1 mr-2 border-r border-gray-200 dark:border-gray-700 pr-2">
+            <TagsIndicator 
+              count={3}
+              onClick={() => console.log('🏷️ Tags clicadas')} 
+            />
+            <KanbanIndicator 
+              status="Em Atendimento"
+              onClick={() => console.log('📋 Kanban clicado')} 
+            />
+            <TicketsIndicator 
+              count={2}
+              onClick={() => console.log('🎫 Tickets clicados')} 
+            />
+            <AgendamentosIndicator 
+              count={3}
+              onClick={() => console.log('📅 Agendamentos clicados')} 
+            />
+            <OrcamentosIndicator 
+              count={1}
+              onClick={() => console.log('💰 Orçamentos clicados')} 
+            />
+            <AgenteIndicator 
+              nome="João Silva"
+              onClick={() => console.log('👤 Agente clicado')} 
+            />
+            <RespostaRapidaIndicator 
+              count={5}
+              onClick={() => console.log('💬 Respostas Rápidas clicadas')} 
+            />
+            <FilaIndicator 
+              nome="Suporte Técnico"
+              onClick={() => console.log('👥 Fila clicada')} 
+            />
+            <AtendimentoIndicator 
+              status="Ativo"
+              onClick={() => console.log('🎧 Atendimento clicado')} 
+            />
+          </div>
+        )}
+
+        {/* Botões de Ação */}
         {/* Botão de Chamada */}
         <motion.button
           whileHover={{ scale: 1.1 }}

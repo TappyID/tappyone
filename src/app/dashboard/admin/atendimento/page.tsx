@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import SideFilter from './components/SideFilter'
 import SideChat from './components/SideChat'
 import ChatHeader from './components/TopChatArea/ChatHeader'
@@ -8,22 +8,7 @@ import ChatArea from './components/ChatArea'
 import FooterChatArea from './components/FooterChatArea'
 import { useContatoData } from '@/hooks/useContatoData'
 import { useMessagesData } from '@/hooks/useMessagesData'
-
-// Componente temporário - será substituído
-function AtendimentosTopbar({ loading, count }: { loading?: boolean, count?: number }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Atendimento
-        </h1>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          {loading ? '⏳ Carregando chats...' : `📱 ${count || 0} chats carregados`}
-        </div>
-      </div>
-    </div>
-  )
-}
+import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 
 // Mock data para demonstração
 const mockTags = [
@@ -90,7 +75,7 @@ export default function AtendimentoPage() {
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>()
   
-  // Hook para mensagens REAIS do chat selecionado
+  // Hook para mensagens do chat selecionado
   const { 
     messages: realMessages, 
     loading: loadingMessages, 
@@ -98,6 +83,54 @@ export default function AtendimentoPage() {
     hasMore: hasMoreMessages,
     loadMore: loadMoreMessages
   } = useMessagesData(selectedChatId)
+
+
+  // Função para recarregar mensagens após envio
+  const refreshMessages = useCallback(() => {
+    if (selectedChatId) {
+      // Força recarregamento das mensagens
+      window.location.reload()
+    }
+  }, [selectedChatId])
+
+  // Função para votar em enquete
+  const handlePollVote = useCallback(async (messageId: string, chatId: string, votes: string[]) => {
+    try {
+      console.log('🗳️ Votando na enquete:', { messageId, chatId, votes })
+      
+      const response = await fetch('http://159.65.34.199:3001/api/sendPollVote', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Api-Key': 'tappyone-waha-2024-secretkey'
+        },
+        body: JSON.stringify({
+          session: 'user_fb8da1d7_1758158816675',
+          chatId,
+          pollMessageId: messageId,
+          votes
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+      }
+
+      console.log('✅ Voto enviado com sucesso!')
+      // Recarregar mensagens para mostrar o resultado
+      setTimeout(() => refreshMessages(), 1000)
+      
+    } catch (error) {
+      console.error('❌ Erro ao votar:', error)
+      alert('Erro ao votar na enquete. Tente novamente.')
+    }
+  }, [refreshMessages])
+
+  // Usar apenas mensagens reais vindas da API
+  const displayMessages = useMemo(() => {
+    if (!selectedChatId) return []
+    return realMessages
+  }, [selectedChatId, realMessages])
 
   // Estados para chats com pesquisa
   const [whatsappChats, setWhatsappChats] = useState<any[]>([])
@@ -176,6 +209,76 @@ export default function AtendimentoPage() {
     return () => clearTimeout(timeoutId)
   }, [searchQuery])
   
+  // Helper functions para processar mensagens da WAHA
+  const getMessageType = (lastMessage: any): 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' => {
+    if (!lastMessage) return 'text'
+    if (lastMessage.type === 'image' || lastMessage.mimetype?.startsWith('image/')) return 'image'
+    if (lastMessage.type === 'video' || lastMessage.mimetype?.startsWith('video/')) return 'video'
+    if (lastMessage.type === 'audio' || lastMessage.mimetype?.startsWith('audio/')) return 'audio'
+    if (lastMessage.type === 'document') return 'document'
+    if (lastMessage.type === 'location') return 'location'
+    if (lastMessage.type === 'vcard') return 'contact'
+    if (lastMessage.type === 'call_log') return 'call'
+    return 'text'
+  }
+
+  const getLastMessageContent = (chat: any): string => {
+    const lastMessage = chat.lastMessage
+    
+    if (!lastMessage) {
+      return 'Conversa iniciada' // Em vez de "Sem mensagens"
+    }
+    
+    // Se for string, retorna direto (formato antigo)
+    if (typeof lastMessage === 'string') {
+      return lastMessage || 'Conversa iniciada'
+    }
+    
+    // Se for objeto (formato WAHA), extrai conteúdo baseado no tipo
+    const type = getMessageType(lastMessage)
+    
+    switch (type) {
+      case 'image': return '📷 Imagem'
+      case 'video': return '🎥 Vídeo' 
+      case 'audio': return '🎵 Áudio'
+      case 'document': return '📄 Documento'
+      case 'location': return '📍 Localização'
+      case 'contact': return '👤 Contato'
+      case 'call': return '📞 Chamada'
+      default: 
+        return lastMessage.body || lastMessage.caption || lastMessage.content || 'Conversa iniciada'
+    }
+  }
+
+  const getMessageSender = (chat: any): 'user' | 'agent' => {
+    const lastMessage = chat.lastMessage
+    
+    // Se não há mensagem, considerar como user (novo chat)
+    if (!lastMessage) return 'user'
+    
+    // Se for string simples, usar o fromMe do chat
+    if (typeof lastMessage === 'string') {
+      return chat.fromMe ? 'agent' : 'user'
+    }
+    
+    // Se for objeto WAHA, verificar fromMe da mensagem
+    return lastMessage.fromMe ? 'agent' : 'user'
+  }
+
+  const getMessageReadStatus = (chat: any): boolean => {
+    const lastMessage = chat.lastMessage
+    
+    // Se não há mensagem, considerar como lida
+    if (!lastMessage) return true
+    
+    // Para mensagens do agente (enviadas por nós), sempre consideramos lidas
+    if (getMessageSender(chat) === 'agent') return true
+    
+    // Para mensagens do usuário, verificar se há unreadCount
+    // Se unreadCount é 0, a última mensagem foi lida
+    return (chat.unreadCount || 0) === 0
+  }
+  
   // Usar todos os chats encontrados (pesquisa ou inicial)
   const finalChats = whatsappChats
   const finalLoading = loadingChats || isSearching
@@ -202,7 +305,6 @@ export default function AtendimentoPage() {
 
   // Transformar dados para o formato esperado pelos componentes
   const processedChats = useMemo(() => {
-    console.log('🔍 [DEBUG] Processando chats:', activeChats.length)
     const result = activeChats.map((chat: any) => {
       // Extrair ID de forma segura
       let chatId = ''
@@ -219,17 +321,38 @@ export default function AtendimentoPage() {
         name: chat.name || chat.contact?.name || 'Contato sem nome',
         avatar: chat.profilePictureUrl || chat.contact?.profilePictureUrl,
         lastMessage: {
-          type: 'text' as const,
-          content: chat.lastMessage || 'Sem mensagens',
-          timestamp: chat.timestamp || Date.now() - Math.random() * 3600000, // timestamp aleatório nas últimas horas
-          sender: 'user' as const,
-          isRead: chat.unreadCount === 0
+          type: getMessageType(chat.lastMessage),
+          content: getLastMessageContent(chat),
+          timestamp: chat.timestamp || Date.now() - Math.random() * 3600000,  
+          sender: getMessageSender(chat),
+          isRead: getMessageReadStatus(chat)
         },
+        // Indicadores
         tags: contatoData.tags || [],
         rating: contatoData.rating,
-        unreadCount: chat.unreadCount || 0,
+        isOnline: Math.random() > 0.7, // Mock - depois integrar com dados reais
+        connectionStatus: ['connected', 'disconnected', 'connecting'][Math.floor(Math.random() * 3)] as 'connected' | 'disconnected' | 'connecting',
+        kanbanStatus: Math.random() > 0.6 ? {
+          id: '1',
+          nome: 'Em Atendimento',
+          cor: '#3B82F6'
+        } : undefined,
+        fila: Math.random() > 0.8 ? {
+          id: '1', 
+          nome: 'Suporte',
+          cor: '#10B981'
+        } : undefined,
+        ticketStatus: Math.random() > 0.7 ? {
+          id: '1',
+          nome: 'Aberto',
+          cor: '#F59E0B'
+        } : undefined,
+        
+        // Estados do chat
+        unreadCount: chat.unreadCount > 0 ? chat.unreadCount : undefined,
         isTransferred: false,
-        transferredTo: undefined
+        transferredTo: undefined,
+        isFavorite: Math.random() > 0.8 // Mock - 20% dos chats são favoritos
       }
     }).filter(chat => chat.id) // Filtrar chats sem ID válido
     
@@ -239,7 +362,10 @@ export default function AtendimentoPage() {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Topbar */}
       <div className="flex-shrink-0">
-        <AtendimentosTopbar loading={finalLoading || loadingContatos} count={processedChats.length} />
+        <AtendimentosTopBar 
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
       </div>
 
       {/* Container principal */}
@@ -287,6 +413,10 @@ export default function AtendimentoPage() {
                 e.stopPropagation()
                 console.log('🗑️ Deletar:', chatId)
               }}
+              onFavoriteClick={(chatId, e) => {
+                e.stopPropagation()
+                console.log('❤️ Favoritar:', chatId)
+              }}
             />
           </div>
         </div>
@@ -309,14 +439,10 @@ export default function AtendimentoPage() {
 
           {/* Área de Mensagens */}
           <ChatArea
-            messages={realMessages}
+            messages={displayMessages}
             isLoading={loadingMessages}
-            isTyping={selectedChatId ? Math.random() > 0.7 : false}
-            typingUser="Cliente"
-            selectedChat={selectedChatId ? {
-              id: selectedChatId,
-              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
-            } : undefined}
+            onPollVote={handlePollVote}
+            selectedChatId={selectedChatId}
           />
           
           {/* Debug info para mensagens */}
@@ -331,14 +457,83 @@ export default function AtendimentoPage() {
           {/* Footer - Input de Mensagem */}
           <FooterChatArea
             onSendMessage={(content) => {
-              console.log('📤 Enviar mensagem:', content)
-              // Aqui você implementaria a lógica real de envio
+              if (!selectedChatId) return
+              // Usar API WAHA para enviar texto
+              fetch('http://159.65.34.199:3001/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chatId: selectedChatId,
+                  text: content
+                })
+              }).then(() => console.log('📤 Mensagem enviada:', content))
             }}
-            onAttachFile={() => console.log('📎 Anexar arquivo')}
-            onSendImage={() => console.log('🖼️ Enviar imagem')}
-            onSendAudio={() => console.log('🎤 Gravar áudio')}
+            onAttachFile={(file) => {
+              if (!selectedChatId || !file) return
+              // Usar API WAHA para enviar arquivo
+              const formData = new FormData()
+              formData.append('chatId', selectedChatId)
+              formData.append('file', file)
+              
+              fetch('http://159.65.34.199:3001/api/sendFile', {
+                method: 'POST',
+                body: formData
+              }).then(() => console.log('📎 Arquivo enviado'))
+            }}
+            onSendImage={(file) => {
+              if (!selectedChatId || !file) return
+              // Usar API WAHA para enviar imagem
+              const formData = new FormData()
+              formData.append('chatId', selectedChatId)
+              formData.append('file', file)
+              
+              fetch('http://159.65.34.199:3001/api/sendImage', {
+                method: 'POST',
+                body: formData
+              }).then(() => console.log('🖼️ Imagem enviada'))
+            }}
+            onSendAudio={(audioBlob) => {
+              if (!selectedChatId || !audioBlob) return
+              // Usar API WAHA para enviar áudio
+              const formData = new FormData()
+              formData.append('chatId', selectedChatId)
+              formData.append('file', audioBlob, 'audio.ogg')
+              
+              fetch('http://159.65.34.199:3001/api/sendVoice', {
+                method: 'POST',
+                body: formData
+              }).then(() => console.log('🎤 Áudio enviado'))
+            }}
             onOpenCamera={() => console.log('📷 Abrir câmera')}
             onOpenEmojis={() => console.log('😊 Abrir emojis')}
+            onRespostaRapidaClick={() => console.log('💬 Resposta rápida')}
+            onIAClick={() => console.log('🤖 I.A clicada')}
+            onSendPoll={(pollData) => {
+              if (!selectedChatId) return
+              // Usar API WAHA para enviar enquete
+              fetch('http://159.65.34.199:3001/api/sendPoll', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  poll: pollData
+                })
+              }).then(() => console.log('📊 Enquete enviada'))
+            }}
+            onSendList={(listData) => {
+              if (!selectedChatId) return
+              // Usar API WAHA para enviar lista/menu
+              fetch('http://159.65.34.199:3001/api/sendList', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  message: listData
+                })
+              }).then(() => console.log('🔗 Lista enviada'))
+            }}
             selectedChat={selectedChatId ? {
               id: selectedChatId,
               name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'

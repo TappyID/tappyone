@@ -46,6 +46,7 @@ interface SideChatProps {
   onArchiveClick: (chatId: string, e: React.MouseEvent) => void
   onHideClick: (chatId: string, e: React.MouseEvent) => void
   onDeleteClick: (chatId: string, e: React.MouseEvent) => void
+  onFavoriteClick: (chatId: string, e: React.MouseEvent) => void
   
   // Scroll infinito
   onLoadMore?: () => void
@@ -66,6 +67,7 @@ export default function SideChat({
   onArchiveClick,
   onHideClick,
   onDeleteClick,
+  onFavoriteClick,
   onLoadMore,
   hasMoreChats = false,
   isLoadingMore = false,
@@ -131,7 +133,7 @@ export default function SideChat({
               )}
               
               {/* Badge de não lidas */}
-              {chat.unreadCount && chat.unreadCount > 0 && (
+              {(chat.unreadCount && chat.unreadCount > 0) && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full 
                                flex items-center justify-center">
                   <span className="text-xs font-bold text-white">
@@ -164,25 +166,28 @@ export default function SideChat({
           </div>
         )}
 
-        {/* Lista de chats */}
+        {/* Lista de chats - Estilo vivaosim sem divisórias */}
         {!isLoading && (
-          <AnimatePresence mode="popLayout">
-            {chats.map((chat, index) => (
-              <ItemSideChat
-                key={chat.id}
-                chat={{
-                  ...chat,
-                  isSelected: chat.id === selectedChatId
-                }}
-                onSelect={() => onSelectChat(chat.id)}
-                onTagsClick={(e) => onTagsClick(chat.id, e)}
-                onTransferClick={(e) => onTransferClick(chat.id, e)}
-                onArchiveClick={(e) => onArchiveClick(chat.id, e)}
-                onHideClick={(e) => onHideClick(chat.id, e)}
-                onDeleteClick={(e) => onDeleteClick(chat.id, e)}
-              />
-            ))}
-          </AnimatePresence>
+          <div className="space-y-1 p-2">
+            <AnimatePresence mode="popLayout">
+              {chats.map((chat, index) => (
+                <ItemSideChat
+                  key={chat.id}
+                  chat={{
+                    ...chat,
+                    isSelected: chat.id === selectedChatId
+                  }}
+                  onSelect={() => onSelectChat(chat.id)}
+                  onTagsClick={(e) => onTagsClick(chat.id, e)}
+                  onTransferClick={(e) => onTransferClick(chat.id, e)}
+                  onArchiveClick={(e) => onArchiveClick(chat.id, e)}
+                  onHideClick={(e) => onHideClick(chat.id, e)}
+                  onDeleteClick={(e) => onDeleteClick(chat.id, e)}
+                  onFavoriteClick={(e) => onFavoriteClick(chat.id, e)}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
         )}
 
         {/* Trigger do scroll infinito */}

@@ -1,0 +1,7 @@
+export { default as MessageAudio } from './MessageAudio'
+export { default as MessageDocument } from './MessageDocument'
+export { default as MessageVideo } from './MessageVideo'
+export { default as MessageLocation } from './MessageLocation'
+export { default as MessageContact } from './MessageContact'
+export { default as MessagePoll } from './MessagePoll'
+export { default as MessageMenu } from './MessageMenu'

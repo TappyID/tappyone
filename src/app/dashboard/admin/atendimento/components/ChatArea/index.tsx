@@ -11,11 +11,48 @@ interface ChatAreaProps {
   messages: Array<{
     id: string
     content: string
-    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
+    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu'
     sender: 'user' | 'agent'
     timestamp: number
     status?: 'sending' | 'sent' | 'delivered' | 'read'
     mediaUrl?: string
+    metadata?: {
+      // Para áudio
+      duration?: number
+      // Para documento
+      fileName?: string
+      fileSize?: number
+      mimeType?: string
+      // Para video
+      thumbnailUrl?: string
+      // Para localização
+      latitude?: number
+      longitude?: number
+      address?: string
+      locationName?: string
+      // Para contato
+      contactName?: string
+      phoneNumber?: string
+      email?: string
+      organization?: string
+      // Para enquete
+      question?: string
+      pollOptions?: Array<{id: string, text: string, votes: number}>
+      totalVotes?: number
+      allowMultipleAnswers?: boolean
+      hasVoted?: boolean
+      userVote?: string[]
+      // Para menu
+      menuTitle?: string
+      menuDescription?: string
+      menuItems?: Array<{
+        id: string
+        title: string
+        description?: string
+        icon?: string
+        submenu?: any[]
+      }>
+    }
   }>
   
   // Estados
