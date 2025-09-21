@@ -240,7 +240,7 @@ import '@/styles/scrollbar.css'
     const chatIds = chats.length > 0 ? chats.map(chat => chat.id?._serialized || chat.id || '').filter(id => id) : []
     
     // Estados para scroll infinito
-    const [visibleChatsCount, setVisibleChatsCount] = useState(15)
+    const [visibleChatsCount, setVisibleChatsCount] = useState(6)
     const [handleLoadMoreChats, setHandleLoadMoreChats] = useState<(() => void) | null>(null)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
     const [lastScrollPosition, setLastScrollPosition] = useState(0)
@@ -260,8 +260,8 @@ import '@/styles/scrollbar.css'
         if (scrollContainerRef.current) {
           setLastScrollPosition(scrollContainerRef.current.scrollTop)
         }
-        // Preservar pelo menos 15 chats visíveis após reset
-        setVisibleChatsCount(Math.max(15, Math.min(visibleChatsCount, currentCount)))
+        // Preservar pelo menos 6 chats visíveis após reset
+        setVisibleChatsCount(Math.max(6, Math.min(visibleChatsCount, currentCount)))
         setLastChatCount(currentCount)
       }
     }, [chatIds.length, lastChatCount, isLoadingMore, visibleChatsCount, scrollContainerRef])
@@ -831,8 +831,8 @@ import '@/styles/scrollbar.css'
       }
     }, [visibleChatsCount, handleLoadMoreChats])
     
-    // OTIMIZAÇÃO: Carregar dados apenas dos chats visíveis
-    const activeChatIds = activeChats.slice(0, visibleChatsCount).map(chat => chat.id?._serialized || chat.id || '')
+    // OTIMIZAÇÃO: Carregar dados apenas dos 5 primeiros chats
+    const activeChatIds = activeChats.slice(0, 5).map(chat => chat.id?._serialized || chat.id || '')
     const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
     
     // Cache inteligente - marca chats que não existem no CRM para evitar requisições repetidas
@@ -1034,11 +1034,11 @@ import '@/styles/scrollbar.css'
       }
     }), [activeChats, contatosData, tagsCache, conexoes, filas, atendentes, kanbanInfo, agentesCache, conexaoFilaCache])
 
-    // OTIMIZAÇÃO: Carregar informações dos agentes para 30 chats visíveis
+    // OTIMIZAÇÃO: Carregar informações dos agentes para 5 chats visíveis
     useEffect(() => {
       const loadAgentesInfo = async () => {
-        // Carregar para os primeiros 30 chats (suficiente para badges visíveis)
-        const visibleChats = activeChats.slice(0, 30)
+        // Carregar para os primeiros 5 chats (otimização para teste)
+        const visibleChats = activeChats.slice(0, 5)
         
         for (const chat of visibleChats) {
           const chatId = chat.id?._serialized || chat.id || ''
@@ -1053,11 +1053,11 @@ import '@/styles/scrollbar.css'
       }
     }, [activeChats])
 
-    // OTIMIZAÇÃO: Carregar informações de conexão/fila para 30 chats visíveis 
+    // OTIMIZAÇÃO: Carregar informações de conexão/fila para 5 chats visíveis 
     useEffect(() => {
       const loadConexaoFilaInfo = async () => {
-        // Carregar para os primeiros 30 chats (suficiente para badges visíveis)
-        const visibleChats = activeChats.slice(0, 30)
+        // Carregar para os primeiros 5 chats (otimização para teste)
+        const visibleChats = activeChats.slice(0, 5)
         
         for (const chat of visibleChats) {
           const chatId = chat.id?._serialized || chat.id || ''
@@ -1077,8 +1077,8 @@ import '@/styles/scrollbar.css'
       const loadKanbanInfo = async () => {
         const newKanbanInfo: {[key: string]: any} = {}
         
-        // Carregar apenas para os chats visíveis (removido limite de 5)
-        const visibleChats = activeChats.slice(0, Math.min(visibleChatsCount, 20))
+        // Carregar apenas para os 5 primeiros chats (otimização para teste)
+        const visibleChats = activeChats.slice(0, Math.min(visibleChatsCount, 5))
         
         for (const chat of visibleChats) {
           const chatId = chat.id._serialized || chat.id
@@ -1764,7 +1764,7 @@ import '@/styles/scrollbar.css'
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       {/* Conexão - igual ao card do kanban */}
                       {conversation.conexaoFila && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium" style={{
+                        <div className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border text-xs font-medium" style={{
                           backgroundColor: conversation.conexaoFila.isConnected ? '#10b98120' : '#6b728020',
                           borderColor: conversation.conexaoFila.isConnected ? '#10b98140' : '#6b728040',
                           color: conversation.conexaoFila.isConnected ? '#10b981' : '#6b7280'
@@ -1780,7 +1780,7 @@ import '@/styles/scrollbar.css'
                       
                       {/* Fila */}
                       {conversation.queue && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
+                        <div className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border" style={{
                           backgroundColor: `${conversation.queue.cor}20`,
                           borderColor: `${conversation.queue.cor}40`
                         }}>
@@ -1799,7 +1799,7 @@ import '@/styles/scrollbar.css'
                         
                         if (conversation.kanbanBoard) {
                           return (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-purple-500/20 border-purple-400/40">
+                            <div className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border bg-purple-500/20 border-purple-400/40">
                               <Layers className="w-3 h-3 text-purple-500" />
                               <span className="text-xs font-medium text-purple-500">
                                 {conversation.kanbanBoard}
@@ -1812,7 +1812,7 @@ import '@/styles/scrollbar.css'
 
                       {/* DEBUG TEMPORÁRIO - Agente Ativo */}
                       {conversation.atendente && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border bg-blue-500/20 border-blue-400/40">
+                        <div className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border bg-blue-500/20 border-blue-400/40">
                           <User className="w-3 h-3 text-blue-500" />
                           <span className="text-xs font-medium text-blue-500">
                             {conversation.atendente.nome || 'Agente'}
@@ -1832,7 +1832,7 @@ import '@/styles/scrollbar.css'
                                 return (
                                   <div 
                                     key={tag.id || index}
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded-md border" 
+                                    className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border" 
                                     style={{
                                       backgroundColor: `${tagColor}20`,
                                       borderColor: `${tagColor}40`
@@ -1850,7 +1850,7 @@ import '@/styles/scrollbar.css'
                         } else {
                           // Exibir "Em aberto" quando não tem tags
                           return (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md border" style={{
+                            <div className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border" style={{
                               backgroundColor: '#f3f4f620',
                               borderColor: '#9ca3af40'
                             }}>
@@ -1901,7 +1901,7 @@ import '@/styles/scrollbar.css'
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                            className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border cursor-pointer"
                             style={{
                               backgroundColor: '#3b82f620',
                               borderColor: '#3b82f640'
@@ -1930,7 +1930,7 @@ import '@/styles/scrollbar.css'
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                              className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border cursor-pointer"
                               style={{
                                 backgroundColor: '#7c3aed20',
                                 borderColor: '#7c3aed40'
@@ -1970,7 +1970,7 @@ import '@/styles/scrollbar.css'
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer max-w-[120px]"
+                              className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border cursor-pointer max-w-[120px]"
                               style={{
                                 backgroundColor: statusBgColor,
                                 borderColor: statusBorderColor
@@ -1998,7 +1998,7 @@ import '@/styles/scrollbar.css'
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                            className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border cursor-pointer"
                             style={{
                               backgroundColor: '#10b98120',
                               borderColor: '#10b98140'
@@ -2047,13 +2047,12 @@ import '@/styles/scrollbar.css'
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-md border cursor-pointer"
+                              className="flex items-center gap-1 px-1.5 py-0.25 rounded-md border cursor-pointer"
                               style={{
                                 backgroundColor: rating >= 4 ? '#10b98120' : rating >= 3 ? '#f59e0b20' : '#ef444420',
                                 borderColor: rating >= 4 ? '#10b98140' : rating >= 3 ? '#f59e0b40' : '#ef444440'
                               }}
                               title={`Avaliação: ${rating}/5 estrelas`}
-                              onClick={() => {}}
                             >
                               <svg 
                                 className="w-3 h-3" 
@@ -2097,10 +2096,29 @@ import '@/styles/scrollbar.css'
                 </div>
 
                 {/* Hover Actions */}
-                <motion.div 
-                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                <motion.div
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
                   whileHover={{ scale: 1.1 }}
                 >
+                  {/* Botão de Tags */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const chatId = conversation.id
+                      const contatoData = contatosData[chatId]
+                      setSelectedConversationForTags(conversation)
+                      setContatoTags(contatoData?.tags || [])
+                      setShowTagsModal(true)
+                    }}
+                    className="p-2 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg border border-emerald-400/30 transition-colors"
+                    title="Gerenciar Tags"
+                  >
+                    <Tag className="w-3 h-3 text-emerald-400" />
+                  </motion.button>
+
+                  {/* Menu de 3 pontos */}
                   <MoreVertical className="w-4 h-4 text-slate-400" />
                 </motion.div>
               </motion.div>

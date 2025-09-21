@@ -1993,7 +1993,29 @@ export default function ChatArea({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowTagsModal(true)}
+            onClick={async () => {
+              // Carregar tags atuais antes de abrir o modal
+              if (chatId) {
+                try {
+                  const numeroTelefone = chatId.replace('@c.us', '')
+                  const token = localStorage.getItem('token')
+                  
+                  const response = await fetch(`/api/contatos/${numeroTelefone}/tags`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  })
+                  
+                  if (response.ok) {
+                    const tagsData = await response.json()
+                    setContatoTags(tagsData || [])
+                    console.log('🏷️ [CHATAREA] Tags atuais carregadas:', tagsData)
+                  }
+                } catch (error) {
+                  console.error('❌ [CHATAREA] Erro ao carregar tags:', error)
+                  setContatoTags([])
+                }
+              }
+              setShowTagsModal(true)
+            }}
             className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-all duration-300 relative"
             title="Gerenciar Tags"
           >

@@ -1,0 +1,608 @@
+[
+  {
+    "timestamp": "2025-09-21T16:17:23.069Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "demo-1",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:23.166Z",
+    "component": "Kanban",
+    "action": "loadContactsManual_data_received",
+    "data": {
+      "type": "object",
+      "isArray": true,
+      "length": 3,
+      "sample": [
+        {
+          "id": "fa3393a5-0ddb-4bd9-967f-6d37696877c7",
+          "criadoEm": "2025-09-19T20:02:22.661873Z",
+          "atualizadoEm": "2025-09-19T20:02:22.661873Z",
+          "numeroTelefone": "5581994076486",
+          "nome": "5581994076486",
+          "fotoPerfil": null,
+          "sobre": null,
+          "bloqueado": false,
+          "sessaoWhatsappId": "3dbbaf3f-5a01-405e-9836-2a9c939b61b6",
+          "contactid": null,
+          "email": null,
+          "empresa": null,
+          "cpf": null,
+          "cnpj": null,
+          "cep": null,
+          "rua": null,
+          "numero": null,
+          "bairro": null,
+          "cidade": null,
+          "estado": null,
+          "pais": "Brasil",
+          "favorito": false,
+          "sessaoWhatsapp": {
+            "id": "",
+            "criadoEm": "0001-01-01T00:00:00Z",
+            "atualizadoEm": "0001-01-01T00:00:00Z",
+            "nomeSessao": "",
+            "numeroTelefone": null,
+            "status": "",
+            "codigoQr": null,
+            "urlWebhook": null,
+            "ativo": false,
+            "usuarioId": "",
+            "usuario": {
+              "id": "",
+              "criadoEm": "0001-01-01T00:00:00Z",
+              "atualizadoEm": "0001-01-01T00:00:00Z",
+              "email": "",
+              "nome": "",
+              "telefone": null,
+              "avatar": null,
+              "tipo": "",
+              "ativo": false,
+              "fila_id": null
+            }
+          }
+        },
+        {
+          "id": "f0598f5d-9fb1-44ff-b4e4-64574b5e389e",
+          "criadoEm": "2025-09-18T01:36:50.863909Z",
+          "atualizadoEm": "2025-09-18T01:36:50.863909Z",
+          "numeroTelefone": "15147260960",
+          "nome": "15147260960",
+          "fotoPerfil": null,
+          "sobre": null,
+          "bloqueado": false,
+          "sessaoWhatsappId": "3dbbaf3f-5a01-405e-9836-2a9c939b61b6",
+          "contactid": null,
+          "email": "suporte@vyzer.com.br",
+          "empresa": "321321321321",
+          "cpf": "32132132132",
+          "cnpj": "32132132132132",
+          "cep": "16700000",
+          "rua": "Rua avenida",
+          "numero": "249",
+          "bairro": "Centro",
+          "cidade": "Guararapes",
+          "estado": "PR",
+          "pais": "Brasil",
+          "favorito": false,
+          "sessaoWhatsapp": {
+            "id": "",
+            "criadoEm": "0001-01-01T00:00:00Z",
+            "atualizadoEm": "0001-01-01T00:00:00Z",
+            "nomeSessao": "",
+            "numeroTelefone": null,
+            "status": "",
+            "codigoQr": null,
+            "urlWebhook": null,
+            "ativo": false,
+            "usuarioId": "",
+            "usuario": {
+              "id": "",
+              "criadoEm": "0001-01-01T00:00:00Z",
+              "atualizadoEm": "0001-01-01T00:00:00Z",
+              "email": "",
+              "nome": "",
+              "telefone": null,
+              "avatar": null,
+              "tipo": "",
+              "ativo": false,
+              "fila_id": null
+            }
+          }
+        },
+        {
+          "id": "50718fde-6d26-4fc1-8a6e-b403e875629a",
+          "criadoEm": "2025-09-15T20:09:44.971352Z",
+          "atualizadoEm": "2025-09-15T20:09:44.971352Z",
+          "numeroTelefone": "5518996755165",
+          "nome": "5518996755165",
+          "fotoPerfil": null,
+          "sobre": null,
+          "bloqueado": false,
+          "sessaoWhatsappId": "3dbbaf3f-5a01-405e-9836-2a9c939b61b6",
+          "contactid": null,
+          "email": "jessica@jessica.com.br",
+          "empresa": "jessica",
+          "cpf": "31211211111",
+          "cnpj": "13213133",
+          "cep": "16700000",
+          "rua": "Rua avenida",
+          "numero": "249",
+          "bairro": "Centro",
+          "cidade": "Guararapes",
+          "estado": "PR",
+          "pais": "Brasil",
+          "favorito": false,
+          "sessaoWhatsapp": {
+            "id": "",
+            "criadoEm": "0001-01-01T00:00:00Z",
+            "atualizadoEm": "0001-01-01T00:00:00Z",
+            "nomeSessao": "",
+            "numeroTelefone": null,
+            "status": "",
+            "codigoQr": null,
+            "urlWebhook": null,
+            "ativo": false,
+            "usuarioId": "",
+            "usuario": {
+              "id": "",
+              "criadoEm": "0001-01-01T00:00:00Z",
+              "atualizadoEm": "0001-01-01T00:00:00Z",
+              "email": "",
+              "nome": "",
+              "telefone": null,
+              "avatar": null,
+              "tipo": "",
+              "ativo": false,
+              "fila_id": null
+            }
+          },
+          "tags": [
+            {
+              "id": "a09cd194-5328-4274-b560-ffd81674bd49",
+              "criadoEm": "2025-09-21T14:55:31.443559Z",
+              "atualizadoEm": "2025-09-21T14:55:31.443559Z",
+              "contatoId": "50718fde-6d26-4fc1-8a6e-b403e875629a",
+              "tagId": "8e5d6344-5254-4249-83da-b97e80e8f784",
+              "contato": {
+                "id": "",
+                "criadoEm": "0001-01-01T00:00:00Z",
+                "atualizadoEm": "0001-01-01T00:00:00Z",
+                "numeroTelefone": "",
+                "nome": null,
+                "fotoPerfil": null,
+                "sobre": null,
+                "bloqueado": false,
+                "sessaoWhatsappId": "",
+                "contactid": null,
+                "email": null,
+                "empresa": null,
+                "cpf": null,
+                "cnpj": null,
+                "cep": null,
+                "rua": null,
+                "numero": null,
+                "bairro": null,
+                "cidade": null,
+                "estado": null,
+                "pais": null,
+                "favorito": false,
+                "sessaoWhatsapp": {
+                  "id": "",
+                  "criadoEm": "0001-01-01T00:00:00Z",
+                  "atualizadoEm": "0001-01-01T00:00:00Z",
+                  "nomeSessao": "",
+                  "numeroTelefone": null,
+                  "status": "",
+                  "codigoQr": null,
+                  "urlWebhook": null,
+                  "ativo": false,
+                  "usuarioId": "",
+                  "usuario": {
+                    "id": "",
+                    "criadoEm": "0001-01-01T00:00:00Z",
+                    "atualizadoEm": "0001-01-01T00:00:00Z",
+                    "email": "",
+                    "nome": "",
+                    "telefone": null,
+                    "avatar": null,
+                    "tipo": "",
+                    "ativo": false,
+                    "fila_id": null
+                  }
+                }
+              },
+              "tag": {
+                "id": "8e5d6344-5254-4249-83da-b97e80e8f784",
+                "criadoEm": "2025-09-19T21:18:37.999545Z",
+                "atualizadoEm": "2025-09-21T14:55:31.614547Z",
+                "nome": "Teste rodrigo",
+                "cor": "#6366F1",
+                "categoria": "geral",
+                "uso_count": 0,
+                "criado_por": "",
+                "ativo": true,
+                "favorito": false
+              }
+            }
+          ]
+        }
+      ],
+      "rawData": [
+        {
+          "id": "fa3393a5-0ddb-4bd9-967f-6d37696877c7",
+          "criadoEm": "2025-09-19T20:02:22.661873Z",
+          "atualizadoEm": "2025-09-19T20:02:22.661873Z",
+          "numeroTelefone": "5581994076486",
+          "nome": "5581994076486",
+          "fotoPerfil": null,
+          "sobre": null,
+          "bloqueado": false,
+          "sessaoWhatsappId": "3dbbaf3f-5a01-405e-9836-2a9c939b61b6",
+          "contactid": null,
+          "email": null,
+          "empresa": null,
+          "cpf": null,
+          "cnpj": null,
+          "cep": null,
+          "rua": null,
+          "numero": null,
+          "bairro": null,
+          "cidade": null,
+          "estado": null,
+          "pais": "Brasil",
+          "favorito": false,
+          "sessaoWhatsapp": {
+            "id": "",
+            "criadoEm": "0001-01-01T00:00:00Z",
+            "atualizadoEm": "0001-01-01T00:00:00Z",
+            "nomeSessao": "",
+            "numeroTelefone": null,
+            "status": "",
+            "codigoQr": null,
+            "urlWebhook": null,
+            "ativo": false,
+            "usuarioId": "",
+            "usuario": {
+              "id": "",
+              "criadoEm": "0001-01-01T00:00:00Z",
+              "atualizadoEm": "0001-01-01T00:00:00Z",
+              "email": "",
+              "nome": "",
+              "telefone": null,
+              "avatar": null,
+              "tipo": "",
+              "ativo": false,
+              "fila_id": null
+            }
+          }
+        },
+        {
+          "id": "f0598f5d-9fb1-44ff-b4e4-64574b5e389e",
+          "criadoEm": "2025-09-18T01:36:50.863909Z",
+          "atualizadoEm": "2025-09-18T01:36:50.863909Z",
+          "numeroTelefone": "15147260960",
+          "nome": "15147260960",
+          "fotoPerfil": null,
+          "sobre": null,
+          "bloqueado": false,
+          "sessaoWhatsappId": "3dbbaf3f-5a01-405e-9836-2a9c939b61b6",
+          "contactid": null,
+          "email": "suporte@vyzer.com.br",
+          "empresa": "321321321321",
+          "cpf": "32132132132",
+          "cnpj": "32132132132132",
+          "cep": "16700000",
+          "rua": "Rua avenida",
+          "numero": "249",
+          "bairro": "Centro",
+          "cidade": "Guararapes",
+          "estado": "PR",
+          "pais": "Brasil",
+          "favorito": false,
+          "sessaoWhatsapp": {
+            "id": "",
+            "criadoEm": "0001-01-01T00:00:00Z",
+            "atualizadoEm": "0001-01-01T00:00:00Z",
+            "nomeSessao": "",
+            "numeroTelefone": null,
+            "status": "",
+            "codigoQr": null,
+            "urlWebhook": null,
+            "ativo": false,
+            "usuarioId": "",
+            "usuario": {
+              "id": "",
+              "criadoEm": "0001-01-01T00:00:00Z",
+              "atualizadoEm": "0001-01-01T00:00:00Z",
+              "email": "",
+              "nome": "",
+              "telefone": null,
+              "avatar": null,
+              "tipo": "",
+              "ativo": false,
+              "fila_id": null
+            }
+          }
+        },
+        {
+          "id": "50718fde-6d26-4fc1-8a6e-b403e875629a",
+          "criadoEm": "2025-09-15T20:09:44.971352Z",
+          "atualizadoEm": "2025-09-15T20:09:44.971352Z",
+          "numeroTelefone": "5518996755165",
+          "nome": "5518996755165",
+          "fotoPerfil": null,
+          "sobre": null,
+          "bloqueado": false,
+          "sessaoWhatsappId": "3dbbaf3f-5a01-405e-9836-2a9c939b61b6",
+          "contactid": null,
+          "email": "jessica@jessica.com.br",
+          "empresa": "jessica",
+          "cpf": "31211211111",
+          "cnpj": "13213133",
+          "cep": "16700000",
+          "rua": "Rua avenida",
+          "numero": "249",
+          "bairro": "Centro",
+          "cidade": "Guararapes",
+          "estado": "PR",
+          "pais": "Brasil",
+          "favorito": false,
+          "sessaoWhatsapp": {
+            "id": "",
+            "criadoEm": "0001-01-01T00:00:00Z",
+            "atualizadoEm": "0001-01-01T00:00:00Z",
+            "nomeSessao": "",
+            "numeroTelefone": null,
+            "status": "",
+            "codigoQr": null,
+            "urlWebhook": null,
+            "ativo": false,
+            "usuarioId": "",
+            "usuario": {
+              "id": "",
+              "criadoEm": "0001-01-01T00:00:00Z",
+              "atualizadoEm": "0001-01-01T00:00:00Z",
+              "email": "",
+              "nome": "",
+              "telefone": null,
+              "avatar": null,
+              "tipo": "",
+              "ativo": false,
+              "fila_id": null
+            }
+          },
+          "tags": [
+            {
+              "id": "a09cd194-5328-4274-b560-ffd81674bd49",
+              "criadoEm": "2025-09-21T14:55:31.443559Z",
+              "atualizadoEm": "2025-09-21T14:55:31.443559Z",
+              "contatoId": "50718fde-6d26-4fc1-8a6e-b403e875629a",
+              "tagId": "8e5d6344-5254-4249-83da-b97e80e8f784",
+              "contato": {
+                "id": "",
+                "criadoEm": "0001-01-01T00:00:00Z",
+                "atualizadoEm": "0001-01-01T00:00:00Z",
+                "numeroTelefone": "",
+                "nome": null,
+                "fotoPerfil": null,
+                "sobre": null,
+                "bloqueado": false,
+                "sessaoWhatsappId": "",
+                "contactid": null,
+                "email": null,
+                "empresa": null,
+                "cpf": null,
+                "cnpj": null,
+                "cep": null,
+                "rua": null,
+                "numero": null,
+                "bairro": null,
+                "cidade": null,
+                "estado": null,
+                "pais": null,
+                "favorito": false,
+                "sessaoWhatsapp": {
+                  "id": "",
+                  "criadoEm": "0001-01-01T00:00:00Z",
+                  "atualizadoEm": "0001-01-01T00:00:00Z",
+                  "nomeSessao": "",
+                  "numeroTelefone": null,
+                  "status": "",
+                  "codigoQr": null,
+                  "urlWebhook": null,
+                  "ativo": false,
+                  "usuarioId": "",
+                  "usuario": {
+                    "id": "",
+                    "criadoEm": "0001-01-01T00:00:00Z",
+                    "atualizadoEm": "0001-01-01T00:00:00Z",
+                    "email": "",
+                    "nome": "",
+                    "telefone": null,
+                    "avatar": null,
+                    "tipo": "",
+                    "ativo": false,
+                    "fila_id": null
+                  }
+                }
+              },
+              "tag": {
+                "id": "8e5d6344-5254-4249-83da-b97e80e8f784",
+                "criadoEm": "2025-09-19T21:18:37.999545Z",
+                "atualizadoEm": "2025-09-21T14:55:31.614547Z",
+                "nome": "Teste rodrigo",
+                "cor": "#6366F1",
+                "categoria": "geral",
+                "uso_count": 0,
+                "criado_por": "",
+                "ativo": true,
+                "favorito": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:23.248Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "demo-1": 0
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "demo-1": 0
+      },
+      "totalOptimizedCards": 0
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:23.271Z",
+    "component": "Kanban",
+    "action": "loadContactsManual_contacts_transformed",
+    "data": {
+      "count": 3,
+      "firstContact": {
+        "id": "5581994076486@c.us",
+        "name": "5581994076486",
+        "title": "5581994076486",
+        "pushname": "5581994076486",
+        "numeroTelefone": "5581994076486",
+        "email": null,
+        "empresa": null,
+        "profilePictureUrl": null,
+        "isGroup": false,
+        "lastMessage": null,
+        "timestamp": 1758471443271,
+        "contactId": "fa3393a5-0ddb-4bd9-967f-6d37696877c7",
+        "cpf": null,
+        "cnpj": null,
+        "endereco": {
+          "cep": null,
+          "rua": null,
+          "numero": null,
+          "bairro": null,
+          "cidade": null,
+          "estado": null,
+          "pais": "Brasil"
+        }
+      },
+      "allContactNames": [
+        "5581994076486",
+        "15147260960",
+        "5518996755165"
+      ]
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:23.386Z",
+    "component": "Kanban",
+    "action": "loadContactsManual_success",
+    "data": {
+      "finalContactCount": 3,
+      "success": true
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:23.410Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_started",
+    "data": {
+      "loading": false,
+      "chatsLength": 3
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:23.457Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 3,
+      "uniqueCardIds": 3,
+      "sampleCardIds": [
+        "5581994076486@c.us",
+        "15147260960@c.us",
+        "5518996755165@c.us"
+      ],
+      "allCardIds": [
+        "5581994076486@c.us",
+        "15147260960@c.us",
+        "5518996755165@c.us"
+      ]
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:24.417Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5581994076486@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:24.808Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "15147260960@c.us",
+      "notesCount": 1,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:25.176Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996755165@c.us",
+      "notesCount": 1,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-21T16:17:25.203Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "5581994076486@c.us": 0,
+        "15147260960@c.us": 1,
+        "5518996755165@c.us": 1
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "5581994076486@c.us": 0,
+        "15147260960@c.us": 0,
+        "5518996755165@c.us": 1
+      },
+      "totalOptimizedCards": 3
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  }
+]
