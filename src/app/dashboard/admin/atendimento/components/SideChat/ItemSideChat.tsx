@@ -178,7 +178,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                   ? 'text-gray-900 dark:text-gray-100' 
                   : 'text-gray-600 dark:text-gray-300'
             }`}>
-              {chat.name}
+              {chat.name.length > 15 ? `${chat.name.substring(0, 15)}...` : chat.name}
             </h3>
             {/* Contador de não lidas */}
             {chat.unreadCount && chat.unreadCount > 0 && (

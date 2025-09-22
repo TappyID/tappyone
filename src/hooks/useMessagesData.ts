@@ -107,9 +107,14 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
       console.log(`🔄 Buscando ${limit} mensagens (offset: ${offset})`)
       
       // Usar WAHA API diretamente com limit
-      const response = await fetch(`http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`, {
+      // Detectar se estamos em HTTPS para usar URL segura
+      const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'https:' 
+        ? process.env.NEXT_PUBLIC_WAHA_HTTPS_URL || 'https://waha.tappy.id:3001'
+        : process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:3001'
+      
+      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`, {
         headers: {
-          'X-Api-Key': 'tappyone-waha-2024-secretkey'
+          'X-Api-Key': process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
         }
       })
 
@@ -255,8 +260,12 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
 
     pollingRef.current = setInterval(() => {
       // Buscar apenas as 5 mensagens mais recentes para verificar mudanças de status
-      fetch(`http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`, {
-        headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
+      const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'https:' 
+        ? process.env.NEXT_PUBLIC_WAHA_HTTPS_URL || 'https://waha.tappy.id:3001'
+        : process.env.NEXT_PUBLIC_WAHA_URL || 'http://159.65.34.199:3001'
+        
+      fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`, {
+        headers: { 'X-Api-Key': process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey' }
       })
       .then(response => response.json())
       .then(data => {
