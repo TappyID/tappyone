@@ -76,7 +76,7 @@ interface UseMessagesDataReturn {
   refreshMessages: () => void
 }
 
-// v2.0 - Fixed HTTPS proxy for all fetch calls
+// v3.0 - Force HTTPS proxy for production - CRITICAL FIX
 export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
@@ -108,18 +108,25 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       
       console.log(`🔄 Buscando ${limit} mensagens (offset: ${offset})`)
       
-      // Detectar se estamos em produção HTTPS
-      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      // CRITICAL: Force HTTPS proxy for production
+      const isProduction = typeof window !== 'undefined' && (
+        window.location.protocol === 'https:' || 
+        window.location.hostname === 'crm.tappy.id' ||
+        window.location.hostname.includes('vercel')
+      )
       
-      // Usar proxy em produção, direto em desenvolvimento
+      // ALWAYS use proxy in production
       const baseUrl = isProduction 
         ? '/api/waha-proxy' 
         : 'http://159.65.34.199:3001'
       
-      // Debug log
-      console.log('🔐 useMessagesData - isProduction:', isProduction, 'baseUrl:', baseUrl)
+      // Critical debug log
+      console.log('🔐 [v3.0] useMessagesData - isProduction:', isProduction, 'baseUrl:', baseUrl, 'hostname:', window.location.hostname)
       
-      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`, {
+      const url = `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`
+      console.log('🔗 [v3.0] Fetching URL:', url)
+      
+      const response = await fetch(url, {
         headers: {
           'X-Api-Key': 'tappyone-waha-2024-secretkey'
         }
@@ -266,15 +273,23 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
     }
 
     pollingRef.current = setInterval(() => {
-      // Detectar se estamos em produção HTTPS
-      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      // CRITICAL: Force HTTPS proxy for production
+      const isProduction = typeof window !== 'undefined' && (
+        window.location.protocol === 'https:' || 
+        window.location.hostname === 'crm.tappy.id' ||
+        window.location.hostname.includes('vercel')
+      )
+      
       const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
       
       // Debug log para polling
-      console.log('🔄 Polling - isProduction:', isProduction, 'baseUrl:', baseUrl)
+      console.log('🔄 [v3.0] Polling - isProduction:', isProduction, 'baseUrl:', baseUrl, 'hostname:', window.location.hostname)
       
       // Buscar apenas as 5 mensagens mais recentes para verificar mudanças de status
-      fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`, {
+      const pollingUrl = `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`
+      console.log('🔗 [v3.0] Polling URL:', pollingUrl)
+      
+      fetch(pollingUrl, {
         headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
       })
       .then(response => response.json())
