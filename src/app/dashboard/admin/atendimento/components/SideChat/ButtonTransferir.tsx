@@ -25,7 +25,7 @@ export default function ButtonTransferir({
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
-      className={`relative p-1 rounded border transition-colors ${
+      className={`relative p-1 rounded-sm border transition-colors ${
         isTransferred 
           ? 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-400/30 text-blue-600'
           : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600'
@@ -42,7 +42,7 @@ export default function ButtonTransferir({
       {/* Indicador de transferência */}
       {isTransferred && (
         <div 
-          className="relative p-1 bg-indigo-500/20 hover:bg-indigo-500/30 rounded 
+          className="relative p-1 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-sm 
                  border border-indigo-400/30 transition-colors k:border-gray-800 flex items-center justify-center">
           <User className="w-2 h-2 text-white" />
         </div>

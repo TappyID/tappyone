@@ -4,10 +4,9 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { 
   Archive, 
-  Eye, 
+  Eye,
   EyeOff, 
   Trash2,
-  MoreVertical,
   Heart
 } from 'lucide-react'
 
@@ -123,11 +122,10 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.01 }}
       onClick={onSelect}
-      className={`group relative flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${
+      className={`group relative flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all ${
         chat.isSelected
-          ? 'bg-gradient-to-r from-blue-500/10 via-blue-400/20 to-blue-500/10 backdrop-blur-sm border border-blue-300/30 shadow-lg shadow-blue-500/20 dark:from-blue-600/20 dark:via-blue-500/30 dark:to-blue-600/20 dark:border-blue-400/30'
+          ? 'bg-blue-50 dark:bg-blue-900/20'
           : 'hover:bg-gray-50 dark:hover:bg-gray-700'
       } ${
         chat.isArchived ? 'opacity-50' : ''
@@ -144,13 +142,13 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               src={chat.avatar} 
               alt={chat.name}
               className={`w-12 h-12 rounded-full object-cover ${
-                chat.isSelected ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : ''
+                chat.isSelected ? 'ring-2 ring-blue-400' : ''
               }`}
             />
           ) : (
             <div className={`w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 
                            flex items-center justify-center ${
-                chat.isSelected ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : ''
+                chat.isSelected ? 'ring-2 ring-blue-400' : ''
               }`}>
               <span className="text-lg font-semibold text-gray-600 dark:text-gray-300">
                 {chat.name.charAt(0).toUpperCase()}
@@ -171,7 +169,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       {/* Informações do Chat */}
       <div className="flex-1 min-w-0">
-          {/* Nome e Timestamp */}
+          {/* Nome e Badge */}
           <div className="flex items-center justify-between mb-1">
             <h3 className={`font-medium truncate ${
               chat.isSelected
@@ -182,56 +180,50 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             }`}>
               {chat.name}
             </h3>
-            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {formatTimeRelative(chat.lastMessage.timestamp)}
-              </span>
-              {/* Contador de não lidas */}
-              {chat.unreadCount && chat.unreadCount > 0 && (
-                <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
-                  {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
-                </div>
-              )}
-            </div>
+            {/* Contador de não lidas */}
+            {chat.unreadCount && chat.unreadCount > 0 && (
+              <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+              </div>
+            )}
           </div>
 
           {/* Última Mensagem */}
           <LastMessageSideChat 
             message={chat.lastMessage}
-            maxLength={45}
+            maxLength={6}
           />
 
-          {/* Indicadores (Tags, Rating, Conexão, etc.) */}
-          <div className="mt-1">
-            <ChatIndicators 
-              chat={chat}
-              onTagsClick={onTagsClick}
-              onRatingClick={(e) => {
-                e.stopPropagation()
-                console.log('⭐ Rating clicado:', chat.rating)
-              }}
-              onKanbanClick={(e) => {
-                e.stopPropagation()
-                console.log('📋 Kanban clicado:', chat.kanbanStatus)
-              }}
-              onFilaClick={(e) => {
-                e.stopPropagation()
-                console.log('👥 Fila clicada:', chat.fila)
-              }}
-              onTicketClick={(e) => {
-                e.stopPropagation()
-                console.log('🎫 Ticket clicado:', chat.ticketStatus)
-              }}
-            />
-          </div>
       </div>
 
-      {/* Botões de Ação - Aparecem no hover (reduzidos) */}
+      {/* Botões de Ação + Indicadores - Aparecem no hover ou quando ativo */}
       <motion.div
-        className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
-                   transition-opacity flex items-center gap-0.5"
+        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-opacity flex items-center gap-1 ${
+          chat.isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
         whileHover={{ scale: 1.05 }}
       >
+        {/* Indicadores (Tags, Rating, Conexão, etc.) */}
+        <ChatIndicators 
+          chat={chat}
+          onTagsClick={onTagsClick}
+          onRatingClick={(e) => {
+            e.stopPropagation()
+            console.log('⭐ Rating clicado:', chat.rating)
+          }}
+          onKanbanClick={(e) => {
+            e.stopPropagation()
+            console.log('📋 Kanban clicado:', chat.kanbanStatus)
+          }}
+          onFilaClick={(e) => {
+            e.stopPropagation()
+            console.log('👥 Fila clicada:', chat.fila)
+          }}
+          onTicketClick={(e) => {
+            e.stopPropagation()
+            console.log('🎫 Ticket clicado:', chat.ticketStatus)
+          }}
+        />
 
         {/* Botão de Transferir */}
         <ButtonTransferir
@@ -245,7 +237,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onFavoriteClick}
-          className={`p-1 rounded border transition-colors ${
+          className={`p-1 rounded-sm border transition-colors ${
             chat.isFavorite
               ? 'bg-red-500/20 hover:bg-red-500/30 border-red-400/30 text-red-600'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600'
@@ -260,7 +252,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onArchiveClick}
-          className={`p-1 rounded border transition-colors ${
+          className={`p-1 rounded-sm border transition-colors ${
             chat.isArchived
               ? 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-400/30 text-orange-600'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600'
@@ -276,7 +268,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           whileTap={{ scale: 0.9 }}
           onClick={onHideClick}
           className="p-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 
-                     rounded border border-gray-300 dark:border-gray-600 transition-colors"
+                     rounded-sm border border-gray-300 dark:border-gray-600 transition-colors"
           title={chat.isHidden ? 'Mostrar' : 'Ocultar'}
         >
           {chat.isHidden ? (
@@ -291,15 +283,13 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onDeleteClick}
-          className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded border border-red-400/30 
+          className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded-sm border border-red-400/30 
                      transition-colors text-red-600"
           title="Deletar Chat"
         >
           <Trash2 className="w-2.5 h-2.5" />
         </motion.button>
 
-        {/* Menu de 3 pontos (reduzido) */}
-        <MoreVertical className="w-3 h-3 text-slate-400" />
       </motion.div>
     </motion.div>
   )

@@ -113,7 +113,7 @@ export default function AtendimentoPage() {
       },
       // Adicionar dados para os indicadores (mock por enquanto)
       isSelected: selectedChatId === chat.id,
-      unreadCount: chat.unreadCount || 0,
+      unreadCount: chat.unreadCount > 0 ? chat.unreadCount : undefined,
       // Mock dos outros dados
       tags: Math.random() > 0.7 ? [mockTags[Math.floor(Math.random() * mockTags.length)]] : undefined,
       rating: Math.random() > 0.6 ? Math.floor(Math.random() * 5) + 1 : undefined,

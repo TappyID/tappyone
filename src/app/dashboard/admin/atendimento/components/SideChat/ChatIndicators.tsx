@@ -6,7 +6,7 @@ import {
   Tag,
   Star,
   Wifi,
-  Kanban,
+  LayoutDashboard,
   Users,
   Ticket
 } from 'lucide-react'
@@ -99,15 +99,23 @@ export default function ChatIndicators({
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       {/* Indicador de Conexão */}
       {(chat.isOnline || chat.connectionStatus) && (
         <motion.div
           whileHover={{ scale: 1.1 }}
-          className={`p-1 rounded transition-colors ${getConnectionColor()}`}
+          className={`relative p-1 rounded-sm transition-colors ${getConnectionColor()}`}
           title={`Conexão: ${chat.connectionStatus || 'online'}`}
         >
-          <Wifi className="w-3 h-3" />
+          <Wifi className="w-2.5 h-2.5" />
+          
+          {/* Badge para Conexão */}
+          <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full 
+                          border border-white dark:border-gray-800 ${
+            chat.connectionStatus === 'connected' ? 'bg-green-500' :
+            chat.connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+          }`}>
+          </div>
         </motion.div>
       )}
 
@@ -116,11 +124,11 @@ export default function ChatIndicators({
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={onTagsClick}
-        className="relative p-1 bg-emerald-500/20 hover:bg-emerald-500/30 rounded 
+        className="relative p-1 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-sm 
                    border border-emerald-400/30 transition-colors"
         title={`Gerenciar Tags${chat.tags?.length ? ` (${chat.tags.length})` : ''}`}
       >
-        <Tag className="w-3 h-3 text-emerald-600" />
+        <Tag className="w-2.5 h-2.5 text-emerald-600" />
         
         {/* Badge de quantidade de tags */}
         {(chat.tags && chat.tags.length > 0) && (
@@ -139,12 +147,15 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onRatingClick}
-          className="relative p-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded 
+          className="relative p-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-sm 
                      border border-yellow-400/30 transition-colors"
           title={`Rating: ${chat.rating}/5`}
         >
-          <div className="flex items-center gap-0.5">
-            {renderRatingStars(chat.rating)}
+          <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+          
+          {/* Badge para Rating */}
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full 
+                          border border-white dark:border-gray-800">
           </div>
         </motion.button>
       )}
@@ -155,14 +166,20 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onKanbanClick}
-          className="p-1 rounded border transition-colors"
+          className="p-1 rounded-sm border transition-colors"
           style={{ 
             backgroundColor: `${chat.kanbanStatus.cor}20`,
             borderColor: `${chat.kanbanStatus.cor}40`
           }}
           title={`Kanban: ${chat.kanbanStatus.nome}`}
         >
-          <Kanban className="w-3 h-3" style={{ color: chat.kanbanStatus.cor }} />
+          <LayoutDashboard className="w-2.5 h-2.5" style={{ color: chat.kanbanStatus.cor }} />
+          
+          {/* Badge para Kanban */}
+          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full 
+                          border border-white dark:border-gray-800"
+               style={{ backgroundColor: chat.kanbanStatus.cor }}>
+          </div>
         </motion.button>
       )}
 
@@ -172,11 +189,16 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onFilaClick}
-          className="p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded 
+          className="p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded-sm 
                      border border-blue-400/30 transition-colors"
           title={`Fila: ${chat.fila.nome}`}
         >
-          <Users className="w-3 h-3 text-blue-600" />
+          <Users className="w-2.5 h-2.5 text-blue-600" />
+          
+          {/* Badge para Fila */}
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full 
+                          border border-white dark:border-gray-800">
+          </div>
         </motion.button>
       )}
 
@@ -186,14 +208,20 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onTicketClick}
-          className="p-1 rounded border transition-colors"
+          className="p-1 rounded-sm border transition-colors"
           style={{ 
             backgroundColor: `${chat.ticketStatus.cor}20`,
             borderColor: `${chat.ticketStatus.cor}40`
           }}
           title={`Status: ${chat.ticketStatus.nome}`}
         >
-          <Ticket className="w-3 h-3" style={{ color: chat.ticketStatus.cor }} />
+          <Ticket className="w-2.5 h-2.5" style={{ color: chat.ticketStatus.cor }} />
+          
+          {/* Badge para Ticket */}
+          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full 
+                          border border-white dark:border-gray-800"
+               style={{ backgroundColor: chat.ticketStatus.cor }}>
+          </div>
         </motion.button>
       )}
     </div>

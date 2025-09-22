@@ -84,7 +84,7 @@ export default function LastMessageSideChat({
       }`} />
 
       {/* Conteúdo da mensagem */}
-      <p className={`text-sm truncate min-w-0 ${
+      <p className={`text-xs truncate min-w-0 ${
         message.isRead === false 
           ? 'font-semibold text-gray-900 dark:text-gray-100' 
           : 'text-gray-600 dark:text-gray-400'
