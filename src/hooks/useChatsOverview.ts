@@ -64,10 +64,16 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       console.log('📊 Overview recebido:', data.length, 'chats')
 
       // Transformar dados da WAHA para formato interno
-      const transformedChats: ChatOverview[] = data.map((chat: any) => ({
-        id: chat.id,
-        name: chat.name || chat.contact?.name || chat.contact?.pushname || 'Usuário',
-        image: chat.contact?.profilePicUrl,
+      const transformedChats: ChatOverview[] = data.map((chat: any) => {
+        // Debug da foto de perfil
+        if (chat.contact?.profilePicUrl) {
+          console.log('🖼️ Avatar encontrado para', chat.name, ':', chat.contact.profilePicUrl)
+        }
+        
+        return {
+          id: chat.id,
+          name: chat.name || chat.contact?.name || chat.contact?.pushname || 'Usuário',
+          image: chat.contact?.profilePicUrl || chat.profilePicUrl || null,
         lastMessage: chat.lastMessage ? {
           id: chat.lastMessage.id,
           body: chat.lastMessage.body || getMessageTypeDescription(chat.lastMessage),
@@ -83,7 +89,8 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
           pushname: chat.contact.pushname,
           profilePicUrl: chat.contact.profilePicUrl
         } : undefined
-      }))
+        }
+      })
 
       // Ordenar por timestamp da última mensagem (mais recente primeiro)
       transformedChats.sort((a, b) => {

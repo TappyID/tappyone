@@ -126,25 +126,31 @@ export default function SideChat({
   // Modo colapsado
   if (isCollapsed) {
     return (
-      <div className="w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-        {/* Avatars dos chats ativos */}
-        <div className="p-2 space-y-2">
-          {chats.slice(0, 6).map((chat) => (
+      <div className="w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 
+                      flex flex-col items-center py-4 space-y-2">
+        <div className="space-y-2">
+          {chats.slice(0, 8).map((chat) => (
             <button
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
-              className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all ${
-                chat.id === selectedChatId 
-                  ? 'border-blue-500 scale-110' 
-                  : 'border-gray-300 hover:border-gray-400'
+              className={`relative w-12 h-12 rounded-full overflow-hidden transition-all ${
+                selectedChatId === chat.id 
+                  ? 'ring-2 ring-blue-500' 
+                  : 'hover:ring-2 hover:ring-gray-300'
               }`}
               title={chat.name}
             >
+              {/* Avatar */}
               {chat.avatar ? (
-                <img src={chat.avatar} alt={chat.name} className="w-full h-full object-cover" />
+                <img 
+                  src={chat.avatar} 
+                  alt={chat.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 
+                               flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">
                     {chat.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -167,13 +173,21 @@ export default function SideChat({
   }
 
   return (
-    <div className="relative flex-1 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 
-                    flex flex-col overflow-hidden">
-      
-      {/* Container com scroll */}
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+          Conversas
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          {chats.length} {chats.length === 1 ? 'conversa' : 'conversas'}
+        </p>
+      </div>
+
+      {/* Lista de Chats com scroll */}
       <div 
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto scrollbar-paypal"
+        className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
         onScroll={handleScroll}
       >
         {/* Loading inicial */}
@@ -240,19 +254,6 @@ export default function SideChat({
               <MessageCircle className="w-3 h-3" />
               <span>Todos os chats carregados</span>
             </motion.div>
-          </div>
-        )}
-
-        {/* Estado vazio */}
-        {!isLoading && chats.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MessageCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Nenhuma conversa encontrada
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Tente ajustar os filtros ou aguarde novas mensagens chegarem.
-            </p>
           </div>
         )}
       </div>

@@ -315,85 +315,62 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       {/* Timestamp no canto superior direito */}
       <div className="absolute top-3 right-3 text-xs text-gray-400">
-        {formatTimeRelative(chat.lastMessage.timestamp)}
+        {formatTimestamp(chat.lastMessage.timestamp)}
       </div>
 
-      {/* Botões de Ação - Aparecem no hover */}
-      <motion.div
-        className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-      >
+      {/* Ações rápidas no hover */}
+      <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 transition-opacity ${
+        chat.isSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}>
         {/* Favoritar */}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onFavoriteClick(e)
-          }}
-          className={`p-1.5 rounded-lg transition-colors ${
+          onClick={onFavoriteClick}
+          className={`p-1.5 rounded-full transition-colors ${
             chat.isFavorite 
-              ? 'text-yellow-400 hover:text-yellow-500' 
-              : 'text-gray-400 hover:text-yellow-400'
+              ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20' 
+              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'
           }`}
-          title={chat.isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+          title={chat.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
-          <Star className="w-4 h-4" fill={chat.isFavorite ? 'currentColor' : 'none'} />
+          <Star className={`w-3 h-3 ${chat.isFavorite ? 'fill-current' : ''}`} />
         </button>
-
+        
         {/* Transferir */}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onTransferClick(e)
-          }}
-          className="p-1.5 text-gray-400 hover:text-blue-400 rounded-lg transition-colors"
-          title="Transferir conversa"
+          onClick={onTransferClick}
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+          title="Transferir chat"
         >
-          <UserPlus className="w-4 h-4" />
+          <UserPlus className="w-3 h-3" />
         </button>
-
+        
         {/* Arquivar */}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onArchiveClick(e)
-          }}
-          className={`p-1.5 rounded-lg transition-colors ${
-            chat.isArchived
-              ? 'text-orange-400 hover:text-orange-500'
-              : 'text-gray-400 hover:text-orange-400'
-          }`}
-          title={chat.isArchived ? "Desarquivar" : "Arquivar"}
+          onClick={onArchiveClick}
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+          title="Arquivar chat"
         >
-          <Archive className="w-4 h-4" />
+          <Archive className="w-3 h-3" />
         </button>
-
-        {/* Ocultar */}
+        
+        {/* Ocultar/Mostrar */}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onHideClick(e)
-          }}
-          className={`p-1.5 rounded-lg transition-colors ${
-            chat.isHidden
-              ? 'text-purple-400 hover:text-purple-500'
-              : 'text-gray-400 hover:text-purple-400'
-          }`}
-          title={chat.isHidden ? "Mostrar" : "Ocultar"}
+          onClick={onHideClick}
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+          title={chat.isHidden ? 'Mostrar chat' : 'Ocultar chat'}
         >
-          {chat.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          {chat.isHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </button>
-
+        
         {/* Excluir */}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDeleteClick(e)
-          }}
-          className="p-1.5 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
-          title="Excluir conversa"
+          onClick={onDeleteClick}
+          className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500 transition-colors"
+          title="Excluir chat"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3 h-3" />
         </button>
-      </motion.div>
+      </div>
     </motion.div>
   )
 })
