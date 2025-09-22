@@ -134,7 +134,10 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
           text: `💰 *Orçamento Criado*\n\n*${titulo}*\n${descricao}\n\nTotal: *R$ ${total.toFixed(2)}*\n\nOrçamento válido por 30 dias.`,
         }
         
-        await fetch('http://159.65.34.199:3001/api/send', {
+        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        const wahaUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+        
+        await fetch(`${wahaUrl}/api/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(whatsappData),

@@ -147,7 +147,10 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
           text: `🎫 *Ticket Criado*\n\n*${titulo}*\n📋 ${categoria}\n⚠️ Prioridade: ${prioridade.toUpperCase()}\n📊 Status: ${status.replace('_', ' ')}\n\n${descricao}\n\n*Número do Ticket:* #${result?.id || Date.now()}`,
         }
         
-        await fetch('http://159.65.34.199:3001/api/send', {
+        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        const wahaUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+        
+        await fetch(`${wahaUrl}/api/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(whatsappData),
