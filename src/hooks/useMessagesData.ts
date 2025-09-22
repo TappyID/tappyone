@@ -71,18 +71,20 @@ interface UseMessagesDataReturn {
   loading: boolean
   error: string | null
   hasMore: boolean
-  totalMessages: number
+  totalMessages: number | null
   loadMore: () => void
   refreshMessages: () => void
 }
 
-export function useMessagesData(chatId?: string): UseMessagesDataReturn {
+// v2.0 - Fixed HTTPS proxy for all fetch calls
+export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
-  const [offset, setOffset] = useState(0)
-  const [totalMessages, setTotalMessages] = useState(0)
+  const [currentOffset, setCurrentOffset] = useState(0)
+  const [totalMessages, setTotalMessages] = useState<number | null>(null)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
   
   // Carregar apenas 5 mensagens inicialmente para economia
@@ -113,6 +115,9 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
       const baseUrl = isProduction 
         ? '/api/waha-proxy' 
         : 'http://159.65.34.199:3001'
+      
+      // Debug log
+      console.log('🔐 useMessagesData - isProduction:', isProduction, 'baseUrl:', baseUrl)
       
       const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`, {
         headers: {
@@ -264,6 +269,9 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
       // Detectar se estamos em produção HTTPS
       const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
       const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+      
+      // Debug log para polling
+      console.log('🔄 Polling - isProduction:', isProduction, 'baseUrl:', baseUrl)
       
       // Buscar apenas as 5 mensagens mais recentes para verificar mudanças de status
       fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`, {
