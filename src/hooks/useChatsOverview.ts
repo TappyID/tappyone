@@ -42,8 +42,15 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
       console.log('🔄 Buscando chats overview da WAHA...')
       
-      // Usar endpoint overview da WAHA que inclui last message
-      const response = await fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/chats/overview', {
+      // Detectar se estamos em produção HTTPS
+      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      
+      // Usar proxy em produção, direto em desenvolvimento
+      const baseUrl = isProduction 
+        ? '/api/waha-proxy' 
+        : 'http://159.65.34.199:3001'
+      
+      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview`, {
         headers: {
           'X-Api-Key': 'tappyone-waha-2024-secretkey'
         }
