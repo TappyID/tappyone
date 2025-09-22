@@ -7,7 +7,7 @@ import ChatHeader from './components/TopChatArea/ChatHeader'
 import ChatArea from './components/ChatArea'
 import FooterChatArea from './components/FooterChatArea'
 import { useContatoData } from '@/hooks/useContatoData'
-import { useMessagesData } from '@/hooks/useMessagesData'
+import useMessagesData from '@/hooks/useMessagesDataTemp'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 
 // Mock data para demonstração
@@ -81,17 +81,13 @@ export default function AtendimentoPage() {
     loading: loadingMessages, 
     error: messagesError,
     hasMore: hasMoreMessages,
-    loadMore: loadMoreMessages
+    totalMessages,
+    loadMore: loadMoreMessages,
+    refreshMessages
   } = useMessagesData(selectedChatId)
 
 
-  // Função para recarregar mensagens após envio
-  const refreshMessages = useCallback(() => {
-    if (selectedChatId) {
-      // Força recarregamento das mensagens
-      window.location.reload()
-    }
-  }, [selectedChatId])
+  // refreshMessages já vem do hook useMessagesData
 
   // Função para votar em enquete
   const handlePollVote = useCallback(async (messageId: string, chatId: string, votes: string[]) => {
@@ -129,8 +125,15 @@ export default function AtendimentoPage() {
   // Usar apenas mensagens reais vindas da API
   const displayMessages = useMemo(() => {
     if (!selectedChatId) return []
+    console.log('📋 Display Messages:', {
+      chatId: selectedChatId,
+      messages: realMessages.length,
+      hasMore: hasMoreMessages,
+      totalMessages,
+      loading: loadingMessages
+    })
     return realMessages
-  }, [selectedChatId, realMessages])
+  }, [selectedChatId, realMessages, hasMoreMessages, totalMessages, loadingMessages])
 
   // Estados para chats com pesquisa
   const [whatsappChats, setWhatsappChats] = useState<any[]>([])
@@ -441,8 +444,13 @@ export default function AtendimentoPage() {
           <ChatArea
             messages={displayMessages}
             isLoading={loadingMessages}
-            onPollVote={handlePollVote}
-            selectedChatId={selectedChatId}
+            hasMore={hasMoreMessages}
+            totalMessages={totalMessages}
+            onLoadMore={loadMoreMessages}
+            selectedChat={selectedChatId ? {
+              id: selectedChatId,
+              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
+            } : undefined}
           />
           
           {/* Debug info para mensagens */}
@@ -456,17 +464,83 @@ export default function AtendimentoPage() {
 
           {/* Footer - Input de Mensagem */}
           <FooterChatArea
+            onStartTyping={() => {
+              if (!selectedChatId) return
+              // Usar API WAHA para mostrar "digitando..."
+              fetch('http://159.65.34.199:3001/api/startTyping', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId
+                })
+              }).then(() => console.log('⌨️ Iniciou digitando'))
+            }}
+            onStopTyping={() => {
+              if (!selectedChatId) return
+              // Usar API WAHA para parar "digitando..."
+              fetch('http://159.65.34.199:3001/api/stopTyping', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId
+                })
+              }).then(() => console.log('⏹️ Parou de digitar'))
+            }}
+            onMarkAsSeen={(messageId) => {
+              if (!selectedChatId) return
+              // Usar API WAHA para marcar como vista (✓✓ azul)
+              fetch('http://159.65.34.199:3001/api/sendSeen', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  messageId: messageId
+                })
+              }).then(() => console.log('👁️ Marcado como visto'))
+            }}
             onSendMessage={(content) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar texto
-              fetch('http://159.65.34.199:3001/api/send', {
+              fetch('http://159.65.34.199:3001/api/sendText', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                },
                 body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
                   chatId: selectedChatId,
-                  text: content
+                  text: content,
+                  reply_to: null,
+                  linkPreview: true,
+                  linkPreviewHighQuality: false
                 })
-              }).then(() => console.log('📤 Mensagem enviada:', content))
+              }).then(async response => {
+                if (response.ok) {
+                  const result = await response.json()
+                  console.log('✅ Mensagem enviada:', content)
+                  console.log('📋 Resposta WAHA:', result)
+                  
+                  // Recarregar mensagens imediatamente (sem reload da página)
+                  setTimeout(() => refreshMessages(), 500)
+                } else {
+                  const errorData = await response.json().catch(() => null)
+                  console.error('❌ Erro ao enviar:', response.status, response.statusText)
+                  console.error('📋 Detalhes do erro:', errorData)
+                }
+              }).catch(error => console.error('❌ Erro de rede:', error))
             }}
             onAttachFile={(file) => {
               if (!selectedChatId || !file) return
@@ -475,10 +549,17 @@ export default function AtendimentoPage() {
               formData.append('chatId', selectedChatId)
               formData.append('file', file)
               
-              fetch('http://159.65.34.199:3001/api/sendFile', {
+              fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/sendFile', {
                 method: 'POST',
+                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: formData
-              }).then(() => console.log('📎 Arquivo enviado'))
+              }).then(response => {
+                if (response.ok) {
+                  console.log('✅ Arquivo enviado')
+                } else {
+                  console.error('❌ Erro ao enviar arquivo:', response.status)
+                }
+              })
             }}
             onSendImage={(file) => {
               if (!selectedChatId || !file) return
@@ -487,22 +568,37 @@ export default function AtendimentoPage() {
               formData.append('chatId', selectedChatId)
               formData.append('file', file)
               
-              fetch('http://159.65.34.199:3001/api/sendImage', {
+              fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/sendImage', {
                 method: 'POST',
+                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: formData
-              }).then(() => console.log('🖼️ Imagem enviada'))
+              }).then(response => {
+                if (response.ok) {
+                  console.log('✅ Imagem enviada')
+                } else {
+                  console.error('❌ Erro ao enviar imagem:', response.status)
+                }
+              })
             }}
             onSendAudio={(audioBlob) => {
               if (!selectedChatId || !audioBlob) return
               // Usar API WAHA para enviar áudio
               const formData = new FormData()
+              formData.append('session', 'user_fb8da1d7_1758158816675')
               formData.append('chatId', selectedChatId)
               formData.append('file', audioBlob, 'audio.ogg')
               
-              fetch('http://159.65.34.199:3001/api/sendVoice', {
+              fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/sendVoice', {
                 method: 'POST',
+                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: formData
-              }).then(() => console.log('🎤 Áudio enviado'))
+              }).then(response => {
+                if (response.ok) {
+                  console.log('✅ Áudio enviado')
+                } else {
+                  console.error('❌ Erro ao enviar áudio:', response.status)
+                }
+              })
             }}
             onOpenCamera={() => console.log('📷 Abrir câmera')}
             onOpenEmojis={() => console.log('😊 Abrir emojis')}
@@ -533,6 +629,32 @@ export default function AtendimentoPage() {
                   message: listData
                 })
               }).then(() => console.log('🔗 Lista enviada'))
+            }}
+            onSendEvent={(eventData) => {
+              if (!selectedChatId) return
+              // Usar API WAHA para enviar evento
+              fetch(`http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  chatId: selectedChatId,
+                  event: eventData
+                })
+              }).then(() => console.log('📅 Evento enviado'))
+            }}
+            onReaction={(messageId, emoji) => {
+              if (!selectedChatId) return
+              // Usar API WAHA para reagir à mensagem
+              fetch('http://159.65.34.199:3001/api/reaction', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  messageId,
+                  reaction: emoji
+                })
+              }).then(() => console.log('😀 Reação enviada'))
             }}
             selectedChat={selectedChatId ? {
               id: selectedChatId,

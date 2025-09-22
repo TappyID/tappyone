@@ -58,7 +58,7 @@ const menuItems = [
   {
     title: 'Atendimentos',
     icon: MessageSquare,
-    href: '/dashboard/admin/atendimentos',
+    href: '/dashboard/admin/atendimento',
     color: 'text-green-600'
   },
   {

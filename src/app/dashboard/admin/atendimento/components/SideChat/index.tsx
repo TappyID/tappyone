@@ -149,14 +149,34 @@ export default function SideChat({
   }
 
   return (
+    <>
+      <style jsx>{`
+        .custom-sidebar-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-sidebar-scroll::-webkit-scrollbar-track {
+          background: rgba(59, 130, 246, 0.1);
+        }
+        .custom-sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(59, 130, 246, 0.6);
+          border-radius: 3px;
+        }
+        .custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(59, 130, 246, 0.8);
+        }
+      `}</style>
+      
     <div className="flex-1 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 
                     flex flex-col overflow-hidden">
       
       {/* Container com scroll */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scroll-smooth"
-        style={{ scrollbarWidth: 'thin' }}
+        className="h-full overflow-y-auto custom-sidebar-scroll" 
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(59, 130, 246, 0.6) rgba(59, 130, 246, 0.1)'
+        }}
       >
         {/* Loading inicial */}
         {isLoading && (
@@ -239,5 +259,6 @@ export default function SideChat({
         )}
       </div>
     </div>
+    </>
   )
 }

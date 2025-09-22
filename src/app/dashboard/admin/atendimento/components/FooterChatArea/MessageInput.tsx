@@ -49,7 +49,7 @@ import {
 } from './TabComponents'
 
 interface MessageInputProps {
-  onSendMessage: (content: string, type?: 'text') => void
+  onSendMessage: (content: string) => void
   onAttachFile?: () => void
   onSendImage?: () => void
   onSendAudio?: () => void
@@ -59,6 +59,9 @@ interface MessageInputProps {
   onAcoesRapidasClick?: () => void
   onIAClick?: () => void
   onRespostaRapidaClick?: () => void
+  onStartTyping?: () => void
+  onStopTyping?: () => void
+  onMarkAsSeen?: (messageId: string) => void
   placeholder?: string
   disabled?: boolean
   isTyping?: boolean
@@ -75,6 +78,9 @@ export default function MessageInput({
   onAcoesRapidasClick,
   onIAClick,
   onRespostaRapidaClick,
+  onStartTyping,
+  onStopTyping,
+  onMarkAsSeen,
   placeholder = "Digite sua mensagem...",
   disabled = false,
   isTyping = false 
@@ -82,6 +88,7 @@ export default function MessageInput({
   const [message, setMessage] = useState('')
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'sistema'>('whatsapp')
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
@@ -94,6 +101,39 @@ export default function MessageInput({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    }
+  }
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newMessage = e.target.value
+    setMessage(newMessage)
+    
+    // Gerenciar typing indicators
+    if (newMessage.length > 0) {
+      // Iniciar typing se ainda não iniciou
+      if (!typingTimeout) {
+        onStartTyping?.()
+      }
+      
+      // Limpar timeout anterior
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+      }
+      
+      // Definir novo timeout para parar typing
+      const timeout = setTimeout(() => {
+        onStopTyping?.()
+        setTypingTimeout(null)
+      }, 3000) // Para de mostrar "digitando" após 3 segundos de inatividade
+      
+      setTypingTimeout(timeout)
+    } else {
+      // Se apagou tudo, parar typing
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+        setTypingTimeout(null)
+      }
+      onStopTyping?.()
     }
   }
 
@@ -187,7 +227,7 @@ export default function MessageInput({
         <div className="flex-1 relative">
           <textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
             placeholder={placeholder}
             disabled={disabled}

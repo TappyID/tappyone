@@ -260,7 +260,7 @@ export default function AtendimentosTopBar({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (isKanbanPage) {
-                    router.push('/dashboard/admin/atendimentos')
+                    router.push('/dashboard/admin/atendimento')
                   } else {
                     router.push('/dashboard/admin/kanban')
                   }

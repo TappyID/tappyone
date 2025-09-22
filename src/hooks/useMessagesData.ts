@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface Message {
   id: string
   content: string
-  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu'
+  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu' | 'event' | 'link-preview'
   sender: 'user' | 'agent'
   timestamp: number
   status?: 'sending' | 'sent' | 'delivered' | 'read'
@@ -44,6 +44,25 @@ interface Message {
       icon?: string
       submenu?: any[]
     }>
+    // Para evento
+    eventType?: 'calendar' | 'group' | 'info' | 'success' | 'warning' | 'star'
+    eventTitle?: string
+    eventDescription?: string
+    eventMetadata?: {
+      participants?: string[]
+      location?: string
+      date?: string
+      url?: string
+    }
+    // Para link preview
+    linkPreview?: {
+      url: string
+      title?: string
+      description?: string
+      image?: string
+      siteName?: string
+      favicon?: string
+    }
   }
 }
 
@@ -52,7 +71,9 @@ interface UseMessagesDataReturn {
   loading: boolean
   error: string | null
   hasMore: boolean
+  totalMessages: number
   loadMore: () => void
+  refreshMessages: () => void
 }
 
 export function useMessagesData(chatId?: string): UseMessagesDataReturn {
@@ -61,21 +82,34 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
+  const [totalMessages, setTotalMessages] = useState(0)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Carregar apenas 5 mensagens inicialmente para economia
+  const INITIAL_LIMIT = 5
+  const LOAD_MORE_LIMIT = 20
+  
+  // Função para forçar atualização das mensagens
+  const refreshMessages = () => {
+    if (chatId) {
+      fetchMessages(chatId, 0, false)
+    }
+  }
 
   const fetchMessages = async (chatId: string, offset: number = 0, append: boolean = false) => {
     try {
       if (!append) setLoading(true)
       setError(null)
 
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Token não encontrado')
-      }
-
-      // Buscar mensagens com paginação (50 por vez para performance)
-      const response = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}/messages?limit=50&offset=${offset}`, {
+      // Buscar mensagens com paginação otimizada (5 iniciais, depois 20)
+      const limit = offset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT
+      
+      console.log(`🔄 Buscando ${limit} mensagens (offset: ${offset})`)
+      
+      // Usar WAHA API diretamente com limit
+      const response = await fetch(`http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'X-Api-Key': 'tappyone-waha-2024-secretkey'
         }
       })
 
@@ -84,9 +118,32 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
       }
 
       const data = await response.json()
-      console.log(`📨 Mensagens carregadas: ${data.length} para chat ${chatId}`)
-      console.log('📝 Dados brutos da WAHA:', data.slice(0, 5)) // Mostrar primeiras 5 mensagens para debug
+      console.log('📨 Mensagens carregadas:', data.length, 'para chat', chatId)
       
+      console.log(`📊 Retornado: ${data.length} mensagens de ${limit} solicitadas`)
+      
+      // Se retornou menos que solicitado, não há mais mensagens
+      if (data.length < limit) {
+        setHasMore(false)
+        setTotalMessages(offset + data.length)
+        console.log(`🏁 Fim das mensagens: total estimado ${offset + data.length}`)
+      } else {
+        // Retornou a quantidade completa - provavelmente há mais mensagens
+        setHasMore(true)
+        // Para o carregamento inicial (offset 0), assumir pelo menos mais algumas
+        if (offset === 0) {
+          setTotalMessages(data.length + 10) // Estimativa inicial
+        } else {
+          setTotalMessages((offset + data.length) + 5)
+        }
+        console.log(`🔄 Há mais mensagens: total estimado ${offset === 0 ? data.length + 10 : (offset + data.length) + 5}`)
+      }
+      
+      if (data.length === 0) {
+        setHasMore(false)
+        if (!append) setLoading(false)
+        return
+      }
       // Log detalhado para debug de tipos específicos
       data.forEach((msg: any, index: number) => {
         if (index < 5) { // Só primeiras 5 para não spam
@@ -154,22 +211,75 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
   }
 
   const loadMore = () => {
-    if (!chatId || loading || !hasMore) return
+    console.log('🔄 LoadMore chamado:', { chatId, loading, hasMore, offset, currentMessages: messages.length })
     
-    const newOffset = offset + 50
+    if (!chatId) {
+      console.log('❌ LoadMore: Sem chatId')
+      return
+    }
+    if (loading) {
+      console.log('❌ LoadMore: Já carregando')
+      return  
+    }
+    if (!hasMore) {
+      console.log('❌ LoadMore: Não há mais mensagens')
+      return
+    }
+    
+    const newOffset = offset + (offset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT)
+    console.log('✅ LoadMore: Carregando com offset', newOffset)
     setOffset(newOffset)
     fetchMessages(chatId, newOffset, true)
   }
 
   useEffect(() => {
-    if (chatId) {
-      setOffset(0)
-      setHasMore(true)
-      fetchMessages(chatId, 0, false)
-    } else {
-      setMessages([])
-      setError(null)
-      setOffset(0)
+    if (!chatId) return
+
+    // Reset messages when chat changes
+    setMessages([])
+    setError(null)
+    setOffset(0)
+    setHasMore(true)
+    setTotalMessages(0)
+
+    // Fetch initial messages
+    fetchMessages(chatId, 0, false)
+
+    // Webhook desabilitado temporariamente (404 error)
+    // TODO: Implementar webhook corretamente quando endpoint estiver disponível
+
+    // Setup polling para atualizar status das mensagens a cada 5 segundos
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+    }
+
+    pollingRef.current = setInterval(() => {
+      // Buscar apenas as 5 mensagens mais recentes para verificar mudanças de status
+      fetch(`http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`, {
+        headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Atualizar apenas o status das mensagens existentes
+        setMessages(prev => prev.map(msg => {
+          const updated = data.find((newMsg: any) => newMsg.id === msg.id)
+          if (updated) {
+            return {
+              ...msg,
+              status: getMessageStatus(updated)
+            }
+          }
+          return msg
+        }))
+      })
+      .catch(error => console.log('Status polling error:', error))
+    }, 5000)
+
+    // Cleanup
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+      }
     }
   }, [chatId])
 
@@ -178,9 +288,14 @@ export function useMessagesData(chatId?: string): UseMessagesDataReturn {
     loading,
     error,
     hasMore,
-    loadMore
+    totalMessages,
+    loadMore,
+    refreshMessages
   }
 }
+
+// Export default também para garantir compatibilidade
+export default useMessagesData
 
 // Helper para determinar tipo da mensagem baseado nos dados da WAHA
 function getMessageType(msg: any): Message['type'] {
@@ -199,6 +314,7 @@ function getMessageType(msg: any): Message['type'] {
   
   // Verificar por tipo de mensagem específica no _data.Message
   if (msg._data?.Message) {
+    if (msg._data.Message.eventMessage) return 'event'
     if (msg._data.Message.pollCreationMessage || msg._data.Message.pollCreationMessageV3) return 'poll'
     if (msg._data.Message.contactMessage) return 'contact'
     if (msg._data.Message.documentMessage) return 'document'
@@ -208,6 +324,8 @@ function getMessageType(msg: any): Message['type'] {
     if (msg._data.Message.audioMessage) return 'audio'
     if (msg._data.Message.listMessage) return 'menu'
     if (msg._data.Message.buttonsMessage) return 'menu'
+    // Verificar se é texto com preview de link
+    if (msg._data.Message.extendedTextMessage?.contextInfo?.externalAdReply) return 'link-preview'
   }
   
   // Verificar mídia por mimetype (fallback)
@@ -250,6 +368,8 @@ function getDefaultContent(msg: any): string {
     case 'call': return '📞 Chamada'
     case 'poll': return '📊 Enquete'
     case 'menu': return '🔗 Menu'
+    case 'event': return '📅 Evento'
+    case 'link-preview': return '🔗 Link'
     default: return 'Mensagem'
   }
 }
@@ -356,6 +476,34 @@ function extractMetadata(msg: any): Message['metadata'] | undefined {
         id: btn.buttonId,
         title: btn.displayText
       }))
+    }
+  }
+  
+  // Metadados de evento
+  if (messageType === 'event') {
+    const eventMessage = msg._data?.Message?.eventMessage
+    if (eventMessage) {
+      metadata.eventType = 'calendar' // Padrão
+      metadata.eventTitle = eventMessage.name || 'Evento'
+      metadata.eventDescription = eventMessage.description
+      metadata.eventMetadata = {
+        date: eventMessage.startTime ? new Date(eventMessage.startTime * 1000).toISOString() : undefined
+      }
+    }
+  }
+  
+  // Metadados de link preview
+  if (messageType === 'link-preview') {
+    const extendedText = msg._data?.Message?.extendedTextMessage
+    const adReply = extendedText?.contextInfo?.externalAdReply
+    if (adReply) {
+      metadata.linkPreview = {
+        url: adReply.sourceUrl || msg.body || '',
+        title: adReply.title,
+        description: adReply.body,
+        image: adReply.thumbnailUrl,
+        siteName: adReply.sourceType
+      }
     }
   }
   

@@ -14,14 +14,16 @@ import {
   MessageLocation,
   MessageContact,
   MessagePoll,
-  MessageMenu
+  MessageMenu,
+  MessageEvent,
+  MessageLinkPreview
 } from './MessageTypes'
 
 interface MessageBubbleProps {
   message: {
     id: string
     content: string
-    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu'
+    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu' | 'event' | 'link-preview'
     sender: 'user' | 'agent'
     timestamp: number
     status?: 'sending' | 'sent' | 'delivered' | 'read'
@@ -206,6 +208,30 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
               </p>
             )}
           </div>
+        )
+
+      case 'event':
+        return (
+          <MessageEvent
+            eventType={(metadata as any)?.eventType || 'info'}
+            title={(metadata as any)?.eventTitle || content}
+            description={(metadata as any)?.eventDescription}
+            timestamp={message.timestamp}
+            metadata={(metadata as any)?.eventMetadata}
+          />
+        )
+
+      case 'link-preview':
+        return (
+          <MessageLinkPreview
+            content={content}
+            linkPreview={(metadata as any)?.linkPreview || {
+              url: content,
+              title: 'Link',
+              description: content
+            }}
+            isFromUser={isFromUser}
+          />
         )
 
       case 'text':

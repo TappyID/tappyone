@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, MessageCircle } from 'lucide-react'
+import { Loader2, MessageCircle, ChevronUp } from 'lucide-react'
 
 import MessageBubble from './MessageBubble'
 
@@ -11,7 +11,7 @@ interface ChatAreaProps {
   messages: Array<{
     id: string
     content: string
-    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu'
+    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call' | 'poll' | 'menu' | 'event' | 'link-preview'
     sender: 'user' | 'agent'
     timestamp: number
     status?: 'sending' | 'sent' | 'delivered' | 'read'
@@ -55,10 +55,15 @@ interface ChatAreaProps {
     }
   }>
   
-  // Estados
+  // Estados de carregamento
   isLoading?: boolean
   isTyping?: boolean
   typingUser?: string
+  
+  // Paginação e scroll
+  hasMore?: boolean
+  totalMessages?: number
+  onLoadMore?: () => void
   
   // Chat selecionado
   selectedChat?: {
@@ -72,14 +77,51 @@ export default function ChatArea({
   isLoading = false,
   isTyping = false,
   typingUser,
+  hasMore = false,
+  totalMessages = 0,
+  onLoadMore,
   selectedChat
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const [showScrollToTop, setShowScrollToTop] = useState(false)
 
-  // Auto-scroll para última mensagem
+  // Auto-scroll para última mensagem apenas no carregamento inicial
   useEffect(() => {
+    if (messages.length <= 5) { // Só nas primeiras 5 mensagens
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    }
+  }, [messages.length])
+
+  // Detectar scroll para mostrar badge e load more
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+    
+    console.log('📜 Scroll detectado:', { scrollTop, hasMore, isLoading })
+    
+    // Mostrar botão "voltar ao topo" se scrollou muito
+    setShowScrollToTop(scrollTop > 200)
+    
+    // Load more quando chegar próximo do topo (não exatamente 0)
+    if (scrollTop < 100 && hasMore && onLoadMore && !isLoading) {
+      console.log('📤 Trigger: Carregando mais mensagens...')
+      onLoadMore()
+    }
+  }
+
+  const scrollToBottom = () => {
+    console.log('⬇️ Badge clicada: rolando para baixo')
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }
+
+  const handleBadgeClick = () => {
+    console.log('🎯 Badge clicada: carregando mais mensagens')
+    if (onLoadMore && !isLoading) {
+      onLoadMore()
+    }
+  }
 
   // Estado sem chat selecionado
   if (!selectedChat) {
@@ -99,9 +141,60 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <>
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(59, 130, 246, 0.1);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(45deg, #3B82F6, #1D4ED8);
+          border-radius: 4px;
+          transition: background 0.3s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(45deg, #1D4ED8, #1E40AF);
+        }
+      `}</style>
+      
+    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
+      
+      {/* Badge de mensagens não carregadas - estilo WhatsApp Web */}
+      {totalMessages > messages.length && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <motion.button
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleBadgeClick}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium transition-all cursor-pointer"
+          >
+            <ChevronUp className="w-4 h-4 rotate-180" />
+            {totalMessages - messages.length} mensagens não carregadas
+          </motion.button>
+        </div>
+      )}
+
       {/* Área de mensagens */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar"
+        onScroll={handleScroll}
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#3B82F6 rgba(59, 130, 246, 0.1)'
+        }}
+      >
+        {/* Loading mais mensagens no topo */}
+        {isLoading && messages.length > 0 && (
+          <div className="flex items-center justify-center py-4 border-b border-gray-200 dark:border-gray-700">
+            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            <span className="ml-2 text-xs text-gray-500">Carregando mais mensagens...</span>
+          </div>
+        )}
+
         {/* Loading inicial */}
         {isLoading && messages.length === 0 && (
           <div className="flex items-center justify-center py-8">
@@ -168,5 +261,6 @@ export default function ChatArea({
         <div ref={messagesEndRef} />
       </div>
     </div>
+    </>
   )
 }
