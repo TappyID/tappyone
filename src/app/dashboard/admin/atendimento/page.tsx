@@ -825,29 +825,53 @@ export default function AtendimentoPage() {
               
               console.log('📎 Enviando mídia:', { fileName: file.name, mediaType, caption, selectedChatId })
               
-              // Determinar endpoint baseado no tipo - formato correto da WAHA
-              let endpoint = '/api/sendFile' // document default
-              if (mediaType === 'image') {
-                endpoint = '/api/sendImage'
-              } else if (mediaType === 'video') {
-                endpoint = '/api/sendVideo'
-              }
-              
-              const formData = new FormData()
-              formData.append('chatId', selectedChatId)
-              formData.append('file', file)
-              
-              if (caption?.trim()) {
-                formData.append('caption', caption.trim())
-              }
-              
-              console.log('📦 FormData preparado para endpoint:', endpoint)
-              
               try {
+                // Converter arquivo para base64
+                const reader = new FileReader()
+                const base64Promise = new Promise<string>((resolve) => {
+                  reader.onloadend = () => {
+                    const base64 = reader.result as string
+                    resolve(base64.split(',')[1]) // Remove o prefixo data:...
+                  }
+                })
+                reader.readAsDataURL(file)
+                const base64Data = await base64Promise
+                
+                // Determinar mimetype
+                let mimetype = file.type || 'application/octet-stream'
+                
+                // Preparar payload JSON
+                const payload = {
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  file: {
+                    data: base64Data,
+                    mimetype: mimetype,
+                    filename: file.name
+                  }
+                }
+                
+                if (caption?.trim()) {
+                  payload['caption'] = caption.trim()
+                }
+                
+                // Determinar endpoint baseado no tipo
+                let endpoint = '/api/sendFile'
+                if (mediaType === 'image') {
+                  endpoint = '/api/sendImage'
+                } else if (mediaType === 'video') {
+                  endpoint = '/api/sendVideo'
+                }
+                
+                console.log('📦 Enviando mídia como JSON:', { endpoint, filename: file.name, mimetype })
+                
                 const response = await fetch(getWahaUrl(endpoint), {
                   method: 'POST',
-                  headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
-                  body: formData
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': 'tappyone-waha-2024-secretkey' 
+                  },
+                  body: JSON.stringify(payload)
                 })
                 
                 if (response.ok) {
@@ -859,7 +883,7 @@ export default function AtendimentoPage() {
                   console.error('❌ Erro ao enviar mídia:', response.status, errorData)
                 }
               } catch (error) {
-                console.error('❌ Erro de rede mídia:', error)
+                console.error('❌ Erro ao processar/enviar mídia:', error)
               }
             }}
             onSendContact={(contactsData) => {
@@ -990,19 +1014,38 @@ export default function AtendimentoPage() {
           
           console.log('🎤 Enviando áudio:', { size: audioBlob.size, type: audioBlob.type })
           
-          // Converter blob para arquivo
-          const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' })
-          
-          // Criar FormData para enviar o áudio
-          const formData = new FormData()
-          formData.append('chatId', selectedChatId)
-          formData.append('file', audioFile)
-          
           try {
+            // Converter blob para base64
+            const reader = new FileReader()
+            const base64Promise = new Promise<string>((resolve) => {
+              reader.onloadend = () => {
+                const base64 = reader.result as string
+                resolve(base64.split(',')[1]) // Remove o prefixo data:...
+              }
+            })
+            reader.readAsDataURL(audioBlob)
+            const base64Data = await base64Promise
+            
+            // Preparar payload JSON para áudio
+            const payload = {
+              session: 'user_fb8da1d7_1758158816675',
+              chatId: selectedChatId,
+              file: {
+                data: base64Data,
+                mimetype: 'audio/webm',
+                filename: 'audio.webm'
+              }
+            }
+            
+            console.log('🎤 Enviando áudio como JSON')
+            
             const response = await fetch(getWahaUrl('/api/sendVoice'), {
               method: 'POST',
-              headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
-              body: formData
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-Api-Key': 'tappyone-waha-2024-secretkey' 
+              },
+              body: JSON.stringify(payload)
             })
             
             if (response.ok) {

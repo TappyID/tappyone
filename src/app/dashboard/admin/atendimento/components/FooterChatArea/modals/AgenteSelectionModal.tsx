@@ -42,9 +42,8 @@ export default function AgenteSelectionModal({
         setLoading(true)
         console.log('🤖 [AgenteSelectionModal] Buscando agentes...')
         
-        // Usar backend correto baseado no ambiente
-        const isProduction = typeof window !== 'undefined' && window.location.hostname === 'crm.tappy.id'
-        const backendUrl = isProduction ? 'https://backend.tappy.id' : 'http://localhost:8081'
+        // Usar backend correto - sempre usar o servidor remoto pois localhost pode não estar rodando
+        const backendUrl = 'http://159.65.34.199:8081'
         
         const response = await fetch(`${backendUrl}/api/agentes`, {
           headers: {
