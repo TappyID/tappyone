@@ -7,12 +7,18 @@ import {
   Eye,
   EyeOff, 
   Trash2,
-  Heart
+  Star,
+  UserPlus,
+  Calendar,
+  DollarSign,
+  Layers,
+  Users,
+  Tag,
+  Ticket,
+  UserCheck
 } from 'lucide-react'
 
-import ButtonTransferir from './ButtonTransferir'
 import LastMessageSideChat from './LastMessageSideChat'
-import ChatIndicators from './ChatIndicators'
 
 // Helper para formatar tempo relativo
 function formatTimeRelative(timestamp: number): string {
@@ -97,6 +103,7 @@ interface ItemSideChatProps {
     isHidden?: boolean
     isFavorite?: boolean
     unreadCount?: number
+    isContact?: boolean
   }
   
   // Callbacks
@@ -150,35 +157,53 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       {chat.isSelected && (
         <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full shadow-md" />
       )}
-      {/* Avatar */}
+      {/* Avatar com foto real */}
       <div className="relative flex-shrink-0">
           {chat.avatar ? (
             <img 
               src={chat.avatar} 
               alt={chat.name}
-              className={`w-12 h-12 rounded-full object-cover ${
-                chat.isSelected ? 'ring-2 ring-blue-400' : ''
+              className={`w-12 h-12 rounded-full object-cover border-2 ${
+                chat.isSelected 
+                  ? 'border-blue-400 shadow-lg' 
+                  : 'border-gray-200 dark:border-gray-700'
               }`}
+              onError={(e) => {
+                // Fallback se a imagem falhar
+                e.currentTarget.style.display = 'none'
+                e.currentTarget.nextElementSibling?.classList.remove('hidden')
+              }}
             />
-          ) : (
-            <div className={`w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 
-                           flex items-center justify-center ${
-                chat.isSelected ? 'ring-2 ring-blue-400' : ''
+          ) : null}
+          
+          {/* Fallback avatar com inicial */}
+          <div className={`${chat.avatar ? 'hidden' : ''} w-12 h-12 rounded-full 
+                         bg-gradient-to-br from-blue-400 to-purple-500
+                         flex items-center justify-center border-2 ${
+                chat.isSelected 
+                  ? 'border-blue-400 shadow-lg' 
+                  : 'border-gray-200 dark:border-gray-700'
               }`}>
-              <span className="text-lg font-semibold text-gray-600 dark:text-gray-300">
+              <span className="text-lg font-bold text-white">
                 {chat.name.charAt(0).toUpperCase()}
               </span>
-            </div>
-          )}
+          </div>
           
           {/* Badge de mensagens não lidas */}
           {(chat.unreadCount && chat.unreadCount > 0) && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full 
-                           border border-white dark:border-gray-800 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full 
+                           border-2 border-white dark:border-gray-800 flex items-center justify-center
+                           shadow-md">
               <span className="text-xs font-bold text-white">
                 {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
               </span>
             </div>
+          )}
+          
+          {/* Indicador de online */}
+          {chat.isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full 
+                           border-2 border-white dark:border-gray-800"></div>
           )}
       </div>
 
@@ -206,117 +231,168 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           {/* Última Mensagem */}
           <LastMessageSideChat 
             message={chat.lastMessage}
-            maxLength={6}
+            maxLength={25}
           />
+
+          {/* Badges de indicadores - Micro tamanho */}
+          <div className="flex items-center gap-0.5 mt-0.5 flex-wrap">
+            {/* Indicador de Contato Cadastrado */}
+            {chat.isContact && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded">
+                <UserCheck className="w-2.5 h-2.5 text-purple-500" />
+              </div>
+            )}
+            
+            {/* Tags */}
+            {chat.tags && chat.tags.length > 0 && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
+                <Tag className="w-2.5 h-2.5 text-gray-500" />
+                <span className="text-[10px] font-medium text-gray-600">{chat.tags.length}</span>
+              </div>
+            )}
+            
+            {/* Agendamentos */}
+            {chat.agendamentos && chat.agendamentos.length > 0 && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded">
+                <Calendar className="w-2.5 h-2.5 text-blue-500" />
+                <span className="text-[10px] font-medium text-blue-600">{chat.agendamentos.length}</span>
+              </div>
+            )}
+            
+            {/* Orçamentos */}
+            {chat.orcamentos && chat.orcamentos.length > 0 && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded">
+                <DollarSign className="w-2.5 h-2.5 text-green-500" />
+                <span className="text-[10px] font-medium text-green-600">{chat.orcamentos.length}</span>
+              </div>
+            )}
+            
+            {/* Tickets */}
+            {chat.tickets && chat.tickets.length > 0 && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded">
+                <Ticket className="w-2.5 h-2.5 text-orange-500" />
+                <span className="text-[10px] font-medium text-orange-600">{chat.tickets.length}</span>
+              </div>
+            )}
+            
+            {/* Kanban */}
+            {chat.kanbanStatus && (
+              <div 
+                className="flex items-center gap-0.5 px-1 py-0.5 rounded"
+                style={{ 
+                  backgroundColor: `${chat.kanbanStatus.cor || '#6b7280'}20`,
+                  color: chat.kanbanStatus.cor || '#6b7280'
+                }}
+              >
+                <Layers className="w-2.5 h-2.5" />
+                <span className="text-[10px] font-medium truncate max-w-[40px]">{chat.kanbanStatus.nome}</span>
+              </div>
+            )}
+            
+            {/* Fila */}
+            {chat.fila && (
+              <div 
+                className="flex items-center gap-0.5 px-1 py-0.5 rounded"
+                style={{ 
+                  backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
+                  color: chat.fila.cor || '#9333ea'
+                }}
+              >
+                <Users className="w-2.5 h-2.5" />
+                <span className="text-[10px] font-medium truncate max-w-[40px]">{chat.fila.nome}</span>
+              </div>
+            )}
+            
+            {/* Rating */}
+            {chat.rating && chat.rating > 0 && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-yellow-100 dark:bg-yellow-900/20 rounded">
+                <span className="text-[10px] font-bold text-yellow-600">⭐{chat.rating}</span>
+              </div>
+            )}
+          </div>
 
       </div>
 
-      {/* Botões de Ação + Indicadores - Aparecem no hover ou quando ativo */}
+      {/* Timestamp no canto superior direito */}
+      <div className="absolute top-3 right-3 text-xs text-gray-400">
+        {formatTimeRelative(chat.lastMessage.timestamp)}
+      </div>
+
+      {/* Botões de Ação - Aparecem no hover */}
       <motion.div
-        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-opacity flex items-center gap-1 ${
-          chat.isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        }`}
-        whileHover={{ scale: 1.05 }}
+        className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
       >
-        {/* Indicadores (Tags, Rating, Conexão, etc.) */}
-        <ChatIndicators 
-          chat={chat}
-          onTagsClick={onTagsClick}
-          onAgendamentosClick={(e) => {
+        {/* Favoritar */}
+        <button
+          onClick={(e) => {
             e.stopPropagation()
-            console.log('📅 Agendamentos clicados:', chat.agendamentos)
+            onFavoriteClick(e)
           }}
-          onOrcamentosClick={(e) => {
-            e.stopPropagation()
-            console.log('💰 Orçamentos clicados:', chat.orcamentos)
-          }}
-          onTicketsClick={(e) => {
-            e.stopPropagation()
-            console.log('🎫 Tickets clicados:', chat.tickets)
-          }}
-          onRatingClick={(e) => {
-            e.stopPropagation()
-            console.log('⭐ Rating clicado:', chat.rating)
-          }}
-          onKanbanClick={(e) => {
-            e.stopPropagation()
-            console.log('📋 Kanban clicado:', chat.kanbanStatus)
-          }}
-          onFilaClick={(e) => {
-            e.stopPropagation()
-            console.log('👥 Fila clicada:', chat.fila)
-          }}
-          onTicketClick={(e) => {
-            e.stopPropagation()
-            console.log('🎫 Ticket clicado:', chat.ticketStatus)
-          }}
-        />
-
-        {/* Botão de Transferir */}
-        <ButtonTransferir
-          onClick={onTransferClick}
-          isTransferred={chat.isTransferred}
-          transferredTo={chat.transferredTo}
-        />
-
-        {/* Botão Favoritar */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onFavoriteClick}
-          className={`p-1 rounded-sm border transition-colors ${
-            chat.isFavorite
-              ? 'bg-red-500/20 hover:bg-red-500/30 border-red-400/30 text-red-600'
-              : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600'
+          className={`p-1.5 rounded-lg transition-colors ${
+            chat.isFavorite 
+              ? 'text-yellow-400 hover:text-yellow-500' 
+              : 'text-gray-400 hover:text-yellow-400'
           }`}
-          title={chat.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          title={chat.isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
         >
-          <Heart className={`w-2.5 h-2.5 ${chat.isFavorite ? 'fill-current' : ''}`} />
-        </motion.button>
+          <Star className="w-4 h-4" fill={chat.isFavorite ? 'currentColor' : 'none'} />
+        </button>
 
-        {/* Botão Arquivar (reduzido) */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onArchiveClick}
-          className={`p-1 rounded-sm border transition-colors ${
+        {/* Transferir */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onTransferClick(e)
+          }}
+          className="p-1.5 text-gray-400 hover:text-blue-400 rounded-lg transition-colors"
+          title="Transferir conversa"
+        >
+          <UserPlus className="w-4 h-4" />
+        </button>
+
+        {/* Arquivar */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onArchiveClick(e)
+          }}
+          className={`p-1.5 rounded-lg transition-colors ${
             chat.isArchived
-              ? 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-400/30 text-orange-600'
-              : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600'
+              ? 'text-orange-400 hover:text-orange-500'
+              : 'text-gray-400 hover:text-orange-400'
           }`}
-          title={chat.isArchived ? 'Desarquivar' : 'Arquivar'}
+          title={chat.isArchived ? "Desarquivar" : "Arquivar"}
         >
-          <Archive className="w-2.5 h-2.5" />
-        </motion.button>
+          <Archive className="w-4 h-4" />
+        </button>
 
-        {/* Botão Ocultar/Visualizar (reduzido) */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onHideClick}
-          className="p-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 
-                     rounded-sm border border-gray-300 dark:border-gray-600 transition-colors"
-          title={chat.isHidden ? 'Mostrar' : 'Ocultar'}
+        {/* Ocultar */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onHideClick(e)
+          }}
+          className={`p-1.5 rounded-lg transition-colors ${
+            chat.isHidden
+              ? 'text-purple-400 hover:text-purple-500'
+              : 'text-gray-400 hover:text-purple-400'
+          }`}
+          title={chat.isHidden ? "Mostrar" : "Ocultar"}
         >
-          {chat.isHidden ? (
-            <Eye className="w-2.5 h-2.5" />
-          ) : (
-            <EyeOff className="w-2.5 h-2.5" />
-          )}
-        </motion.button>
+          {chat.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+        </button>
 
-        {/* Botão Deletar (reduzido) */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onDeleteClick}
-          className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded-sm border border-red-400/30 
-                     transition-colors text-red-600"
-          title="Deletar Chat"
+        {/* Excluir */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onDeleteClick(e)
+          }}
+          className="p-1.5 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+          title="Excluir conversa"
         >
-          <Trash2 className="w-2.5 h-2.5" />
-        </motion.button>
-
+          <Trash2 className="w-4 h-4" />
+        </button>
       </motion.div>
     </motion.div>
   )

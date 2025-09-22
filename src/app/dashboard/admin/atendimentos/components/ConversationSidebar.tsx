@@ -235,6 +235,7 @@ import '@/styles/scrollbar.css'
     
     const scrollContainerRef = useRef<HTMLDivElement>(null)
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
+    const [showScrollTop, setShowScrollTop] = useState(false)
     
     // Buscar dados reais dos contatos - OTIMIZADO: só processar se há chats
     const chatIds = chats.length > 0 ? chats.map(chat => chat.id?._serialized || chat.id || '').filter(id => id) : []
@@ -727,8 +728,8 @@ import '@/styles/scrollbar.css'
         return newSet
       })
     }
-    
-    // NOVO: Função para toggle de favorito
+
+    // Função para favoritar chat
     const toggleFavoriteConversation = (chatId: string) => {
       setFavoriteChats(prev => {
         const newSet = new Set(prev)
@@ -739,6 +740,31 @@ import '@/styles/scrollbar.css'
         }
         return newSet
       })
+    }
+
+    // Função para ocultar chat
+    const toggleHideConversation = (chatId: string) => {
+      setHiddenChats(prev => {
+        const newSet = new Set(prev)
+        if (newSet.has(chatId)) {
+          newSet.delete(chatId)
+        } else {
+          newSet.add(chatId)
+        }
+        return newSet
+      })
+    }
+
+    // Função para excluir chat
+    const deleteConversation = async (chatId: string) => {
+      try {
+        // TODO: Implementar exclusão no backend
+        console.log('Excluindo conversa:', chatId)
+        // Por enquanto, apenas oculta
+        toggleHideConversation(chatId)
+      } catch (error) {
+        console.error('Erro ao excluir conversa:', error)
+      }
     }
 
     // Função para deletar/ocultar chat específico
@@ -914,12 +940,26 @@ import '@/styles/scrollbar.css'
     
     // Handler do scroll com infinite scroll ativo
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+      const scrollTop = e.currentTarget.scrollTop
+      
+      // Mostrar botão scroll-to-top quando rolar mais de 200px
+      setShowScrollTop(scrollTop > 200)
       
       if (useInfiniteScroll && infiniteScrollHandler) {
         infiniteScrollHandler(e.currentTarget)
       } else {
       }
     }, [useInfiniteScroll, infiniteScrollHandler])
+
+    // Função para rolar para o topo
+    const scrollToTop = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }
+    }
 
       // Função para encontrar a fila de um chat baseado nas conexões
       const getChatQueue = useCallback((chatId: string) => {
@@ -2095,31 +2135,94 @@ import '@/styles/scrollbar.css'
                   </div>
                 </div>
 
-                {/* Hover Actions */}
+                {/* Hover Actions - Apenas ações essenciais */}
                 <motion.div
                   className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-                  whileHover={{ scale: 1.1 }}
                 >
-                  {/* Botão de Tags */}
+                  {/* Favoritar */}
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={(e) => {
                       e.stopPropagation()
-                      const chatId = conversation.id
-                      const contatoData = contatosData[chatId]
-                      setSelectedConversationForTags(conversation)
-                      setContatoTags(contatoData?.tags || [])
-                      setShowTagsModal(true)
+                      toggleFavoriteConversation(conversation.id)
                     }}
-                    className="p-2 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg border border-emerald-400/30 transition-colors"
-                    title="Gerenciar Tags"
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      favoriteChats.has(conversation.id) 
+                        ? 'text-yellow-400 hover:text-yellow-500' 
+                        : 'text-slate-400 hover:text-yellow-400'
+                    }`}
+                    title={favoriteChats.has(conversation.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                   >
-                    <Tag className="w-3 h-3 text-emerald-400" />
+                    <Star className="w-4 h-4" fill={favoriteChats.has(conversation.id) ? 'currentColor' : 'none'} />
                   </motion.button>
 
-                  {/* Menu de 3 pontos */}
-                  <MoreVertical className="w-4 h-4 text-slate-400" />
+                  {/* Transferir */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedConversationForTransfer(conversation)
+                      setShowTransferirModal(true)
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
+                    title="Transferir conversa"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </motion.button>
+
+                  {/* Arquivar */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleArchiveConversation(conversation.id)
+                    }}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      archivedChats.has(conversation.id)
+                        ? 'text-orange-400 hover:text-orange-500'
+                        : 'text-slate-400 hover:text-orange-400'
+                    }`}
+                    title={archivedChats.has(conversation.id) ? "Desarquivar" : "Arquivar"}
+                  >
+                    <Archive className="w-4 h-4" />
+                  </motion.button>
+
+                  {/* Ocultar */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleHideConversation(conversation.id)
+                    }}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      hiddenChats.has(conversation.id)
+                        ? 'text-purple-400 hover:text-purple-500'
+                        : 'text-slate-400 hover:text-purple-400'
+                    }`}
+                    title={hiddenChats.has(conversation.id) ? "Mostrar" : "Ocultar"}
+                  >
+                    {hiddenChats.has(conversation.id) ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </motion.button>
+
+                  {/* Excluir */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm('Tem certeza que deseja excluir esta conversa?')) {
+                        deleteConversation(conversation.id)
+                      }
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+                    title="Excluir conversa"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </motion.button>
                 </motion.div>
               </motion.div>
             ))}
@@ -2290,6 +2393,29 @@ import '@/styles/scrollbar.css'
               </motion.div>
             )}
           </div>
+
+          {/* Botão Scroll to Top */}
+          <AnimatePresence>
+            {showScrollTop && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.3 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.3 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20 
+                }}
+                onClick={scrollToTop}
+                className="absolute bottom-6 right-6 p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 z-50"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                title="Voltar ao topo"
+              >
+                <ArrowUp className="w-5 h-5" />
+              </motion.button>
+            )}
+          </AnimatePresence>
 
         </motion.div>
         

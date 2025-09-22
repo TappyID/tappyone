@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, MessageCircle } from 'lucide-react'
+import { Loader2, MessageCircle, ArrowUp } from 'lucide-react'
 
 import ItemSideChat from './ItemSideChat'
 
@@ -34,6 +34,7 @@ interface SideChatProps {
     isArchived?: boolean
     isHidden?: boolean
     unreadCount?: number
+    isContact?: boolean
   }>
   
   // Chat selecionado
@@ -76,6 +77,7 @@ export default function SideChat({
 }: SideChatProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
 
   // IntersectionObserver para scroll infinito
   useEffect(() => {
@@ -104,6 +106,22 @@ export default function SideChat({
       }
     }
   }, [onLoadMore, hasMoreChats, isLoadingMore])
+
+  // Handler do scroll
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop
+    setShowScrollTop(scrollTop > 200)
+  }
+
+  // Função para rolar para o topo
+  const scrollToTop = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+  }
 
   // Modo colapsado
   if (isCollapsed) {
@@ -149,34 +167,14 @@ export default function SideChat({
   }
 
   return (
-    <>
-      <style jsx>{`
-        .custom-sidebar-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-sidebar-scroll::-webkit-scrollbar-track {
-          background: rgba(59, 130, 246, 0.1);
-        }
-        .custom-sidebar-scroll::-webkit-scrollbar-thumb {
-          background: rgba(59, 130, 246, 0.6);
-          border-radius: 3px;
-        }
-        .custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(59, 130, 246, 0.8);
-        }
-      `}</style>
-      
-    <div className="flex-1 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 
+    <div className="relative flex-1 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 
                     flex flex-col overflow-hidden">
       
       {/* Container com scroll */}
       <div 
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto custom-sidebar-scroll" 
-        style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(59, 130, 246, 0.6) rgba(59, 130, 246, 0.1)'
-        }}
+        className="h-full overflow-y-auto scrollbar-paypal"
+        onScroll={handleScroll}
       >
         {/* Loading inicial */}
         {isLoading && (
@@ -258,7 +256,29 @@ export default function SideChat({
           </div>
         )}
       </div>
+
+      {/* Botão Scroll to Top */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.3 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.3 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 260,
+              damping: 20 
+            }}
+            onClick={scrollToTop}
+            className="absolute bottom-6 right-6 p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 z-50"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Voltar ao topo"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
-    </>
   )
 }

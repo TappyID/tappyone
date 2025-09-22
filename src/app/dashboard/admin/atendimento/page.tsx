@@ -116,46 +116,146 @@ export default function AtendimentoPage() {
 
   console.log('📊 Overview chats recebidos:', overviewChats.length)
 
+  // Estado para armazenar dados extras dos chats
+  const [chatsExtraData, setChatsExtraData] = useState<Record<string, any>>({})
+
+  // Buscar dados extras para cada chat (tags, agendamentos, etc)
+  useEffect(() => {
+    const fetchExtraData = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      for (const chat of overviewChats.slice(0, 20)) { // Limitar para performance
+        const contatoId = chat.id?.replace('@c.us', '').replace('@g.us', '')
+        if (!contatoId) continue
+
+        try {
+          // Buscar dados em paralelo
+          const [tagsRes, agendamentosRes, orcamentosRes, ticketsRes, contatoRes] = await Promise.all([
+            // Tags
+            fetch(`/api/contatos/${contatoId}/tags`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => null),
+            // Agendamentos
+            fetch(`/api/agendamentos?contato_id=${contatoId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => null),
+            // Orçamentos
+            fetch(`/api/orcamentos?contato_id=${contatoId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => null),
+            // Tickets
+            fetch(`/api/tickets?contato_id=${contatoId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => null),
+            // Contato
+            fetch(`/api/contatos?telefone=${contatoId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => null)
+          ])
+
+          const extraData: any = {}
+
+          // Processar tags
+          if (tagsRes?.ok) {
+            const tagsData = await tagsRes.json()
+            extraData.tags = tagsData.data || []
+          }
+
+          // Processar agendamentos
+          if (agendamentosRes?.ok) {
+            const agendamentosData = await agendamentosRes.json()
+            extraData.agendamentos = agendamentosData.data || agendamentosData || []
+          }
+
+          // Processar orçamentos
+          if (orcamentosRes?.ok) {
+            const orcamentosData = await orcamentosRes.json()
+            extraData.orcamentos = orcamentosData.data || orcamentosData || []
+          }
+
+          // Processar tickets
+          if (ticketsRes?.ok) {
+            const ticketsData = await ticketsRes.json()
+            extraData.tickets = ticketsData.data || ticketsData || []
+          }
+
+          // Verificar se é contato
+          if (contatoRes?.ok) {
+            const contatoData = await contatoRes.json()
+            const contatos = contatoData.data || contatoData || []
+            extraData.isContact = contatos.length > 0
+          }
+
+          // Atualizar estado com os dados extras
+          setChatsExtraData(prev => ({
+            ...prev,
+            [chat.id]: extraData
+          }))
+        } catch (error) {
+          console.error(`Erro ao buscar dados extras para ${contatoId}:`, error)
+        }
+      }
+    }
+
+    if (overviewChats.length > 0) {
+      fetchExtraData()
+    }
+  }, [overviewChats])
+
   // Transformar overview chats para formato da SideChat
   const transformedChats = useMemo(() => {
-    return overviewChats.map(chat => ({
-      id: chat.id,
-      name: chat.name,
-      avatar: chat.image, // Foto real do contato
-      lastMessage: {
-        type: chat.lastMessage?.type === 'text' ? 'text' as const : 
-              chat.lastMessage?.hasMedia ? 'image' as const : 'text' as const,
-        content: chat.lastMessage?.body || 'Sem mensagens',
-        timestamp: chat.lastMessage?.timestamp || Date.now(),
-        sender: chat.lastMessage?.fromMe ? 'agent' as const : 'user' as const,
-        isRead: (chat.unreadCount ?? 0) === 0
-      },
-      // Adicionar dados para os indicadores (mock por enquanto)
-      isSelected: selectedChatId === chat.id,
-      unreadCount: chat.unreadCount > 0 ? chat.unreadCount : undefined,
-      // Mock dos outros dados
-      tags: Math.random() > 0.7 ? [mockTags[Math.floor(Math.random() * mockTags.length)]] : undefined,
-      rating: Math.random() > 0.6 ? Math.floor(Math.random() * 5) + 1 : undefined,
-      isOnline: Math.random() > 0.3,
-      connectionStatus: Math.random() > 0.8 ? 'connecting' : 
-                      Math.random() > 0.2 ? 'connected' : 'disconnected',
-      kanbanStatus: Math.random() > 0.4 ? {
-        id: '1',
-        nome: ['Pendente', 'Em Andamento', 'Finalizado'][Math.floor(Math.random() * 3)],
-        cor: ['#f59e0b', '#3b82f6', '#10b981'][Math.floor(Math.random() * 3)]
-      } : undefined,
-      fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
-    }))
-  }, [overviewChats, selectedChatId])
+    return overviewChats.map(chat => {
+      const extraData = chatsExtraData[chat.id] || {}
+      
+      return {
+        id: chat.id,
+        name: chat.name,
+        avatar: chat.image, // Foto real do contato
+        lastMessage: {
+          type: chat.lastMessage?.type === 'text' ? 'text' as const : 
+                chat.lastMessage?.hasMedia ? 'image' as const : 'text' as const,
+          content: chat.lastMessage?.body || 'Sem mensagens',
+          timestamp: chat.lastMessage?.timestamp || Date.now(),
+          sender: chat.lastMessage?.fromMe ? 'agent' as const : 'user' as const,
+          isRead: (chat.unreadCount ?? 0) === 0
+        },
+        isSelected: selectedChatId === chat.id,
+        unreadCount: chat.unreadCount > 0 ? chat.unreadCount : undefined,
+        // Dados reais dos indicadores
+        tags: extraData.tags,
+        agendamentos: extraData.agendamentos,
+        orcamentos: extraData.orcamentos,
+        tickets: extraData.tickets,
+        isContact: extraData.isContact,
+        // Dados mock por enquanto
+        rating: Math.random() > 0.6 ? Math.floor(Math.random() * 5) + 1 : undefined,
+        isOnline: Math.random() > 0.3,
+        kanbanStatus: Math.random() > 0.4 ? {
+          id: '1',
+          nome: ['Pendente', 'Em Andamento', 'Finalizado'][Math.floor(Math.random() * 3)],
+          cor: ['#f59e0b', '#3b82f6', '#10b981'][Math.floor(Math.random() * 3)]
+        } : undefined,
+        fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
+      }
+    })
+  }, [overviewChats, selectedChatId, chatsExtraData])
 
   console.log('🔄 Chats transformados:', transformedChats.length)
+
+  // Função helper para obter URL base
+  const getWahaUrl = useCallback((path: string = '') => {
+    const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+    const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+    return `${baseUrl}${path}`
+  }, [])
 
   // Função para votar em enquete
   const handlePollVote = useCallback(async (messageId: string, chatId: string, votes: string[]) => {
     try {
       console.log('🗳️ Votando na enquete:', { messageId, chatId, votes })
       
-      const response = await fetch('http://159.65.34.199:3001/api/sendPollVote', {
+      const response = await fetch(getWahaUrl('/api/sendPollVote'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -540,7 +640,7 @@ export default function AtendimentoPage() {
               if (!selectedChatId) return
               
               // API correta da WAHA para reações!
-              fetch('http://159.65.34.199:3001/api/reaction', {
+              fetch(getWahaUrl('/api/reaction'), {
                 method: 'PUT',
                 headers: { 
                   'Content-Type': 'application/json',
@@ -591,7 +691,7 @@ export default function AtendimentoPage() {
             onStartTyping={() => {
               if (!selectedChatId) return
               // Usar API WAHA para mostrar "digitando..."
-              fetch('http://159.65.34.199:3001/api/startTyping', {
+              fetch(getWahaUrl('/api/startTyping'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
@@ -606,7 +706,7 @@ export default function AtendimentoPage() {
             onStopTyping={() => {
               if (!selectedChatId) return
               // Usar API WAHA para parar "digitando..."
-              fetch('http://159.65.34.199:3001/api/stopTyping', {
+              fetch(getWahaUrl('/api/stopTyping'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
@@ -621,7 +721,7 @@ export default function AtendimentoPage() {
             onMarkAsSeen={(messageId) => {
               if (!selectedChatId) return
               // Usar API WAHA para marcar como vista (✓✓ azul)
-              fetch('http://159.65.34.199:3001/api/sendSeen', {
+              fetch(getWahaUrl('/api/sendSeen'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
@@ -645,7 +745,7 @@ export default function AtendimentoPage() {
             onSendMessage={(content) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar texto
-              fetch('http://159.65.34.199:3001/api/sendText', {
+              fetch(getWahaUrl('/api/sendText'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
@@ -680,7 +780,7 @@ export default function AtendimentoPage() {
             onSendPoll={(pollData) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar enquete
-              fetch('http://159.65.34.199:3001/api/sendPoll', {
+              fetch(getWahaUrl('/api/sendPoll'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: JSON.stringify({
@@ -693,7 +793,7 @@ export default function AtendimentoPage() {
             onSendList={(listData) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar lista/menu
-              fetch('http://159.65.34.199:3001/api/sendList', {
+              fetch(getWahaUrl('/api/sendList'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: JSON.stringify({
@@ -706,7 +806,7 @@ export default function AtendimentoPage() {
             onSendEvent={(eventData) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar evento
-              fetch(`http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/events`, {
+              fetch(getWahaUrl('/api/user_fb8da1d7_1758158816675/events'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: JSON.stringify({
@@ -739,7 +839,7 @@ export default function AtendimentoPage() {
               console.log('📦 FormData preparado para endpoint:', endpoint)
               
               try {
-                const response = await fetch(`http://159.65.34.199:3001${endpoint}`, {
+                const response = await fetch(getWahaUrl(endpoint), {
                   method: 'POST',
                   headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                   body: formData
@@ -760,7 +860,7 @@ export default function AtendimentoPage() {
             onSendContact={(contactsData) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar contato
-              fetch('http://159.65.34.199:3001/api/sendContactVcard', {
+              fetch(getWahaUrl('/api/sendContactVcard'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json', 
@@ -784,7 +884,7 @@ export default function AtendimentoPage() {
             onSendLocation={(locationData) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar localização
-              fetch('http://159.65.34.199:3001/api/sendLocation', {
+              fetch(getWahaUrl('/api/sendLocation'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json', 
@@ -843,7 +943,7 @@ export default function AtendimentoPage() {
           onSend={(message) => {
             // Enviar mensagem gerada pela IA
             if (selectedChatId) {
-              fetch('http://159.65.34.199:3001/api/sendText', {
+              fetch(getWahaUrl('/api/sendText'), {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
@@ -893,7 +993,7 @@ export default function AtendimentoPage() {
                 onClick={() => {
                   if (forwardingMessage && selectedChatId) {
                     // Implementar encaminhamento via WAHA
-                    fetch('http://159.65.34.199:3001/api/forwardMessage', {
+                    fetch(getWahaUrl('/api/forwardMessage'), {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
