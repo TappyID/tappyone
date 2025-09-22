@@ -1669,16 +1669,8 @@ export default function QuickActionsSidebar({
           </div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-border bg-muted/30 space-y-2">
+          <div className="p-3 border-t border-border bg-muted/30">
             <div className="grid grid-cols-2 gap-2">
-              <Button 
-                className="" 
-                size="sm"
-                onClick={handleCreateWithAI}
-              >
-                <Bot className="w-3.5 h-3.5 mr-1.5" />
-                Criar com IA
-              </Button>
               <Button 
                 className="" 
                 size="sm"
@@ -1688,16 +1680,16 @@ export default function QuickActionsSidebar({
                 <Workflow className="w-3.5 h-3.5 mr-1.5" />
                 Fluxo com IA
               </Button>
+              <Button 
+                className="" 
+                size="sm"
+                variant="secondary"
+                onClick={handleCreateNow}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Criar Agora
+              </Button>
             </div>
-            <Button 
-              className="w-full" 
-              size="sm"
-              variant="secondary"
-              onClick={handleCreateNow}
-            >
-              <Plus className="w-3.5 h-3.5 mr-2" />
-              Criar Agora
-            </Button>
           </div>
 
           {/* Modal Criar Resposta */}

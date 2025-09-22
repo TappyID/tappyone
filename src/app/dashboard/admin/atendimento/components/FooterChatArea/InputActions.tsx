@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Paperclip,
+  Plus,
   Image,
   Camera,
   Mic,
@@ -49,12 +50,14 @@ export const AnexoMenuButton = ({
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowMenu(!showMenu)}
-        className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
-                   dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 
-                   dark:hover:bg-gray-800 transition-colors"
-        title="Anexos"
+        className="p-2.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 
+                   hover:from-blue-500/20 hover:to-purple-500/20
+                   text-blue-600 dark:text-blue-400 rounded-xl 
+                   border border-blue-200/50 dark:border-blue-700/50
+                   transition-all duration-200 shadow-sm hover:shadow-md"
+        title="Anexos & Ações"
       >
-        <Paperclip className="w-5 h-5" />
+        <Plus className="w-5 h-5" />
       </motion.button>
 
       {showMenu && (
@@ -241,17 +244,43 @@ export const AudioButton = ({ onClick }: { onClick?: () => void }) => (
 )
 
 // Micro componente Agente
-export const AgenteButton = ({ onClick }: { onClick?: () => void }) => (
+export const AgenteButton = ({ 
+  onClick, 
+  isGenerating = false,
+  agenteAtivo = false,
+  agenteNome = ''
+}: { 
+  onClick?: () => void,
+  isGenerating?: boolean,
+  agenteAtivo?: boolean,
+  agenteNome?: string
+}) => (
   <motion.button
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
     onClick={onClick}
-    className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 
-               dark:hover:text-indigo-300 rounded-lg hover:bg-indigo-50 
-               dark:hover:bg-indigo-900/20 transition-colors"
-    title="Transferir para agente"
+    className="p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all duration-300 relative"
+    title={
+      isGenerating 
+        ? `Gerando resposta... (${agenteNome})`  
+        : agenteAtivo 
+          ? `Agente ativo: ${agenteNome}` 
+          : "Selecionar agente IA"
+    }
   >
-    <UserCheck className="w-5 h-5" />
+    <Bot className="w-5 h-5 text-blue-500" />
+    {/* Badge - Amarelo pulsando se gerando, verde se ativo, vermelho se inativo */}
+    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 transition-all duration-300 ${
+      isGenerating 
+        ? 'bg-yellow-500 animate-pulse' 
+        : agenteAtivo 
+          ? 'bg-green-500' 
+          : 'bg-red-500'
+    }`}></div>
+    {/* Indicador adicional quando gerando */}
+    {isGenerating && (
+      <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 animate-ping"></div>
+    )}
   </motion.button>
 )
 

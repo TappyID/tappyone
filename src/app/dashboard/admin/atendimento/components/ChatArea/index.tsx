@@ -70,6 +70,13 @@ interface ChatAreaProps {
     id: string
     name: string
   }
+  
+  // Callbacks para ações das mensagens
+  onReply?: (messageId: string) => void
+  onForward?: (messageId: string) => void
+  onReaction?: (messageId: string, emoji: string) => void
+  onTranslate?: (messageId: string, translatedText?: string) => void
+  onAIReply?: (messageId: string, content: string) => void
 }
 
 export default function ChatArea({ 
@@ -80,7 +87,12 @@ export default function ChatArea({
   hasMore = false,
   totalMessages = 0,
   onLoadMore,
-  selectedChat
+  selectedChat,
+  onReply,
+  onForward,
+  onReaction,
+  onTranslate,
+  onAIReply
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -216,6 +228,11 @@ export default function ChatArea({
                 message={message}
                 isLastMessage={isLastMessage}
                 showAvatar={showAvatar}
+                onReply={onReply}
+                onForward={onForward}
+                onReaction={onReaction}
+                onTranslate={onTranslate}
+                onAIReply={onAIReply}
               />
             )
           })}

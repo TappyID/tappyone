@@ -52,6 +52,21 @@ interface ItemSideChatProps {
       nome: string
       cor?: string
     }>
+    agendamentos?: Array<{
+      id: string
+      titulo: string
+      status: string
+    }>
+    orcamentos?: Array<{
+      id: string
+      titulo: string
+      status: string
+    }>
+    tickets?: Array<{
+      id: string
+      titulo: string
+      status: string
+    }>
     rating?: number
     isOnline?: boolean
     connectionStatus?: 'connected' | 'disconnected' | 'connecting'
@@ -207,6 +222,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         <ChatIndicators 
           chat={chat}
           onTagsClick={onTagsClick}
+          onAgendamentosClick={(e) => {
+            e.stopPropagation()
+            console.log('📅 Agendamentos clicados:', chat.agendamentos)
+          }}
+          onOrcamentosClick={(e) => {
+            e.stopPropagation()
+            console.log('💰 Orçamentos clicados:', chat.orcamentos)
+          }}
+          onTicketsClick={(e) => {
+            e.stopPropagation()
+            console.log('🎫 Tickets clicados:', chat.tickets)
+          }}
           onRatingClick={(e) => {
             e.stopPropagation()
             console.log('⭐ Rating clicado:', chat.rating)

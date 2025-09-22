@@ -21,6 +21,8 @@ export default function MessageAudio({
 }: MessageAudioProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [transcription, setTranscription] = useState<string>('')
   const audioRef = useRef<HTMLAudioElement>(null)
 
   const togglePlay = () => {
@@ -34,10 +36,50 @@ export default function MessageAudio({
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  const handleTranscribe = async () => {
+    if (isTranscribing) return
+    
+    setIsTranscribing(true)
+    try {
+      console.log(' Iniciando transcrição do áudio:', audioUrl)
+      
+      // Chamar API de transcrição
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audioUrl: audioUrl,
+          language: 'pt' // Português por padrão
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.transcription) {
+          console.log(' Transcrição recebida:', data.transcription)
+          setTranscription(data.transcription)
+          
+          // Chamar callback se existir
+          onTranscribe?.(audioUrl)
+        } else {
+          console.error(' Erro na resposta:', data)
+        }
+      } else {
+        console.error(' Erro HTTP:', response.status)
+      }
+    } catch (error) {
+      console.error(' Erro ao transcrever:', error)
+    } finally {
+      setIsTranscribing(false)
+    }
   }
 
   const handleTimeUpdate = () => {
@@ -109,23 +151,29 @@ export default function MessageAudio({
         </div>
 
         {/* Botão Transcrever */}
-        {onTranscribe && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onTranscribe(audioUrl)}
-            className={`p-2 rounded-full ${
-              isFromUser
+        {/* Botão Transcrever */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleTranscribe}
+          disabled={isTranscribing}
+          className={`p-2 rounded-full ${
+            isTranscribing
+              ? 'opacity-50 cursor-not-allowed'
+              : isFromUser
                 ? 'hover:bg-white/20'
                 : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            title="Transcrever áudio"
-          >
+          }`}
+          title={isTranscribing ? "Transcrevendo..." : "Transcrever áudio"}
+        >
+          {isTranscribing ? (
+            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
             <FileText className={`w-3 h-3 ${
               isFromUser ? 'text-white/80' : 'text-gray-500'
             }`} />
-          </motion.button>
-        )}
+          )}
+        </motion.button>
 
         {/* Botão Download */}
         <motion.button
@@ -152,6 +200,19 @@ export default function MessageAudio({
         }`}>
           {caption}
         </p>
+      )}
+
+      {/* Transcrição */}
+      {transcription && (
+        <div className="mt-2 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 border-l-4 border-blue-500">
+          <div className="flex items-start gap-2">
+            <FileText className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="text-xs font-medium text-blue-600 block mb-1">Transcrição:</span>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{transcription}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -10,6 +10,8 @@ import { useContatoData } from '@/hooks/useContatoData'
 import useMessagesData from '@/hooks/useMessagesDataTemp'
 import useChatsOverview from '@/hooks/useChatsOverview'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
+import EditTextModal from '../atendimentos/components/EditTextModal'
+import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
 
 // Mock data para demonstração
 const mockTags = [
@@ -75,6 +77,23 @@ export default function AtendimentoPage() {
   
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>()
+  
+  // Estados dos modais
+  const [showAgenteModal, setShowAgenteModal] = useState(false)
+  const [showEditTextModal, setShowEditTextModal] = useState(false)
+  const [showQuickActionsSidebar, setShowQuickActionsSidebar] = useState(false)
+  const [showForwardModal, setShowForwardModal] = useState(false)
+  const [forwardingMessage, setForwardingMessage] = useState<string | null>(null)
+  
+  // Estados de tradução
+  const [translatedMessages, setTranslatedMessages] = useState<{[messageId: string]: string}>({})
+  
+  // Estado de resposta
+  const [replyingTo, setReplyingTo] = useState<{
+    messageId: string
+    content: string
+    sender: string
+  } | null>(null)
   
   // Hook de mensagens com dados reais da WAHA
   const { 
@@ -172,10 +191,16 @@ export default function AtendimentoPage() {
       messages: realMessages.length,
       hasMore: hasMoreMessages,
       totalMessages,
-      loading: loadingMessages
+      loading: loadingMessages,
+      translations: Object.keys(translatedMessages).length
     })
-    return realMessages
-  }, [selectedChatId, realMessages, hasMoreMessages, totalMessages, loadingMessages])
+    
+    // Adicionar traduções às mensagens
+    return realMessages.map(message => ({
+      ...message,
+      translation: translatedMessages[message.id]
+    }))
+  }, [selectedChatId, realMessages, hasMoreMessages, totalMessages, loadingMessages, translatedMessages])
 
   // Estados para chats com pesquisa
   const [whatsappChats, setWhatsappChats] = useState<any[]>([])
@@ -403,6 +428,7 @@ export default function AtendimentoPage() {
     
     return result
   }, [activeChats, contatosData])
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Topbar */}
@@ -469,14 +495,14 @@ export default function AtendimentoPage() {
         {/* Área Principal - Chat Completa */}
         <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
           {/* Header do Chat */}
-          <ChatHeader
+          <ChatHeader 
             chat={selectedChatId ? {
               id: selectedChatId,
               name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário',
-              isOnline: Math.random() > 0.5, // Mock
-              lastSeen: Date.now() - Math.random() * 3600000,
-              location: 'São Paulo, SP'
+              isOnline: true,
+              lastSeen: Date.now()
             } : undefined}
+            selectedChatId={selectedChatId}
             onCallClick={() => console.log('📞 Chamada iniciada')}
             onVideoClick={() => console.log('📹 Videochamada iniciada')}
             onMenuClick={() => console.log('⚙️ Menu aberto')}
@@ -493,6 +519,62 @@ export default function AtendimentoPage() {
               id: selectedChatId,
               name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
             } : undefined}
+            onReply={(messageId) => {
+              console.log('🔄 Responder à mensagem:', messageId)
+              const message = displayMessages.find(m => m.id === messageId)
+              if (message) {
+                setReplyingTo({
+                  messageId: message.id,
+                  content: message.content,
+                  sender: message.sender === 'user' ? transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário' : 'Você'
+                })
+              }
+            }}
+            onForward={(messageId) => {
+              console.log('↗️ Encaminhar mensagem:', messageId)
+              setForwardingMessage(messageId)
+              setShowForwardModal(true)
+            }}
+            onReaction={(messageId, emoji) => {
+              console.log('😀 Enviando reação:', emoji, 'para mensagem:', messageId)
+              if (!selectedChatId) return
+              
+              // API correta da WAHA para reações!
+              fetch('http://159.65.34.199:3001/api/reaction', {
+                method: 'PUT',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                },
+                body: JSON.stringify({
+                  messageId: messageId,
+                  reaction: emoji,
+                  session: 'user_fb8da1d7_1758158816675'
+                })
+              }).then(async response => {
+                if (response.ok) {
+                  const result = await response.json()
+                  console.log('✅ Reação enviada:', emoji, 'Resposta:', result)
+                  setTimeout(() => refreshMessages(), 500)
+                } else {
+                  const errorData = await response.json().catch(() => null)
+                  console.error('❌ Erro ao enviar reação:', response.status, errorData)
+                }
+              }).catch(error => console.error('❌ Erro de rede reação:', error))
+            }}
+            onTranslate={(messageId, translatedText) => {
+              console.log('🌐 Tradução recebida para:', messageId, '→', translatedText)
+              if (translatedText) {
+                setTranslatedMessages(prev => ({
+                  ...prev,
+                  [messageId]: translatedText
+                }))
+              }
+            }}
+            onAIReply={(messageId, content) => {
+              console.log('🤖 IA responder para:', messageId, 'com:', content)
+              setShowEditTextModal(true)
+            }}
           />
           
           {/* Debug info para mensagens */}
@@ -552,6 +634,14 @@ export default function AtendimentoPage() {
                 })
               }).then(() => console.log('👁️ Marcado como visto'))
             }}
+            onAgentClick={() => setShowAgenteModal(true)}
+            onIAClick={() => setShowEditTextModal(true)}
+            onRespostaRapidaClick={() => {
+              console.log('🔍 Abrindo sidebar - selectedChatId:', selectedChatId)
+              setShowQuickActionsSidebar(true)
+            }}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
             onSendMessage={(content) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar texto
@@ -565,7 +655,7 @@ export default function AtendimentoPage() {
                   session: 'user_fb8da1d7_1758158816675',
                   chatId: selectedChatId,
                   text: content,
-                  reply_to: null,
+                  reply_to: replyingTo?.messageId || null,
                   linkPreview: true,
                   linkPreviewHighQuality: false
                 })
@@ -574,6 +664,9 @@ export default function AtendimentoPage() {
                   const result = await response.json()
                   console.log('✅ Mensagem enviada:', content)
                   console.log('📋 Resposta WAHA:', result)
+                  
+                  // Limpar reply após enviar
+                  setReplyingTo(null)
                   
                   // Recarregar mensagens imediatamente (sem reload da página)
                   setTimeout(() => refreshMessages(), 500)
@@ -722,6 +815,116 @@ export default function AtendimentoPage() {
           />
         </div>
       </div>
+
+      {/* Modais */}
+      {showAgenteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setShowAgenteModal(false)} />
+          <div className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Selecionar Agente IA</h3>
+            <p className="text-gray-600 mb-4">Funcionalidade em desenvolvimento...</p>
+            <button 
+              onClick={() => setShowAgenteModal(false)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showEditTextModal && (
+        <EditTextModal
+          isOpen={showEditTextModal}
+          onClose={() => setShowEditTextModal(false)}
+          initialText=""
+          contactName={transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'}
+          actionTitle="Gerar com IA"
+          onSend={(message) => {
+            // Enviar mensagem gerada pela IA
+            if (selectedChatId) {
+              fetch('http://159.65.34.199:3001/api/sendText', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  text: message
+                })
+              }).then(() => {
+                console.log('🤖 Mensagem IA enviada')
+                setTimeout(() => refreshMessages(), 500)
+                setShowEditTextModal(false)
+              })
+            }
+          }}
+        />
+      )}
+
+      <QuickActionsSidebar
+        isOpen={showQuickActionsSidebar}
+        onClose={() => setShowQuickActionsSidebar(false)}
+        activeChatId={selectedChatId}
+        onSelectAction={(action) => {
+          // Executar ação rápida selecionada
+          console.log('⚡ Ação rápida:', action)
+          console.log('🔍 selectedChatId na página:', selectedChatId)
+          setShowQuickActionsSidebar(false)
+        }}
+      />
+
+      {/* Modal de Encaminhamento */}
+      {showForwardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setShowForwardModal(false)} />
+          <div className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Encaminhar Mensagem</h3>
+            <p className="text-gray-600 mb-4">
+              Funcionalidade de encaminhamento em desenvolvimento...
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Mensagem ID: {forwardingMessage}
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  if (forwardingMessage && selectedChatId) {
+                    // Implementar encaminhamento via WAHA
+                    fetch('http://159.65.34.199:3001/api/forwardMessage', {
+                      method: 'POST',
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                      },
+                      body: JSON.stringify({
+                        session: 'user_fb8da1d7_1758158816675',
+                        messageId: forwardingMessage,
+                        to: selectedChatId // Por enquanto encaminha para o mesmo chat
+                      })
+                    }).then(() => {
+                      console.log('✅ Mensagem encaminhada')
+                      setShowForwardModal(false)
+                      setTimeout(() => refreshMessages(), 500)
+                    })
+                  }
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Encaminhar
+              </button>
+              <button 
+                onClick={() => setShowForwardModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

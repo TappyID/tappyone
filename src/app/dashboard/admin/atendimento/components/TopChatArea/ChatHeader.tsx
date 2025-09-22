@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Phone, 
@@ -11,17 +11,22 @@ import {
   MapPin
 } from 'lucide-react'
 
-import {
-  TagsIndicator,
-  KanbanIndicator,
-  TicketsIndicator,
-  AgendamentosIndicator,
-  OrcamentosIndicator,
-  AgenteIndicator,
-  RespostaRapidaIndicator,
-  FilaIndicator,
-  AtendimentoIndicator
-} from './StatusIndicators'
+// import AgendamentosSidebar from './AgendamentosSidebar'
+// import OrcamentosSidebar from './OrcamentosSidebar'
+// import TicketsSidebar from './TicketsSidebar'
+// import TagsSidebar from './TagsSidebar'
+// import AtendenteSidebar from './AtendenteSidebar'
+// import FilaSidebar from './FilaSidebar'
+// import KanbanSidebar from './KanbanSidebar'
+import AgendamentosIndicator from './Indicators/AgendamentosIndicator'
+import OrcamentosIndicator from './Indicators/OrcamentosIndicator'
+import SimpleTagsIndicator from './Indicators/SimpleTagsIndicator'
+import ContactIndicator from './Indicators/ContactIndicator'
+import TicketsIndicator from './Indicators/TicketsIndicator'
+import KanbanIndicator from './Indicators/KanbanIndicator'
+// import FilaIndicator from './Indicators/FilaIndicator'
+// import AgenteIndicator from './Indicators/AgenteIndicator'
+import CreateContactModal from './CreateContactModal'
 
 interface ChatHeaderProps {
   chat?: {
@@ -32,6 +37,7 @@ interface ChatHeaderProps {
     lastSeen?: number
     location?: string
   }
+  selectedChatId?: string // Chat ID selecionado para integração com módulos
   onCallClick?: () => void
   onVideoClick?: () => void
   onMenuClick?: () => void
@@ -39,10 +45,17 @@ interface ChatHeaderProps {
 
 export default function ChatHeader({ 
   chat, 
+  selectedChatId,
   onCallClick, 
   onVideoClick, 
   onMenuClick 
 }: ChatHeaderProps) {
+  
+  // Extrair contato_id do chatId (remover @c.us)
+  const contatoId = selectedChatId ? selectedChatId.replace('@c.us', '') : null
+  
+  console.log(' [ChatHeader] selectedChatId:', selectedChatId)
+  console.log(' [ChatHeader] contatoId extraído:', contatoId)
   
   if (!chat) {
     return (
@@ -54,6 +67,16 @@ export default function ChatHeader({
       </div>
     )
   }
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [agendamentosSidebarOpen, setAgendamentosSidebarOpen] = useState(false)
+  const [orcamentosSidebarOpen, setOrcamentosSidebarOpen] = useState(false)
+  const [ticketsSidebarOpen, setTicketsSidebarOpen] = useState(false)
+  const [tagsSidebarOpen, setTagsSidebarOpen] = useState(false)
+  const [atendenteSidebarOpen, setAtendenteSidebarOpen] = useState(false)
+  const [filaSidebarOpen, setFilaSidebarOpen] = useState(false)
+  const [kanbanSidebarOpen, setKanbanSidebarOpen] = useState(false)
+  const [createContactModalOpen, setCreateContactModalOpen] = useState(false)
 
   const formatLastSeen = (timestamp?: number) => {
     if (!timestamp) return 'Offline'
@@ -119,90 +142,72 @@ export default function ChatHeader({
         </div>
       </div>
 
-      {/* Indicadores + Botões de Ação */}
-      <div className="flex items-center gap-2">
-        {/* Indicadores de Status */}
-        {chat && (
-          <div className="flex items-center gap-1 mr-2 border-r border-gray-200 dark:border-gray-700 pr-2">
-            <TagsIndicator 
-              count={3}
-              onClick={() => console.log('🏷️ Tags clicadas')} 
-            />
-            <KanbanIndicator 
-              status="Em Atendimento"
-              onClick={() => console.log('📋 Kanban clicado')} 
-            />
-            <TicketsIndicator 
-              count={2}
-              onClick={() => console.log('🎫 Tickets clicados')} 
-            />
-            <AgendamentosIndicator 
-              count={3}
-              onClick={() => console.log('📅 Agendamentos clicados')} 
-            />
-            <OrcamentosIndicator 
-              count={1}
-              onClick={() => console.log('💰 Orçamentos clicados')} 
-            />
-            <AgenteIndicator 
-              nome="João Silva"
-              onClick={() => console.log('👤 Agente clicado')} 
-            />
-            <RespostaRapidaIndicator 
-              count={5}
-              onClick={() => console.log('💬 Respostas Rápidas clicadas')} 
-            />
-            <FilaIndicator 
-              nome="Suporte Técnico"
-              onClick={() => console.log('👥 Fila clicada')} 
-            />
-            <AtendimentoIndicator 
-              status="Ativo"
-              onClick={() => console.log('🎧 Atendimento clicado')} 
-            />
-          </div>
-        )}
-
-        {/* Botões de Ação */}
-        {/* Botão de Chamada */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onCallClick}
-          className="p-2 text-gray-600 hover:text-green-600 dark:text-gray-400 
-                     dark:hover:text-green-400 rounded-lg hover:bg-gray-100 
-                     dark:hover:bg-gray-800 transition-colors"
-          title="Fazer chamada"
-        >
-          <Phone className="w-5 h-5" />
-        </motion.button>
-
-        {/* Botão de Vídeo */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onVideoClick}
-          className="p-2 text-gray-600 hover:text-blue-600 dark:text-gray-400 
-                     dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 
-                     dark:hover:bg-gray-800 transition-colors"
-          title="Videochamada"
-        >
-          <Video className="w-5 h-5" />
-        </motion.button>
-
-        {/* Menu de opções */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onMenuClick}
-          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
-                     dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 
-                     dark:hover:bg-gray-800 transition-colors"
-          title="Mais opções"
-        >
-          <MoreVertical className="w-5 h-5" />
-        </motion.button>
+      {/* Indicadores com Badges - Lado Direito */}
+      <div className="flex items-center gap-1">
+        <ContactIndicator 
+          chatId={selectedChatId}
+          onClick={() => {
+            // Se já é contato, mostrar mensagem. Se não, abrir modal
+            const numero = selectedChatId ? selectedChatId.replace('@c.us', '') : ''
+            console.log('👤 [ChatHeader] Clique no ContactIndicator - chatId:', selectedChatId)
+            
+            // Por enquanto sempre abre modal - o ContactIndicator vai determinar se deve ou não
+            setCreateContactModalOpen(true)
+          }} 
+        />
+        <KanbanIndicator 
+          contatoId={contatoId}
+          onClick={() => {
+            console.log('📋 [ChatHeader] Clique no KanbanIndicator - contatoId:', contatoId)
+            // TODO: Abrir modal do kanban ou navegar para kanban
+            alert('Funcionalidade do kanban em desenvolvimento!')
+          }} 
+        />
+        <SimpleTagsIndicator 
+          contatoId={contatoId}
+          onClick={() => setTagsSidebarOpen(true)} 
+        />
+        <AgendamentosIndicator 
+          contatoId={contatoId}
+          onClick={() => {
+            console.log('📅 [ChatHeader] Clique no AgendamentosIndicator - contatoId:', contatoId)
+            alert('Modal de agendamentos em desenvolvimento!')
+          }} 
+        />
+        <OrcamentosIndicator 
+          contatoId={contatoId}
+          onClick={() => {
+            console.log('💰 [ChatHeader] Clique no OrcamentosIndicator - contatoId:', contatoId)
+            alert('Modal de orçamentos em desenvolvimento!')
+          }} 
+        />
+        <TicketsIndicator 
+          contatoId={contatoId}
+          onClick={() => {
+            console.log('🎫 [ChatHeader] Clique no TicketsIndicator - contatoId:', contatoId)
+            alert('Modal de tickets em desenvolvimento!')
+          }} 
+        />
+        {/* TEMPORARIAMENTE COMENTADO - OUTROS INDICADORES */}
+        {/*
+        <FilaIndicator 
+          contatoId={contatoId}
+          onClick={() => setFilaSidebarOpen(true)} 
+        />
+        <AgenteIndicator 
+          contatoId={contatoId}
+          onClick={() => setAtendenteSidebarOpen(true)} 
+        />
+        */}
       </div>
+      
+      {/* Modal de Criar Contato */}
+      <CreateContactModal
+        isOpen={createContactModalOpen}
+        onClose={() => setCreateContactModalOpen(false)}
+        chatId={selectedChatId}
+        chatName={chat?.name}
+      />
     </motion.div>
   )
-}
+} 

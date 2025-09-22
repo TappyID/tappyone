@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:3001/'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
     // Pegar token JWT dos headers
     const authHeader = request.headers.get('Authorization')
     console.log(' [API PROXY] Auth header:', authHeader ? 'presente' : 'ausente')
+    console.log(' [API PROXY] Auth header completo:', authHeader)
+    console.log(' [API PROXY] Todos os headers:', Object.fromEntries(request.headers.entries()))
     
     if (!authHeader) {
       console.log(' [API PROXY] Token não fornecido')

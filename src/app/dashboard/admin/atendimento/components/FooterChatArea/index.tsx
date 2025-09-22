@@ -10,6 +10,9 @@ interface FooterChatAreaProps {
   onSendAudio?: () => void
   onOpenCamera?: () => void
   onOpenEmojis?: () => void
+  onAgentClick?: () => void
+  onIAClick?: () => void
+  onRespostaRapidaClick?: () => void
   
   // Typing e Seen
   onStartTyping?: () => void
@@ -34,6 +37,14 @@ interface FooterChatAreaProps {
     id: string
     name: string
   }
+  
+  // Estado de resposta
+  replyingTo?: {
+    messageId: string
+    content: string
+    sender: string
+  } | null
+  onCancelReply?: () => void
 }
 
 export default function FooterChatArea({
@@ -43,6 +54,9 @@ export default function FooterChatArea({
   onSendAudio,
   onOpenCamera,
   onOpenEmojis,
+  onAgentClick,
+  onIAClick,
+  onRespostaRapidaClick,
   onStartTyping,
   onStopTyping,
   onMarkAsSeen,
@@ -55,7 +69,9 @@ export default function FooterChatArea({
   disabled = false,
   isTyping = false,
   enableSignature = true,
-  selectedChat
+  selectedChat,
+  replyingTo,
+  onCancelReply
 }: FooterChatAreaProps) {
   
   // Não mostrar se não há chat selecionado
@@ -113,6 +129,11 @@ export default function FooterChatArea({
       onSendAudio={onSendAudio}
       onOpenCamera={onOpenCamera}
       onOpenEmojis={onOpenEmojis}
+      onAgentClick={onAgentClick}
+      onIAClick={onIAClick}
+      onRespostaRapidaClick={onRespostaRapidaClick}
+      replyingTo={replyingTo}
+      onCancelReply={onCancelReply}
       onStartTyping={onStartTyping}
       onStopTyping={onStopTyping}
       onMarkAsSeen={onMarkAsSeen}

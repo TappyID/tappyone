@@ -15,7 +15,15 @@ import {
   Send,
   List,
   Plus,
-  Trash2
+  Trash2,
+  Camera,
+  Image,
+  FileText,
+  MapPin,
+  User,
+  Zap,
+  Bot,
+  Reply
 } from 'lucide-react'
 
 import {
@@ -28,8 +36,8 @@ import {
 } from './InputActions'
 
 import {
-  TabButton,
   MenuButton,
+  ImageButton,
   EnqueteButton,
   LocalizacaoButton,
   ContatoButton,
@@ -40,14 +48,24 @@ import {
   AgendamentoButton,
   OrcamentoButton,
   AssinaturaButton,
+  AnotacoesButton,
   TagButton,
   TicketButton,
   FilaButton,
   AtendenteButton
-} from './TabComponents'
+} from './AttachMenuButtons'
+import AgendamentoBottomSheet from './BottomSheets/AgendamentoBottomSheet'
+import TagsBottomSheet from './BottomSheets/TagsBottomSheet'
+import OrcamentoBottomSheet from './BottomSheets/OrcamentoBottomSheet'
+import TicketBottomSheet from './BottomSheets/TicketBottomSheet'
+import FilaBottomSheet from './BottomSheets/FilaBottomSheet'
+import AtendenteBottomSheet from './BottomSheets/AtendenteBottomSheet'
+import AssinaturaBottomSheet from './BottomSheets/AssinaturaBottomSheet'
+import AnotacoesBottomSheet from './BottomSheets/AnotacoesBottomSheet'
 
 import SpecialMediaModal from '@/components/ui/SpecialMediaModal'
 import MediaSendModal from '@/components/ui/MediaSendModal'
+import AgenteSelectionModal from './modals/AgenteSelectionModal'
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void
@@ -66,6 +84,15 @@ interface MessageInputProps {
   placeholder?: string
   disabled?: boolean
   isTyping?: boolean
+  
+  // Estado de resposta
+  replyingTo?: {
+    messageId: string
+    content: string
+    sender: string
+  } | null
+  onCancelReply?: () => void
+  
   // Novas funções para envio de mídia
   onSendContact?: (contacts: any[], caption: string) => Promise<void>
   onSendLocation?: (latitude: number, longitude: number, title: string, address: string) => Promise<void>
@@ -75,6 +102,9 @@ interface MessageInputProps {
   onSendMedia?: (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => Promise<void>
   // ID do chat para as APIs
   chatId?: string
+  
+  // Contato ID extraído do chatId para vincular criações
+  contatoId?: string | null
 }
 
 interface ExtendedSpecialModalProps {
@@ -363,11 +393,19 @@ export default function MessageInput({
   chatId,
   placeholder = "Digite sua mensagem...",
   disabled = false,
-  isTyping = false 
+  isTyping = false,
+  replyingTo,
+  onCancelReply
 }: MessageInputProps) {
   const [message, setMessage] = useState('')
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'sistema'>('whatsapp')
+  
+  // Extrair contato_id do chatId (remover @c.us)
+  const contatoId = chatId ? chatId.replace('@c.us', '') : null
+  
+  console.log('🔍 [MessageInput] chatId:', chatId)
+  console.log('🔍 [MessageInput] contatoId extraído:', contatoId)
   
   // Estados para modals
   const [showSpecialModal, setShowSpecialModal] = useState<'contact' | 'location' | 'poll' | 'menu' | 'events' | null>(null)
@@ -376,8 +414,13 @@ export default function MessageInput({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   
   // Estados para ações rápidas (bottom sheet)
-  const [showActionSheet, setShowActionSheet] = useState<'agendamento' | 'orcamento' | 'assinatura' | 'tags' | 'ticket' | 'fila' | 'atendente' | null>(null)
+  const [showActionSheet, setShowActionSheet] = useState<'agendamento' | 'orcamento' | 'assinatura' | 'anotacoes' | 'tags' | 'ticket' | 'fila' | 'atendente' | null>(null)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  
+  // Estados para agente IA
+  const [showAgenteModal, setShowAgenteModal] = useState(false)
+  const [agenteAtual, setAgenteAtual] = useState<any>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
@@ -477,27 +520,41 @@ export default function MessageInput({
 
           {/* Tabs */}
           <div className="flex gap-2 mb-4">
-            <TabButton 
-              active={activeTab === 'whatsapp'} 
+            <button
               onClick={() => setActiveTab('whatsapp')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'whatsapp' 
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
             >
               WhatsApp
-            </TabButton>
-            <TabButton 
-              active={activeTab === 'sistema'} 
+            </button>
+            <button
               onClick={() => setActiveTab('sistema')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'sistema' 
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
             >
               Sistema
-            </TabButton>
+            </button>
           </div>
           
           {/* Conteúdo das Tabs */}
-          <div className="grid grid-cols-4 gap-3">
-            {activeTab === 'whatsapp' ? (
-              <>
+          <div className="p-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+            <div className="grid grid-cols-4 gap-3">
+              {activeTab === 'whatsapp' ? (
+                <>
                 <MenuButton onClick={() => { 
                   setShowSpecialModal('menu'); 
                   setShowAttachMenu(false) 
+                }} />
+                <ImageButton onClick={() => {
+                  setMediaSendType('image');
+                  setShowMediaSendModal(true);
+                  setShowAttachMenu(false);
                 }} />
                 <EnqueteButton onClick={() => { 
                   setShowSpecialModal('poll'); 
@@ -521,36 +578,72 @@ export default function MessageInput({
               </>
             ) : (
               <>
-                <AgendamentoButton onClick={() => { 
-                  setShowActionSheet('agendamento'); 
+                <AgendamentoButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log('📅 Criando agendamento para contato:', contatoId)
+                    setShowActionSheet('agendamento'); 
+                    setShowAttachMenu(false) 
+                  }} 
+                />
+                <OrcamentoButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log('💰 Criando orçamento para contato:', contatoId)
+                    setShowActionSheet('orcamento'); 
+                    setShowAttachMenu(false) 
+                  }} 
+                />
+                <AssinaturaButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log(' Criando assinatura para contato:', contatoId)
+                    setShowActionSheet('assinatura')
+                    setShowAttachMenu(false) 
+                  }} 
+                />
+                <AnotacoesButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log(' Abrindo anotações para contato:', contatoId)
+                    setShowActionSheet('anotacoes')
+                    setShowAttachMenu(false) 
+                  }} 
+                />
+                <TagButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log('🏷️ Criando tag para contato:', contatoId)
+                    setShowActionSheet('tags'); 
                   setShowAttachMenu(false) 
                 }} />
-                <OrcamentoButton onClick={() => { 
-                  setShowActionSheet('orcamento'); 
-                  setShowAttachMenu(false) 
-                }} />
-                <AssinaturaButton onClick={() => { 
-                  setShowActionSheet('assinatura'); 
-                  setShowAttachMenu(false) 
-                }} />
-                <TagButton onClick={() => { 
-                  setShowActionSheet('tags'); 
-                  setShowAttachMenu(false) 
-                }} />
-                <TicketButton onClick={() => { 
-                  setShowActionSheet('ticket'); 
-                  setShowAttachMenu(false) 
-                }} />
-                <FilaButton onClick={() => { 
-                  setShowActionSheet('fila'); 
-                  setShowAttachMenu(false) 
-                }} />
-                <AtendenteButton onClick={() => { 
-                  setShowActionSheet('atendente'); 
-                  setShowAttachMenu(false) 
-                }} />
+                <TicketButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log('🎫 Criando ticket para contato:', contatoId)
+                    setShowActionSheet('ticket'); 
+                    setShowAttachMenu(false) 
+                  }} 
+                />
+                <FilaButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log('👥 Atribuindo fila para contato:', contatoId)
+                    setShowActionSheet('fila'); 
+                    setShowAttachMenu(false) 
+                  }} 
+                />
+                <AtendenteButton 
+                  contatoId={contatoId}
+                  onClick={() => { 
+                    console.log('👤 Atribuindo atendente para contato:', contatoId)
+                    setShowActionSheet('atendente'); 
+                    setShowAttachMenu(false) 
+                  }} 
+                />
               </>
             )}
+            </div>
           </div>
         </motion.div>
       )}
@@ -575,6 +668,34 @@ export default function MessageInput({
           <RespostaRapidaButton onClick={onRespostaRapidaClick} />
           <IAButton onClick={onIAClick} />
         </div>
+
+        {/* Preview de Resposta */}
+        {replyingTo && (
+          <div className="flex-1">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-3 mb-2 rounded-r-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Reply className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-600">
+                      Respondendo para {replyingTo.sender}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                    {replyingTo.content}
+                  </p>
+                </div>
+                <button
+                  onClick={onCancelReply}
+                  className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-full ml-2"
+                >
+                  <X className="w-4 h-4 text-blue-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input de mensagem */}
         <div className="flex-1 relative">
           <textarea
@@ -610,7 +731,12 @@ export default function MessageInput({
         </motion.button>
 
         {/* Botão Agente antes do enviar */}
-        <AgenteButton onClick={onAgentClick} />
+        <AgenteButton 
+          onClick={() => setShowAgenteModal(true)}
+          isGenerating={isGenerating}
+          agenteAtivo={!!agenteAtual}
+          agenteNome={agenteAtual?.nome || ''}
+        />
         
         {/* Botão de Áudio */}
         <motion.button
@@ -627,16 +753,7 @@ export default function MessageInput({
         {/* Botões de enviar com ícones */}
         <div className="flex items-center gap-1">
           {/* Botão Lista */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => console.log('📋 Lista')}
-            className="p-3 bg-gray-500/80 hover:bg-gray-600 text-white rounded-full 
-                       shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm"
-            title="Lista de mensagens"
-          >
-            <List className="w-5 h-5" />
-          </motion.button>
+       
           
           {/* Botão Enviar */}
           <motion.button
@@ -700,7 +817,7 @@ export default function MessageInput({
         />
       )}
 
-      {/* Bottom Sheet para Ações Rápidas */}
+      {/* Bottom Sheets para Ações Rápidas */}
       {showActionSheet === 'agendamento' && (
         <AgendamentoBottomSheet
           isOpen={showActionSheet === 'agendamento'}
@@ -716,43 +833,53 @@ export default function MessageInput({
           chatId={chatId}
         />
       )}
+
+      {showActionSheet === 'orcamento' && (
+        <OrcamentoBottomSheet
+          isOpen={showActionSheet === 'orcamento'}
+          onClose={() => setShowActionSheet(null)}
+          chatId={chatId}
+        />
+      )}
+
+      {showActionSheet === 'ticket' && (
+        <TicketBottomSheet
+          isOpen={showActionSheet === 'ticket'}
+          onClose={() => setShowActionSheet(null)}
+          chatId={chatId}
+        />
+      )}
+
+      {showActionSheet === 'fila' && (
+        <FilaBottomSheet
+          isOpen={showActionSheet === 'fila'}
+          onClose={() => setShowActionSheet(null)}
+          chatId={chatId}
+        />
+      )}
+
+      {showActionSheet === 'atendente' && (
+        <AtendenteBottomSheet
+          isOpen={showActionSheet === 'atendente'}
+          onClose={() => setShowActionSheet(null)}
+          chatId={chatId}
+        />
+      )}
+
+      {showActionSheet === 'assinatura' && (
+        <AssinaturaBottomSheet
+          isOpen={showActionSheet === 'assinatura'}
+          onClose={() => setShowActionSheet(null)}
+          chatId={chatId}
+        />
+      )}
       
-      {/* Outros bottom sheets em desenvolvimento */}
-      {(showActionSheet && !['agendamento', 'tags'].includes(showActionSheet)) && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            className="bg-white dark:bg-gray-900 rounded-t-2xl p-6 w-full max-w-md pointer-events-auto"
-          >
-            <div className="text-center">
-              <div className="text-4xl mb-4">
-                {showActionSheet === 'orcamento' && '💰'}
-                {showActionSheet === 'assinatura' && '✍️'}
-                {showActionSheet === 'ticket' && '🎫'}
-                {showActionSheet === 'fila' && '👥'}
-                {showActionSheet === 'atendente' && '👨‍💼'}
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                {showActionSheet === 'orcamento' && 'Orçamento'}
-                {showActionSheet === 'assinatura' && 'Assinatura'}
-                {showActionSheet === 'ticket' && 'Ticket'}
-                {showActionSheet === 'fila' && 'Fila'}
-                {showActionSheet === 'atendente' && 'Atendente'}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Em desenvolvimento...
-              </p>
-              <button
-                onClick={() => setShowActionSheet(null)}
-                className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
-              >
-                Fechar
-              </button>
-            </div>
-          </motion.div>
-        </div>
+      {showActionSheet === 'anotacoes' && (
+        <AnotacoesBottomSheet
+          isOpen={showActionSheet === 'anotacoes'}
+          onClose={() => setShowActionSheet(null)}
+          chatId={chatId}
+        />
       )}
 
       {/* Modal de Envio de Mídia */}
@@ -765,6 +892,18 @@ export default function MessageInput({
           file={selectedFile}
         />
       )}
+      
+      {/* Modal de Seleção de Agente */}
+      <AgenteSelectionModal
+        isOpen={showAgenteModal}
+        onClose={() => setShowAgenteModal(false)}
+        onSelect={(agente) => {
+          setAgenteAtual(agente)
+          console.log('🤖 Agente selecionado:', agente)
+        }}
+        agenteAtual={agenteAtual}
+        chatId={chatId}
+      />
     </div>
   )
 }

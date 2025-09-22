@@ -8,7 +8,10 @@ import {
   Wifi,
   LayoutDashboard,
   Users,
-  Ticket
+  Ticket,
+  Calendar,
+  DollarSign,
+  FileText
 } from 'lucide-react'
 
 interface ChatIndicatorsProps {
@@ -23,6 +26,27 @@ interface ChatIndicatorsProps {
       id: string
       nome: string
       cor?: string
+    }>
+    
+    // Agendamentos
+    agendamentos?: Array<{
+      id: string
+      titulo: string
+      status: string
+    }>
+    
+    // Orçamentos
+    orcamentos?: Array<{
+      id: string
+      titulo: string
+      status: string
+    }>
+    
+    // Tickets
+    tickets?: Array<{
+      id: string
+      titulo: string
+      status: string
     }>
     
     // Rating
@@ -52,6 +76,9 @@ interface ChatIndicatorsProps {
   
   // Callbacks
   onTagsClick: (e: React.MouseEvent) => void
+  onAgendamentosClick?: (e: React.MouseEvent) => void
+  onOrcamentosClick?: (e: React.MouseEvent) => void
+  onTicketsClick?: (e: React.MouseEvent) => void
   onRatingClick?: (e: React.MouseEvent) => void
   onKanbanClick?: (e: React.MouseEvent) => void
   onFilaClick?: (e: React.MouseEvent) => void
@@ -61,6 +88,9 @@ interface ChatIndicatorsProps {
 export default function ChatIndicators({
   chat,
   onTagsClick,
+  onAgendamentosClick,
+  onOrcamentosClick,
+  onTicketsClick,
   onRatingClick,
   onKanbanClick,
   onFilaClick,
@@ -140,6 +170,72 @@ export default function ChatIndicators({
           </div>
         )}
       </motion.button>
+
+      {/* Botão de Agendamentos */}
+      {(chat.agendamentos && chat.agendamentos.length > 0) && (
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onAgendamentosClick}
+          className="relative p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded-sm 
+                     border border-blue-400/30 transition-colors"
+          title={`Agendamentos (${chat.agendamentos.length})`}
+        >
+          <Calendar className="w-2.5 h-2.5 text-blue-600" />
+          
+          {/* Badge de quantidade de agendamentos */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full 
+                          border border-white dark:border-gray-800 flex items-center justify-center">
+            <span className="text-xs font-bold text-white">
+              {chat.agendamentos.length > 9 ? '9+' : chat.agendamentos.length}
+            </span>
+          </div>
+        </motion.button>
+      )}
+
+      {/* Botão de Orçamentos */}
+      {(chat.orcamentos && chat.orcamentos.length > 0) && (
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onOrcamentosClick}
+          className="relative p-1 bg-green-500/20 hover:bg-green-500/30 rounded-sm 
+                     border border-green-400/30 transition-colors"
+          title={`Orçamentos (${chat.orcamentos.length})`}
+        >
+          <DollarSign className="w-2.5 h-2.5 text-green-600" />
+          
+          {/* Badge de quantidade de orçamentos */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full 
+                          border border-white dark:border-gray-800 flex items-center justify-center">
+            <span className="text-xs font-bold text-white">
+              {chat.orcamentos.length > 9 ? '9+' : chat.orcamentos.length}
+            </span>
+          </div>
+        </motion.button>
+      )}
+
+      {/* Botão de Tickets */}
+      {(chat.tickets && chat.tickets.length > 0) && (
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onTicketsClick}
+          className="relative p-1 bg-red-500/20 hover:bg-red-500/30 rounded-sm 
+                     border border-red-400/30 transition-colors"
+          title={`Tickets (${chat.tickets.length})`}
+        >
+          <FileText className="w-2.5 h-2.5 text-red-600" />
+          
+          {/* Badge de quantidade de tickets */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full 
+                          border border-white dark:border-gray-800 flex items-center justify-center">
+            <span className="text-xs font-bold text-white">
+              {chat.tickets.length > 9 ? '9+' : chat.tickets.length}
+            </span>
+          </div>
+        </motion.button>
+      )}
 
       {/* Botão de Rating */}
       {(chat.rating && chat.rating > 0) && (

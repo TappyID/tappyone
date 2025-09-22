@@ -4,7 +4,8 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { 
   Check, 
-  CheckCheck
+  CheckCheck,
+  Languages
 } from 'lucide-react'
 
 import {
@@ -30,6 +31,7 @@ interface MessageBubbleProps {
     timestamp: number
     status?: 'sending' | 'sent' | 'delivered' | 'read'
     mediaUrl?: string
+    translation?: string
     // Dados específicos por tipo
     metadata?: {
       // Para áudio
@@ -71,12 +73,24 @@ interface MessageBubbleProps {
   }
   isLastMessage?: boolean
   showAvatar?: boolean
+  
+  // Callbacks para ações das mensagens
+  onReply?: (messageId: string) => void
+  onForward?: (messageId: string) => void
+  onReaction?: (messageId: string, emoji: string) => void
+  onTranslate?: (messageId: string, translatedText?: string) => void
+  onAIReply?: (messageId: string, content: string) => void
 }
 
 const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({ 
   message, 
   isLastMessage = false,
-  showAvatar = false 
+  showAvatar = false,
+  onReply,
+  onForward,
+  onReaction,
+  onTranslate,
+  onAIReply
 }, ref) => {
   
   const isFromUser = message.sender === 'user'
@@ -239,7 +253,22 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
 
       case 'text':
       default:
-        return <p className="text-sm break-words">{content}</p>
+        return (
+          <div>
+            <p className="text-sm break-words">{content}</p>
+            {message.translation && (
+              <div className="mt-2 p-2 rounded-md border-l-2 border-blue-300 bg-blue-50/50">
+                <div className="flex items-start gap-2">
+                  <Languages className="w-3 h-3 mt-0.5 text-blue-600 flex-shrink-0" />
+                  <div>
+                    <span className="text-xs font-medium text-blue-600 block mb-1">Tradução:</span>
+                    <span className="text-sm text-blue-800">{message.translation}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
     }
   }
 
@@ -293,11 +322,11 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
           messageId={message.id}
           messageContent={message.content}
           isFromUser={isFromUser}
-          onReply={(id) => console.log('🔄 Responder:', id)}
-          onForward={(id) => console.log('↗️ Encaminhar:', id)}
-          onReaction={(id, emoji) => console.log('😀 Reação:', emoji, 'para', id)}
-          onTranslate={(id) => console.log('🌐 Traduzir:', id)}
-          onAIReply={(id, content) => console.log('🤖 IA responder:', content)}
+          onReply={onReply}
+          onForward={onForward}
+          onReaction={onReaction}
+          onTranslate={onTranslate}
+          onAIReply={onAIReply}
         />
       </div>
     </motion.div>

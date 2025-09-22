@@ -2,22 +2,46 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const audioFile = formData.get('audio') as File
+    const contentType = request.headers.get('content-type')
     
-    if (!audioFile) {
-      return NextResponse.json({ error: 'Arquivo de áudio não fornecido' }, { status: 400 })
+    let audioFile: File | null = null
+    let audioUrl: string | null = null
+    
+    if (contentType?.includes('multipart/form-data')) {
+      // Formato antigo - arquivo direto
+      const formData = await request.formData()
+      audioFile = formData.get('audio') as File
+    } else {
+      // Formato novo - URL do áudio
+      const { audioUrl: url } = await request.json()
+      audioUrl = url
+    }
+    
+    if (!audioFile && !audioUrl) {
+      return NextResponse.json({ error: 'Arquivo de áudio ou URL não fornecido' }, { status: 400 })
+    }
+
+    // Se for URL, baixar o arquivo primeiro
+    if (audioUrl) {
+      console.log('🎤 Baixando áudio da URL:', audioUrl)
+      const audioResponse = await fetch(audioUrl)
+      if (!audioResponse.ok) {
+        return NextResponse.json({ error: 'Erro ao baixar áudio da URL' }, { status: 400 })
+      }
+      const audioBuffer = await audioResponse.arrayBuffer()
+      audioFile = new File([audioBuffer], 'audio.ogg', { type: 'audio/ogg' })
     }
 
     console.log('🎤 Iniciando transcrição:', {
-      fileName: audioFile.name,
-      fileSize: audioFile.size,
-      fileType: audioFile.type
+      fileName: audioFile?.name,
+      fileSize: audioFile?.size,
+      fileType: audioFile?.type,
+      source: audioUrl ? 'URL' : 'Upload'
     })
 
     // Preparar FormData para a API da OpenAI
     const openaiFormData = new FormData()
-    openaiFormData.append('file', audioFile)
+    openaiFormData.append('file', audioFile!)
     openaiFormData.append('model', 'whisper-1')
     openaiFormData.append('language', 'pt') // Português brasileiro
 
@@ -47,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      text: transcription.text,
+      transcription: transcription.text,
       language: 'pt-BR'
     })
 

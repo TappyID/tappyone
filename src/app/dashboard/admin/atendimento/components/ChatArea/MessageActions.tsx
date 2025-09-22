@@ -19,7 +19,7 @@ interface MessageActionsProps {
   onReply?: (messageId: string) => void
   onForward?: (messageId: string) => void
   onReaction?: (messageId: string, emoji: string) => void
-  onTranslate?: (messageId: string) => void
+  onTranslate?: (messageId: string, translatedText?: string) => void
   onAIReply?: (messageId: string, content: string) => void
 }
 
@@ -35,6 +35,72 @@ export default function MessageActions({
 }: MessageActionsProps) {
   const [showMenu, setShowMenu] = useState(false)
   const [showReactions, setShowReactions] = useState(false)
+
+  // Função para responder com IA
+  const handleAIReply = async () => {
+    try {
+      console.log('🤖 Gerando resposta com IA para:', messageContent.substring(0, 50))
+      
+      // Chamar API de IA
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: messageContent,
+          context: 'Contexto: Você está gerando uma resposta para um atendimento via WhatsApp. A mensagem do cliente foi: "' + messageContent + '". Gere uma resposta profissional, amigável e útil.',
+          type: 'response'
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.text) {
+          // Chamar callback para abrir modal com texto gerado
+          onAIReply?.(messageId, data.text)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao gerar resposta IA:', error)
+    }
+  }
+
+  // Função para traduzir mensagem
+  const handleTranslate = async () => {
+    try {
+      console.log('🌐 Traduzindo mensagem:', messageContent.substring(0, 50))
+      
+      // Detectar idioma e definir tradução inteligente
+      const isEnglish = /^[a-zA-Z\s.,!?'"()-]+$/.test(messageContent)
+      const targetLanguage = isEnglish ? 'pt' : 'en'
+      
+      console.log('🎯 Idioma detectado:', isEnglish ? 'Inglês → Português' : 'Português → Inglês')
+      
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: messageContent,
+          sourceLanguage: isEnglish ? 'en' : 'pt',
+          targetLanguage: targetLanguage
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.translatedText) {
+          console.log('✅ Tradução recebida:', data.translatedText)
+          // Chamar callback com a tradução
+          onTranslate?.(messageId, data.translatedText)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao traduzir:', error)
+    }
+  }
 
   const reactions = ['❤️', '👍', '😂', '😮', '😢', '😡']
 
@@ -70,20 +136,20 @@ export default function MessageActions({
       onClick: () => setShowReactions(true)
     },
     {
-      id: 'translate',
-      label: 'Traduzir',
-      icon: Languages,
-      onClick: () => {
-        onTranslate?.(messageId)
-        setShowMenu(false)
-      }
-    },
-    {
       id: 'ai-reply',
       label: 'Responder com I.A',
       icon: Bot,
       onClick: () => {
-        onAIReply?.(messageId, messageContent)
+        handleAIReply()
+        setShowMenu(false)
+      }
+    },
+    {
+      id: 'translate',
+      label: 'Traduzir',
+      icon: Languages,
+      onClick: () => {
+        handleTranslate()
         setShowMenu(false)
       }
     }

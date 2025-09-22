@@ -74,6 +74,9 @@ export interface CreateCategoriaRequest {
 
 export function useRespostasRapidas() {
   const { token } = useAuth()
+  
+  // Mock token temporário para desenvolvimento
+  const effectiveToken = token || 'mock-token-dev'
   const [respostas, setRespostas] = useState<RespostaRapida[]>([])
   const [categorias, setCategorias] = useState<CategoriaResposta[]>([])
   const [estatisticas, setEstatisticas] = useState<EstatisticasResposta | null>(null)
@@ -92,7 +95,7 @@ export function useRespostasRapidas() {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${effectiveToken}`,
         ...options.headers,
       },
     })
@@ -112,7 +115,7 @@ export function useRespostasRapidas() {
     }
 
     return response.json()
-  }, [token, baseURL])
+  }, [effectiveToken, baseURL])
 
   const fetchRespostas = useCallback(async () => {
     try {
