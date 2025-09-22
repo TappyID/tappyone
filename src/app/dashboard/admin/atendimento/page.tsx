@@ -6,11 +6,14 @@ import SideChat from './components/SideChat'
 import ChatHeader from './components/TopChatArea/ChatHeader'
 import ChatArea from './components/ChatArea'
 import FooterChatArea from './components/FooterChatArea'
+import EditTextModal from '../atendimentos/components/EditTextModal'
+import AgenteSelectionModal from './components/FooterChatArea/modals/AgenteSelectionModal'
+import ForwardMessageModal from '../atendimentos/components/ForwardMessageModal'
+import AudioRecorderModal from './components/FooterChatArea/modals/AudioRecorderModal'
 import { useContatoData } from '@/hooks/useContatoData'
 import useMessagesData from '@/hooks/useMessagesData'
 import useChatsOverview from '@/hooks/useChatsOverview'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
-import EditTextModal from '../atendimentos/components/EditTextModal'
 import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
 
 // Mock data para demonstração
@@ -84,6 +87,7 @@ export default function AtendimentoPage() {
   const [showQuickActionsSidebar, setShowQuickActionsSidebar] = useState(false)
   const [showForwardModal, setShowForwardModal] = useState(false)
   const [forwardingMessage, setForwardingMessage] = useState<string | null>(null)
+  const [showAudioModal, setShowAudioModal] = useState(false)
   
   // Estados de tradução
   const [translatedMessages, setTranslatedMessages] = useState<{[messageId: string]: string}>({})
@@ -740,6 +744,7 @@ export default function AtendimentoPage() {
               console.log('🔍 Abrindo sidebar - selectedChatId:', selectedChatId)
               setShowQuickActionsSidebar(true)
             }}
+            onSendAudio={() => setShowAudioModal(true)}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
             onSendMessage={(content) => {
@@ -820,12 +825,12 @@ export default function AtendimentoPage() {
               
               console.log('📎 Enviando mídia:', { fileName: file.name, mediaType, caption, selectedChatId })
               
-              // Determinar endpoint baseado no tipo (usando padrão com sessão na URL)
-              let endpoint = '/api/user_fb8da1d7_1758158816675/sendFile' // document default
+              // Determinar endpoint baseado no tipo - formato correto da WAHA
+              let endpoint = '/api/sendFile' // document default
               if (mediaType === 'image') {
-                endpoint = '/api/user_fb8da1d7_1758158816675/sendImage'
+                endpoint = '/api/sendImage'
               } else if (mediaType === 'video') {
-                endpoint = '/api/user_fb8da1d7_1758158816675/sendVideo'
+                endpoint = '/api/sendVideo'
               }
               
               const formData = new FormData()
@@ -973,6 +978,47 @@ export default function AtendimentoPage() {
           console.log('⚡ Ação rápida:', action)
           console.log('🔍 selectedChatId na página:', selectedChatId)
           setShowQuickActionsSidebar(false)
+        }}
+      />
+
+      {/* Modal de Gravação de Áudio */}
+      <AudioRecorderModal
+        isOpen={showAudioModal}
+        onClose={() => setShowAudioModal(false)}
+        onSend={async (audioBlob) => {
+          if (!selectedChatId) return
+          
+          console.log('🎤 Enviando áudio:', { size: audioBlob.size, type: audioBlob.type })
+          
+          // Converter blob para arquivo
+          const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' })
+          
+          // Criar FormData para enviar o áudio
+          const formData = new FormData()
+          formData.append('chatId', selectedChatId)
+          formData.append('file', audioFile)
+          
+          try {
+            const response = await fetch(getWahaUrl('/api/sendVoice'), {
+              method: 'POST',
+              headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+              body: formData
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              console.log('✅ Áudio enviado com sucesso:', result)
+              setTimeout(() => refreshMessages(), 500)
+              setShowAudioModal(false)
+            } else {
+              const errorData = await response.json().catch(() => null)
+              console.error('❌ Erro ao enviar áudio:', response.status, errorData)
+              alert('Erro ao enviar áudio. Tente novamente.')
+            }
+          } catch (error) {
+            console.error('❌ Erro de rede ao enviar áudio:', error)
+            alert('Erro de conexão. Verifique sua internet.')
+          }
         }}
       />
 

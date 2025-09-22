@@ -42,7 +42,11 @@ export default function AgenteSelectionModal({
         setLoading(true)
         console.log('🤖 [AgenteSelectionModal] Buscando agentes...')
         
-        const response = await fetch('/api/agentes', {
+        // Usar backend correto baseado no ambiente
+        const isProduction = typeof window !== 'undefined' && window.location.hostname === 'crm.tappy.id'
+        const backendUrl = isProduction ? 'https://backend.tappy.id' : 'http://localhost:8081'
+        
+        const response = await fetch(`${backendUrl}/api/agentes`, {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
           }
