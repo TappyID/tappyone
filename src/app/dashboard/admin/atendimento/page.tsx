@@ -584,68 +584,6 @@ export default function AtendimentoPage() {
                 }
               }).catch(error => console.error('❌ Erro de rede:', error))
             }}
-            onAttachFile={(file) => {
-              if (!selectedChatId || !file) return
-              // Usar API WAHA para enviar arquivo
-              const formData = new FormData()
-              formData.append('chatId', selectedChatId)
-              formData.append('file', file)
-              
-              fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/sendFile', {
-                method: 'POST',
-                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
-                body: formData
-              }).then(response => {
-                if (response.ok) {
-                  console.log('✅ Arquivo enviado')
-                } else {
-                  console.error('❌ Erro ao enviar arquivo:', response.status)
-                }
-              })
-            }}
-            onSendImage={(file) => {
-              if (!selectedChatId || !file) return
-              // Usar API WAHA para enviar imagem
-              const formData = new FormData()
-              formData.append('chatId', selectedChatId)
-              formData.append('file', file)
-              
-              fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/sendImage', {
-                method: 'POST',
-                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
-                body: formData
-              }).then(response => {
-                if (response.ok) {
-                  console.log('✅ Imagem enviada')
-                } else {
-                  console.error('❌ Erro ao enviar imagem:', response.status)
-                }
-              })
-            }}
-            onSendAudio={(audioBlob) => {
-              if (!selectedChatId || !audioBlob) return
-              // Usar API WAHA para enviar áudio
-              const formData = new FormData()
-              formData.append('session', 'user_fb8da1d7_1758158816675')
-              formData.append('chatId', selectedChatId)
-              formData.append('file', audioBlob, 'audio.ogg')
-              
-              fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/sendVoice', {
-                method: 'POST',
-                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
-                body: formData
-              }).then(response => {
-                if (response.ok) {
-                  console.log('✅ Áudio enviado')
-                } else {
-                  console.error('❌ Erro ao enviar áudio:', response.status)
-                }
-              })
-            }}
-            onOpenCamera={() => console.log('📷 Abrir câmera')}
-            onOpenEmojis={() => console.log('😊 Abrir emojis')}
-            onRespostaRapidaClick={() => console.log('💬 Resposta rápida')}
-            onIAClick={() => console.log('🤖 I.A clicada')}
             onSendPoll={(pollData) => {
               if (!selectedChatId) return
               // Usar API WAHA para enviar enquete
@@ -684,19 +622,98 @@ export default function AtendimentoPage() {
                 })
               }).then(() => console.log('📅 Evento enviado'))
             }}
-            onReaction={(messageId, emoji) => {
+            onSendMedia={async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
+              if (!selectedChatId || !file) return
+              
+              console.log('📎 Enviando mídia:', { fileName: file.name, mediaType, caption, selectedChatId })
+              
+              // Determinar endpoint baseado no tipo (usando padrão com sessão na URL)
+              let endpoint = '/api/user_fb8da1d7_1758158816675/sendFile' // document default
+              if (mediaType === 'image') {
+                endpoint = '/api/user_fb8da1d7_1758158816675/sendImage'
+              } else if (mediaType === 'video') {
+                endpoint = '/api/user_fb8da1d7_1758158816675/sendVideo'
+              }
+              
+              const formData = new FormData()
+              formData.append('chatId', selectedChatId)
+              formData.append('file', file)
+              
+              if (caption?.trim()) {
+                formData.append('caption', caption.trim())
+              }
+              
+              console.log('📦 FormData preparado para endpoint:', endpoint)
+              
+              try {
+                const response = await fetch(`http://159.65.34.199:3001${endpoint}`, {
+                  method: 'POST',
+                  headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                  body: formData
+                })
+                
+                if (response.ok) {
+                  const result = await response.json()
+                  console.log('✅ Mídia enviada com sucesso:', result)
+                  setTimeout(() => refreshMessages(), 500)
+                } else {
+                  const errorData = await response.json().catch(() => null)
+                  console.error('❌ Erro ao enviar mídia:', response.status, errorData)
+                }
+              } catch (error) {
+                console.error('❌ Erro de rede mídia:', error)
+              }
+            }}
+            onSendContact={(contactsData) => {
               if (!selectedChatId) return
-              // Usar API WAHA para reagir à mensagem
-              fetch('http://159.65.34.199:3001/api/reaction', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+              // Usar API WAHA para enviar contato
+              fetch('http://159.65.34.199:3001/api/sendContactVcard', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey' 
+                },
                 body: JSON.stringify({
                   session: 'user_fb8da1d7_1758158816675',
                   chatId: selectedChatId,
-                  messageId,
-                  reaction: emoji
+                  contacts: contactsData.contacts || []
                 })
-              }).then(() => console.log('😀 Reação enviada'))
+              }).then(async response => {
+                if (response.ok) {
+                  console.log('✅ Contatos enviados')
+                  setTimeout(() => refreshMessages(), 500)
+                } else {
+                  const errorData = await response.json().catch(() => null)
+                  console.error('❌ Erro ao enviar contatos:', response.status, errorData)
+                }
+              }).catch(error => console.error('❌ Erro de rede contatos:', error))
+            }}
+            onSendLocation={(locationData) => {
+              if (!selectedChatId) return
+              // Usar API WAHA para enviar localização
+              fetch('http://159.65.34.199:3001/api/sendLocation', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey' 
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: selectedChatId,
+                  latitude: locationData.latitude,
+                  longitude: locationData.longitude,
+                  title: locationData.title || 'Localização',
+                  address: locationData.address || ''
+                })
+              }).then(async response => {
+                if (response.ok) {
+                  console.log('✅ Localização enviada')
+                  setTimeout(() => refreshMessages(), 500)
+                } else {
+                  const errorData = await response.json().catch(() => null)
+                  console.error('❌ Erro ao enviar localização:', response.status, errorData)
+                }
+              }).catch(error => console.error('❌ Erro de rede localização:', error))
             }}
             selectedChat={selectedChatId ? {
               id: selectedChatId,

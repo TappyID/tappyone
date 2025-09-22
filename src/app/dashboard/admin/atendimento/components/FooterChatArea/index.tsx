@@ -16,6 +16,14 @@ interface FooterChatAreaProps {
   onStopTyping?: () => void
   onMarkAsSeen?: (messageId: string) => void
   
+  // Novos handlers para envio (compatíveis com page.tsx)
+  onSendContact?: (contactsData: any) => void
+  onSendLocation?: (locationData: any) => void
+  onSendPoll?: (pollData: any) => void
+  onSendList?: (listData: any) => void
+  onSendEvent?: (eventData: any) => void
+  onSendMedia?: (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => Promise<void>
+  
   // Estados
   disabled?: boolean
   isTyping?: boolean
@@ -38,6 +46,12 @@ export default function FooterChatArea({
   onStartTyping,
   onStopTyping,
   onMarkAsSeen,
+  onSendContact,
+  onSendLocation,
+  onSendPoll,
+  onSendList,
+  onSendEvent,
+  onSendMedia,
   disabled = false,
   isTyping = false,
   enableSignature = true,
@@ -102,6 +116,60 @@ export default function FooterChatArea({
       onStartTyping={onStartTyping}
       onStopTyping={onStopTyping}
       onMarkAsSeen={onMarkAsSeen}
+      onSendContact={onSendContact ? async (contacts: any[], caption: string) => {
+        const contactsData = { contacts, caption }
+        return onSendContact(contactsData)
+      } : undefined}
+      onSendLocation={onSendLocation ? async (latitude: number, longitude: number, title: string, address: string) => {
+        const locationData = { latitude, longitude, title, address }
+        return onSendLocation(locationData)
+      } : undefined}
+      onSendPoll={onSendPoll ? async (name: string, options: string[], multipleAnswers: boolean) => {
+        console.log('📊 FooterChatArea - Dados da enquete recebidos:', { name, options, multipleAnswers })
+        const pollData = { name, options, multipleAnswers }
+        console.log('📊 FooterChatArea - pollData formatado:', pollData)
+        return onSendPoll(pollData)
+      } : undefined}
+      onSendMenu={onSendList ? async (title: string, description: string, options: string[]) => {
+        console.log('🔗 FooterChatArea - Dados do menu recebidos:', { title, description, options })
+        
+        // Formato correto para WAHA API sendList
+        const listData = {
+          title: description || 'Selecione uma opção', // ✅ Título da mensagem (obrigatório)
+          button: title || 'Ver opções', // ✅ Texto do botão (obrigatório)
+          sections: [
+            {
+              title: 'Opções disponíveis', // ✅ Título da seção
+              rows: options.map((option, index) => ({
+                rowId: `option_${index + 1}`, // ✅ rowId (obrigatório)
+                title: option, // ✅ Texto da opção
+                description: `Opção ${index + 1}` // ✅ Descrição
+              }))
+            }
+          ]
+        }
+        
+        console.log('🔗 FooterChatArea - listData formatado para WAHA:', listData)
+        return onSendList(listData)
+      } : undefined}
+      onSendEvent={onSendEvent ? async (title: string, dateTime: string) => {
+        console.log('📅 FooterChatArea - Dados do evento recebidos:', { title, dateTime })
+        
+        // Converter data para timestamp Unix (segundos desde 1970)
+        const startTime = dateTime ? Math.floor(new Date(dateTime).getTime() / 1000) : Math.floor(Date.now() / 1000)
+        
+        const eventData = { 
+          name: title || 'Evento sem título',
+          startTime: startTime,
+          isCanceled: false,
+          extraGuestsAllowed: true
+        }
+        
+        console.log('📅 FooterChatArea - eventData formatado para WAHA:', eventData)
+        return onSendEvent(eventData)
+      } : undefined}
+      onSendMedia={onSendMedia}
+      chatId={selectedChat.id}
       placeholder={`Mensagem para ${selectedChat.name}...`}
       disabled={disabled}
       isTyping={isTyping}

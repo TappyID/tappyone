@@ -605,6 +605,7 @@ export default function ChatArea({
   // Estados para mídia
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false)
+  const [selectedAttachmentType, setSelectedAttachmentType] = useState<'image' | 'video' | 'document' | 'contact' | 'location' | 'poll' | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null)
   const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video' | 'document' | null>(null)

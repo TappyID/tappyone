@@ -15,7 +15,8 @@ import {
   Tag,
   Ticket,
   Users,
-  UserCheck
+  UserCheck,
+  Mic
 } from 'lucide-react'
 
 // ======================
@@ -203,5 +204,32 @@ export const AtendenteButton = ({ onClick }: { onClick?: () => void }) => (
   >
     <UserCheck className="w-6 h-6 mb-2 text-teal-500" />
     <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Atendente</span>
+  </motion.button>
+)
+
+// ======================
+// NOVOS BOTÕES WHATSAPP  
+// ======================
+export const AudioWhatsappButton = ({ onClick }: { onClick?: () => void }) => (
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className="flex flex-col items-center p-3 rounded-xl transition-colors hover:bg-white dark:hover:bg-gray-600 bg-orange-100 dark:bg-orange-900/30"
+  >
+    <Mic className="w-6 h-6 mb-2 text-orange-500" />
+    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Áudio</span>
+  </motion.button>
+)
+
+export const EventsButton = ({ onClick }: { onClick?: () => void }) => (
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className="flex flex-col items-center p-3 rounded-xl transition-colors hover:bg-white dark:hover:bg-gray-600 bg-indigo-100 dark:bg-indigo-900/30"
+  >
+    <Calendar className="w-6 h-6 mb-2 text-indigo-500" />
+    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Agenda</span>
   </motion.button>
 )
