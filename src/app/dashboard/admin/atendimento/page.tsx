@@ -8,6 +8,7 @@ import ChatArea from './components/ChatArea'
 import FooterChatArea from './components/FooterChatArea'
 import { useContatoData } from '@/hooks/useContatoData'
 import useMessagesData from '@/hooks/useMessagesDataTemp'
+import useChatsOverview from '@/hooks/useChatsOverview'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 
 // Mock data para demonstração
@@ -75,7 +76,7 @@ export default function AtendimentoPage() {
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>()
   
-  // Hook para mensagens do chat selecionado
+  // Hook de mensagens com dados reais da WAHA
   const { 
     messages: realMessages, 
     loading: loadingMessages, 
@@ -86,8 +87,49 @@ export default function AtendimentoPage() {
     refreshMessages
   } = useMessagesData(selectedChatId)
 
+  // Hook de overview dos chats da WAHA (com última mensagem)
+  const {
+    chats: overviewChats,
+    loading: loadingOverview,
+    error: overviewError,
+    refreshChats: refreshOverview
+  } = useChatsOverview()
 
-  // refreshMessages já vem do hook useMessagesData
+  console.log('📊 Overview chats recebidos:', overviewChats.length)
+
+  // Transformar overview chats para formato da SideChat
+  const transformedChats = useMemo(() => {
+    return overviewChats.map(chat => ({
+      id: chat.id,
+      name: chat.name,
+      avatar: chat.image, // Foto real do contato
+      lastMessage: {
+        type: chat.lastMessage?.type === 'text' ? 'text' as const : 
+              chat.lastMessage?.hasMedia ? 'image' as const : 'text' as const,
+        content: chat.lastMessage?.body || 'Sem mensagens',
+        timestamp: chat.lastMessage?.timestamp || Date.now(),
+        sender: chat.lastMessage?.fromMe ? 'agent' as const : 'user' as const,
+        isRead: (chat.unreadCount ?? 0) === 0
+      },
+      // Adicionar dados para os indicadores (mock por enquanto)
+      isSelected: selectedChatId === chat.id,
+      unreadCount: chat.unreadCount || 0,
+      // Mock dos outros dados
+      tags: Math.random() > 0.7 ? [mockTags[Math.floor(Math.random() * mockTags.length)]] : undefined,
+      rating: Math.random() > 0.6 ? Math.floor(Math.random() * 5) + 1 : undefined,
+      isOnline: Math.random() > 0.3,
+      connectionStatus: Math.random() > 0.8 ? 'connecting' : 
+                      Math.random() > 0.2 ? 'connected' : 'disconnected',
+      kanbanStatus: Math.random() > 0.4 ? {
+        id: '1',
+        nome: ['Pendente', 'Em Andamento', 'Finalizado'][Math.floor(Math.random() * 3)],
+        cor: ['#f59e0b', '#3b82f6', '#10b981'][Math.floor(Math.random() * 3)]
+      } : undefined,
+      fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
+    }))
+  }, [overviewChats, selectedChatId])
+
+  console.log('🔄 Chats transformados:', transformedChats.length)
 
   // Função para votar em enquete
   const handlePollVote = useCallback(async (messageId: string, chatId: string, votes: string[]) => {
@@ -392,10 +434,10 @@ export default function AtendimentoPage() {
           {/* Lista de Chats */}
           <div className="flex-1 overflow-hidden">
             <SideChat
-              chats={processedChats}
+              chats={transformedChats}
               selectedChatId={selectedChatId}
               onSelectChat={setSelectedChatId}
-              isLoading={finalLoading || loadingContatos}
+              isLoading={loadingOverview}
               onTagsClick={(chatId, e) => {
                 e.stopPropagation()
                 console.log('🏷️ Tags clicadas:', chatId)
@@ -430,7 +472,7 @@ export default function AtendimentoPage() {
           <ChatHeader
             chat={selectedChatId ? {
               id: selectedChatId,
-              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário',
+              name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário',
               isOnline: Math.random() > 0.5, // Mock
               lastSeen: Date.now() - Math.random() * 3600000,
               location: 'São Paulo, SP'
@@ -449,7 +491,7 @@ export default function AtendimentoPage() {
             onLoadMore={loadMoreMessages}
             selectedChat={selectedChatId ? {
               id: selectedChatId,
-              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
+              name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
             } : undefined}
           />
           
@@ -658,7 +700,7 @@ export default function AtendimentoPage() {
             }}
             selectedChat={selectedChatId ? {
               id: selectedChatId,
-              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
+              name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
             } : undefined}
           />
         </div>

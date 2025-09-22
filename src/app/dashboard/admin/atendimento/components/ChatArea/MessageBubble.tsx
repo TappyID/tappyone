@@ -19,6 +19,8 @@ import {
   MessageLinkPreview
 } from './MessageTypes'
 
+import MessageActions from './MessageActions'
+
 interface MessageBubbleProps {
   message: {
     id: string
@@ -111,10 +113,11 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
       case 'audio':
         return (
           <MessageAudio
-            audioUrl={mediaUrl || ''}
-            duration={metadata?.duration || 0}
+            audioUrl={message.mediaUrl || ''}
+            duration={message.metadata?.duration}
             isFromUser={isFromUser}
-            caption={content}
+            caption={message.content !== 'Áudio' ? message.content : undefined}
+            onTranscribe={(audioUrl) => console.log('🎙️ Transcrever áudio:', audioUrl)}
           />
         )
 
@@ -245,23 +248,22 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex items-end gap-2 mb-4 ${
+      className={`group flex items-end gap-1 mb-2 ${
         isFromUser ? 'flex-row-reverse' : 'flex-row'
       }`}
     >
       {/* Avatar do agente (só para mensagens do agente) */}
       {!isFromUser && showAvatar && (
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 self-end mb-1">
           <span className="text-xs font-semibold text-white">A</span>
         </div>
       )}
 
-      {/* Bolha da mensagem */}
-      <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${
-        isFromUser ? 'ml-auto' : 'mr-auto'
-      }`}>
+      {/* Conteúdo da mensagem */}
+      <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md relative">
+        {/* Renderizar conteúdo baseado no tipo */}
         {message.type === 'text' ? (
-          <div className={`rounded-2xl px-4 py-2 ${
+          <div className={`p-3 rounded-2xl shadow-sm ${
             isFromUser 
               ? 'bg-blue-500 text-white' 
               : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
@@ -283,6 +285,20 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
           </span>
           {getStatusIcon()}
         </div>
+      </div>
+
+      {/* Menu de ações ao lado direito */}
+      <div className={`self-start ${isFromUser ? 'order-first mr-1' : 'ml-1'}`}>
+        <MessageActions
+          messageId={message.id}
+          messageContent={message.content}
+          isFromUser={isFromUser}
+          onReply={(id) => console.log('🔄 Responder:', id)}
+          onForward={(id) => console.log('↗️ Encaminhar:', id)}
+          onReaction={(id, emoji) => console.log('😀 Reação:', emoji, 'para', id)}
+          onTranslate={(id) => console.log('🌐 Traduzir:', id)}
+          onAIReply={(id, content) => console.log('🤖 IA responder:', content)}
+        />
       </div>
     </motion.div>
   )

@@ -1,0 +1,181 @@
+'use client'
+
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  MoreHorizontal, 
+  Reply, 
+  Forward, 
+  Heart,
+  Languages,
+  Bot,
+  X
+} from 'lucide-react'
+
+interface MessageActionsProps {
+  messageId: string
+  messageContent: string
+  isFromUser: boolean
+  onReply?: (messageId: string) => void
+  onForward?: (messageId: string) => void
+  onReaction?: (messageId: string, emoji: string) => void
+  onTranslate?: (messageId: string) => void
+  onAIReply?: (messageId: string, content: string) => void
+}
+
+export default function MessageActions({
+  messageId,
+  messageContent,
+  isFromUser,
+  onReply,
+  onForward,
+  onReaction,
+  onTranslate,
+  onAIReply
+}: MessageActionsProps) {
+  const [showMenu, setShowMenu] = useState(false)
+  const [showReactions, setShowReactions] = useState(false)
+
+  const reactions = ['❤️', '👍', '😂', '😮', '😢', '😡']
+
+  const handleReaction = (emoji: string) => {
+    onReaction?.(messageId, emoji)
+    setShowReactions(false)
+    setShowMenu(false)
+  }
+
+  const menuActions = [
+    {
+      id: 'reply',
+      label: 'Responder',
+      icon: Reply,
+      onClick: () => {
+        onReply?.(messageId)
+        setShowMenu(false)
+      }
+    },
+    {
+      id: 'forward', 
+      label: 'Encaminhar',
+      icon: Forward,
+      onClick: () => {
+        onForward?.(messageId)
+        setShowMenu(false)
+      }
+    },
+    {
+      id: 'reaction',
+      label: 'Reação',
+      icon: Heart,
+      onClick: () => setShowReactions(true)
+    },
+    {
+      id: 'translate',
+      label: 'Traduzir',
+      icon: Languages,
+      onClick: () => {
+        onTranslate?.(messageId)
+        setShowMenu(false)
+      }
+    },
+    {
+      id: 'ai-reply',
+      label: 'Responder com I.A',
+      icon: Bot,
+      onClick: () => {
+        onAIReply?.(messageId, messageContent)
+        setShowMenu(false)
+      }
+    }
+  ]
+
+  return (
+    <div className="relative">
+      {/* Botão 3 pontinhos */}
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${
+          showMenu ? 'opacity-100' : ''
+        }`}
+      >
+        <MoreHorizontal className="w-4 h-4 text-gray-500" />
+      </button>
+
+      {/* Menu de ações */}
+      <AnimatePresence>
+        {showMenu && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className={`absolute z-50 ${
+              isFromUser ? 'right-0' : 'left-0'
+            } mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2`}
+          >
+            {menuActions.map((action) => {
+              const Icon = action.icon
+              return (
+                <button
+                  key={action.id}
+                  onClick={action.onClick}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm"
+                >
+                  <Icon className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-700 dark:text-gray-200">{action.label}</span>
+                </button>
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Menu de reações */}
+      <AnimatePresence>
+        {showReactions && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className={`absolute z-50 ${
+              isFromUser ? 'right-0' : 'left-0'
+            } mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                Escolha uma reação
+              </span>
+              <button
+                onClick={() => setShowReactions(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-3 h-3 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex gap-2">
+              {reactions.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(emoji)}
+                  className="text-xl hover:scale-125 transition-transform p-1 rounded"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Overlay para fechar menus */}
+      {(showMenu || showReactions) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setShowMenu(false)
+            setShowReactions(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}

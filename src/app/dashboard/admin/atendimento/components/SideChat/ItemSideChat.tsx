@@ -15,6 +15,26 @@ import ButtonTransferir from './ButtonTransferir'
 import LastMessageSideChat from './LastMessageSideChat'
 import ChatIndicators from './ChatIndicators'
 
+// Helper para formatar tempo relativo
+function formatTimeRelative(timestamp: number): string {
+  const now = Date.now()
+  const diff = now - timestamp
+  const minutes = Math.floor(diff / (1000 * 60))
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (minutes < 1) return 'agora'
+  if (minutes < 60) return `${minutes}m`
+  if (hours < 24) return `${hours}h`
+  if (days < 7) return `${days}d`
+  
+  // Para mais de uma semana, mostrar data
+  return new Date(timestamp).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit'
+  })
+}
+
 interface ItemSideChatProps {
   chat: {
     id: string
@@ -110,11 +130,13 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           ? 'bg-gradient-to-r from-blue-500/10 via-blue-400/20 to-blue-500/10 backdrop-blur-sm border border-blue-300/30 shadow-lg shadow-blue-500/20 dark:from-blue-600/20 dark:via-blue-500/30 dark:to-blue-600/20 dark:border-blue-400/30'
           : 'hover:bg-gray-50 dark:hover:bg-gray-700'
       } ${
-        chat.isArchived ? 'opacity-60' : ''
-      } ${
-        chat.isHidden ? 'opacity-40' : ''
+        chat.isArchived ? 'opacity-50' : ''
       }`}
     >
+      {/* Bordinha azul no lado direito quando ativo */}
+      {chat.isSelected && (
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full shadow-md" />
+      )}
       {/* Avatar */}
       <div className="relative flex-shrink-0">
           {chat.avatar ? (
@@ -156,13 +178,21 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                 ? 'text-blue-700 dark:text-blue-300 font-semibold'
                 : chat.lastMessage.isRead === false 
                   ? 'text-gray-900 dark:text-gray-100' 
-                  : 'text-gray-700 dark:text-gray-300'
+                  : 'text-gray-600 dark:text-gray-300'
             }`}>
               {chat.name}
             </h3>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-              {formatTimestamp(chat.lastMessage.timestamp)}
-            </span>
+            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatTimeRelative(chat.lastMessage.timestamp)}
+              </span>
+              {/* Contador de não lidas */}
+              {chat.unreadCount && chat.unreadCount > 0 && (
+                <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                  {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Última Mensagem */}

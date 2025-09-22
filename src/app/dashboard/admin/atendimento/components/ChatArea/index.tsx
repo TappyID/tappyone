@@ -207,8 +207,8 @@ export default function ChatArea({
         <AnimatePresence mode="popLayout">
           {messages.map((message, index) => {
             const isLastMessage = index === messages.length - 1
-            const prevMessage = messages[index - 1]
-            const showAvatar = !prevMessage || prevMessage.sender !== message.sender
+            // Sempre mostrar avatar para corrigir o bug de agrupamento
+            const showAvatar = true
             
             return (
               <MessageBubble

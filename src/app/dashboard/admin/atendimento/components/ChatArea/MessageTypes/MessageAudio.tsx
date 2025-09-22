@@ -2,20 +2,22 @@
 
 import React, { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Play, Pause, Volume2, Download } from 'lucide-react'
+import { Play, Pause, Download, FileText } from 'lucide-react'
 
 interface MessageAudioProps {
   audioUrl: string
   duration?: number
   isFromUser: boolean
   caption?: string
+  onTranscribe?: (audioUrl: string) => void
 }
 
 export default function MessageAudio({ 
   audioUrl, 
   duration = 0, 
   isFromUser,
-  caption 
+  caption,
+  onTranscribe
 }: MessageAudioProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -106,6 +108,25 @@ export default function MessageAudio({
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
 
+        {/* Botão Transcrever */}
+        {onTranscribe && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onTranscribe(audioUrl)}
+            className={`p-2 rounded-full ${
+              isFromUser
+                ? 'hover:bg-white/20'
+                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+            title="Transcrever áudio"
+          >
+            <FileText className={`w-3 h-3 ${
+              isFromUser ? 'text-white/80' : 'text-gray-500'
+            }`} />
+          </motion.button>
+        )}
+
         {/* Botão Download */}
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -115,10 +136,11 @@ export default function MessageAudio({
             isFromUser
               ? 'hover:bg-white/20'
               : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-          } transition-colors`}
+          }`}
+          title="Baixar áudio"
         >
-          <Download className={`w-4 h-4 ${
-            isFromUser ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+          <Download className={`w-3 h-3 ${
+            isFromUser ? 'text-white/80' : 'text-gray-500'
           }`} />
         </motion.button>
       </div>
