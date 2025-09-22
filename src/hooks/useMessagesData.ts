@@ -230,7 +230,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
   }
 
   const loadMore = () => {
-    console.log('🔄 LoadMore chamado:', { chatId, loading, hasMore, offset, currentMessages: messages.length })
+    console.log('🔄 LoadMore chamado:', { chatId, loading, hasMore, currentOffset, currentMessages: messages.length })
     
     if (!chatId) {
       console.log('❌ LoadMore: Sem chatId')
@@ -245,9 +245,9 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       return
     }
     
-    const newOffset = offset + (offset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT)
+    const newOffset = currentOffset + (currentOffset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT)
     console.log('✅ LoadMore: Carregando com offset', newOffset)
-    setOffset(newOffset)
+    setCurrentOffset(newOffset)
     fetchMessages(chatId, newOffset, true)
   }
 
@@ -257,7 +257,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
     // Reset messages when chat changes
     setMessages([])
     setError(null)
-    setOffset(0)
+    setCurrentOffset(0)
     setHasMore(true)
     setTotalMessages(0)
 
