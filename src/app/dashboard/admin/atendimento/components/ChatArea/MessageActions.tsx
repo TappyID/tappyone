@@ -49,6 +49,31 @@ export default function MessageActions({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
+  // Função melhorada para detectar idioma
+  const detectLanguage = (text: string) => {
+    const portugueseWords = ['é', 'ã', 'ç', 'ê', 'ô', 'õ', 'á', 'à', 'â', 'í', 'ó', 'ú', 'não', 'sim', 'com', 'para', 'que', 'uma', 'um', 'de', 'do', 'da', 'em', 'por', 'mas', 'ou', 'este', 'esta', 'isso', 'você', 'muito', 'bem', 'obrigado', 'obrigada']
+    const spanishWords = ['ñ', 'hola', 'cómo', 'está', 'necesito', 'ayuda', 'gracias', 'por', 'favor', 'sí', 'no', 'el', 'la', 'es', 'con', 'para', 'que', 'una', 'uno', 'de', 'del', 'en', 'pero', 'o', 'este', 'esta', 'esto', 'usted', 'muy', 'bien', 'bueno', 'buena']
+    const englishWords = ['the', 'and', 'or', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'could', 'should', 'this', 'that', 'with', 'from', 'they', 'them', 'their', 'hello', 'how', 'you', 'need', 'help', 'thank', 'please', 'yes', 'very', 'good', 'well']
+    
+    const textLower = text.toLowerCase()
+    
+    let ptScore = portugueseWords.filter(word => textLower.includes(word)).length
+    let esScore = spanishWords.filter(word => textLower.includes(word)).length  
+    let enScore = englishWords.filter(word => textLower.includes(word)).length
+    
+    // Dar peso extra para caracteres especiais
+    if (/[ñáéíóúü]/i.test(text)) esScore += 2
+    if (/[ãçêôõàâ]/i.test(text)) ptScore += 2
+    
+    console.log('🔍 Scores de idioma:', { ptScore, esScore, enScore, text: text.substring(0, 50) })
+    
+    if (ptScore > esScore && ptScore > enScore) return 'pt'
+    if (esScore > ptScore && esScore > enScore) return 'es'  
+    if (enScore > ptScore && enScore > esScore) return 'en'
+    
+    return 'pt' // default
+  }
+
   // Função para responder com IA
   const handleAIReply = async () => {
     try {
@@ -136,20 +161,13 @@ export default function MessageActions({
       setIsTranslating(true)
       console.log('🌍📝 Traduzindo mensagem para PT-BR no modal:', messageContent.substring(0, 50))
       
-      // Detectar idioma da mensagem original - melhorada para múltiplos idiomas
-      const isPortuguese = /\b(é|ã|ç|ê|ô|õ|á|à|â|í|ó|ú|não|sim|com|para|que|uma|um|de|do|da|em|por|mas|ou|este|esta|isso)\b/i.test(messageContent)
-      const isSpanish = /\b(ñ|é|í|ó|ú|á|ü|el|la|es|con|para|que|una|uno|de|del|en|por|pero|o|este|esta|esto)\b/i.test(messageContent)
-      const isEnglish = /\b(the|and|or|is|are|was|were|have|has|had|will|would|could|should|this|that|with|from|they|them|their)\b/i.test(messageContent)
+      // Usar nova função de detecção de idioma  
+      const sourceLanguage = detectLanguage(messageContent)
       
-      let sourceLanguage = 'pt' // default português
-      if (isEnglish && !isPortuguese && !isSpanish) {
-        sourceLanguage = 'en'
-      } else if (isSpanish && !isPortuguese && !isEnglish) {
-        sourceLanguage = 'es'
-      }
+      console.log('🎯 Idioma detectado no modal:', sourceLanguage)
       
       // Se já está em português, mostrar original
-      if (isPortuguese || sourceLanguage === 'pt') {
+      if (sourceLanguage === 'pt') {
         console.log('⚠️ Mensagem já está em português, mostrando original')
         setTranslatedMessage(messageContent)
         setIsTranslating(false)

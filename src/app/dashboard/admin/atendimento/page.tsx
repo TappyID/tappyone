@@ -1059,7 +1059,10 @@ export default function AtendimentoPage() {
                 try {
                   console.log('📤 Enviando resposta traduzida:', content)
                   
-                  const response = await fetch(`/api/waha-proxy/api/user_fb8da1d7_1758158816675/chats/${selectedChatId}/messages/text`, {
+                  const wahaUrl = getWahaUrl(`/api/user_fb8da1d7_1758158816675/chats/${selectedChatId}/messages/text`)
+                  console.log('🔗 URL de envio:', wahaUrl)
+                  
+                  const response = await fetch(wahaUrl, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
