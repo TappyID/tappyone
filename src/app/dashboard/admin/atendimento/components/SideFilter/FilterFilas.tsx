@@ -24,7 +24,9 @@ export default function FilterFilas({
 }: FilterFilasProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const selectedFilaData = filas.find(fila => fila.id === selectedFila)
+  // Garantir que filas seja um array
+  const filasArray = Array.isArray(filas) ? filas : []
+  const selectedFilaData = filasArray.find(fila => fila.id === selectedFila)
 
   return (
     <div className="relative">
@@ -82,7 +84,7 @@ export default function FilterFilas({
             </button>
 
             {/* Lista de Filas */}
-            {filas.map(fila => (
+            {filasArray.map(fila => (
               <button
                 key={fila.id}
                 onClick={() => {

@@ -69,6 +69,7 @@ interface SideFilterProps {
   isLoadingPrices?: boolean
   isLoadingKanban?: boolean
   isLoadingTickets?: boolean
+  isLoadingAtendentes?: boolean
   
   // Layout
   isCollapsed?: boolean
@@ -110,6 +111,7 @@ export default function SideFilter({
   isLoadingPrices = false,
   isLoadingKanban = false,
   isLoadingTickets = false,
+  isLoadingAtendentes = false,
   isCollapsed = false,
   totalChats = 0,
   unreadChats = 0,
@@ -364,13 +366,10 @@ export default function SideFilter({
                   Status Kanban
                 </h4>
                 <FilterKanban 
-                  selectedQuadro="todos"
-                  onQuadroChange={() => {}}
-                  quadros={[
-                    { id: '1', nome: 'Vendas', cor: '#10B981' },
-                    { id: '2', nome: 'Suporte', cor: '#3B82F6' },
-                    { id: '3', nome: 'Marketing', cor: '#F59E0B' }
-                  ]}
+                  selectedQuadro={selectedKanbanStatus}
+                  onQuadroChange={onKanbanStatusChange}
+                  quadros={kanbanStatuses}
+                  isLoading={isLoadingKanban}
                 />
               </div>
 
@@ -381,13 +380,10 @@ export default function SideFilter({
                   Tickets
                 </h4>
                 <FilterTickets 
-                  selectedStatus="todos"
-                  onStatusChange={() => {}}
-                  ticketStatuses={[
-                    { id: '1', nome: 'Aberto', cor: '#F59E0B', count: 12 },
-                    { id: '2', nome: 'Em Andamento', cor: '#3B82F6', count: 5 },
-                    { id: '3', nome: 'Resolvido', cor: '#10B981', count: 23 }
-                  ]}
+                  selectedStatus={selectedTicketStatus}
+                  onStatusChange={onTicketStatusChange}
+                  ticketStatuses={ticketStatuses}
+                  isLoading={isLoadingTickets}
                 />
               </div>
 

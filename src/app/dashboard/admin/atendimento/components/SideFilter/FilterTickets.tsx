@@ -24,7 +24,9 @@ export default function FilterTickets({
 }: FilterTicketsProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const selectedStatusData = ticketStatuses.find(s => s.id === selectedStatus)
+  // Garantir que ticketStatuses seja um array
+  const ticketStatusesArray = Array.isArray(ticketStatuses) ? ticketStatuses : []
+  const selectedStatusData = ticketStatusesArray.find(status => status.id === selectedStatus)
 
   return (
     <div className="relative">
@@ -82,7 +84,7 @@ export default function FilterTickets({
             </button>
 
             {/* Lista de Status */}
-            {ticketStatuses.map(status => (
+            {ticketStatusesArray.map(status => (
               <button
                 key={status.id}
                 onClick={() => {

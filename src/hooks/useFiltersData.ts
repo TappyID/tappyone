@@ -72,15 +72,31 @@ export function useFiltersData() {
   const fetchTags = async () => {
     setIsLoadingTags(true)
     try {
-      const response = await fetch('/api/tags')
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+      
+      const response = await fetch('/api/tags', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        setTags(data.tags || data)
+        // Ajustar estrutura para ser consistente
+        const tagsFormatted = (data.data || data.tags || data || []).map((tag: any) => ({
+          id: tag.id,
+          nome: tag.nome,
+          cor: tag.cor || '#3B82F6',
+          count: tag.count || 0
+        }))
+        setTags(tagsFormatted)
       } else {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para tags')
+      console.log('Usando dados mock para tags:', error)
       // Dados mock enquanto não há API
       setTags([
         { id: '1', nome: 'Vendas', cor: '#10B981', count: 25 },
@@ -95,19 +111,37 @@ export function useFiltersData() {
     }
   }
 
-  // Buscar filas reais
+  // Buscar filas reais (igual à página /admin/filas)
   const fetchFilas = async () => {
     setIsLoadingFilas(true)
     try {
-      const response = await fetch('/api/filas')
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+
+      const response = await fetch('/api/filas', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        setFilas(data.filas || data)
+        // Usar mesma estrutura da página de filas
+        const filasFormatted = (data.data || data.filas || data || []).map((fila: any) => ({
+          id: fila.id,
+          nome: fila.nome,
+          cor: fila.cor || '#3B82F6',
+          descricao: fila.descricao || '',
+          atendentes: fila.atendentes?.map((a: any) => a.usuarioId || a.id) || [],
+          count: fila.estatisticas?.conversasAtivas || 0
+        }))
+        setFilas(filasFormatted)
       } else {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para filas')
+      console.log('Usando dados mock para filas:', error)
       setFilas([
         { 
           id: '1', 
@@ -155,78 +189,129 @@ export function useFiltersData() {
     }
   }
 
-  // Buscar status do Kanban
+  // Buscar quadros do Kanban (igual à página /admin/kanban)
   const fetchKanbanStatuses = async () => {
     setIsLoadingKanban(true)
     try {
-      const response = await fetch('/api/kanban/colunas')
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+
+      const response = await fetch('/api/kanban/quadros', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        // Transformar colunas em status
-        const statuses = data.colunas?.map((col: any) => ({
-          id: col.id,
-          nome: col.nome,
-          cor: col.cor || '#3B82F6',
-          quadro: col.quadro_id,
-          count: col.cards?.length || 0
-        })) || []
-        setKanbanStatuses(statuses)
+        // Usar estrutura de quadros (não colunas)
+        const quadrosFormatted = (data.data || data.quadros || data || []).map((quadro: any) => ({
+          id: quadro.id,
+          nome: quadro.nome,
+          cor: quadro.cor || '#3B82F6',
+          quadro: quadro.id,
+          count: quadro.totalCards || 0
+        }))
+        setKanbanStatuses(quadrosFormatted)
       } else {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para kanban')
+      console.log('Usando dados mock para kanban:', error)
       setKanbanStatuses([
-        { id: '1', nome: 'Novo Lead', cor: '#3B82F6', count: 18 },
-        { id: '2', nome: 'Qualificado', cor: '#F59E0B', count: 12 },
-        { id: '3', nome: 'Proposta', cor: '#8B5CF6', count: 8 },
-        { id: '4', nome: 'Negociação', cor: '#06B6D4', count: 5 },
-        { id: '5', nome: 'Fechado', cor: '#10B981', count: 23 },
-        { id: '6', nome: 'Perdido', cor: '#EF4444', count: 7 }
+        { id: '1', nome: 'Pipeline Vendas', cor: '#3B82F6', count: 18 },
+        { id: '2', nome: 'Suporte Cliente', cor: '#F59E0B', count: 12 },
+        { id: '3', nome: 'Projetos', cor: '#8B5CF6', count: 8 },
+        { id: '4', nome: 'Lead Qualification', cor: '#06B6D4', count: 5 },
+        { id: '5', nome: 'Pós-Venda', cor: '#10B981', count: 23 }
       ])
     } finally {
       setIsLoadingKanban(false)
     }
   }
 
-  // Buscar status de tickets
+  // Buscar status de tickets (igual à página /admin/tickets)
   const fetchTicketStatuses = async () => {
     setIsLoadingTickets(true)
     try {
-      const response = await fetch('/api/tickets/status')
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+
+      // Buscar tickets para calcular status
+      const response = await fetch('/api/tickets', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        setTicketStatuses(data.statuses || data)
+        const tickets = data.data || data.tickets || data || []
+        
+        // Calcular contadores por status
+        const statusCount: Record<string, number> = {}
+        tickets.forEach((ticket: any) => {
+          const status = ticket.status || 'ABERTO'
+          statusCount[status] = (statusCount[status] || 0) + 1
+        })
+
+        // Status padrão do sistema de tickets
+        const statusList = [
+          { id: 'ABERTO', nome: 'Aberto', cor: '#F59E0B', count: statusCount['ABERTO'] || 0 },
+          { id: 'ANDAMENTO', nome: 'Em Andamento', cor: '#3B82F6', count: statusCount['ANDAMENTO'] || 0 },
+          { id: 'ENCERRADO', nome: 'Encerrado', cor: '#10B981', count: statusCount['ENCERRADO'] || 0 }
+        ]
+        
+        setTicketStatuses(statusList)
       } else {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para tickets')
+      console.log('Usando dados mock para tickets:', error)
       setTicketStatuses([
-        { id: '1', nome: 'Aberto', cor: '#F59E0B', count: 12 },
-        { id: '2', nome: 'Em Andamento', cor: '#3B82F6', count: 8 },
-        { id: '3', nome: 'Aguardando Cliente', cor: '#8B5CF6', count: 5 },
-        { id: '4', nome: 'Resolvido', cor: '#10B981', count: 23 },
-        { id: '5', nome: 'Fechado', cor: '#6B7280', count: 45 }
+        { id: 'ABERTO', nome: 'Aberto', cor: '#F59E0B', count: 12 },
+        { id: 'ANDAMENTO', nome: 'Em Andamento', cor: '#3B82F6', count: 8 },
+        { id: 'ENCERRADO', nome: 'Encerrado', cor: '#10B981', count: 23 }
       ])
     } finally {
       setIsLoadingTickets(false)
     }
   }
 
-  // Buscar atendentes reais
+  // Buscar atendentes reais (igual à página /admin/atendentes)
   const fetchAtendentes = async () => {
     setIsLoadingAtendentes(true)
     try {
-      const response = await fetch('/api/atendentes')
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Token não encontrado')
+
+      const response = await fetch('/api/users?tipo=atendente', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        setAtendentes(data.atendentes || data)
+        // Usar mesma estrutura da página de atendentes
+        const atendentesFormatted = (data.data || data.users || data || []).map((atendente: any) => ({
+          id: atendente.id,
+          nome: atendente.nome,
+          email: atendente.email,
+          status: atendente.status || 'offline',
+          atendimentosAtivos: atendente.atendimentosAtivos || 0,
+          filas: atendente.filas?.map((f: any) => f.filaId || f.id) || [],
+          rating: atendente.rating || 0
+        }))
+        setAtendentes(atendentesFormatted)
       } else {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para atendentes')
+      console.log('Usando dados mock para atendentes:', error)
       setAtendentes([
         {
           id: '1',

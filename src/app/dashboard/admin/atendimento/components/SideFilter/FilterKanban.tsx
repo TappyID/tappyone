@@ -24,7 +24,9 @@ export default function FilterKanban({
 }: FilterKanbanProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const selectedQuadroData = quadros.find(q => q.id === selectedQuadro)
+  // Garantir que quadros seja um array
+  const quadrosArray = Array.isArray(quadros) ? quadros : []
+  const selectedQuadroData = quadrosArray.find(quadro => quadro.id === selectedQuadro)
 
   return (
     <div className="relative">
@@ -82,7 +84,7 @@ export default function FilterKanban({
             </button>
 
             {/* Lista de Quadros */}
-            {quadros.map(quadro => (
+            {quadrosArray.map(quadro => (
               <button
                 key={quadro.id}
                 onClick={() => {

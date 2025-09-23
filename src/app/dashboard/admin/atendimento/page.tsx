@@ -11,8 +11,9 @@ import AgenteSelectionModal from './components/FooterChatArea/modals/AgenteSelec
 import ForwardMessageModal from '../atendimentos/components/ForwardMessageModal'
 import AudioRecorderModal from './components/FooterChatArea/modals/AudioRecorderModal'
 import { useContatoData } from '@/hooks/useContatoData'
-import useMessagesData from '@/hooks/useMessagesData'
 import useChatsOverview from '@/hooks/useChatsOverview'
+import { useFiltersData } from '@/hooks/useFiltersData'
+import useMessagesData from '@/hooks/useMessagesData'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
 import TransferirAtendimentoModal from '../atendimentos/components/modals/TransferirAtendimentoModal'
@@ -80,8 +81,29 @@ export default function AtendimentoPage() {
   const [selectedFila, setSelectedFila] = useState('todas')
   const [activeFilter, setActiveFilter] = useState('all') // Novo estado para filtros de tabs
   
+  // Estados para filtros avançados
+  const [selectedKanbanStatus, setSelectedKanbanStatus] = useState('todos')
+  const [selectedTicketStatus, setSelectedTicketStatus] = useState('todos')
+  const [selectedPriceRange, setSelectedPriceRange] = useState('todos')
+  
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>()
+
+  // Hook para filtros avançados com dados reais
+  const {
+    tags: realTags,
+    filas: realFilas,
+    kanbanStatuses: realKanbanStatuses,
+    ticketStatuses: realTicketStatuses,
+    priceRanges: realPriceRanges,
+    atendentes: realAtendentes,
+    isLoadingTags,
+    isLoadingFilas,
+    isLoadingKanban: isLoadingKanbanStatuses,
+    isLoadingTickets: isLoadingTicketStatuses,
+    isLoadingAtendentes,
+    refetch: refetchFilters
+  } = useFiltersData()
   
   // Estados dos modais
   const [showAgenteModal, setShowAgenteModal] = useState(false)
@@ -95,10 +117,7 @@ export default function AtendimentoPage() {
   const [displayedChatsCount, setDisplayedChatsCount] = useState(10)
   const [isLoadingMoreChats, setIsLoadingMoreChats] = useState(false)
   
-  // Estados para dados reais dos filtros
-  const [realTags, setRealTags] = useState<any[]>([])
-  const [realFilas, setRealFilas] = useState<any[]>([])
-  const [loadingFilters, setLoadingFilters] = useState(false)
+  // Estados removidos - agora usando useFiltersData
   
   // Estados de tradução
   const [translatedMessages, setTranslatedMessages] = useState<{[messageId: string]: string}>({})
@@ -216,40 +235,7 @@ export default function AtendimentoPage() {
   } = useChatsOverview()
 
 
-  // Buscar dados reais para os filtros
-  useEffect(() => {
-    const fetchFilterData = async () => {
-      setLoadingFilters(true)
-      const token = localStorage.getItem('token')
-      if (!token) return
-
-      try {
-        // Buscar tags reais
-        const tagsResponse = await fetch('http://159.65.34.199:8081/api/tags', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        if (tagsResponse.ok) {
-          const tagsData = await tagsResponse.json()
-          setRealTags(tagsData.data || tagsData || [])
-        }
-
-        // Buscar filas reais (quando implementadas)
-        // const filasResponse = await fetch('http://159.65.34.199:8081/api/filas', {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // })
-        // if (filasResponse.ok) {
-        //   const filasData = await filasResponse.json()
-        //   setRealFilas(filasData.data || filasData || [])
-        // }
-      } catch (error) {
-        console.error('Erro ao buscar dados dos filtros:', error)
-      } finally {
-        setLoadingFilters(false)
-      }
-    }
-
-    fetchFilterData()
-  }, [])
+  // Dados dos filtros agora vêm do useFiltersData hook
 
   // Reset da paginação quando filtros mudam
   useEffect(() => {
@@ -804,12 +790,26 @@ export default function AtendimentoPage() {
               onSearchChange={setSearchQuery}
               selectedTag={selectedTag}
               onTagChange={setSelectedTag}
-              tags={realTags.length > 0 ? realTags : mockTags}
+              tags={realTags}
               selectedFila={selectedFila}
               onFilaChange={setSelectedFila}
-              filas={realFilas.length > 0 ? realFilas : mockFilas}
-              isLoadingTags={loadingFilters}
-              isLoadingFilas={loadingFilters}
+              filas={realFilas}
+              // Estados de loading dos filtros avançados
+              isLoadingTags={isLoadingTags}
+              isLoadingFilas={isLoadingFilas}
+              isLoadingKanban={isLoadingKanbanStatuses}
+              isLoadingTickets={isLoadingTicketStatuses}
+              isLoadingAtendentes={isLoadingAtendentes}
+              // Dados dos filtros avançados
+              kanbanStatuses={realKanbanStatuses}
+              ticketStatuses={realTicketStatuses}
+              priceRanges={realPriceRanges}
+              selectedKanbanStatus={selectedKanbanStatus}
+              onKanbanStatusChange={setSelectedKanbanStatus}
+              selectedTicketStatus={selectedTicketStatus}
+              onTicketStatusChange={setSelectedTicketStatus}
+              selectedPriceRange={selectedPriceRange}
+              onPriceRangeChange={setSelectedPriceRange}
               // Contadores para filtros (calcular baseado em todos os chats, não só os filtrados)
               totalChats={activeChats.filter(c => !hiddenChats.has(c.id)).length}
               unreadChats={activeChats.filter(c => !hiddenChats.has(c.id) && (c.unreadCount || 0) > 0).length}

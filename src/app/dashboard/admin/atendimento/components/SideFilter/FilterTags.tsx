@@ -23,7 +23,9 @@ export default function FilterTags({
 }: FilterTagsProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const selectedTagData = tags.find(tag => tag.id === selectedTag)
+  // Garantir que tags seja um array
+  const tagsArray = Array.isArray(tags) ? tags : []
+  const selectedTagData = tagsArray.find(tag => tag.id === selectedTag)
 
   return (
     <div className="relative">
@@ -81,7 +83,7 @@ export default function FilterTags({
             </button>
 
             {/* Lista de Tags */}
-            {tags.map(tag => (
+            {tagsArray.map(tag => (
               <button
                 key={tag.id}
                 onClick={() => {
