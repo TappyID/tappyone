@@ -118,6 +118,49 @@ export default function AtendimentoPage() {
   const [showTransferirModal, setShowTransferirModal] = useState(false)
   const [selectedChatForTransfer, setSelectedChatForTransfer] = useState<string | null>(null)
 
+  // Funções para gerenciar estados dos chats
+  const toggleFavoriteChat = (chatId: string) => {
+    setFavoriteChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+      } else {
+        newSet.add(chatId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleArchiveChat = (chatId: string) => {
+    setArchivedChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+      } else {
+        newSet.add(chatId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleHiddenChat = (chatId: string) => {
+    setHiddenChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+      } else {
+        newSet.add(chatId)
+      }
+      return newSet
+    })
+  }
+
+  const deleteChat = (chatId: string) => {
+    if (confirm('Deseja realmente ocultar esta conversa?')) {
+      toggleHiddenChat(chatId)
+    }
+  }
+
   // Carregar estados do localStorage
   useEffect(() => {
     try {
@@ -679,32 +722,14 @@ export default function AtendimentoPage() {
 
   const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
 
-  // Transformar dados para o formato esperado pelos componentes
+  // Usar dados já processados do useChatsOverview e adicionar dados extras dos contatos
   const processedChats = useMemo(() => {
     const result = activeChats.map((chat: any) => {
-      // Extrair ID de forma segura
-      let chatId = ''
-      if (typeof chat.id === 'string') {
-        chatId = chat.id
-      } else if (chat.id && typeof chat.id === 'object' && '_serialized' in chat.id) {
-        chatId = chat.id._serialized
-      }
-      
-      const contatoData: any = contatosData[chatId] || {}
+      const contatoData: any = contatosData[chat.id] || {}
       
       return {
-        id: chatId,
-        name: chat.name || chat.contact?.name || 'Contato sem nome',
-        avatar: chat.profilePictureUrl || chat.contact?.profilePictureUrl,
-        lastMessage: {
-          type: chat.lastMessage?.type === 'text' ? 'text' as const : 
-                chat.lastMessage?.hasMedia ? 'image' as const : 'text' as const,
-          content: chat.lastMessage?.body || 'Sem mensagens',
-          timestamp: chat.lastMessage?.timestamp || Date.now(),
-          sender: chat.lastMessage?.fromMe ? 'agent' as const : 'user' as const,
-          isRead: (chat.unreadCount ?? 0) === 0
-        },
-        // Indicadores
+        ...chat, // Usar dados já processados (incluindo lastMessage.body correto)
+        // Adicionar dados extras dos contatos
         tags: contatoData.tags || [],
         rating: contatoData.rating,
         isOnline: Math.random() > 0.7, // Mock - depois integrar com dados reais
@@ -714,28 +739,20 @@ export default function AtendimentoPage() {
           nome: 'Em Atendimento',
           cor: '#3B82F6'
         } : undefined,
-        fila: Math.random() > 0.8 ? {
-          id: '1', 
-          nome: 'Suporte',
-          cor: '#10B981'
-        } : undefined,
+        fila: Math.random() > 0.8 ? 'Suporte' : undefined,
         ticketStatus: Math.random() > 0.7 ? {
           id: '1',
           nome: 'Aberto',
           cor: '#F59E0B'
         } : undefined,
-        
-        // Estados do chat - USANDO ESTADOS REAIS DOS ÍCONES
-        unreadCount: chat.unreadCount > 0 ? chat.unreadCount : undefined,
-        isTransferred: false,
-        transferredTo: undefined,
-        isFavorite: favoriteChats.has(chatId),
-        isArchived: archivedChats.has(chatId),
-        isHidden: hiddenChats.has(chatId)
+        // Adicionar estados de favorito, arquivado, oculto
+        isFavorite: favoriteChats.has(chat.id),
+        isArchived: archivedChats.has(chat.id),
+        isHidden: hiddenChats.has(chat.id),
       }
     })
-    .filter(chat => chat.id) // Filtrar chats sem ID válido
-    .filter(chat => !hiddenChats.has(chat.id)) // Filtrar chats ocultos
+    // Filtrar chats ocultos
+    .filter(chat => !hiddenChats.has(chat.id))
     
     return result
   }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats])
@@ -782,29 +799,19 @@ export default function AtendimentoPage() {
               isLoadingMore={isLoadingMoreChats}
               onTagsClick={(chatId, e) => {
                 e.stopPropagation()
-                console.log('🏷️ Tags clicadas:', chatId)
-                // TODO: Implementar modal de tags
+                console.log('🏷️ Tags clicadas para chat:', chatId)
+                // TODO: Abrir modal de tags
               }}
               onTransferClick={(chatId, e) => {
                 e.stopPropagation()
-                handleTransferChat(chatId)
+                console.log('🔄 Transferir clicado para chat:', chatId)
+                setSelectedChatForTransfer(chatId)
+                setShowTransferirModal(true)
               }}
-              onArchiveClick={(chatId, e) => {
-                e.stopPropagation()
-                toggleArchiveConversation(chatId)
-              }}
-              onHideClick={(chatId, e) => {
-                e.stopPropagation()
-                toggleHideConversation(chatId)
-              }}
-              onDeleteClick={(chatId, e) => {
-                e.stopPropagation()
-                handleDeleteChat(chatId)
-              }}
-              onFavoriteClick={(chatId, e) => {
-                e.stopPropagation()
-                toggleFavoriteConversation(chatId)
-              }}
+              onToggleFavorite={toggleFavoriteChat}
+              onToggleArchive={toggleArchiveChat}
+              onToggleHidden={toggleHiddenChat}
+              onDelete={deleteChat}
             />
           </div>
         </div>

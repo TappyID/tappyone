@@ -47,10 +47,10 @@ interface SideChatProps {
   onSelectChat: (chatId: string) => void
   onTagsClick: (chatId: string, e: React.MouseEvent) => void
   onTransferClick: (chatId: string, e: React.MouseEvent) => void
-  onArchiveClick: (chatId: string, e: React.MouseEvent) => void
-  onHideClick: (chatId: string, e: React.MouseEvent) => void
-  onDeleteClick: (chatId: string, e: React.MouseEvent) => void
-  onFavoriteClick: (chatId: string, e: React.MouseEvent) => void
+  onToggleFavorite?: (chatId: string) => void
+  onToggleArchive?: (chatId: string) => void
+  onToggleHidden?: (chatId: string) => void
+  onDelete?: (chatId: string) => void
   
   // Scroll infinito
   onLoadMore?: () => void
@@ -68,10 +68,10 @@ export default function SideChat({
   onSelectChat,
   onTagsClick,
   onTransferClick,
-  onArchiveClick,
-  onHideClick,
-  onDeleteClick,
-  onFavoriteClick,
+  onToggleFavorite,
+  onToggleArchive,
+  onToggleHidden,
+  onDelete,
   onLoadMore,
   hasMoreChats = false,
   isLoadingMore = false,
@@ -205,35 +205,10 @@ export default function SideChat({
                   onSelect={() => onSelectChat(chat.id)}
                   onTagsClick={(e) => onTagsClick(chat.id, e)}
                   onTransferClick={(e) => onTransferClick(chat.id, e)}
-                  onToggleFavorite={(chatId) => {
-                    // TODO: Implementar API de favoritar
-                    console.log('Favoritar chat:', chatId)
-                    // Atualizar estado local temporariamente
-                    const updatedChats = chats.map(c => 
-                      c.id === chatId ? { ...c, isFavorite: !c.isFavorite } : c
-                    )
-                    // setChats(updatedChats) // Quando tiver setState disponível
-                  }}
-                  onToggleArchive={(chatId) => {
-                    // TODO: Implementar API de arquivar
-                    console.log('Arquivar chat:', chatId)
-                    const updatedChats = chats.map(c => 
-                      c.id === chatId ? { ...c, isArchived: !c.isArchived } : c
-                    )
-                  }}
-                  onToggleHidden={(chatId) => {
-                    // TODO: Implementar API de ocultar
-                    console.log('Ocultar chat:', chatId)
-                    const updatedChats = chats.map(c => 
-                      c.id === chatId ? { ...c, isHidden: !c.isHidden } : c
-                    )
-                  }}
-                  onDelete={(chatId) => {
-                    // TODO: Implementar API de deletar
-                    console.log('Deletar chat:', chatId)
-                    // Remover da lista temporariamente
-                    const updatedChats = chats.filter(c => c.id !== chatId)
-                  }}
+                  onToggleFavorite={onToggleFavorite}
+                  onToggleArchive={onToggleArchive}
+                  onToggleHidden={onToggleHidden}
+                  onDelete={onDelete}
                 />
               ))}
             </AnimatePresence>

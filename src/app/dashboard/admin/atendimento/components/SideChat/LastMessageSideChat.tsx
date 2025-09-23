@@ -13,11 +13,12 @@ import {
 } from 'lucide-react'
 
 interface LastMessageSideChatProps {
-  message: {
-    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
-    content: string
-    timestamp: number
-    sender: 'user' | 'agent'
+  message?: {
+    type?: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
+    content?: string
+    body?: string
+    timestamp?: number
+    sender?: 'user' | 'agent'
     isRead?: boolean
   }
   maxLength?: number
@@ -28,8 +29,18 @@ export default function LastMessageSideChat({
   maxLength = 50 
 }: LastMessageSideChatProps) {
   
+  // Se não há mensagem, retornar fallback
+  if (!message) {
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-2 h-2 rounded-full bg-gray-400" />
+        <p className="text-xs text-gray-500 truncate">Sem mensagens</p>
+      </div>
+    )
+  }
+  
   // Função para obter ícone baseado no tipo
-  const getMessageIcon = (type: string) => {
+  const getMessageIcon = (type?: string) => {
     const iconProps = { className: "w-3 h-3 text-gray-500" }
     
     switch (type) {
@@ -45,7 +56,9 @@ export default function LastMessageSideChat({
   }
 
   // Função para obter texto baseado no tipo
-  const getMessageText = (message: any) => {
+  const getMessageText = (message: any): string => {
+    if (!message) return 'Mensagem'
+    
     switch (message.type) {
       case 'image': return '📷 Imagem'
       case 'video': return '🎥 Vídeo'
@@ -54,12 +67,13 @@ export default function LastMessageSideChat({
       case 'location': return '📍 Localização'
       case 'contact': return '👤 Contato'
       case 'call': return '📞 Chamada'
-      default: return message.content
+      default: return message.content || message.body || 'Mensagem'
     }
   }
 
   // Truncar mensagem se necessário
-  const truncateMessage = (text: string, maxLength: number) => {
+  const truncateMessage = (text: string | undefined, maxLength: number) => {
+    if (!text || typeof text !== 'string') return 'Mensagem'
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
   }

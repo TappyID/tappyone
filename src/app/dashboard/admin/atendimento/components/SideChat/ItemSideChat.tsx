@@ -225,7 +225,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           </div>
           
           {/* Badge de mensagens não lidas */}
-          {(chat.unreadCount && chat.unreadCount > 0) && (
+          {!!(chat.unreadCount && chat.unreadCount > 0) && (
             <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full 
                            border-2 border-white dark:border-gray-800 flex items-center justify-center
                            shadow-md">
@@ -256,7 +256,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               {chat.name.length > 15 ? `${chat.name.substring(0, 15)}...` : chat.name}
             </h3>
             {/* Contador de não lidas */}
-            {chat.unreadCount && chat.unreadCount > 0 && (
+            {!!(chat.unreadCount && chat.unreadCount > 0) && (
               <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
                 {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
               </div>
@@ -279,7 +279,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
             
             {/* Tags */}
-            {chat.tags && chat.tags.length > 0 && (
+            {!!(chat.tags && chat.tags.length > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
                 <Tag className="w-2.5 h-2.5 text-gray-500" />
                 <span className="text-[10px] font-medium text-gray-600">{chat.tags.length}</span>
@@ -287,7 +287,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
             
             {/* Agendamentos */}
-            {chat.agendamentos && chat.agendamentos.length > 0 && (
+            {!!(chat.agendamentos && chat.agendamentos.length > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded">
                 <Calendar className="w-2.5 h-2.5 text-blue-500" />
                 <span className="text-[10px] font-medium text-blue-600">{chat.agendamentos.length}</span>
@@ -295,7 +295,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
             
             {/* Orçamentos */}
-            {chat.orcamentos && chat.orcamentos.length > 0 && (
+            {!!(chat.orcamentos && chat.orcamentos.length > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded">
                 <DollarSign className="w-2.5 h-2.5 text-green-500" />
                 <span className="text-[10px] font-medium text-green-600">{chat.orcamentos.length}</span>
@@ -303,7 +303,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
             
             {/* Tickets */}
-            {chat.tickets && chat.tickets.length > 0 && (
+            {!!(chat.tickets && chat.tickets.length > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded">
                 <Ticket className="w-2.5 h-2.5 text-orange-500" />
                 <span className="text-[10px] font-medium text-orange-600">{chat.tickets.length}</span>
@@ -339,7 +339,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
             
             {/* Rating */}
-            {chat.rating && chat.rating > 0 && (
+            {!!(chat.rating && chat.rating > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-yellow-100 dark:bg-yellow-900/20 rounded">
                 <span className="text-[10px] font-bold text-yellow-600">⭐{chat.rating}</span>
               </div>
