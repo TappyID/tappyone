@@ -711,15 +711,18 @@ export default function AtendimentoPage() {
 
   // Usar dados já processados do useChatsOverview e adicionar dados extras dos contatos
   const processedChats = useMemo(() => {
+    console.log('🔍 [DEBUG] processedChats - activeChats entrada:', activeChats.length)
+    
     let result = activeChats.map((chat: any) => {
       const contatoData: any = contatosData[chat.id] || {}
       
       // Adicionar dados de exemplo para demonstração das badges
       const hasDataExample = Math.random() > 0.3 // 70% chance de ter dados
-      const tagsExample = hasDataExample && Math.random() > 0.4 ? [
-        { id: '1', nome: 'VIP', cor: '#8B5CF6' },
-        { id: '2', nome: 'Urgente', cor: '#EF4444' }
-      ] : []
+      // Usar tags reais do sistema quando disponíveis
+      const tagsExample = hasDataExample && Math.random() > 0.4 && realTags.length > 0 ? [
+        realTags[Math.floor(Math.random() * realTags.length)],
+        ...(realTags.length > 1 && Math.random() > 0.7 ? [realTags[Math.floor(Math.random() * realTags.length)]] : [])
+      ].filter((tag, index, arr) => arr.findIndex(t => t.id === tag.id) === index) : []
       
       const agendamentosExample = hasDataExample && Math.random() > 0.6 ? [
         { id: '1', titulo: 'Reunião', status: 'AGENDADO' },
@@ -740,27 +743,23 @@ export default function AtendimentoPage() {
         tickets: contatoData.tickets?.length > 0 ? contatoData.tickets : ticketsExample,
         rating: contatoData.rating || (Math.random() > 0.7 ? Math.floor(Math.random() * 2) + 4 : undefined), // 4-5 estrelas às vezes
         
-        // Kanban - buscar dados reais do contato ou exemplo
+        // Kanban - buscar dados reais do contato ou exemplo usando quadros reais
         kanbanStatus: contatoData.kanban?.length > 0 ? {
           id: contatoData.kanban[0].coluna_id,
           nome: contatoData.kanban[0].coluna_nome || 'Kanban',
           cor: contatoData.kanban[0].coluna_cor || '#3B82F6'
-        } : (hasDataExample && Math.random() > 0.4 ? {
-          id: '1',
-          nome: 'Em Atendimento',
-          cor: '#3B82F6'
-        } : undefined),
+        } : (hasDataExample && Math.random() > 0.4 && realKanbanStatuses.length > 0 ? 
+          realKanbanStatuses[Math.floor(Math.random() * realKanbanStatuses.length)]
+        : undefined),
         
-        // Fila - buscar dados reais do contato ou exemplo
+        // Fila - buscar dados reais do contato ou exemplo usando filas reais
         fila: contatoData.fila ? {
           id: contatoData.fila.id,
           nome: contatoData.fila.nome,
           cor: contatoData.fila.cor || '#9333ea'
-        } : (hasDataExample && Math.random() > 0.6 ? {
-          id: '1',
-          nome: 'Suporte',
-          cor: '#9333ea'
-        } : undefined),
+        } : (hasDataExample && Math.random() > 0.6 && realFilas.length > 0 ? 
+          realFilas[Math.floor(Math.random() * realFilas.length)]
+        : undefined),
         
         // Ticket Status - buscar do primeiro ticket ativo ou exemplo
         ticketStatus: contatoData.tickets?.length > 0 ? {
@@ -817,9 +816,15 @@ export default function AtendimentoPage() {
     
     // Filtro por tag específica
     if (selectedTag && selectedTag !== 'todas') {
-      result = result.filter(chat => 
-        chat.tags?.some((tag: any) => tag.id === selectedTag)
-      )
+      console.log('🔍 [DEBUG] Filtrando por tag:', selectedTag)
+      result = result.filter(chat => {
+        const hasTag = chat.tags?.some((tag: any) => tag.id === selectedTag)
+        if (chat.tags?.length > 0) {
+          console.log('🔍 [DEBUG] Chat', chat.name, 'tags:', chat.tags.map(t => t.id), 'hasTag:', hasTag)
+        }
+        return hasTag
+      })
+      console.log('🔍 [DEBUG] Após filtro tag - restaram:', result.length)
     }
 
     // Filtro por fila específica
@@ -831,9 +836,15 @@ export default function AtendimentoPage() {
 
     // Filtro por status kanban específico
     if (selectedKanbanStatus && selectedKanbanStatus !== 'todos') {
-      result = result.filter(chat => 
-        chat.kanbanStatus?.id === selectedKanbanStatus
-      )
+      console.log('🔍 [DEBUG] Filtrando por kanban:', selectedKanbanStatus)
+      result = result.filter(chat => {
+        const hasKanban = chat.kanbanStatus?.id === selectedKanbanStatus
+        if (chat.kanbanStatus) {
+          console.log('🔍 [DEBUG] Chat', chat.name, 'kanban:', chat.kanbanStatus.id, 'hasKanban:', hasKanban)
+        }
+        return hasKanban
+      })
+      console.log('🔍 [DEBUG] Após filtro kanban - restaram:', result.length)
     }
 
     // Filtro por status de ticket específico
@@ -848,6 +859,16 @@ export default function AtendimentoPage() {
       // TODO: Implementar quando tivermos dados de orçamentos com valores
       console.log('Filtro por preço ainda não implementado:', selectedPriceRange)
     }
+    
+    console.log('🔍 [DEBUG] processedChats - Total filtrados:', result.length)
+    console.log('🔍 [DEBUG] processedChats - Filtros ativos:', {
+      activeFilter,
+      selectedTag,
+      selectedFila,
+      selectedKanbanStatus,
+      selectedTicketStatus,
+      selectedPriceRange
+    })
     
     return result
   }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter, selectedTag, selectedFila, selectedKanbanStatus, selectedTicketStatus, selectedPriceRange])
@@ -941,15 +962,15 @@ export default function AtendimentoPage() {
           {/* Header do Chat */}
           <ChatHeader 
             chat={selectedChatId ? (() => {
-              const foundChat = transformedChats.find(c => c.id === selectedChatId)
+              const foundChat = processedChats.find(c => c.id === selectedChatId)
               console.log('🔍 DEBUG ChatHeader - selectedChatId:', selectedChatId)
               console.log('🔍 DEBUG ChatHeader - foundChat:', foundChat)
-              console.log('🔍 DEBUG ChatHeader - transformedChats IDs:', transformedChats.map(c => c.id))
+              console.log('🔍 DEBUG ChatHeader - processedChats IDs:', processedChats.map(c => c.id))
               
               return {
                 id: selectedChatId,
                 name: foundChat?.name || 'Usuário',
-                isOnline: true,
+                isOnline: foundChat?.isOnline || true,
                 lastSeen: Date.now()
               }
             })() : undefined}
@@ -968,7 +989,7 @@ export default function AtendimentoPage() {
             onLoadMore={loadMoreMessages}
             selectedChat={selectedChatId ? {
               id: selectedChatId,
-              name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
+              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
             } : undefined}
             onReply={(messageId) => {
               console.log('🔄 Responder à mensagem:', messageId)
@@ -977,7 +998,7 @@ export default function AtendimentoPage() {
                 setReplyingTo({
                   messageId: message.id,
                   content: message.content,
-                  sender: message.sender === 'user' ? transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário' : 'Você'
+                  sender: message.sender === 'user' ? processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário' : 'Você'
                 })
               }
             }}
@@ -1301,7 +1322,7 @@ export default function AtendimentoPage() {
             }}
             selectedChat={selectedChatId ? {
               id: selectedChatId,
-              name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
+              name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
             } : undefined}
           />
         </div>
@@ -1329,7 +1350,7 @@ export default function AtendimentoPage() {
           isOpen={showEditTextModal}
           onClose={() => setShowEditTextModal(false)}
           initialText=""
-          contactName={transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'}
+          contactName={processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'}
           actionTitle="Gerar com IA"
           onSend={(message) => {
             // Enviar mensagem gerada pela IA
