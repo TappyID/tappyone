@@ -61,9 +61,7 @@ export default function ChatHeader({
     return (
       <div className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 
                       flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">
-          Selecione uma conversa para começar
-        </p>
+        
       </div>
     )
   }
