@@ -179,12 +179,10 @@ export default function SideFilter({
             </motion.button>
           </div>
           
-          {/* Ícone de filtros avançados ALINHADO */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          {/* Ícone de filtros avançados CORRIGIDO */}
+          <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${
+            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 ${
               showAdvancedFilters 
                 ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
                 : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -192,7 +190,7 @@ export default function SideFilter({
             title="Filtros Avançados"
           >
             <Filter className="w-4 h-4" />
-          </motion.button>
+          </button>
         </div>
       </div>
 

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 
 import LastMessageSideChat from './LastMessageSideChat'
+import { useChatPicture } from '@/hooks/useChatPicture'
 
 // Helper para formatar tempo relativo
 function formatTimeRelative(timestamp: number): string {
@@ -110,22 +111,17 @@ interface ItemSideChatProps {
   onSelect: () => void
   onTagsClick: (e: React.MouseEvent) => void
   onTransferClick: (e: React.MouseEvent) => void
-  onArchiveClick: (e: React.MouseEvent) => void
-  onHideClick: (e: React.MouseEvent) => void
-  onDeleteClick: (e: React.MouseEvent) => void
-  onFavoriteClick: (e: React.MouseEvent) => void
 }
 
 const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   chat,
   onSelect,
   onTagsClick,
-  onTransferClick,
-  onArchiveClick,
-  onHideClick,
-  onDeleteClick,
-  onFavoriteClick
+  onTransferClick
 }, ref) => {
+  
+  // Buscar foto de perfil do WAHA
+  const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat.id)
   
   // Formatação do timestamp
   const formatTimestamp = (timestamp: number) => {
@@ -174,17 +170,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           </div>
         )}
       </div>
-      {/* Avatar com foto real */}
+      {/* Avatar com foto real do WAHA ou fallback */}
       <div className="relative flex-shrink-0">
-          {chat.avatar ? (
+          {/* Foto do WAHA ou avatar fornecido */}
+          {(pictureUrl || chat.avatar) ? (
             <img 
-              src={chat.avatar} 
+              src={pictureUrl || chat.avatar} 
               alt={chat.name}
               className={`w-12 h-12 rounded-full object-cover border-2 ${
                 chat.isSelected 
                   ? 'border-blue-400 shadow-lg' 
                   : 'border-gray-200 dark:border-gray-700'
-              }`}
+              } ${isLoadingPicture ? 'animate-pulse' : ''}`}
               onError={(e) => {
                 // Fallback se a imagem falhar
                 e.currentTarget.style.display = 'none'
@@ -194,7 +191,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           ) : null}
           
           {/* Fallback avatar com inicial */}
-          <div className={`${chat.avatar ? 'hidden' : ''} w-12 h-12 rounded-full 
+          <div className={`${(pictureUrl || chat.avatar) ? 'hidden' : ''} w-12 h-12 rounded-full 
                          bg-gradient-to-br from-blue-400 to-purple-500
                          flex items-center justify-center border-2 ${
                 chat.isSelected 
@@ -339,7 +336,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
         {/* Favoritar - IGUAL AO ANTIGO */}
         <button
-          onClick={onFavoriteClick}
+          onClick={(e) => {
+            e.stopPropagation()
+            // TODO: Implementar favoritar
+            console.log('Favoritar:', chat.id)
+          }}
           className={`p-1.5 rounded-lg transition-colors ${
             chat.isFavorite 
               ? 'text-yellow-400 hover:text-yellow-500' 
@@ -352,7 +353,10 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         
         {/* Transferir - IGUAL AO ANTIGO */}
         <button
-          onClick={onTransferClick}
+          onClick={(e) => {
+            e.stopPropagation()
+            onTransferClick?.(e)
+          }}
           className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
           title="Transferir conversa"
         >
@@ -361,7 +365,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         
         {/* Arquivar - IGUAL AO ANTIGO */}
         <button
-          onClick={onArchiveClick}
+          onClick={(e) => {
+            e.stopPropagation()
+            // TODO: Implementar arquivar
+            console.log('Arquivar:', chat.id)
+          }}
           className={`p-1.5 rounded-lg transition-colors ${
             chat.isArchived
               ? 'text-orange-400 hover:text-orange-500' 
@@ -374,7 +382,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         
         {/* Ocultar/Mostrar - IGUAL AO ANTIGO */}
         <button
-          onClick={onHideClick}
+          onClick={(e) => {
+            e.stopPropagation()
+            // TODO: Implementar ocultar
+            console.log('Ocultar:', chat.id)
+          }}
           className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg transition-colors"
           title={chat.isHidden ? 'Mostrar conversa' : 'Ocultar conversa'}
         >
@@ -383,7 +395,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         
         {/* Excluir - IGUAL AO ANTIGO */}
         <button
-          onClick={onDeleteClick}
+          onClick={(e) => {
+            e.stopPropagation()
+            // TODO: Implementar deletar
+            console.log('Deletar:', chat.id)
+          }}
           className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
           title="Excluir conversa"
         >

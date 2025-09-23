@@ -27,6 +27,7 @@ import KanbanIndicator from './Indicators/KanbanIndicator'
 // import FilaIndicator from './Indicators/FilaIndicator'
 // import AgenteIndicator from './Indicators/AgenteIndicator'
 import CreateContactModal from './CreateContactModal'
+import { useChatPicture } from '@/hooks/useChatPicture'
 
 interface ChatHeaderProps {
   chat?: {
@@ -51,20 +52,7 @@ export default function ChatHeader({
   onMenuClick 
 }: ChatHeaderProps) {
   
-  // Extrair contato_id do chatId (remover @c.us)
-  const contatoId = selectedChatId ? selectedChatId.replace('@c.us', '') : null
-  
-
-  
-  if (!chat) {
-    return (
-      <div className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 
-                      flex items-center justify-center">
-        
-      </div>
-    )
-  }
-
+  // Estados SEMPRE devem ser declarados antes de qualquer early return
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [agendamentosSidebarOpen, setAgendamentosSidebarOpen] = useState(false)
   const [orcamentosSidebarOpen, setOrcamentosSidebarOpen] = useState(false)
@@ -74,6 +62,23 @@ export default function ChatHeader({
   const [filaSidebarOpen, setFilaSidebarOpen] = useState(false)
   const [kanbanSidebarOpen, setKanbanSidebarOpen] = useState(false)
   const [createContactModalOpen, setCreateContactModalOpen] = useState(false)
+  
+  // Extrair contato_id do chatId (remover @c.us)
+  const contatoId = selectedChatId ? selectedChatId.replace('@c.us', '') : null
+  
+  // Buscar foto de perfil do WAHA - sempre chamar o hook, mas desabilitar se não há chat
+  const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat?.id || '', { 
+    enabled: !!chat?.id 
+  })
+  
+  if (!chat) {
+    return (
+      <div className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 
+                      flex items-center justify-center">
+        <span className="text-gray-400">Selecione uma conversa</span>
+      </div>
+    )
+  }
 
   const formatLastSeen = (timestamp?: number) => {
     if (!timestamp) return 'Offline'
@@ -98,20 +103,33 @@ export default function ChatHeader({
     >
       {/* Info do Contato */}
       <div className="flex items-center gap-3">
-        {/* Avatar */}
+        {/* Avatar com foto do WAHA */}
         <div className="relative">
-          {chat.avatar ? (
+          {(pictureUrl || chat.avatar) ? (
             <img 
-              src={chat.avatar} 
+              src={pictureUrl || chat.avatar} 
               alt={chat.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className={`w-10 h-10 rounded-full object-cover ${
+                isLoadingPicture ? 'animate-pulse' : ''
+              }`}
+              onError={(e) => {
+                // Fallback se a imagem falhar
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+                const fallback = target.nextElementSibling as HTMLElement
+                if (fallback) fallback.style.display = 'flex'
+              }}
             />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 
-                           flex items-center justify-center">
-              <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </div>
-          )}
+          ) : null}
+          
+          {/* Fallback avatar */}
+          <div 
+            className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 
+                       flex items-center justify-center"
+            style={{ display: (pictureUrl || chat.avatar) ? 'none' : 'flex' }}
+          >
+            <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </div>
           
           {/* Status online */}
           {chat.isOnline && (

@@ -202,10 +202,6 @@ export default function SideChat({
                   onSelect={() => onSelectChat(chat.id)}
                   onTagsClick={(e) => onTagsClick(chat.id, e)}
                   onTransferClick={(e) => onTransferClick(chat.id, e)}
-                  onArchiveClick={(e) => onArchiveClick(chat.id, e)}
-                  onHideClick={(e) => onHideClick(chat.id, e)}
-                  onDeleteClick={(e) => onDeleteClick(chat.id, e)}
-                  onFavoriteClick={(e) => onFavoriteClick(chat.id, e)}
                 />
               ))}
             </AnimatePresence>
