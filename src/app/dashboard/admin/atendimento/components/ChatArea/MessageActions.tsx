@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   MoreHorizontal, 
@@ -9,7 +9,9 @@ import {
   Heart,
   Languages,
   Bot,
-  X
+  X,
+  Mic,
+  MicOff
 } from 'lucide-react'
 
 interface MessageActionsProps {
@@ -39,6 +41,12 @@ export default function MessageActions({
   const [translatedMessage, setTranslatedMessage] = useState('')
   const [replyText, setReplyText] = useState('')
   const [isTranslating, setIsTranslating] = useState(false)
+  
+  // Estados para gravação de voz no modal
+  const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
   // Função para responder com IA
   const handleAIReply = async () => {
@@ -186,6 +194,84 @@ export default function MessageActions({
       console.error('❌ Erro ao enviar resposta traduzida:', error)
     } finally {
       setIsTranslating(false)
+    }
+  }
+
+  // Funções de gravação de voz para o modal de tradução
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data)
+      }
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        await transcribeAudio(audioBlob)
+        
+        // Parar todas as tracks do stream
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      mediaRecorder.start()
+      setIsRecording(true)
+      console.log('🎙️ Gravação iniciada no modal de tradução')
+    } catch (error) {
+      console.error('❌ Erro ao iniciar gravação:', error)
+      alert('Não foi possível acessar o microfone. Verifique as permissões.')
+    }
+  }
+  
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      console.log('🛑 Gravação parada')
+    }
+  }
+  
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      setIsTranscribing(true)
+      console.log('🔄 Transcrevendo áudio para texto...')
+      
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+      
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.text) {
+          console.log('✅ Transcrição recebida:', data.text)
+          
+          // Adicionar texto transcrito ao campo de resposta
+          setReplyText(prevText => {
+            return prevText ? `${prevText} ${data.text}` : data.text
+          })
+        }
+      } else {
+        console.error('❌ Erro na resposta da API:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao transcrever áudio:', error)
+    } finally {
+      setIsTranscribing(false)
+    }
+  }
+  
+  const toggleVoiceRecording = () => {
+    if (isRecording) {
+      stopVoiceRecording()
+    } else {
+      startVoiceRecording()
     }
   }
 
@@ -380,14 +466,62 @@ export default function MessageActions({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Sua resposta (será traduzida automaticamente):
                 </label>
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Digite sua resposta em português..."
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={3}
-                  autoFocus
-                />
+                <div className="relative">
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Digite sua resposta em português ou use o microfone..."
+                    className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    rows={3}
+                    autoFocus={!isRecording}
+                  />
+                  
+                  {/* Botão de Microfone */}
+                  <button
+                    onClick={toggleVoiceRecording}
+                    disabled={isTranscribing}
+                    className={`absolute bottom-3 right-3 p-2 rounded-full transition-all ${
+                      isRecording 
+                        ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
+                        : isTranscribing
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                          : 'bg-purple-500 hover:bg-purple-600 text-white'
+                    }`}
+                    title={
+                      isRecording 
+                        ? 'Parar gravação' 
+                        : isTranscribing 
+                          ? 'Transcrevendo...'
+                          : 'Falar resposta'
+                    }
+                  >
+                    {isRecording ? (
+                      <MicOff className="w-4 h-4" />
+                    ) : isTranscribing ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Mic className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                
+                {/* Indicador de status */}
+                {(isRecording || isTranscribing) && (
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    {isRecording && (
+                      <span className="text-red-500 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        Gravando...
+                      </span>
+                    )}
+                    {isTranscribing && (
+                      <span className="text-yellow-500 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                        Transcrevendo...
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Botões */}

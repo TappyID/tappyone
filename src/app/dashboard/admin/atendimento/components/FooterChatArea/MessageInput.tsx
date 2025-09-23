@@ -4,35 +4,20 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from
 import { motion } from 'framer-motion'
 import {
   Smile,
-  X,
-  Calendar,
-  Clock,
-  DollarSign,
-  Paperclip,
-  Video,
-  FileSignature,
-  UserCheck,
   Mic,
-  Send,
-  List,
-  ListOrdered,
-  Plus,
-  Trash2,
-  Camera,
-  Image,
-  FileText,
-  MapPin,
-  User,
-  Zap,
-  Bot,
-  Reply,
+  MicOff,
   Bold,
   Italic,
   Code,
   Strikethrough,
+  List,
+  ListOrdered,
   Quote,
+  GripHorizontal,
   Type,
-  GripHorizontal
+  Reply,
+  X,
+  Send
 } from 'lucide-react'
 
 import {
@@ -444,6 +429,12 @@ export default function MessageInput({
   const [isFocused, setIsFocused] = useState(false)
   const [manualHeight, setManualHeight] = useState<number | null>(null)
   
+  // Estados para transcrição de voz
+  const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  
   // Auto-resize inteligente - só expande quando necessário
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current
@@ -552,6 +543,88 @@ export default function MessageInput({
       setManualHeight(null) // resetar altura manual
       // Resetar altura do textarea após enviar
       setTimeout(() => adjustHeight(), 0)
+    }
+  }
+  
+  // Funções de transcrição de voz
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data)
+      }
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        await transcribeAudio(audioBlob)
+        
+        // Parar todas as tracks do stream
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      mediaRecorder.start()
+      setIsRecording(true)
+      console.log('🎙️ Gravação de voz iniciada')
+    } catch (error) {
+      console.error('❌ Erro ao iniciar gravação:', error)
+      alert('Não foi possível acessar o microfone. Verifique as permissões.')
+    }
+  }
+  
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      console.log('🛑 Gravação de voz parada')
+    }
+  }
+  
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      setIsTranscribing(true)
+      console.log('🔄 Transcrevendo áudio...')
+      
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+      
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.text) {
+          console.log('✅ Transcrição recebida:', data.text)
+          
+          // Adicionar texto transcrito ao campo
+          setMessage(prevMessage => {
+            const newMessage = prevMessage ? `${prevMessage} ${data.text}` : data.text
+            return newMessage
+          })
+          
+          // Ajustar altura do textarea
+          setTimeout(() => adjustHeight(), 0)
+        }
+      } else {
+        console.error('❌ Erro na resposta da API:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao transcrever áudio:', error)
+    } finally {
+      setIsTranscribing(false)
+    }
+  }
+  
+  const toggleVoiceRecording = () => {
+    if (isRecording) {
+      stopVoiceRecording()
+    } else {
+      startVoiceRecording()
     }
   }
 
@@ -994,9 +1067,6 @@ export default function MessageInput({
         
         {/* Botões de enviar com ícones */}
         <div className="flex items-center gap-1">
-          {/* Botão Lista */}
-       
-          
           {/* Botão Enviar */}
           <motion.button
             whileHover={{ scale: 1.1 }}
