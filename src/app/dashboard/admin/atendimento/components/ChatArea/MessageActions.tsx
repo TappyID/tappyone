@@ -45,6 +45,7 @@ export default function MessageActions({
   // Estados para gravação de voz no modal
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
@@ -295,6 +296,44 @@ export default function MessageActions({
     }
   }
 
+  // Função para gerar resposta com IA no modal
+  const handleGenerateAIResponse = async () => {
+    try {
+      setIsGeneratingAI(true)
+      console.log('🤖 Gerando resposta IA para mensagem:', translatedMessage || messageContent)
+      
+      const prompt = `Gere uma resposta profissional e amigável para esta mensagem: "${translatedMessage || messageContent}"`
+      
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          context: 'Atendimento ao cliente via WhatsApp',
+          type: 'response'
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.text) {
+          console.log('✅ Resposta IA gerada:', data.text)
+          
+          // Adicionar resposta da IA ao campo
+          setReplyText(data.text)
+        }
+      } else {
+        console.error('❌ Erro na resposta da API de IA:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao gerar resposta com IA:', error)
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
+
   const reactions = ['❤️', '👍', '😂', '😮', '😢', '😡']
 
   const handleReaction = (emoji: string) => {
@@ -496,37 +535,62 @@ export default function MessageActions({
                     autoFocus={!isRecording}
                   />
                   
-                  {/* Botão de Microfone */}
-                  <button
-                    onClick={toggleVoiceRecording}
-                    disabled={isTranscribing}
-                    className={`absolute bottom-3 right-3 p-2 rounded-full transition-all ${
-                      isRecording 
-                        ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-                        : isTranscribing
-                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                          : 'bg-purple-500 hover:bg-purple-600 text-white'
-                    }`}
-                    title={
-                      isRecording 
-                        ? 'Parar gravação' 
-                        : isTranscribing 
-                          ? 'Transcrevendo...'
-                          : 'Falar resposta'
-                    }
-                  >
-                    {isRecording ? (
-                      <MicOff className="w-4 h-4" />
-                    ) : isTranscribing ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Mic className="w-4 h-4" />
-                    )}
-                  </button>
+                  {/* Botões de Ação */}
+                  <div className="absolute bottom-3 right-3 flex gap-2">
+                    {/* Botão de IA */}
+                    <button
+                      onClick={handleGenerateAIResponse}
+                      disabled={isGeneratingAI || isTranscribing || isRecording}
+                      className={`p-2 rounded-full transition-all ${
+                        isGeneratingAI 
+                          ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
+                      title={
+                        isGeneratingAI 
+                          ? 'Gerando resposta...'
+                          : 'Gerar resposta com IA'
+                      }
+                    >
+                      {isGeneratingAI ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Bot className="w-4 h-4" />
+                      )}
+                    </button>
+                    
+                    {/* Botão de Microfone */}
+                    <button
+                      onClick={toggleVoiceRecording}
+                      disabled={isTranscribing || isGeneratingAI}
+                      className={`p-2 rounded-full transition-all ${
+                        isRecording 
+                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
+                          : isTranscribing
+                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                            : 'bg-purple-500 hover:bg-purple-600 text-white'
+                      }`}
+                      title={
+                        isRecording 
+                          ? 'Parar gravação' 
+                          : isTranscribing 
+                            ? 'Transcrevendo...'
+                            : 'Falar resposta'
+                      }
+                    >
+                      {isRecording ? (
+                        <MicOff className="w-4 h-4" />
+                      ) : isTranscribing ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 
                 {/* Indicador de status */}
-                {(isRecording || isTranscribing) && (
+                {(isRecording || isTranscribing || isGeneratingAI) && (
                   <div className="mt-2 flex items-center gap-2 text-sm">
                     {isRecording && (
                       <span className="text-red-500 flex items-center gap-1">
@@ -538,6 +602,12 @@ export default function MessageActions({
                       <span className="text-yellow-500 flex items-center gap-1">
                         <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
                         Transcrevendo...
+                      </span>
+                    )}
+                    {isGeneratingAI && (
+                      <span className="text-blue-500 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                        Gerando resposta com IA...
                       </span>
                     )}
                   </div>
