@@ -75,7 +75,16 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
           image: chat.contact?.profilePicUrl || chat.profilePicUrl || null,
         lastMessage: chat.lastMessage ? {
           id: chat.lastMessage.id,
-          body: chat.lastMessage.body || getMessageTypeDescription(chat.lastMessage),
+          body: (() => {
+            const body = chat.lastMessage.body || getMessageTypeDescription(chat.lastMessage)
+            console.log('🔍 DEBUG LastMessage para', chat.name, ':', {
+              originalBody: chat.lastMessage.body,
+              processedBody: body,
+              type: chat.lastMessage.type,
+              hasMedia: chat.lastMessage.hasMedia
+            })
+            return body
+          })(),
           timestamp: chat.lastMessage.timestamp * 1000, // Converter para ms
           fromMe: chat.lastMessage.fromMe,
           type: chat.lastMessage.type || 'text',
@@ -133,6 +142,13 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
 // Helper para descrever tipos de mensagem
 function getMessageTypeDescription(message: any): string {
+  console.log('🔍 getMessageTypeDescription chamado para mensagem:', {
+    type: message.type,
+    hasMedia: message.hasMedia,
+    body: message.body,
+    fullMessage: message
+  })
+  
   if (message.hasMedia) {
     if (message.type?.includes('image')) return '📷 Imagem'
     if (message.type?.includes('video')) return '🎥 Vídeo'
@@ -141,10 +157,22 @@ function getMessageTypeDescription(message: any): string {
     return '📎 Mídia'
   }
   
+  // Tipos específicos do WhatsApp
   if (message.type === 'poll') return '📊 Enquete'
   if (message.type === 'location') return '📍 Localização'
   if (message.type === 'contact') return '👤 Contato'
   if (message.type === 'call') return '📞 Chamada'
+  if (message.type === 'system') return '📢 Mensagem do sistema'
+  if (message.type === 'notification') return '🔔 Notificação'
+  if (message.type === 'revoked') return '🚫 Mensagem apagada'
+  if (message.type === 'group_notification') return '👥 Notificação do grupo'
+  if (message.type === 'e2e_notification') return '🔒 Notificação de criptografia'
   
-  return message.body || 'Mensagem'
+  // Se tem body, usar o body
+  if (message.body && message.body.trim()) {
+    return message.body
+  }
+  
+  // Fallback final
+  return 'Mensagem'
 }

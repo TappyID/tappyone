@@ -625,33 +625,6 @@ export default function AtendimentoPage() {
     return 'text'
   }
 
-  const getLastMessageContent = (chat: any): string => {
-    const lastMessage = chat.lastMessage
-    
-    if (!lastMessage) {
-      return 'Conversa iniciada' // Em vez de "Sem mensagens"
-    }
-    
-    // Se for string, retorna direto (formato antigo)
-    if (typeof lastMessage === 'string') {
-      return lastMessage || 'Conversa iniciada'
-    }
-    
-    // Se for objeto (formato WAHA), extrai conteúdo baseado no tipo
-    const type = getMessageType(lastMessage)
-    
-    switch (type) {
-      case 'image': return '📷 Imagem'
-      case 'video': return '🎥 Vídeo' 
-      case 'audio': return '🎵 Áudio'
-      case 'document': return '📄 Documento'
-      case 'location': return '📍 Localização'
-      case 'contact': return '👤 Contato'
-      case 'call': return '📞 Chamada'
-      default: 
-        return lastMessage.body || lastMessage.caption || lastMessage.content || 'Conversa iniciada'
-    }
-  }
 
   const getMessageSender = (chat: any): 'user' | 'agent' => {
     const lastMessage = chat.lastMessage
@@ -682,9 +655,9 @@ export default function AtendimentoPage() {
     return (chat.unreadCount || 0) === 0
   }
   
-  // Usar todos os chats encontrados (pesquisa ou inicial)
-  const finalChats = whatsappChats
-  const finalLoading = loadingChats || isSearching
+  // Usar chats do useChatsOverview que já processam as mensagens corretamente
+  const finalChats = overviewChats
+  const finalLoading = loadingOverview
   
   // Usar todos os chats (não limitar mais a 5)
   const activeChats = useMemo(() => {
@@ -724,11 +697,12 @@ export default function AtendimentoPage() {
         name: chat.name || chat.contact?.name || 'Contato sem nome',
         avatar: chat.profilePictureUrl || chat.contact?.profilePictureUrl,
         lastMessage: {
-          type: getMessageType(chat.lastMessage),
-          content: getLastMessageContent(chat),
-          timestamp: chat.timestamp || Date.now() - Math.random() * 3600000,  
-          sender: getMessageSender(chat),
-          isRead: getMessageReadStatus(chat)
+          type: chat.lastMessage?.type === 'text' ? 'text' as const : 
+                chat.lastMessage?.hasMedia ? 'image' as const : 'text' as const,
+          content: chat.lastMessage?.body || 'Sem mensagens',
+          timestamp: chat.lastMessage?.timestamp || Date.now(),
+          sender: chat.lastMessage?.fromMe ? 'agent' as const : 'user' as const,
+          isRead: (chat.unreadCount ?? 0) === 0
         },
         // Indicadores
         tags: contatoData.tags || [],
