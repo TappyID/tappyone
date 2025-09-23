@@ -243,7 +243,8 @@ export default function AtendimentoPage() {
     hasMore: hasMoreFromAPI,
     isLoadingMore: isLoadingMoreFromAPI,
     markChatAsRead,
-    markChatAsUnread
+    markChatAsUnread,
+    totalChatsCount
   } = useChatsOverview()
 
 
@@ -972,22 +973,6 @@ export default function AtendimentoPage() {
               ticketStatuses={realTicketStatuses}
               priceRanges={realPriceRanges}
               selectedKanbanStatus={selectedKanbanStatus}
-              onKanbanStatusChange={setSelectedKanbanStatus}
-              selectedTicketStatus={selectedTicketStatus}
-              onTicketStatusChange={setSelectedTicketStatus}
-              selectedPriceRange={selectedPriceRange}
-              onPriceRangeChange={setSelectedPriceRange}
-              // Contadores para filtros (calcular baseado em todos os chats, não só os filtrados)
-              totalChats={activeChats.filter(c => !hiddenChats.has(c.id)).length}
-              unreadChats={activeChats.filter(c => !hiddenChats.has(c.id) && (c.unreadCount || 0) > 0).length}
-              readChats={activeChats.filter(c => !hiddenChats.has(c.id) && (c.unreadCount || 0) === 0).length}
-              archivedChats={archivedChats.size}
-              groupChats={activeChats.filter(c => !hiddenChats.has(c.id) && c.id?.includes('@g.us')).length}
-              favoriteChats={favoriteChats.size}
-              hiddenChats={hiddenChats.size}
-              // Controle do filtro ativo
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
             />
           </div>
 

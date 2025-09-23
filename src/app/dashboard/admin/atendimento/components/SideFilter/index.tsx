@@ -136,6 +136,7 @@ export default function SideFilter({
     { id: 'all', label: 'Todas', icon: MessageCircle, count: totalChats },
     { id: 'unread', label: 'Não lidas', icon: Circle, count: unreadChats },
     { id: 'read', label: 'Lidas', icon: CheckCircle2, count: readChats },
+    { id: 'read-no-reply', label: 'Lidas não respondidas', icon: CheckCircle2, count: readChats },
     { id: 'favorites', label: 'Favoritos', icon: Star, count: favoriteChats },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: archivedChats },
     { id: 'groups', label: 'Grupos', icon: Users, count: groupChats },

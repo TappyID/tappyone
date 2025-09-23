@@ -33,6 +33,7 @@ interface UseChatsOverviewReturn {
   isLoadingMore: boolean
   markChatAsRead: (chatId: string) => Promise<void>
   markChatAsUnread: (chatId: string) => Promise<boolean>
+  totalChatsCount: number // Total real de chats do WhatsApp
 }
 
 export default function useChatsOverview(): UseChatsOverviewReturn {
@@ -41,6 +42,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [totalChatsCount, setTotalChatsCount] = useState(0)
 
   const fetchChatsOverview = async (limit = 12, offset = 0, append = false) => {
     try {
@@ -187,6 +189,38 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     fetchChatsOverview()
   }
 
+  // Função para buscar apenas o total de chats (sem carregar todos)
+  const fetchTotalChatsCount = async () => {
+    try {
+      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+      
+      console.log('📊 Buscando total de chats da WAHA...')
+      
+      // Buscar com limit muito alto para pegar o total real
+      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=9999&offset=0`, {
+        headers: {
+          'X-Api-Key': 'tappyone-waha-2024-secretkey'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const totalCount = data.length
+      
+      console.log(`📊 Total de chats no WhatsApp: ${totalCount}`)
+      setTotalChatsCount(totalCount)
+      
+      return totalCount
+    } catch (error) {
+      console.error('❌ Erro ao buscar total de chats:', error)
+      return 0
+    }
+  }
+
   // Função para marcar mensagens como lidas via WAHA
   const markChatAsRead = async (chatId: string) => {
     try {
@@ -299,6 +333,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
   useEffect(() => {
     fetchChatsOverview(12, 0, false) // Carregar primeira página (12 chats)
+    fetchTotalChatsCount() // Buscar total real de chats
     
     // Soft refresh a cada 60 segundos (DESABILITADO temporariamente para debug)
     // const interval = setInterval(softRefresh, 60000)
@@ -315,7 +350,8 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     hasMore,
     isLoadingMore,
     markChatAsRead, // Marcar como lida via WAHA
-    markChatAsUnread // Marcar como não lida via WAHA (teste)
+    markChatAsUnread, // Marcar como não lida via WAHA (teste)
+    totalChatsCount // Total real de chats do WhatsApp
   }
 }
 
