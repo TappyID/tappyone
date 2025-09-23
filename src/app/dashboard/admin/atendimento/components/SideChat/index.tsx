@@ -174,16 +174,6 @@ export default function SideChat({
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-          Conversas
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {chats.length} {chats.length === 1 ? 'conversa' : 'conversas'}
-        </p>
-      </div>
-
       {/* Lista de Chats com scroll */}
       <div 
         ref={scrollContainerRef}

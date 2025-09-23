@@ -15,6 +15,7 @@ import useMessagesData from '@/hooks/useMessagesData'
 import useChatsOverview from '@/hooks/useChatsOverview'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
+import TransferirAtendimentoModal from '../atendimentos/components/modals/TransferirAtendimentoModal'
 
 // Mock data para demonstração
 const mockTags = [
@@ -107,6 +108,49 @@ export default function AtendimentoPage() {
     content: string
     sender: string
   } | null>(null)
+
+  // Estados para funcionalidades dos ícones do SideChat - COM PERSISTÊNCIA
+  const [favoriteChats, setFavoriteChats] = useState<Set<string>>(new Set())
+  const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set())
+  const [hiddenChats, setHiddenChats] = useState<Set<string>>(new Set())
+  
+  // Estados para modal de transferir
+  const [showTransferirModal, setShowTransferirModal] = useState(false)
+  const [selectedChatForTransfer, setSelectedChatForTransfer] = useState<string | null>(null)
+
+  // Carregar estados do localStorage
+  useEffect(() => {
+    try {
+      const savedFavorites = localStorage.getItem('tappyone-favorite-chats')
+      const savedArchived = localStorage.getItem('tappyone-archived-chats')
+      const savedHidden = localStorage.getItem('tappyone-hidden-chats')
+
+      if (savedFavorites) {
+        setFavoriteChats(new Set(JSON.parse(savedFavorites)))
+      }
+      if (savedArchived) {
+        setArchivedChats(new Set(JSON.parse(savedArchived)))
+      }
+      if (savedHidden) {
+        setHiddenChats(new Set(JSON.parse(savedHidden)))
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estados dos chats:', error)
+    }
+  }, [])
+
+  // Salvar estados no localStorage
+  useEffect(() => {
+    localStorage.setItem('tappyone-favorite-chats', JSON.stringify(Array.from(favoriteChats)))
+  }, [favoriteChats])
+
+  useEffect(() => {
+    localStorage.setItem('tappyone-archived-chats', JSON.stringify(Array.from(archivedChats)))
+  }, [archivedChats])
+
+  useEffect(() => {
+    localStorage.setItem('tappyone-hidden-chats', JSON.stringify(Array.from(hiddenChats)))
+  }, [hiddenChats])
   
   // Hook de mensagens com dados reais da WAHA
   const { 
@@ -127,7 +171,6 @@ export default function AtendimentoPage() {
     refreshChats: refreshOverview
   } = useChatsOverview()
 
-  console.log('📊 Overview chats recebidos:', overviewChats.length)
 
   // Buscar dados reais para os filtros
   useEffect(() => {
@@ -144,7 +187,6 @@ export default function AtendimentoPage() {
         if (tagsResponse.ok) {
           const tagsData = await tagsResponse.json()
           setRealTags(tagsData.data || tagsData || [])
-          console.log('🏷️ Tags carregadas:', tagsData.data?.length || 0)
         }
 
         // Buscar filas reais (quando implementadas)
@@ -269,7 +311,6 @@ export default function AtendimentoPage() {
         chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         chat.lastMessage?.body?.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      console.log(`🔍 Busca "${searchQuery}": ${filteredChats.length} de ${overviewChats.length} chats`)
     }
     
     // Aplicar filtro de tag
@@ -278,7 +319,6 @@ export default function AtendimentoPage() {
         const extraData = chatsExtraData[chat.id] || {}
         return extraData.tags?.some((tag: any) => tag.id === selectedTag)
       })
-      console.log(`🏷️ Filtro tag "${selectedTag}": ${filteredChats.length} chats`)
     }
     
     // Aplicar filtro de fila
@@ -287,7 +327,6 @@ export default function AtendimentoPage() {
         const extraData = chatsExtraData[chat.id] || {}
         return extraData.fila?.id === selectedFila
       })
-      console.log(`📋 Filtro fila "${selectedFila}": ${filteredChats.length} chats`)
     }
     
     // Limitar para performance (apenas se não há busca)
@@ -327,9 +366,8 @@ export default function AtendimentoPage() {
         fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
       }
     })
-  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila])
+  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila, favoriteChats, archivedChats, hiddenChats])
 
-  console.log('🔄 Chats transformados:', transformedChats.length, 'de', overviewChats.length, 'total')
 
   // Função para carregar mais chats
   const handleLoadMoreChats = useCallback(async () => {
@@ -338,7 +376,6 @@ export default function AtendimentoPage() {
     if (isLoadingMoreChats || displayedChatsCount >= overviewChats.length) return
     
     setIsLoadingMoreChats(true)
-    console.log('📄 Carregando mais chats...', { atual: displayedChatsCount, total: overviewChats.length })
     
     // Simular delay de carregamento
     await new Promise(resolve => setTimeout(resolve, 500))
@@ -357,7 +394,6 @@ export default function AtendimentoPage() {
   // Função para votar em enquete
   const handlePollVote = useCallback(async (messageId: string, chatId: string, votes: string[]) => {
     try {
-      console.log('🗳️ Votando na enquete:', { messageId, chatId, votes })
       
       const response = await fetch(getWahaUrl('/api/sendPollVote'), {
         method: 'POST',
@@ -377,7 +413,6 @@ export default function AtendimentoPage() {
         throw new Error(`Erro ${response.status}: ${response.statusText}`)
       }
 
-      console.log('✅ Voto enviado com sucesso!')
       // Recarregar mensagens para mostrar o resultado
       setTimeout(() => refreshMessages(), 1000)
       
@@ -390,14 +425,6 @@ export default function AtendimentoPage() {
   // Usar apenas mensagens reais vindas da API
   const displayMessages = useMemo(() => {
     if (!selectedChatId) return []
-    console.log('📋 Display Messages:', {
-      chatId: selectedChatId,
-      messages: realMessages.length,
-      hasMore: hasMoreMessages,
-      totalMessages,
-      loading: loadingMessages,
-      translations: Object.keys(translatedMessages).length
-    })
     
     // Adicionar traduções às mensagens
     return realMessages.map(message => ({
@@ -410,6 +437,110 @@ export default function AtendimentoPage() {
   const [whatsappChats, setWhatsappChats] = useState<any[]>([])
   const [loadingChats, setLoadingChats] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
+
+  // Funções para manipular os ícones do SideChat - IGUAL AO ConversationSidebar
+  const toggleFavoriteConversation = (chatId: string) => {
+    setFavoriteChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+        console.log('⭐ Removido dos favoritos:', chatId)
+      } else {
+        newSet.add(chatId)
+        console.log('⭐ Adicionado aos favoritos:', chatId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleArchiveConversation = (chatId: string) => {
+    setArchivedChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+        console.log('📁 Desarquivado:', chatId)
+      } else {
+        newSet.add(chatId)
+        console.log('📁 Arquivado:', chatId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleHideConversation = (chatId: string) => {
+    setHiddenChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+        console.log('👁️ Mostrado:', chatId)
+      } else {
+        newSet.add(chatId)
+        console.log('👁️‍🗨️ Ocultado:', chatId)
+      }
+      return newSet
+    })
+  }
+
+  const handleDeleteChat = async (chatId: string) => {
+    if (!confirm('Deseja realmente excluir esta conversa?')) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      
+      // Primeiro tentar via API Next.js (se existir)
+      let response = await fetch(`/api/whatsapp/chats/${encodeURIComponent(chatId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      // Se 404 (não existe) ou 405 (método não permitido), ocultar localmente
+      if (response.status === 404 || response.status === 405) {
+        console.warn(`⚠️ Endpoint DELETE não disponível (${response.status}) - ocultando localmente`)
+        setHiddenChats(prev => new Set(Array.from(prev).concat([chatId])))
+        return
+      }
+      
+      if (response.ok) {
+        // Se deletou com sucesso, adicionar à lista de chats ocultos
+        setHiddenChats(prev => new Set(Array.from(prev).concat([chatId])))
+        console.log('🗑️ Chat excluído:', chatId)
+      } else {
+        console.error('Erro ao deletar chat:', response.statusText)
+        alert('Erro ao deletar chat. Tente novamente.')
+      }
+    } catch (error) {
+      console.error('Erro ao deletar chat:', error)
+      alert('Erro ao deletar chat. Tente novamente.')
+    }
+  }
+
+  const handleTransferChat = (chatId: string) => {
+    console.log('↔️ Transferir chat:', chatId)
+    setSelectedChatForTransfer(chatId)
+    setShowTransferirModal(true)
+  }
+
+  // Handler para confirmar transferência
+  const handleTransferirSave = async (transferData: any) => {
+    try {
+      console.log('🔄 Transferindo chat:', selectedChatForTransfer, transferData)
+      
+      // TODO: Implementar lógica de transferência real
+      // Por enquanto, apenas simular
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      console.log('✅ Chat transferido com sucesso!')
+      setShowTransferirModal(false)
+      setSelectedChatForTransfer(null)
+      
+    } catch (error) {
+      console.error('❌ Erro ao transferir chat:', error)
+      throw error // Re-throw para o modal não fechar
+    }
+  }
 
   // Função para buscar chats (inicial ou pesquisa)
   const fetchChats = async (searchTerm: string = '') => {
@@ -442,11 +573,9 @@ export default function AtendimentoPage() {
             chat.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             chat.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase())
           )
-          console.log(`🔍 Pesquisa "${searchTerm}": ${filteredChats.length} resultados de ${allChats.length} total`)
         } else {
           // Sem pesquisa, pegar apenas os primeiros 20
           filteredChats = allChats.slice(0, 20)
-          console.log(`📱 Carregando inicial: ${filteredChats.length} de ${allChats.length} total`)
         }
         
         // Remover URLs de imagem para evitar requisições extras
@@ -622,16 +751,20 @@ export default function AtendimentoPage() {
           cor: '#F59E0B'
         } : undefined,
         
-        // Estados do chat
+        // Estados do chat - USANDO ESTADOS REAIS DOS ÍCONES
         unreadCount: chat.unreadCount > 0 ? chat.unreadCount : undefined,
         isTransferred: false,
         transferredTo: undefined,
-        isFavorite: Math.random() > 0.8 // Mock - 20% dos chats são favoritos
+        isFavorite: favoriteChats.has(chatId),
+        isArchived: archivedChats.has(chatId),
+        isHidden: hiddenChats.has(chatId)
       }
-    }).filter(chat => chat.id) // Filtrar chats sem ID válido
+    })
+    .filter(chat => chat.id) // Filtrar chats sem ID válido
+    .filter(chat => !hiddenChats.has(chat.id)) // Filtrar chats ocultos
     
     return result
-  }, [activeChats, contatosData])
+  }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats])
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
@@ -666,7 +799,7 @@ export default function AtendimentoPage() {
           {/* Lista de Chats */}
           <div className="flex-1 overflow-hidden">
             <SideChat
-              chats={transformedChats}
+              chats={processedChats}
               selectedChatId={selectedChatId}
               onSelectChat={setSelectedChatId}
               isLoading={loadingOverview}
@@ -676,26 +809,27 @@ export default function AtendimentoPage() {
               onTagsClick={(chatId, e) => {
                 e.stopPropagation()
                 console.log('🏷️ Tags clicadas:', chatId)
+                // TODO: Implementar modal de tags
               }}
               onTransferClick={(chatId, e) => {
                 e.stopPropagation()
-                console.log('↔️ Transferir:', chatId)
+                handleTransferChat(chatId)
               }}
               onArchiveClick={(chatId, e) => {
                 e.stopPropagation()
-                console.log('📁 Arquivar:', chatId)
+                toggleArchiveConversation(chatId)
               }}
               onHideClick={(chatId, e) => {
                 e.stopPropagation()
-                console.log('👁️ Ocultar:', chatId)
+                toggleHideConversation(chatId)
               }}
               onDeleteClick={(chatId, e) => {
                 e.stopPropagation()
-                console.log('🗑️ Deletar:', chatId)
+                handleDeleteChat(chatId)
               }}
               onFavoriteClick={(chatId, e) => {
                 e.stopPropagation()
-                console.log('❤️ Favoritar:', chatId)
+                toggleFavoriteConversation(chatId)
               }}
             />
           </div>
@@ -1234,6 +1368,22 @@ export default function AtendimentoPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Transferir Atendimento */}
+      <TransferirAtendimentoModal
+        isOpen={showTransferirModal}
+        onClose={() => {
+          setShowTransferirModal(false)
+          setSelectedChatForTransfer(null)
+        }}
+        onConfirm={handleTransferirSave}
+        chatId={selectedChatForTransfer || undefined}
+        contactData={{
+          id: selectedChatForTransfer || '',
+          nome: processedChats.find(c => c.id === selectedChatForTransfer)?.name || '',
+          telefone: selectedChatForTransfer?.replace('@c.us', '') || ''
+        }}
+      />
     </div>
   )
 }

@@ -54,8 +54,7 @@ export default function ChatHeader({
   // Extrair contato_id do chatId (remover @c.us)
   const contatoId = selectedChatId ? selectedChatId.replace('@c.us', '') : null
   
-  console.log(' [ChatHeader] selectedChatId:', selectedChatId)
-  console.log(' [ChatHeader] contatoId extraído:', contatoId)
+
   
   if (!chat) {
     return (

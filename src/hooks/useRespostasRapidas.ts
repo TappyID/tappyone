@@ -147,7 +147,6 @@ export function useRespostasRapidas() {
         },
       })
       
-      console.log('[fetchCategorias] Resposta da API:', response.status)
       
       if (!response.ok) {
         throw new Error(`Erro ${response.status}: ${response.statusText}`)

@@ -61,7 +61,6 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       }
 
       const data = await response.json()
-      console.log('📊 Overview recebido:', data.length, 'chats')
 
       // Transformar dados da WAHA para formato interno
       const transformedChats: ChatOverview[] = data.map((chat: any) => {

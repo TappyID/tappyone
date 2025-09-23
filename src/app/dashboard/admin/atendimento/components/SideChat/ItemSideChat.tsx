@@ -157,6 +157,23 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       {chat.isSelected && (
         <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full shadow-md" />
       )}
+
+      {/* Indicadores de estado no canto superior esquerdo */}
+      <div className="absolute top-2 left-2 flex gap-1">
+        {/* Indicador de Favorito */}
+        {chat.isFavorite && (
+          <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+            <Star className="w-2.5 h-2.5 text-white fill-current" />
+          </div>
+        )}
+        
+        {/* Indicador de Arquivado */}
+        {chat.isArchived && (
+          <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center">
+            <Archive className="w-2.5 h-2.5 text-white" />
+          </div>
+        )}
+      </div>
       {/* Avatar com foto real */}
       <div className="relative flex-shrink-0">
           {chat.avatar ? (
@@ -318,57 +335,59 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         {formatTimestamp(chat.lastMessage.timestamp)}
       </div>
 
-      {/* Ações rápidas no hover */}
-      <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 transition-opacity ${
-        chat.isSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}>
-        {/* Favoritar */}
+      {/* Ações rápidas no hover - IGUAL AO CONVERSATIONSIDEBAR ANTIGO */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        {/* Favoritar - IGUAL AO ANTIGO */}
         <button
           onClick={onFavoriteClick}
-          className={`p-1.5 rounded-full transition-colors ${
+          className={`p-1.5 rounded-lg transition-colors ${
             chat.isFavorite 
-              ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20' 
-              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'
+              ? 'text-yellow-400 hover:text-yellow-500' 
+              : 'text-slate-400 hover:text-yellow-400'
           }`}
           title={chat.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
-          <Star className={`w-3 h-3 ${chat.isFavorite ? 'fill-current' : ''}`} />
+          <Star className="w-4 h-4" fill={chat.isFavorite ? 'currentColor' : 'none'} />
         </button>
         
-        {/* Transferir */}
+        {/* Transferir - IGUAL AO ANTIGO */}
         <button
           onClick={onTransferClick}
-          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
-          title="Transferir chat"
+          className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
+          title="Transferir conversa"
         >
-          <UserPlus className="w-3 h-3" />
+          <UserPlus className="w-4 h-4" />
         </button>
         
-        {/* Arquivar */}
+        {/* Arquivar - IGUAL AO ANTIGO */}
         <button
           onClick={onArchiveClick}
-          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
-          title="Arquivar chat"
+          className={`p-1.5 rounded-lg transition-colors ${
+            chat.isArchived
+              ? 'text-orange-400 hover:text-orange-500' 
+              : 'text-slate-400 hover:text-orange-400'
+          }`}
+          title={chat.isArchived ? 'Desarquivar conversa' : 'Arquivar conversa'}
         >
-          <Archive className="w-3 h-3" />
+          <Archive className="w-4 h-4" />
         </button>
         
-        {/* Ocultar/Mostrar */}
+        {/* Ocultar/Mostrar - IGUAL AO ANTIGO */}
         <button
           onClick={onHideClick}
-          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
-          title={chat.isHidden ? 'Mostrar chat' : 'Ocultar chat'}
+          className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg transition-colors"
+          title={chat.isHidden ? 'Mostrar conversa' : 'Ocultar conversa'}
         >
-          {chat.isHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+          {chat.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
         </button>
         
-        {/* Excluir */}
+        {/* Excluir - IGUAL AO ANTIGO */}
         <button
           onClick={onDeleteClick}
-          className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500 transition-colors"
-          title="Excluir chat"
+          className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+          title="Excluir conversa"
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </motion.div>
