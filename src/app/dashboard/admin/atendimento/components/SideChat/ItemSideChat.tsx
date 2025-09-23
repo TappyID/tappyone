@@ -1,6 +1,7 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
+import TransferModal from '../TransferModal'
 import { motion } from 'framer-motion'
 import { 
   Archive, 
@@ -120,8 +121,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   onTransferClick
 }, ref) => {
   
+  // Estado para o modal de transferência
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  
   // Buscar foto de perfil do WAHA
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat.id)
+  
+  // Função para lidar com a transferência
+  const handleTransfer = (targetId: string, type: 'atendente' | 'fila', notes?: string) => {
+    console.log('Transferindo para:', { targetId, type, notes })
+    // TODO: Implementar transferência real via API
+    setShowTransferModal(false)
+  }
   
   // Formatação do timestamp
   const formatTimestamp = (timestamp: number) => {
@@ -136,11 +147,12 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   }
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      onClick={onSelect}
+    <>
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={onSelect}
       className={`group relative flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all ${
         chat.isSelected
           ? 'bg-blue-50 dark:bg-blue-900/20'
@@ -355,7 +367,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            onTransferClick?.(e)
+            setShowTransferModal(true)
           }}
           className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
           title="Transferir conversa"
@@ -407,6 +419,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         </button>
       </div>
     </motion.div>
+
+    {/* Modal de Transferência */}
+    <TransferModal
+      isOpen={showTransferModal}
+      onClose={() => setShowTransferModal(false)}
+      chatId={chat.id}
+      chatName={chat.name}
+      currentAtendente={'Não atribuído'}
+      currentFila={typeof chat.fila === 'object' ? chat.fila.nome : (chat.fila || 'Sem fila')}
+      onTransfer={handleTransfer}
+    />
+  </>
   )
 })
 
