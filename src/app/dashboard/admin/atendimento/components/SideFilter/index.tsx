@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Star,
   Eye,
+  EyeOff,
   Calendar,
   FileText,
   Ticket,
@@ -78,6 +79,12 @@ interface SideFilterProps {
   readChats?: number
   archivedChats?: number
   groupChats?: number
+  favoriteChats?: number
+  hiddenChats?: number
+  
+  // Active filter control
+  activeFilter?: string
+  onFilterChange?: (filterId: string) => void
 }
 
 export default function SideFilter({
@@ -108,11 +115,14 @@ export default function SideFilter({
   unreadChats = 0,
   readChats = 0,
   archivedChats = 0,
-  groupChats = 0
+  groupChats = 0,
+  favoriteChats = 0,
+  hiddenChats = 0,
+  activeFilter = 'all',
+  onFilterChange = () => {}
 }: SideFilterProps) {
   // Estados para o novo sistema de filtros
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [activeTab, setActiveTab] = useState('all')
   const [searchOptions, setSearchOptions] = useState({
     searchInChats: true,
     searchInMessages: false,
@@ -124,10 +134,10 @@ export default function SideFilter({
     { id: 'all', label: 'Todas', icon: MessageCircle, count: totalChats },
     { id: 'unread', label: 'Não lidas', icon: Circle, count: unreadChats },
     { id: 'read', label: 'Lidas', icon: CheckCircle2, count: readChats },
-    { id: 'read-no-reply', label: 'Lidas não respondidas', icon: Clock, count: 0 },
-    { id: 'em-aberto', label: 'Em aberto', icon: Tag, count: 0 },
+    { id: 'favorites', label: 'Favoritos', icon: Star, count: favoriteChats },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: archivedChats },
     { id: 'groups', label: 'Grupos', icon: Users, count: groupChats },
+    { id: 'hidden', label: 'Ocultos', icon: EyeOff, count: hiddenChats },
   ]
 
   // Modo colapsado - só mostra ícone
@@ -261,14 +271,14 @@ export default function SideFilter({
             `}</style>
             {filterTabs.map((tab) => {
               const Icon = tab.icon
-              const isActive = activeTab === tab.id
+              const isActive = activeFilter === tab.id
               
               return (
                 <motion.button
                   key={tab.id}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => onFilterChange(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-w-fit ${
                     isActive
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'

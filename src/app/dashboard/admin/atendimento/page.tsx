@@ -74,10 +74,11 @@ const mockChats = [
 ]
 
 export default function AtendimentoPage() {
-  // Estados dos filtros
+  // Estados para busca e filtros
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState('todas')
   const [selectedFila, setSelectedFila] = useState('todas')
+  const [activeFilter, setActiveFilter] = useState('all') // Novo estado para filtros de tabs
   
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>()
@@ -724,7 +725,7 @@ export default function AtendimentoPage() {
 
   // Usar dados já processados do useChatsOverview e adicionar dados extras dos contatos
   const processedChats = useMemo(() => {
-    const result = activeChats.map((chat: any) => {
+    let result = activeChats.map((chat: any) => {
       const contatoData: any = contatosData[chat.id] || {}
       
       return {
@@ -751,11 +752,36 @@ export default function AtendimentoPage() {
         isHidden: hiddenChats.has(chat.id),
       }
     })
-    // Filtrar chats ocultos
-    .filter(chat => !hiddenChats.has(chat.id))
+
+    // Aplicar filtros baseados no activeFilter
+    switch (activeFilter) {
+      case 'unread':
+        result = result.filter(chat => (chat.unreadCount || 0) > 0)
+        break
+      case 'read':
+        result = result.filter(chat => (chat.unreadCount || 0) === 0)
+        break
+      case 'favorites':
+        result = result.filter(chat => favoriteChats.has(chat.id))
+        break
+      case 'archived':
+        result = result.filter(chat => archivedChats.has(chat.id))
+        break
+      case 'groups':
+        result = result.filter(chat => chat.id?.includes('@g.us'))
+        break
+      case 'hidden':
+        result = result.filter(chat => hiddenChats.has(chat.id))
+        break
+      case 'all':
+      default:
+        // Para 'all', filtrar apenas chats ocultos (não mostrar)
+        result = result.filter(chat => !hiddenChats.has(chat.id))
+        break
+    }
     
     return result
-  }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats])
+  }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter])
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
@@ -784,6 +810,17 @@ export default function AtendimentoPage() {
               filas={realFilas.length > 0 ? realFilas : mockFilas}
               isLoadingTags={loadingFilters}
               isLoadingFilas={loadingFilters}
+              // Contadores para filtros (calcular baseado em todos os chats, não só os filtrados)
+              totalChats={activeChats.filter(c => !hiddenChats.has(c.id)).length}
+              unreadChats={activeChats.filter(c => !hiddenChats.has(c.id) && (c.unreadCount || 0) > 0).length}
+              readChats={activeChats.filter(c => !hiddenChats.has(c.id) && (c.unreadCount || 0) === 0).length}
+              archivedChats={archivedChats.size}
+              groupChats={activeChats.filter(c => !hiddenChats.has(c.id) && c.id?.includes('@g.us')).length}
+              favoriteChats={favoriteChats.size}
+              hiddenChats={hiddenChats.size}
+              // Controle do filtro ativo
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
             />
           </div>
 
