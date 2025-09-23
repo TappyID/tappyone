@@ -249,7 +249,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             <h3 className={`font-medium truncate ${
               chat.isSelected
                 ? 'text-blue-700 dark:text-blue-300 font-semibold'
-                : chat.lastMessage.isRead === false 
+                : chat.lastMessage?.isRead === false 
                   ? 'text-gray-900 dark:text-gray-100' 
                   : 'text-gray-600 dark:text-gray-300'
             }`}>
@@ -350,7 +350,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       {/* Timestamp no canto superior direito */}
       <div className="absolute top-3 right-3 text-xs text-gray-400">
-        {formatTimestamp(chat.lastMessage.timestamp)}
+        {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
       </div>
 
       {/* Ações rápidas no hover - IGUAL AO CONVERSATIONSIDEBAR ANTIGO */}

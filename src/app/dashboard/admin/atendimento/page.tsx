@@ -736,6 +736,14 @@ export default function AtendimentoPage() {
 
       return {
         ...chat, // Usar dados já processados (incluindo lastMessage.body correto)
+        // Garantir que lastMessage existe
+        lastMessage: chat.lastMessage || {
+          type: 'text' as const,
+          content: 'Sem mensagens',
+          timestamp: Date.now(),
+          sender: 'user' as const,
+          isRead: true
+        },
         // Dados reais dos contatos + exemplos para demonstração
         tags: contatoData.tags?.length > 0 ? contatoData.tags : tagsExample,
         agendamentos: contatoData.agendamentos?.length > 0 ? contatoData.agendamentos : agendamentosExample,
