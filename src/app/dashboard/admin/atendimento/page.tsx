@@ -714,25 +714,72 @@ export default function AtendimentoPage() {
     let result = activeChats.map((chat: any) => {
       const contatoData: any = contatosData[chat.id] || {}
       
+      // Adicionar dados de exemplo para demonstração das badges
+      const hasDataExample = Math.random() > 0.3 // 70% chance de ter dados
+      const tagsExample = hasDataExample && Math.random() > 0.4 ? [
+        { id: '1', nome: 'VIP', cor: '#8B5CF6' },
+        { id: '2', nome: 'Urgente', cor: '#EF4444' }
+      ] : []
+      
+      const agendamentosExample = hasDataExample && Math.random() > 0.6 ? [
+        { id: '1', titulo: 'Reunião', status: 'AGENDADO' },
+        { id: '2', titulo: 'Follow-up', status: 'PENDENTE' }
+      ] : []
+      
+      const ticketsExample = hasDataExample && Math.random() > 0.5 ? [
+        { id: '1', titulo: 'Suporte', status: 'ABERTO' },
+        { id: '2', titulo: 'Bug Report', status: 'ANDAMENTO' }
+      ] : []
+
       return {
         ...chat, // Usar dados já processados (incluindo lastMessage.body correto)
-        // Adicionar dados extras dos contatos
-        tags: contatoData.tags || [],
-        rating: contatoData.rating,
-        isOnline: Math.random() > 0.7, // Mock - depois integrar com dados reais
-        connectionStatus: ['connected', 'disconnected', 'connecting'][Math.floor(Math.random() * 3)] as 'connected' | 'disconnected' | 'connecting',
-        kanbanStatus: Math.random() > 0.6 ? {
+        // Dados reais dos contatos + exemplos para demonstração
+        tags: contatoData.tags?.length > 0 ? contatoData.tags : tagsExample,
+        agendamentos: contatoData.agendamentos?.length > 0 ? contatoData.agendamentos : agendamentosExample,
+        orcamentos: contatoData.orcamentos || [],
+        tickets: contatoData.tickets?.length > 0 ? contatoData.tickets : ticketsExample,
+        rating: contatoData.rating || (Math.random() > 0.7 ? Math.floor(Math.random() * 2) + 4 : undefined), // 4-5 estrelas às vezes
+        
+        // Kanban - buscar dados reais do contato ou exemplo
+        kanbanStatus: contatoData.kanban?.length > 0 ? {
+          id: contatoData.kanban[0].coluna_id,
+          nome: contatoData.kanban[0].coluna_nome || 'Kanban',
+          cor: contatoData.kanban[0].coluna_cor || '#3B82F6'
+        } : (hasDataExample && Math.random() > 0.4 ? {
           id: '1',
           nome: 'Em Atendimento',
           cor: '#3B82F6'
-        } : undefined,
-        fila: Math.random() > 0.8 ? 'Suporte' : undefined,
-        ticketStatus: Math.random() > 0.7 ? {
+        } : undefined),
+        
+        // Fila - buscar dados reais do contato ou exemplo
+        fila: contatoData.fila ? {
+          id: contatoData.fila.id,
+          nome: contatoData.fila.nome,
+          cor: contatoData.fila.cor || '#9333ea'
+        } : (hasDataExample && Math.random() > 0.6 ? {
           id: '1',
-          nome: 'Aberto',
-          cor: '#F59E0B'
-        } : undefined,
-        // Adicionar estados de favorito, arquivado, oculto
+          nome: 'Suporte',
+          cor: '#9333ea'
+        } : undefined),
+        
+        // Ticket Status - buscar do primeiro ticket ativo ou exemplo
+        ticketStatus: contatoData.tickets?.length > 0 ? {
+          id: contatoData.tickets[0].status,
+          nome: contatoData.tickets[0].status === 'ABERTO' ? 'Aberto' : 
+                contatoData.tickets[0].status === 'ANDAMENTO' ? 'Em Andamento' : 'Encerrado',
+          cor: contatoData.tickets[0].status === 'ABERTO' ? '#F59E0B' : 
+               contatoData.tickets[0].status === 'ANDAMENTO' ? '#3B82F6' : '#10B981'
+        } : (ticketsExample.length > 0 ? {
+          id: ticketsExample[0].status,
+          nome: ticketsExample[0].status === 'ABERTO' ? 'Aberto' : 'Em Andamento',
+          cor: ticketsExample[0].status === 'ABERTO' ? '#F59E0B' : '#3B82F6'
+        } : undefined),
+        
+        // Estados de conexão (mock por enquanto)
+        isOnline: Math.random() > 0.7,
+        connectionStatus: ['connected', 'disconnected', 'connecting'][Math.floor(Math.random() * 3)] as 'connected' | 'disconnected' | 'connecting',
+        
+        // Estados de favorito, arquivado, oculto
         isFavorite: favoriteChats.has(chat.id),
         isArchived: archivedChats.has(chat.id),
         isHidden: hiddenChats.has(chat.id),
@@ -765,9 +812,45 @@ export default function AtendimentoPage() {
         result = result.filter(chat => !hiddenChats.has(chat.id))
         break
     }
+
+    // Aplicar filtros avançados selecionados
+    
+    // Filtro por tag específica
+    if (selectedTag && selectedTag !== 'todas') {
+      result = result.filter(chat => 
+        chat.tags?.some((tag: any) => tag.id === selectedTag)
+      )
+    }
+
+    // Filtro por fila específica
+    if (selectedFila && selectedFila !== 'todas') {
+      result = result.filter(chat => 
+        chat.fila?.id === selectedFila
+      )
+    }
+
+    // Filtro por status kanban específico
+    if (selectedKanbanStatus && selectedKanbanStatus !== 'todos') {
+      result = result.filter(chat => 
+        chat.kanbanStatus?.id === selectedKanbanStatus
+      )
+    }
+
+    // Filtro por status de ticket específico
+    if (selectedTicketStatus && selectedTicketStatus !== 'todos') {
+      result = result.filter(chat => 
+        chat.ticketStatus?.id === selectedTicketStatus
+      )
+    }
+
+    // Filtro por faixa de preço (orçamentos)
+    if (selectedPriceRange && selectedPriceRange !== 'todos') {
+      // TODO: Implementar quando tivermos dados de orçamentos com valores
+      console.log('Filtro por preço ainda não implementado:', selectedPriceRange)
+    }
     
     return result
-  }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter])
+  }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter, selectedTag, selectedFila, selectedKanbanStatus, selectedTicketStatus, selectedPriceRange])
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
