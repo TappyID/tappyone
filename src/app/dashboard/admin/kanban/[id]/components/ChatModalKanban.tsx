@@ -5,8 +5,8 @@ import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot } fr
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
-// import QuickRepliesModal from '../../../atendimento/components/FooterChatArea/QuickRepliesModal'
-// import AIResponseModal from '../../../atendimento/components/FooterChatArea/AIResponseModal'
+import EditTextModal from '../../../atendimentos/components/EditTextModal'
+import QuickActionsSidebar from '../../../atendimentos/components/QuickActionsSidebar'
 
 interface ChatModalKanbanProps {
   isOpen: boolean
@@ -27,9 +27,10 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
   const [loading, setLoading] = useState(true)
   const [selectedChat, setSelectedChat] = useState<any>(null)
   
-  // Estados para os modais
-  const [showQuickRepliesModal, setShowQuickRepliesModal] = useState(false)
-  const [showAIResponseModal, setShowAIResponseModal] = useState(false)
+  // Estados para os modais - IGUAL AO ATENDIMENTO
+  const [showEditTextModal, setShowEditTextModal] = useState(false)
+  const [showQuickActionsSidebar, setShowQuickActionsSidebar] = useState(false)
+  const [showEmojisModal, setShowEmojisModal] = useState(false)
   
   // Extrair o chatId do card
   const chatId = card?.id || ''
@@ -72,23 +73,70 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
         const data = await response.json()
         console.log('📨 Mensagens recebidas:', data)
         
-        // Transformar mensagens da WAHA para o formato esperado pelo ChatArea
-        const transformedMessages = (data.messages || data || []).map((msg: any) => ({
-          id: msg.id || msg._id || Math.random().toString(),
-          content: msg.text || msg.body || msg.message || '',
-          sender: msg.fromMe ? 'assistant' : 'user',
-          timestamp: new Date(msg.timestamp * 1000 || msg.createdAt || Date.now()).toISOString(),
-          type: msg.type || 'text',
-          status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
-          mediaUrl: msg.mediaUrl || msg.media?.url,
-          quotedMsg: msg.quotedMsg || msg.quotedMessage,
-          // Campos originais para compatibilidade
-          text: msg.text || msg.body || msg.message || '',
-          fromMe: msg.fromMe || false,
-          from: msg.from || (msg.fromMe ? 'me' : chatId),
-          to: msg.to || (msg.fromMe ? chatId : 'me'),
-          ack: msg.ack || 0
-        }))
+        // Transformar mensagens para o formato esperado pelo ChatArea - COM METADADOS COMPLETOS
+        const transformedMessages = data.map((msg: any) => {
+          // Determinar o tipo de mensagem baseado nos dados da WAHA
+          let messageType = 'text'
+          let metadata: any = {}
+          
+          // Detectar tipo baseado no conteúdo da mensagem WAHA
+          if (msg.type === 'image' || msg.media?.mimetype?.startsWith('image/')) {
+            messageType = 'image'
+          } else if (msg.type === 'video' || msg.media?.mimetype?.startsWith('video/')) {
+            messageType = 'video'
+            metadata.thumbnailUrl = msg.media?.thumbnail
+            metadata.duration = msg.media?.duration
+          } else if (msg.type === 'audio' || msg.type === 'ptt' || msg.media?.mimetype?.startsWith('audio/')) {
+            messageType = 'audio'
+            metadata.duration = msg.media?.duration || msg.duration
+          } else if (msg.type === 'document' || msg.media?.mimetype) {
+            messageType = 'document'
+            metadata.fileName = msg.media?.filename || msg.filename
+            metadata.fileSize = msg.media?.filesize || msg.filesize
+            metadata.mimeType = msg.media?.mimetype || msg.mimetype
+          } else if (msg.type === 'location' || msg.location) {
+            messageType = 'location'
+            metadata.latitude = msg.location?.latitude || msg.lat
+            metadata.longitude = msg.location?.longitude || msg.lng
+            metadata.address = msg.location?.address || msg.address
+            metadata.locationName = msg.location?.name || msg.locationName
+          } else if (msg.type === 'contact' || msg.vcard) {
+            messageType = 'contact'
+            metadata.contactName = msg.contact?.name || msg.contactName
+            metadata.phoneNumber = msg.contact?.phone || msg.phoneNumber
+            metadata.email = msg.contact?.email
+            metadata.organization = msg.contact?.organization
+          } else if (msg.type === 'poll' || msg.poll) {
+            messageType = 'poll'
+            metadata.question = msg.poll?.name || msg.pollName
+            metadata.pollOptions = msg.poll?.options || msg.pollOptions || []
+            metadata.totalVotes = msg.poll?.totalVotes || 0
+            metadata.allowMultipleAnswers = msg.poll?.multipleAnswers || false
+          } else if (msg.type === 'list' || msg.list) {
+            messageType = 'menu'
+            metadata.menuTitle = msg.list?.title || msg.listTitle
+            metadata.menuDescription = msg.list?.description || msg.listDescription
+            metadata.menuItems = msg.list?.sections?.[0]?.rows || msg.listItems || []
+          }
+          
+          return {
+            id: msg.id || msg.messageId || `msg_${Date.now()}_${Math.random()}`,
+            content: msg.text || msg.body || msg.message || msg.caption || '',
+            sender: msg.fromMe ? 'assistant' : 'user',
+            timestamp: new Date(msg.timestamp * 1000 || msg.createdAt || Date.now()).getTime(),
+            type: messageType,
+            status: msg.ack === 3 ? 'read' : msg.ack === 2 ? 'delivered' : msg.ack === 1 ? 'sent' : 'pending',
+            mediaUrl: msg.mediaUrl || msg.media?.url || msg.url,
+            metadata,
+            quotedMsg: msg.quotedMsg || msg.quotedMessage,
+            // Campos originais para compatibilidade
+            text: msg.text || msg.body || msg.message || '',
+            fromMe: msg.fromMe || false,
+            from: msg.from || (msg.fromMe ? 'me' : chatId),
+            to: msg.to || (msg.fromMe ? chatId : 'me'),
+            ack: msg.ack || 0
+          }
+        })
         
         console.log('📨 Mensagens transformadas:', transformedMessages)
         setMessages(transformedMessages)
@@ -293,12 +341,103 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
           )}
         </div>
         
-        {/* Input de Mensagem */}
+        {/* Input de Mensagem - IGUAL AO ATENDIMENTO */}
         <div className={`border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
           <MessageInput 
             chatId={chatId}
             onSendMessage={handleSendMessage}
             disabled={loading}
+            onSendPoll={(pollData) => {
+              if (!chatId) return
+              // Usar API WAHA para enviar enquete
+              fetch(getWahaUrl('/api/sendPoll'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: chatId,
+                  poll: pollData
+                })
+              }).then(() => {
+                console.log('📊 Enquete enviada')
+                setTimeout(() => fetchMessages(), 500)
+              })
+            }}
+            onSendList={(listData) => {
+              if (!chatId) return
+              console.log('🔗 Enviando lista/menu:', listData)
+              
+              // Usar API WAHA para enviar lista/menu
+              fetch(getWahaUrl('/api/sendList'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  chatId: chatId,
+                  session: 'user_fb8da1d7_1758158816675',
+                  message: listData,
+                  reply_to: null
+                })
+              }).then(() => {
+                console.log('✅ Lista enviada')
+                setTimeout(() => fetchMessages(), 500)
+              })
+            }}
+            onSendEvent={(eventData) => {
+              if (!chatId) return
+              // Usar API WAHA para enviar evento
+              fetch(getWahaUrl('/api/user_fb8da1d7_1758158816675/events'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                body: JSON.stringify({
+                  chatId: chatId,
+                  event: eventData
+                })
+              }).then(() => {
+                console.log('📅 Evento enviado')
+                setTimeout(() => fetchMessages(), 500)
+              })
+            }}
+            onSendContact={(contactsData) => {
+              if (!chatId) return
+              // Usar API WAHA para enviar contato
+              fetch(getWahaUrl('/api/sendContactVcard'), {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey' 
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: chatId,
+                  contacts: contactsData
+                })
+              }).then(() => {
+                console.log('👤 Contato enviado')
+                setTimeout(() => fetchMessages(), 500)
+              })
+            }}
+            onSendLocation={(locationData) => {
+              if (!chatId) return
+              // Usar API WAHA para enviar localização
+              fetch(getWahaUrl('/api/sendLocation'), {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'X-Api-Key': 'tappyone-waha-2024-secretkey' 
+                },
+                body: JSON.stringify({
+                  session: 'user_fb8da1d7_1758158816675',
+                  chatId: chatId,
+                  latitude: locationData.latitude,
+                  longitude: locationData.longitude,
+                  name: locationData.name || '',
+                  address: locationData.address || ''
+                })
+              }).then(() => {
+                console.log('📍 Localização enviada')
+                setTimeout(() => fetchMessages(), 500)
+              })
+            }}
             onSendMedia={async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
               console.log('📎 Enviando mídia:', { fileName: file.name, mediaType, caption })
               
@@ -308,13 +447,13 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
                 const base64Promise = new Promise<string>((resolve) => {
                   reader.onloadend = () => {
                     const base64 = reader.result as string
-                    resolve(base64.split(',')[1]) // Remove o prefixo data:...
+                    resolve(base64.split(',')[1])
                   }
                 })
                 reader.readAsDataURL(file)
                 const base64Data = await base64Promise
                 
-                // Determinar o endpoint correto baseado no tipo de mídia
+                // Determinar o endpoint correto
                 let endpoint = '/api/sendImage'
                 if (mediaType === 'video') {
                   endpoint = '/api/sendVideo'
@@ -322,7 +461,6 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
                   endpoint = '/api/sendFile'
                 }
                 
-                // Enviar mídia via WAHA - ENDPOINT CORRETO!
                 const response = await fetch(getWahaUrl(endpoint), {
                   method: 'POST',
                   headers: {
@@ -342,8 +480,8 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
                 })
                 
                 if (response.ok) {
-                  console.log('✅ Mídia enviada com sucesso')
-                  setTimeout(() => fetchMessages(), 1000)
+                  console.log('✅ Mídia enviada')
+                  setTimeout(() => fetchMessages(), 500)
                 }
               } catch (error) {
                 console.error('❌ Erro ao enviar mídia:', error)
@@ -351,46 +489,71 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
             }}
             onSendAudio={async (audioBlob: Blob) => {
               console.log('🎤 Enviando áudio...')
-              // Implementar envio de áudio
+              
+              try {
+                // Converter áudio para base64
+                const reader = new FileReader()
+                const base64Promise = new Promise<string>((resolve) => {
+                  reader.onloadend = () => {
+                    const base64 = reader.result as string
+                    resolve(base64.split(',')[1])
+                  }
+                })
+                reader.readAsDataURL(audioBlob)
+                const base64Data = await base64Promise
+                
+                const response = await fetch(getWahaUrl('/api/sendVoice'), {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': 'tappyone-waha-2024-secretkey'
+                  },
+                  body: JSON.stringify({
+                    session: 'user_fb8da1d7_1758158816675',
+                    chatId: chatId,
+                    file: {
+                      mimetype: 'audio/ogg; codecs=opus',
+                      filename: `audio_${Date.now()}.ogg`,
+                      data: base64Data
+                    }
+                  })
+                })
+                
+                if (response.ok) {
+                  console.log('✅ Áudio enviado')
+                  setTimeout(() => fetchMessages(), 500)
+                }
+              } catch (error) {
+                console.error('❌ Erro ao enviar áudio:', error)
+              }
             }}
-            onSendList={(listData: any) => {
-              console.log('📋 Enviando lista:', listData)
-              // Implementar envio de lista
-            }}
-            onSendEvent={async (title: string, dateTime: string) => {
-              console.log('📅 Enviando evento:', { title, dateTime })
-              // Implementar envio de evento
-            }}
-            onQuickReply={() => {
+            onRespostaRapidaClick={() => {
               console.log('⚡ Abrindo respostas rápidas')
-              setShowQuickRepliesModal(true)
+              setShowQuickActionsSidebar(true)
             }}
-            onAIResponse={() => {
+            onIAClick={() => {
               console.log('🤖 Abrindo resposta com I.A')
-              setShowAIResponseModal(true)
+              setShowEditTextModal(true)
+            }}
+            onOpenEmojis={() => {
+              console.log('😀 Abrindo emojis')
+              setShowEmojisModal(true)
+            }}
+            onAcoesRapidasClick={() => {
+              console.log('⚡ Abrindo ações rápidas')
+              // TODO: Implementar ações rápidas
             }}
           />
         </div>
 
-        {/* Modal de Respostas Rápidas */}
-        {showQuickRepliesModal && (
-          <QuickRepliesModal
-            isOpen={showQuickRepliesModal}
-            onClose={() => setShowQuickRepliesModal(false)}
-            onSelectReply={(reply) => {
-              // Enviar resposta rápida
-              handleSendMessage(reply)
-              setShowQuickRepliesModal(false)
-            }}
-            chatId={chatId}
-          />
-        )}
-
-        {/* Modal de Resposta com I.A */}
-        {showAIResponseModal && (
-          <AIResponseModal
-            isOpen={showAIResponseModal}
-            onClose={() => setShowAIResponseModal(false)}
+        {/* Componentes reais - IGUAL AO ATENDIMENTO */}
+        {showEditTextModal && (
+          <EditTextModal
+            isOpen={showEditTextModal}
+            onClose={() => setShowEditTextModal(false)}
+            initialText=""
+            contactName={contactName}
+            actionTitle="Gerar com IA"
             onSend={(message) => {
               // Enviar mensagem gerada pela IA
               if (chatId) {
@@ -408,12 +571,50 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
                 }).then(() => {
                   console.log('🤖 Mensagem IA enviada')
                   setTimeout(() => fetchMessages(), 500)
-                  setShowAIResponseModal(false)
+                  setShowEditTextModal(false)
                 })
               }
             }}
-            chatId={chatId}
           />
+        )}
+
+        <QuickActionsSidebar
+          isOpen={showQuickActionsSidebar}
+          onClose={() => setShowQuickActionsSidebar(false)}
+          activeChatId={chatId}
+          onSelectAction={(action) => {
+            // Executar ação rápida selecionada
+            console.log('⚡ Ação rápida:', action)
+            setShowQuickActionsSidebar(false)
+          }}
+        />
+
+        {showEmojisModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Emojis</h3>
+              <div className="grid grid-cols-6 gap-2 mb-4">
+                {['😀', '😂', '😍', '🤔', '😢', '😡', '👍', '👎', '❤️', '🔥', '💯', '🎉'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      handleSendMessage(emoji)
+                      setShowEmojisModal(false)
+                    }}
+                    className="text-2xl p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowEmojisModal(false)}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

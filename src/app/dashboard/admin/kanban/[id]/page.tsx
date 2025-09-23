@@ -2517,6 +2517,17 @@ export default function QuadroPage() {
     Object.keys(tagsDataState).forEach(cardId => {
       counts[cardId] = tagsDataState[cardId]?.length || 0
     })
+    console.log('🏷️ [TAGS COUNT] counts calculadas:', counts)
+    console.log('🏷️ [TAGS COUNT] tagsDataState atual:', tagsDataState)
+    console.log('🏷️ [TAGS COUNT] Total de cards com dados:', Object.keys(tagsDataState).length)
+    
+    // Debug específico para cards com tags
+    Object.keys(tagsDataState).forEach(cardId => {
+      if (tagsDataState[cardId]?.length > 0) {
+        console.log(`🏷️ [TAGS COUNT] Card ${cardId} tem ${tagsDataState[cardId].length} tags:`, tagsDataState[cardId])
+      }
+    })
+    
     return counts
   }, [tagsDataState])
 
@@ -3381,8 +3392,10 @@ const getContactData = () => {
       if (response.ok) {
         const result = await response.json()
         const data = result.data || result || []
-        console.log('🏷️ [Kanban] Tags recebidas:', data.length)
+        console.log('🏷️ [Kanban] Tags recebidas para', chatId, ':', data.length, 'tags:', data)
         return Array.isArray(data) ? data : []
+      } else {
+        console.log('🏷️ [Kanban] Erro na resposta da API:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Erro ao buscar detalhes de tags:', error)
