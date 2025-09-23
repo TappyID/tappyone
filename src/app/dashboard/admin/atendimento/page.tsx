@@ -1051,9 +1051,35 @@ export default function AtendimentoPage() {
                 }))
               }
             }}
-            onAIReply={(messageId, content) => {
+            onAIReply={async (messageId, content) => {
               console.log('🤖 IA responder para:', messageId, 'com:', content)
-              setShowEditTextModal(true)
+              
+              // Enviar mensagem traduzida diretamente
+              if (selectedChatId && content.trim()) {
+                try {
+                  console.log('📤 Enviando resposta traduzida:', content)
+                  
+                  const response = await fetch(`/api/waha-proxy/api/user_fb8da1d7_1758158816675/chats/${selectedChatId}/messages/text`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      text: content
+                    })
+                  })
+                  
+                  if (response.ok) {
+                    console.log('✅ Resposta traduzida enviada com sucesso!')
+                    // Atualizar mensagens
+                    refreshMessages()
+                  } else {
+                    console.error('❌ Erro ao enviar resposta traduzida:', response.status)
+                  }
+                } catch (error) {
+                  console.error('❌ Erro ao enviar resposta traduzida:', error)
+                }
+              }
             }}
           />
           
