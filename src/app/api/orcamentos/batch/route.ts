@@ -11,16 +11,9 @@ interface JwtPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    // TEMPORÁRIO: Bypass da validação JWT para resolver o problema
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.substring(7) || 'bypass'
     
-    // Mock do decoded para manter compatibilidade
-    const decoded: JwtPayload = {
-      userId: '1', // ID fixo temporário
-      email: 'admin@test.com'
-    }
-
     // Extrair cardIds e mapeamento do body
     const { cardIds, cardContactMapping } = await request.json()
     
@@ -30,38 +23,74 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Batch Orçamentos - cardIds:', cardIds.length)
     console.log('🚀 Batch Orçamentos - mapeamento:', cardContactMapping)
-    console.log('🚀 [DEBUG] BACKEND_URL:', BACKEND_URL)
-    console.log('🚀 [DEBUG] Fazendo fetch para backend Go...', `${BACKEND_URL}/api/orcamentos/batch`)
-
-    // Buscar orçamentos para todos os cards de uma vez
-    const orcamentosResponse = await fetch(`${BACKEND_URL}/api/orcamentos/batch`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-User-ID': decoded.userId
-      },
-      body: JSON.stringify({ 
-        cardIds: cardIds,
-        userId: decoded.userId
-      })
+    
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
+    
+    // Buscar orçamentos para cada telefone (mesma abordagem dos indicadores do chat)
+    const result: Record<string, any[]> = {}
+    
+    // Processar cada card
+    const promises = cardIds.map(async (cardId: string) => {
+      const telefone = cardContactMapping[cardId]
+      if (!telefone) {
+        result[cardId] = []
+        return
+      }
+      
+      try {
+        // 1. Buscar UUID do contato pelo telefone
+        const contactResponse = await fetch(`${BACKEND_URL}/api/contatos?telefone=${telefone}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (!contactResponse.ok) {
+          result[cardId] = []
+          return
+        }
+        
+        const contactData = await contactResponse.json()
+        let contatoUUID = null
+        
+        if (Array.isArray(contactData) && contactData.length > 0) {
+          const specificContact = contactData.find((c: any) => c.numeroTelefone === telefone)
+          contatoUUID = specificContact?.id
+        } else if (contactData?.data && Array.isArray(contactData.data)) {
+          const specificContact = contactData.data.find((c: any) => c.numeroTelefone === telefone)
+          contatoUUID = specificContact?.id
+        }
+        
+        if (!contatoUUID) {
+          result[cardId] = []
+          return
+        }
+        
+        // 2. Buscar orçamentos usando o UUID
+        console.log(`🔍 Buscando orçamentos para ${cardId} (telefone: ${telefone}, UUID: ${contatoUUID})`)
+        const orcamentosResponse = await fetch(`${BACKEND_URL}/api/orcamentos?contato_id=${contatoUUID}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (orcamentosResponse.ok) {
+          const data = await orcamentosResponse.json()
+          const orcamentos = data.data || data || []
+          console.log(`✅ Encontrados ${orcamentos.length} orçamentos para ${cardId}`)
+          result[cardId] = orcamentos
+        } else {
+          console.log(`❌ Erro ao buscar orçamentos para ${cardId}: ${orcamentosResponse.status}`)
+          result[cardId] = []
+        }
+      } catch (error) {
+        console.error(`Erro ao buscar orçamentos para ${cardId}:`, error)
+        result[cardId] = []
+      }
     })
+    
+    await Promise.all(promises)
+    
+    console.log('✅ Orçamentos mapeados para cardIds:', result)
+    console.log('✅ Quantidade de cards retornados:', Object.keys(result).length)
 
-    console.log('🔍 [DEBUG] Response status:', orcamentosResponse.status)
-    console.log('🔍 [DEBUG] Response headers:', Object.fromEntries(orcamentosResponse.headers.entries()))
-
-    if (!orcamentosResponse.ok) {
-      console.error('❌ Erro ao buscar orçamentos do backend:', orcamentosResponse.status)
-      const errorText = await orcamentosResponse.text()
-      console.error('❌ Error body:', errorText)
-      return NextResponse.json({}, { status: 200 }) // Retorna vazio em caso de erro
-    }
-
-    const orcamentosData = await orcamentosResponse.json()
-    console.log('✅ Orçamentos recebidos do backend:', orcamentosData)
-    console.log('✅ Quantidade de cards retornados:', Object.keys(orcamentosData).length)
-
-    return NextResponse.json(orcamentosData)
+    return NextResponse.json(result)
 
   } catch (error) {
     console.error('❌ Erro na API batch orçamentos:', error)

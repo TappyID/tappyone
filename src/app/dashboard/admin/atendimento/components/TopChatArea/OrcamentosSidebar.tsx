@@ -79,7 +79,15 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
               <div>
                 <p className="text-sm text-green-600 opacity-75 font-medium">Total em Orçamentos</p>
                 <p className="text-2xl font-bold text-green-700">
-                  R$ {orcamentos.reduce((total: number, orc: any) => total + (orc.valorTotal || 0), 0).toFixed(2)}
+                  R$ {orcamentos.reduce((total: number, orc: any) => {
+                    let valor = orc.valorTotal || orc.valor_total || orc.valor || 0;
+                    if (valor === 0 && orc.itens?.length > 0) {
+                      valor = orc.itens.reduce((sum: number, item: any) => 
+                        sum + (item.valor || 0) * (item.quantidade || 1), 0
+                      );
+                    }
+                    return total + valor;
+                  }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
@@ -96,25 +104,56 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
             </div>
           ) : orcamentos.length > 0 ? (
             orcamentos.map((orcamento: any) => (
-              <div key={orcamento.id} className="bg-gray-50 border rounded-lg p-3 hover:bg-gray-100 transition-colors">
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{orcamento.titulo}</h4>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                    {orcamento.status}
-                  </span>
-                </div>
-                
-                {orcamento.observacao && (
-                  <p className="text-sm text-gray-600 mb-3">{orcamento.observacao}</p>
-                )}
-                
-                <div className="flex flex-wrap gap-2">
-                  <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                    <DollarSign className="w-3 h-3" />
-                    <span>R$ {orcamento.valorTotal?.toFixed(2)}</span>
+              <div key={orcamento.id} className="bg-gray-50 border rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">
+                      {orcamento.titulo || `Orçamento #${orcamento.id?.slice(0, 8)}`}
+                    </h4>
+                    {orcamento.descricao && (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {orcamento.descricao}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-xs text-gray-500">
+                        {(() => {
+                          const data = orcamento.createdAt || orcamento.criadoEm || orcamento.created_at || orcamento.data;
+                          return data ? new Date(data).toLocaleDateString('pt-BR') : 'Sem data';
+                        })()}
+                      </span>
+                      {orcamento.status && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          orcamento.status === 'aprovado' ? 'bg-green-100 text-green-700' :
+                          orcamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {orcamento.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                    {new Date(orcamento.data).toLocaleDateString('pt-BR')}
+                  <div className="text-right ml-4">
+                    <span className="text-lg font-bold text-green-600">
+                      R$ {(() => {
+                        // Tentar pegar o valor de diferentes formas
+                        let valor = orcamento.valorTotal || orcamento.valor_total || orcamento.valor || 0;
+                        
+                        // Se valor for 0 e tiver itens, calcular a partir dos itens
+                        if (valor === 0 && orcamento.itens?.length > 0) {
+                          valor = orcamento.itens.reduce((sum: number, item: any) => 
+                            sum + (item.valor || 0) * (item.quantidade || 1), 0
+                          );
+                        }
+                        
+                        return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      })()}
+                    </span>
+                    {orcamento.itens?.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {orcamento.itens.length} {orcamento.itens.length === 1 ? 'item' : 'itens'}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -38,9 +38,10 @@ import {
   DollarSign,
   StickyNote,
   UserCheck,
-  Ticket,
   Bot,
-  Network
+  Network,
+  Tag,
+  Ticket
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -49,6 +50,7 @@ import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import { WhatsAppChat } from '@/hooks/useWhatsAppData'
 import { useAgentes } from '@/hooks/useAgentes'
 import { useConexaoFila } from '@/hooks/useConexaoFila'
+// Modais antigos (vamos substituir gradualmente)
 import TicketModal from '../../atendimentos/components/modals/TicketModal'
 import AgenteSelectionModal from '../../atendimentos/components/modals/AgenteSelectionModal'
 import TransferirAtendimentoModal from '../../atendimentos/components/modals/TransferirAtendimentoModal'
@@ -59,8 +61,24 @@ import UniversalAgendamentoModal, { type AgendamentoData as UniversalAgendamento
 import AnotacoesModal from '../../atendimentos/components/modals/AnotacoesModal'
 import AgendamentoModal from '../../atendimentos/components/modals/AgendamentoModal'
 import CriarOrcamentoModal from '../../orcamentos/components/CriarOrcamentoModal'
+
+// BottomSheets do chat (reutilizando)
+import AgendamentoBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/AgendamentoBottomSheet'
+import OrcamentoBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/OrcamentoBottomSheet'
+import TicketBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
+import AnotacoesBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
+import AssinaturaBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/AssinaturaBottomSheet'
+import TagsBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/TagsBottomSheet'
+import ChatHeader from '../../atendimento/components/TopChatArea/ChatHeader'
+import ChatArea from '../../atendimento/components/MiddleChatArea'
+import MessageInput from '../../atendimento/components/FooterChatArea/MessageInput'
 import ConexaoFilaBadges from './components/ConexaoFilaBadges'
 import ConexaoFilaModal from './components/ConexaoFilaModal'
+import OrcamentosBadge from './components/OrcamentosBadge'
+import OrcamentosExpandido from './components/OrcamentosExpandido'
+import TagsBadge from './components/TagsBadge'
+import OrcamentosTotalColuna from './components/OrcamentosTotalColuna'
+import ChatModalKanban from './components/ChatModalKanban'
 import { fileLogger } from '@/utils/fileLogger'
 import CriarCardModal from '../components/CriarCardModal'
 import AssinaturaModal from '../../atendimentos/components/modals/AssinaturaModal'
@@ -105,6 +123,8 @@ function LazyCardsList({
   onOpenAnotacoes,
   onOpenTicket,
   onOpenAgente,
+  onOpenTags,
+  onOpenChat,
   onOpenTransferencia,
   onOpenEditContato,
   onOpenDeleteCard,
@@ -207,6 +227,8 @@ function LazyCardsList({
           onOpenAnotacoes={onOpenAnotacoes}
           onOpenTicket={onOpenTicket}
           onOpenAgente={onOpenAgente}
+          onOpenTags={onOpenTags}
+          onOpenChat={onOpenChat}
           onOpenTransferencia={onOpenTransferencia}
           onOpenEditContato={onOpenEditContato}
           onOpenDeleteCard={onOpenDeleteCard}
@@ -294,6 +316,8 @@ function DroppableArea({
   onOpenAnotacoes,
   onOpenTicket,
   onOpenAgente,
+  onOpenTags,
+  onOpenChat,
   onOpenTransferencia,
   onOpenEditContato,
   onOpenDeleteCard,
@@ -642,8 +666,11 @@ function DroppableArea({
         {(() => {
           const totalOrcamentos = coluna.cards.reduce((total: number, card: any) => {
             const cardOrcamentos = orcamentosData?.[card.id] || []
+            console.log('🔍 [COLUNA] Card:', card.id, 'Orçamentos:', cardOrcamentos.length)
             return total + cardOrcamentos.length
           }, 0)
+          
+          console.log('🔍 [COLUNA] Total orçamentos na coluna:', totalOrcamentos)
           
           const totalAgendamentos = coluna.cards.reduce((total: number, card: any) => {
             const cardAgendamentos = agendamentosData?.[card.id] || []
@@ -653,7 +680,17 @@ function DroppableArea({
           const totalValor = coluna.cards.reduce((total: number, card: any) => {
             const cardOrcamentos = orcamentosData?.[card.id] || []
             const cardTotal = cardOrcamentos.reduce((sum: number, orc: any) => {
-              const valor = parseFloat(orc.valorTotal) || 0
+              // Calcular valor total dos itens se valorTotal for 0
+              let valor = parseFloat(orc.valorTotal) || 0
+              
+              if (valor === 0 && orc.itens && Array.isArray(orc.itens)) {
+                valor = orc.itens.reduce((itemSum: number, item: any) => {
+                  const quantidade = parseFloat(item.quantidade) || 0
+                  const valorUnitario = parseFloat(item.valorUnitario) || 0
+                  return itemSum + (quantidade * valorUnitario)
+                }, 0)
+              }
+              
               return sum + valor
             }, 0)
             return total + cardTotal
@@ -669,41 +706,12 @@ function DroppableArea({
           
           return (
             <div className="mb-4 space-y-2">
-              {/* Resumo de Orçamentos */}
-              {totalOrcamentos > 0 && (
-                <motion.div
-                  className="px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-500 overflow-hidden relative"
-                  style={{
-                    background: theme === 'dark'
-                      ? `linear-gradient(135deg, ${coluna.cor}15 0%, rgba(0,0,0,0.3) 100%)`
-                      : `linear-gradient(135deg, ${coluna.cor}10 0%, rgba(255,255,255,0.8) 100%)`,
-                    borderColor: theme === 'dark' ? '#334155' : '#e2e8f0'
-                  }}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <DollarSign 
-                        className="w-[15px] h-[15px]" 
-                        style={{ color: coluna.cor }}
-                      />
-                      <span className={`text-xs font-medium ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-800'
-                      }`}>
-                        {totalOrcamentos} orçamento{totalOrcamentos !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="text-sm font-bold" style={{ color: coluna.cor }}>
-                      {totalValor.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+              {/* Resumo de Orçamentos - Componente Isolado */}
+              <OrcamentosTotalColuna 
+                cards={coluna.cards || []}
+                columnColor={coluna.cor}
+                theme={theme}
+              />
               
               {/* Resumo de Agendamentos */}
               {totalAgendamentos > 0 && (
@@ -816,6 +824,8 @@ function DroppableArea({
             onOpenAnotacoes={onOpenAnotacoes}
             onOpenTicket={onOpenTicket}
             onOpenAgente={onOpenAgente}
+            onOpenTags={onOpenTags}
+            onOpenChat={onOpenChat}
             onOpenTransferencia={onOpenTransferencia}
             onOpenEditContato={(card) => {
               console.log('🚀 Disparando evento openEditContactModal:', card);
@@ -899,6 +909,8 @@ interface SortableCardProps {
   onOpenAnotacoes: (card: any) => void;
   onOpenTicket: (card: any) => void;
   onOpenAgente: (card: any) => void;
+  onOpenTags: (card: any) => void;
+  onOpenChat: (card: any) => void;
   onOpenTransferencia: (card: any) => void;
   onOpenEditContato: (card: any) => void;
   onOpenDeleteCard: (card: any) => void;
@@ -1093,6 +1105,8 @@ function SortableCard({
   onOpenAnotacoes,
   onOpenTicket,
   onOpenAgente,
+  onOpenTags,
+  onOpenChat,
   onOpenTransferencia,
   onOpenEditContato,
   onOpenDeleteCard,
@@ -1387,6 +1401,9 @@ onError={(e) => {
             )
           })()}
 
+          {/* Badge Tags - Componente Isolado */}
+          <TagsBadge cardId={card.id} theme={theme} />
+
           {/* Badge Filas */}
           {(() => {
             const filasCount = card.filas?.length || 0
@@ -1439,46 +1456,66 @@ onError={(e) => {
           transition={{ duration: 0.2, ease: 'easeInOut' }}
           style={{ overflow: 'hidden' }}
         >
-          {/* Badge Orçamentos - Clicável */}
+          {/* Badge Tags */}
           {(() => {
-            console.log('🔍 DEBUG Card:', card.id, 'orcamentosCount:', orcamentosCount)
-            console.log('🔍 DEBUG orcamentosData para card:', orcamentosData?.[card.id])
-            return null
+            const tags = tagsData?.[card.id] || []
+            return tags.length > 0 && (
+              <div
+                className="flex items-center gap-2 p-2 rounded-lg"
+                style={{
+                  background: theme === 'dark' ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
+                  border: '1px solid rgba(99, 102, 241, 0.3)'
+                }}
+              >
+                <Tag className="w-3.5 h-3.5 text-indigo-500" />
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((tag: any, idx: number) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 text-xs rounded-full"
+                      style={{
+                        backgroundColor: tag.cor + '20',
+                        color: tag.cor,
+                        border: `1px solid ${tag.cor}40`
+                      }}
+                    >
+                      {tag.nome}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )
           })()}
-          {orcamentosCount > 0 && (
-            <div
-              className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:scale-105 transition-all duration-200"
-              style={{
-                background: theme === 'dark' 
-                  ? `${columnColor}15`
-                  : `${columnColor}10`,
-                border: `1px solid ${columnColor}30`
-              }}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                console.log('Clicou orçamentos, expandedSection atual:', expandedSection)
-                console.log('orcamentosData para card:', card.id, orcamentosData?.[card.id])
-                setExpandedSection(expandedSection === 'orcamentos' ? null : 'orcamentos')
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-3.5 h-3.5" style={{ color: columnColor }} />
-                <span className={`text-xs font-medium ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-800'
-                }`}>
-                  {orcamentosCount} Orçamento{orcamentosCount > 1 ? 's' : ''}
+          
+          {/* Badge Agente Responsável */}
+          {(() => {
+            const agente = agentesData?.[card.id]
+            return agente && (
+              <div
+                className="flex items-center gap-2 p-2 rounded-lg"
+                style={{
+                  background: theme === 'dark' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)'
+                }}
+              >
+                <UserCheck className="w-3.5 h-3.5 text-purple-500" />
+                <span className={`text-xs ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                  Agente: <strong>{agente.nome || agente.email}</strong>
                 </span>
               </div>
-              {orcamentosData && orcamentosData[card.id] && (
-                <div className="text-xs font-bold" style={{ color: columnColor }}>
-                  R$ {orcamentosData[card.id].reduce((sum: number, orc: any) => 
-                    sum + (parseFloat(orc.valorTotal) || 0), 0
-                  ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-              )}
-            </div>
-          )}
+            )
+          })()}
+          
+          {/* Badge Orçamentos - Componente Isolado */}
+          <OrcamentosBadge 
+            cardId={card.id} 
+            columnColor={columnColor} 
+            theme={theme}
+            onClick={() => {
+              console.log('Clicou orçamentos, expandedSection atual:', expandedSection)
+              setExpandedSection(expandedSection === 'orcamentos' ? null : 'orcamentos')
+            }}
+          />
 
           {/* Badge Agendamentos - Clicável */}
           {agendamentosCount > 0 && (
@@ -1630,44 +1667,14 @@ onError={(e) => {
 
         {/* Seções Expandidas - Aparecem quando clicadas */}
         <AnimatePresence>
-          {/* Detalhes Orçamentos Expandidos */}
+          {/* Detalhes Orçamentos Expandidos - Componente Isolado */}
           {expandedSection === 'orcamentos' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="mt-3 space-y-2"
-              style={{ overflow: 'hidden' }}
-            >
-              {orcamentosData && orcamentosData[card.id] && Array.isArray(orcamentosData[card.id]) ? (
-                <SortableContext
-                  items={orcamentosData[card.id].map((orc: any) => `orc-${orc.id}`)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {orcamentosData[card.id].map((orc: any, index: number) => (
-                    <SortableOrcamentoItem
-                      key={orc.id}
-                      orc={orc}
-                      index={index}
-                      columnColor={columnColor}
-                      theme={theme}
-                    />
-                  ))}
-                </SortableContext>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className={`p-4 rounded-lg text-center ${
-                    theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
-                  }`}
-                >
-                  <DollarSign className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Carregando orçamentos...</p>
-                </motion.div>
-              )}
-            </motion.div>
+            <OrcamentosExpandido 
+              cardId={card.id}
+              columnColor={columnColor}
+              theme={theme}
+              onOpenOrcamento={() => onOpenOrcamento(card)}
+            />
           )}
 
           {/* Detalhes Agendamentos Expandidos */}
@@ -1680,8 +1687,8 @@ onError={(e) => {
               className="mt-3 space-y-2"
               style={{ overflow: 'hidden' }}
             >
-              {agendamentosData && agendamentosData[card.id] && Array.isArray(agendamentosData[card.id]) ? (
-                agendamentosData[card.id].map((agend: any, index: number) => (
+              {agendamentosData && Array.isArray(agendamentosData) && agendamentosData.length > 0 ? (
+                agendamentosData.map((agend: any, index: number) => (
                   <motion.div
                     key={agend.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -1711,13 +1718,20 @@ onError={(e) => {
                     </div>
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-xs opacity-60">
-                        {agend.dataHora ? new Date(agend.dataHora).toLocaleDateString('pt-BR') : 'Data não definida'}
+                        {(() => {
+                          const data = agend.dataHora || agend.data || agend.createdAt || agend.criadoEm
+                          console.log('🔍 DEBUG Agendamento data:', { dataHora: agend.dataHora, data: agend.data, createdAt: agend.createdAt, criadoEm: agend.criadoEm })
+                          return data ? new Date(data).toLocaleDateString('pt-BR') : 'Data não definida'
+                        })()}
                       </span>
                       <span className="text-xs opacity-60">
-                        {agend.dataHora ? new Date(agend.dataHora).toLocaleTimeString('pt-BR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        }) : '--:--'}
+                        {(() => {
+                          const data = agend.dataHora || agend.data || agend.createdAt || agend.criadoEm
+                          return data ? new Date(data).toLocaleTimeString('pt-BR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          }) : '--:--'
+                        })()}
                       </span>
                     </div>
                   </motion.div>
@@ -1731,7 +1745,14 @@ onError={(e) => {
                   }`}
                 >
                   <Calendar className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Carregando agendamentos...</p>
+                  <p className="text-sm">Nenhum agendamento encontrado</p>
+                  <button
+                    onClick={() => onOpenAgendamento(card)}
+                    className="mt-2 text-xs underline hover:opacity-80"
+                    style={{ color: columnColor }}
+                  >
+                    Criar novo agendamento
+                  </button>
                 </motion.div>
               )}
             </motion.div>
@@ -1747,8 +1768,8 @@ onError={(e) => {
               className="mt-3 space-y-2"
               style={{ overflow: 'hidden' }}
             >
-              {assinaturasData && assinaturasData[card.id] && Array.isArray(assinaturasData[card.id]) ? (
-                assinaturasData[card.id].map((ass: any, index: number) => (
+              {assinaturasData && Array.isArray(assinaturasData) && assinaturasData.length > 0 ? (
+                assinaturasData.map((ass: any, index: number) => (
                   <motion.div
                     key={ass.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -1793,8 +1814,15 @@ onError={(e) => {
                     theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
                   }`}
                 >
-                  <DollarSign className="w-5 h-5 mx-auto mb-1 opacity-50" />
-                  <p className="text-xs">Carregando assinaturas...</p>
+                  <FileSignature className="w-5 h-5 mx-auto mb-1 opacity-50" />
+                  <p className="text-xs">Nenhuma assinatura encontrada</p>
+                  <button
+                    onClick={() => onOpenAssinatura(card)}
+                    className="mt-2 text-xs underline hover:opacity-80"
+                    style={{ color: columnColor }}
+                  >
+                    Criar nova assinatura
+                  </button>
                 </motion.div>
               )}
             </motion.div>
@@ -1810,9 +1838,8 @@ onError={(e) => {
               className="mt-3 space-y-2"
               style={{ overflow: 'hidden' }}
             >
-              {console.log('DEBUG Anotações - cardId:', card.id, 'anotacoesData:', anotacoesData, 'dados do card:', anotacoesData?.[card.id])}
-              {anotacoesData && anotacoesData[card.id] && Array.isArray(anotacoesData[card.id]) ? (
-                anotacoesData[card.id].map((anotacao: any, index: number) => (
+              {anotacoesData && Array.isArray(anotacoesData) && anotacoesData.length > 0 ? (
+                anotacoesData.map((anotacao: any, index: number) => (
                   <motion.div
                     key={anotacao.id}
                     onClick={() => onOpenAnotacoes(card)}
@@ -1873,8 +1900,8 @@ onError={(e) => {
               className="mt-3 space-y-2"
               style={{ overflow: 'hidden' }}
             >
-              {agentesData && Array.isArray(agentesData) && agentesData.length > 0 ? (
-                agentesData.map((agente: any, index: number) => (
+              {agentesData ? (
+                [agentesData].map((agente: any, index: number) => (
                   <motion.div
                     key={agente.id || index}
                     initial={{ opacity: 0, x: -20 }}
@@ -2018,7 +2045,7 @@ onError={(e) => {
       {/* Área de Ações - NÃO draggable */}
       <div className="flex flex-col gap-3 mt-3">
         {/* Ações do ChatArea - Alinhadas à Esquerda */}
-        <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs transition-all duration-300 ${
+        <div className={`flex items-center gap-0.2 px-3 py-1.5 rounded-full font-bold text-xs transition-all duration-300 ${
           theme === 'dark' 
             ? 'bg-gradient-to-r from-slate-700/60 to-slate-600/60 text-slate-200 border border-slate-600/30' 
             : 'bg-gradient-to-r from-gray-100/80 to-gray-200/60 text-gray-700 border border-gray-300/30'
@@ -2027,7 +2054,7 @@ onError={(e) => {
           boxShadow: `0 4px 12px ${columnColor || '#64748b'}15`
         }}>
       
-          {/* Conexão/Fila */}
+          {/* Conexão/Fila
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
@@ -2044,7 +2071,7 @@ onError={(e) => {
             title="Gerenciar Conexão/Fila"
           >
             <Network className="w-[11px] h-[11px]" />
-          </motion.button>
+          </motion.button> */}
 
           {/* Gerenciar Agente IA */}
           <motion.button 
@@ -2164,9 +2191,9 @@ onError={(e) => {
           >
               <DollarSign className="w-[11px] h-[11px]" />
               {/* Badge com número de orçamentos - SEMPRE MOSTRA SE > 0 */}
-              {(orcamentosCount || 0) > 0 && (
+              {(orcamentosCount[card.id] || 0) > 0 && (
                 <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
-                  {orcamentosCount > 99 ? '99+' : orcamentosCount}
+                  {orcamentosCount[card.id] > 99 ? '99+' : orcamentosCount[card.id]}
                 </span>
               )}
             </motion.button>
@@ -2220,9 +2247,9 @@ onError={(e) => {
                   {notesCount > 99 ? '99+' : notesCount}
                 </span>
               )}
-          </motion.button>
+            </motion.button>
             
-          {/* Tickets */}
+          {/* Ticket */}
           <motion.button 
             onClick={(e) => {
               e.preventDefault()
@@ -2236,21 +2263,65 @@ onError={(e) => {
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            title="Tickets"
+            title="Ticket"
           >
-              <Ticket className="w-[11px] h-[11px]" />
-              {/* Badge com número de tickets - SEMPRE MOSTRA SE > 0 */}
-              {(ticketsCount || 0) > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
-                  {ticketsCount > 99 ? '99+' : ticketsCount}
-                </span>
-              )}
-            </motion.button>
+            <Ticket className="w-[11px] h-[11px]" />
+            {/* Badge com número de tickets - SEMPRE MOSTRA SE > 0 */}
+            {(ticketsCount || 0) > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {ticketsCount > 99 ? '99+' : ticketsCount}
+              </span>
+            )}
+          </motion.button>
+          
+          {/* Tags */}
+          <motion.button 
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onOpenTags(card)
+            }}
+            className={`relative p-1.5 rounded-lg transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
+                : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
+            }`}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Tags"
+          >
+            <Tag className="w-[11px] h-[11px]" />
+            {/* Badge com número de tags */}
+            {(tagsCount[card.id] || 0) > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-indigo-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+                {tagsCount[card.id] > 99 ? '99+' : tagsCount[card.id]}
+              </span>
+            )}
+          </motion.button>
+          
+          {/* Chat */}
+          <motion.button 
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onOpenChat(card)
+            }}
+            className={`relative p-1.5 rounded-lg transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'hover:bg-slate-600/50 text-slate-300 hover:text-white' 
+                : 'hover:bg-gray-200/50 text-gray-600 hover:text-gray-800'
+            }`}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Abrir Chat"
+          >
+            <MessageCircle className="w-[11px] h-[11px]" />
+          </motion.button>
         </div>
         
-        {/* Informações do Card */}
-        <div className="flex items-center gap-2">
-          {/* Último Visto */}
+        {/* Informações adicionais */}
+        <div className="flex items-center gap-3 text-xs">
+          {/* Última visualização */}
           {card.lastSeen && (
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 text-[#273155]" />
@@ -2419,16 +2490,7 @@ export default function QuadroPage() {
   const [ticketsDataState, setTicketsDataState] = useState<Record<string, any[]>>({})
   const [agentesDataState, setAgentesDataState] = useState<Record<string, any[]>>({})
   
-  // Criar contagens baseadas nos dados individuais
-  const orcamentosCount = useMemo(() => {
-    const counts: Record<string, number> = {}
-    Object.keys(orcamentosDataState).forEach(cardId => {
-      counts[cardId] = orcamentosDataState[cardId]?.length || 0
-    })
-    console.log('🔍 DEBUG orcamentosCount:', counts)
-    console.log('🔍 DEBUG orcamentosDataState:', orcamentosDataState)
-    return counts
-  }, [orcamentosDataState])
+  // Criar contagens baseadas nos dados individuais - MOVIDO PARA DEPOIS
   
   const agendamentosCount = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -2523,6 +2585,18 @@ export default function QuadroPage() {
   const ticketsData = ticketsDataState
   const agentesData = agentesDataState
   
+  // Calcular contagens após declarar os dados - IGUAL AOS TICKETS
+  const orcamentosCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(orcamentosDataState).forEach(cardId => {
+      counts[cardId] = orcamentosDataState[cardId]?.length || 0
+    })
+    console.log('💰 [ORCAMENTOS COUNT] counts calculadas:', counts)
+    console.log('💰 [ORCAMENTOS COUNT] orcamentosDataState atual:', orcamentosDataState)
+    console.log('💰 [ORCAMENTOS COUNT] Total de cards com dados:', Object.keys(orcamentosDataState).length)
+    return counts
+  }, [orcamentosDataState])
+  
   // Buscar dados de assinaturas do hook otimizado
   const assinaturasData: { [cardId: string]: any[] } = {}
   Object.keys(optimizedCards).forEach(cardId => {
@@ -2546,6 +2620,8 @@ export default function QuadroPage() {
   const [conexaoFilaModal, setConexaoFilaModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
   const [editContactModal, setEditContactModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
   const [deleteCardModal, setDeleteCardModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [tagsModal, setTagsModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
+  const [chatModal, setChatModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
   const [criarCardModal, setCriarCardModal] = useState({ isOpen: false, colunaId: '' })
   const [videoChamadaModal, setVideoChamadaModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
   const [ligacaoModal, setLigacaoModal] = useState({ isOpen: false, card: null as WhatsAppChat | null })
@@ -2845,35 +2921,71 @@ export default function QuadroPage() {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      // Extrair número de telefone do chat ID para usar como contato_id
+      // Extrair número de telefone do chat ID
       const contatoId = selectedCard?.id || data.contato?.id
       const numeroTelefone = contatoId.replace('@c.us', '')
       
-      // Preparar dados do orçamento para o backend (formato correto)
-      const orcamentoData = {
-        Data: `${data.data}T00:00:00Z`, // Backend espera ISO 8601 com timestamp
-        titulo: data.titulo,
-        cliente_nome: data.cliente || 'Cliente',
-        cliente_telefone: numeroTelefone,
-        data_criacao: data.data,
-        data_validade: data.data_validade,
-        tipo: data.tipo || 'orcamento',
-        status: 'rascunho',
-        valor_total: data.itens.reduce((total: number, item: any) => total + (item.valor * item.quantidade), 0),
-        itens: data.itens.map((item: any) => ({
-          nome: item.nome,
-          descricao: item.descricao || '',
-          quantidade: item.quantidade,
-          valor: item.valor, // Backend espera 'valor' não 'valor_unitario'
-          subtotal: item.valor * item.quantidade
-        })),
-        observacoes: data.observacao,
-        condicoes_pagamento: data.condicoes_pagamento,
-        prazo_entrega: data.prazo_entrega,
-        desconto: data.desconto || 0,
-        taxa_adicional: data.taxa_adicional || 0,
-        contato_id: numeroTelefone
+      console.log('💰 [Kanban] Buscando UUID do contato pelo telefone:', numeroTelefone)
+      
+      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone (IGUAL AO BOTTOMSHEET)
+      const contactResponse = await fetch(`/api/contatos?telefone=${numeroTelefone}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!contactResponse.ok) {
+        console.error('❌ Erro ao buscar contato:', contactResponse.status)
+        showNotification('Erro ao buscar contato. Tente novamente.', 'error')
+        return
       }
+      
+      const contactData = await contactResponse.json()
+      let contatoUUID = null
+      
+      if (Array.isArray(contactData) && contactData.length > 0) {
+        const specificContact = contactData.find((c: any) => c.numeroTelefone === numeroTelefone)
+        contatoUUID = specificContact?.id
+      } else if (contactData?.data && Array.isArray(contactData.data)) {
+        const specificContact = contactData.data.find((c: any) => c.numeroTelefone === numeroTelefone)
+        contatoUUID = specificContact?.id
+      }
+      
+      if (!contatoUUID) {
+        console.error('❌ UUID do contato não encontrado')
+        showNotification('Contato não encontrado. Crie o contato primeiro.', 'error')
+        return
+      }
+      
+      console.log('✅ UUID do contato encontrado:', contatoUUID)
+      
+      // 2. SEGUNDO: Criar orçamento com formato EXATO do BottomSheet
+      const valorTotal = data.itens.reduce((total: number, item: any) => 
+        total + (item.valor * item.quantidade), 0
+      )
+      
+      const orcamentoData = {
+        titulo: data.titulo,
+        descricao: data.descricao || '',
+        data: new Date().toISOString(), // minúsculo, ISO completo
+        tipo: 'orcamento', // minúsculo
+        valorTotal: valorTotal,
+        status: 'PENDENTE',
+        contato_id: contatoUUID, // UUID, não telefone!
+        observacao: data.observacao || null,
+        itens: data.itens.map((item: any) => ({
+          descricao: item.descricao || item.nome || '',
+          quantidade: item.quantidade,
+          valor: item.valor,
+          valorUnitario: item.valor, // Adicionar também como valorUnitario
+          subtotal: item.quantidade * item.valor // Calcular subtotal do item
+        })),
+        subtotal: valorTotal,
+        desconto: data.desconto || 0,
+        chatId: contatoId // manter o ID original do chat
+      }
+      
+      console.log('💰 [Kanban] Dados do orçamento a enviar:', orcamentoData)
+      console.log('💰 [Kanban] Valor total calculado:', valorTotal)
+      console.log('💰 [Kanban] Itens:', data.itens)
 
       const response = await fetch('/api/orcamentos', {
         method: 'POST',
@@ -2892,10 +3004,12 @@ export default function QuadroPage() {
         // Invalidar cache e atualizar dados do kanban
         setTimeout(async () => {
           console.log('🔄 [DEBUG] Forçando reload completo dos dados após orçamento')
+          console.log('🔄 [DEBUG] Card ID:', selectedCard?.id)
           await forceRefresh()
           await carregarMetadados()
           // Força reload dos chats também
           loadChatsManual()
+          console.log('🔄 [DEBUG] Reload completo finalizado')
         }, 500)
       } else {
         console.error('❌ Erro ao criar orçamento:', response.statusText)
@@ -3007,21 +3121,62 @@ const getContactData = () => {
 }
 
 
+  // Helper para buscar UUID do contato
+  const getContactUUID = async (telefone: string): Promise<string | null> => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return null
+      
+      const response = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) return null
+      
+      const data = await response.json()
+      let contato = null
+      
+      if (Array.isArray(data) && data.length > 0) {
+        contato = data.find((c: any) => c.numeroTelefone === telefone)
+      } else if (data?.data && Array.isArray(data.data)) {
+        contato = data.data.find((c: any) => c.numeroTelefone === telefone)
+      }
+      
+      return contato?.id || null
+    } catch (error) {
+      console.error('Erro ao buscar UUID:', error)
+      return null
+    }
+  }
+
   // Função para buscar dados completos de orçamentos
   const fetchOrcamentosDetalhes = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      console.log('🔍 DEBUG fetchOrcamentosDetalhes para card:', chatId)
-      // Extrair número do JID para buscar corretamente
-      const numeroTelefone = chatId.replace('@c.us', '')
-      const response = await fetch(`/api/orcamentos?contato_id=${encodeURIComponent(numeroTelefone)}`, {
+      console.log('💰 [Kanban] Buscando orçamentos para:', chatId)
+      
+      // Extrair número do telefone
+      const numeroTelefone = chatId.replace('@c.us', '').replace('@g.us', '')
+      
+      // Buscar UUID do contato
+      const contatoUUID = await getContactUUID(numeroTelefone)
+      if (!contatoUUID) {
+        console.log('💰 [Kanban] UUID não encontrado para:', numeroTelefone)
+        return []
+      }
+      
+      console.log('💰 [Kanban] UUID encontrado:', contatoUUID)
+      
+      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
       
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.data || result || []
+        console.log('💰 [Kanban] Orçamentos recebidos:', data.length)
         return Array.isArray(data) ? data.slice(0, 3) : [] // Limitamos aos 3 mais recentes
       }
       return []
@@ -3035,16 +3190,30 @@ const getContactData = () => {
   const fetchAgendamentosDetalhes = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      // Extrair número do JID para buscar corretamente
-      const numeroTelefone = chatId.replace('@c.us', '')
-      const response = await fetch(`/api/agendamentos?contato_id=${encodeURIComponent(numeroTelefone)}`, {
+      console.log('📅 [Kanban] Buscando agendamentos para:', chatId)
+      
+      // Extrair número do telefone
+      const numeroTelefone = chatId.replace('@c.us', '').replace('@g.us', '')
+      
+      // Buscar UUID do contato
+      const contatoUUID = await getContactUUID(numeroTelefone)
+      if (!contatoUUID) {
+        console.log('📅 [Kanban] UUID não encontrado para:', numeroTelefone)
+        return []
+      }
+      
+      console.log('📅 [Kanban] UUID encontrado:', contatoUUID)
+      
+      const response = await fetch(`http://159.65.34.199:8081/api/agendamentos?contato_id=${contatoUUID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
       
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.data || result || []
+        console.log('📅 [Kanban] Agendamentos recebidos:', data.length)
         return Array.isArray(data) ? data.slice(0, 3) : [] // Limitamos aos 3 mais recentes
       }
       return []
@@ -3185,14 +3354,30 @@ const getContactData = () => {
   const fetchTagsDetails = async (chatId: string) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/tags?contato_id=${encodeURIComponent(chatId)}`, {
+      console.log('🏷️ [Kanban] Buscando tags para:', chatId)
+      
+      // Extrair número do telefone
+      const numeroTelefone = chatId.replace('@c.us', '').replace('@g.us', '')
+      
+      // Buscar UUID do contato
+      const contatoUUID = await getContactUUID(numeroTelefone)
+      if (!contatoUUID) {
+        console.log('🏷️ [Kanban] UUID não encontrado para:', numeroTelefone)
+        return []
+      }
+      
+      console.log('🏷️ [Kanban] UUID encontrado:', contatoUUID)
+      
+      const response = await fetch(`http://159.65.34.199:8081/api/contatos/${contatoUUID}/tags`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
       
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.data || result || []
+        console.log('🏷️ [Kanban] Tags recebidas:', data.length)
         return Array.isArray(data) ? data : []
       }
     } catch (error) {
@@ -3333,6 +3518,14 @@ const getContactData = () => {
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false)
   const [showAssinaturaModal, setShowAssinaturaModal] = useState(false)
   const [showAnotacoesModal, setShowAnotacoesModal] = useState(false)
+  
+  // Estados para BottomSheets
+  const [showAgendamentoSheet, setShowAgendamentoSheet] = useState(false)
+  const [showOrcamentoSheet, setShowOrcamentoSheet] = useState(false)
+  const [showTicketSheet, setShowTicketSheet] = useState(false)
+  const [showAnotacoesSheet, setShowAnotacoesSheet] = useState(false)
+  const [showAssinaturaSheet, setShowAssinaturaSheet] = useState(false)
+  const [selectedSheetCard, setSelectedSheetCard] = useState<any>(null)
   
   // Estados para edição de colunas
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
@@ -3579,6 +3772,16 @@ const getContactData = () => {
     setSelectedCard(card)
     setAnotacoesModal({ isOpen: true, card })
     setShowAnotacoesModal(true)
+  }
+  
+  const handleOpenTags = (card: any) => {
+    setSelectedCard(card)
+    setTagsModal({ isOpen: true, card })
+  }
+  
+  const handleOpenChat = (card: any) => {
+    setSelectedCard(card)
+    setChatModal({ isOpen: true, card })
   }
 
   const handleOpenEditContact = (card: any) => {
@@ -4956,7 +5159,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
             `}</style>
             <div 
               id="kanban-scroll-container"
-              className="flex gap-6 overflow-x-auto pb-4 min-h-[calc(100vh-200px)]"
+              className="flex gap-7 overflow-x-auto pb-4 min-h-[calc(100vh-200px)]"
               style={{
                 scrollbarWidth: 'none', /* Firefox */
                 msOverflowStyle: 'none', /* IE and Edge */
@@ -4996,13 +5199,25 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                     onSaveColumnName={handleSaveColumnName}
                     onOpenColorModal={setColorPickerColumnId}
                     handleAddCard={handleAddCard}
-                    onOpenAgendamento={handleOpenAgendamento}
-                    onOpenOrcamento={handleOpenOrcamento}
-                    onOpenAssinatura={handleOpenAssinatura}
-                    onOpenAnotacoes={handleOpenAnotacoes}
+                    onOpenAgendamento={(card) => {
+                      setSelectedSheetCard(card)
+                      setShowAgendamentoSheet(true)
+                    }}
+                    onOpenOrcamento={(card) => {
+                      setSelectedSheetCard(card)
+                      setShowOrcamentoSheet(true)
+                    }}
+                    onOpenAssinatura={(card) => {
+                      setSelectedSheetCard(card)
+                      setShowAssinaturaSheet(true)
+                    }}
+                    onOpenAnotacoes={(card) => {
+                      setSelectedSheetCard(card)
+                      setShowAnotacoesSheet(true)
+                    }}
                     onOpenTicket={(card) => {
-                      setSelectedTicketCard(card)
-                      setShowTicketModal(true)
+                      setSelectedSheetCard(card)
+                      setShowTicketSheet(true)
                     }}
                     onOpenAgente={(card) => {
                       console.log(`🚀 CLICK BOT! Card ID: ${card?.id}`)
@@ -5013,6 +5228,8 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                         console.log(`🔍 DEBUG ESTADO: showAgenteModal: ${showAgenteModal}, selectedAgenteCard: ${selectedAgenteCard?.id}`)
                       }, 100)
                     }}
+                    onOpenTags={handleOpenTags}
+                    onOpenChat={handleOpenChat}
                     onOpenTransferencia={(card) => {
                       setSelectedTransferCard(card)
                       setShowTransferModal(true)
@@ -5087,6 +5304,8 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
                 onOpenAnotacoes={() => {}}
                 onOpenTicket={() => {}}
                 onOpenAgente={() => {}}
+                onOpenTags={() => {}}
+                onOpenChat={() => {}}
                 onOpenTransferencia={() => {}}
                 onOpenEditContato={(card) => {
                   setSelectedEditCard(card)
@@ -5227,6 +5446,27 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
           console.log('🎥 [Kanban] Iniciando vídeo chamada')
           // TODO: Implementar lógica de vídeo chamada
         }}
+      />
+
+      {/* BottomSheet de Tags */}
+      {tagsModal.isOpen && tagsModal.card && (
+        <TagsBottomSheet
+          isOpen={tagsModal.isOpen}
+          onClose={() => setTagsModal({ isOpen: false, card: null })}
+          contactData={{
+            id: tagsModal.card.id,
+            nome: tagsModal.card.name || tagsModal.card.nome,
+            telefone: tagsModal.card.id.replace('@c.us', '')
+          }}
+        />
+      )}
+
+      {/* Modal de Chat com componentes reutilizados */}
+      <ChatModalKanban 
+        isOpen={chatModal.isOpen}
+        onClose={() => setChatModal({ isOpen: false, card: null })}
+        card={chatModal.card}
+        theme={theme}
       />
 
       {/* Modal de Ligação */}
@@ -5385,6 +5625,72 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
         isOpen={conexaoFilaModal.isOpen}
         onClose={() => setConexaoFilaModal({ isOpen: false, card: null })}
         card={conexaoFilaModal.card || { id: '' }}
+      />
+
+      {/* BottomSheets do Chat (Reutilizados) */}
+      <AgendamentoBottomSheet
+        isOpen={showAgendamentoSheet}
+        onClose={() => {
+          setShowAgendamentoSheet(false)
+          setSelectedSheetCard(null)
+          // Recarregar dados após fechar
+          setTimeout(() => {
+            forceRefresh()
+          }, 500)
+        }}
+        chatId={selectedSheetCard?.id}
+      />
+
+      <OrcamentoBottomSheet
+        isOpen={showOrcamentoSheet}
+        onClose={() => {
+          setShowOrcamentoSheet(false)
+          setSelectedSheetCard(null)
+          // Recarregar dados após fechar
+          setTimeout(() => {
+            forceRefresh()
+          }, 500)
+        }}
+        chatId={selectedSheetCard?.id}
+      />
+
+      <TicketBottomSheet
+        isOpen={showTicketSheet}
+        onClose={() => {
+          setShowTicketSheet(false)
+          setSelectedSheetCard(null)
+          // Recarregar dados após fechar
+          setTimeout(() => {
+            forceRefresh()
+          }, 500)
+        }}
+        chatId={selectedSheetCard?.id}
+      />
+
+      <AnotacoesBottomSheet
+        isOpen={showAnotacoesSheet}
+        onClose={() => {
+          setShowAnotacoesSheet(false)
+          setSelectedSheetCard(null)
+          // Recarregar dados após fechar
+          setTimeout(() => {
+            forceRefresh()
+          }, 500)
+        }}
+        chatId={selectedSheetCard?.id}
+      />
+
+      <AssinaturaBottomSheet
+        isOpen={showAssinaturaSheet}
+        onClose={() => {
+          setShowAssinaturaSheet(false)
+          setSelectedSheetCard(null)
+          // Recarregar dados após fechar
+          setTimeout(() => {
+            forceRefresh()
+          }, 500)
+        }}
+        chatId={selectedSheetCard?.id}
       />
     </div>
   )

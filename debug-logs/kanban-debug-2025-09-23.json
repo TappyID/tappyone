@@ -1,0 +1,123 @@
+[
+  {
+    "timestamp": "2025-09-23T03:02:03.174Z",
+    "component": "Kanban",
+    "action": "loadChatsManual_finished",
+    "data": {
+      "finalState": {
+        "chatsLength": 0,
+        "loading": false
+      }
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:03.176Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_cards_mapped",
+    "data": {
+      "totalCards": 5,
+      "uniqueCardIds": 5,
+      "sampleCardIds": [
+        "15147260960@c.us",
+        "5518996755165@c.us",
+        "5581994076486@c.us",
+        "558199678497@c.us",
+        "5518996064455@c.us"
+      ],
+      "allCardIds": [
+        "15147260960@c.us",
+        "5518996755165@c.us",
+        "5581994076486@c.us",
+        "558199678497@c.us",
+        "5518996064455@c.us"
+      ]
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:06.151Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "15147260960@c.us",
+      "notesCount": 1,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:09.784Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996755165@c.us",
+      "notesCount": 1,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:12.335Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5581994076486@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:16.585Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "558199678497@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 0,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:17.984Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_card_processed",
+    "data": {
+      "cardId": "5518996064455@c.us",
+      "notesCount": 0,
+      "assinaturasCount": 1,
+      "contactStatus": "synced"
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  },
+  {
+    "timestamp": "2025-09-23T03:02:18.674Z",
+    "component": "Kanban",
+    "action": "loadAllCounts_final_data",
+    "data": {
+      "notesCounts": {
+        "15147260960@c.us": 1,
+        "5518996755165@c.us": 1,
+        "5581994076486@c.us": 0,
+        "558199678497@c.us": 0,
+        "5518996064455@c.us": 0
+      },
+      "orcamentosCounts": "usando dados otimizados do hook",
+      "agendamentosCounts": "usando dados otimizados do hook",
+      "assinaturasCounts": {
+        "15147260960@c.us": 0,
+        "5518996755165@c.us": 1,
+        "5581994076486@c.us": 0,
+        "558199678497@c.us": 0,
+        "5518996064455@c.us": 1
+      },
+      "totalOptimizedCards": 5
+    },
+    "userId": "fb8da1d7-d28f-4ef9-b8b0-e01f7466f578"
+  }
+]

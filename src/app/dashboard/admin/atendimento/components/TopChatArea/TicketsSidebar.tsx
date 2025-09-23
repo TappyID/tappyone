@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { X, Ticket } from 'lucide-react'
-import { getContactUUID } from './utils/getContactUUID'
 
 interface TicketsSidebarProps {
   isOpen: boolean
@@ -22,31 +21,31 @@ export default function TicketsSidebar({ isOpen, onClose, contatoId }: TicketsSi
 
   const fetchTickets = async () => {
     setLoading(true)
-    console.log('🎫 [TicketsSidebar] Buscando tickets do contato:', contatoId)
+    console.log('🎫 [TicketsSidebar] Buscando tickets do contato (telefone):', contatoId)
     try {
-      // 1. Buscar UUID do contato
-      const contatoUUID = await getContactUUID(contatoId!)
-      if (!contatoUUID) {
-        console.log('🎫 [TicketsSidebar] UUID não encontrado')
-        setTickets([])
-        return
-      }
-      
-      // 2. Buscar tickets usando o UUID
+      // TICKETS USA TELEFONE DIRETO, NÃO UUID!
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(`/api/tickets?contato_id=${contatoId}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        }
       })
       
+      console.log('🎫 [TicketsSidebar] Status da resposta:', response.status)
+      
       if (response.ok) {
-        const result = await response.json()
-        console.log('🎫 [TicketsSidebar] Tickets recebidos:', result)
-        const tickets = result.data || result || []
-        setTickets(Array.isArray(tickets) ? tickets : [])
-        console.log('🎫 [TicketsSidebar] Total de tickets:', tickets.length)
+        const data = await response.json()
+        const ticketsData = data.data || data || []
+        console.log('🎫 [TicketsSidebar] Tickets encontrados:', ticketsData)
+        setTickets(Array.isArray(ticketsData) ? ticketsData : [])
+        console.log('🎫 [TicketsSidebar] Total de tickets:', ticketsData.length)
+      } else {
+        console.log('🎫 [TicketsSidebar] Nenhum ticket encontrado')
+        setTickets([])
       }
     } catch (error) {
-      console.error('Erro ao buscar tickets:', error)
+      console.error('❌ [TicketsSidebar] Erro ao buscar tickets:', error)
+      setTickets([])
     } finally {
       setLoading(false)
     }

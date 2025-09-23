@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Tag, Plus, Search, Trash2 } from 'lucide-react'
+import { getContactUUID } from './utils/getContactUUID'
 
 interface TagsSidebarProps {
   isOpen: boolean
@@ -26,10 +27,21 @@ export default function TagsSidebar({ isOpen, onClose, contatoId }: TagsSidebarP
 
   const fetchTags = async () => {
     setLoading(true)
-    console.log('🏷️ [TagsSidebar] Buscando tags do contato:', contatoId)
+    console.log('🏷️ [TagsSidebar] Buscando tags do contato (telefone):', contatoId)
     try {
+      // 1. Buscar UUID do contato
+      const contatoUUID = await getContactUUID(contatoId!)
+      if (!contatoUUID) {
+        console.log('🏷️ [TagsSidebar] UUID não encontrado')
+        setTags([])
+        return
+      }
+      
+      console.log('🏷️ [TagsSidebar] UUID encontrado:', contatoUUID)
+      
+      // 2. Buscar tags usando o UUID
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/contatos/${contatoId}/tags`, {
+      const response = await fetch(`http://159.65.34.199:8081/api/contatos/${contatoUUID}/tags`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -42,10 +54,10 @@ export default function TagsSidebar({ isOpen, onClose, contatoId }: TagsSidebarP
         // A API retorna {data: Array, success: true}
         const tags = result.data || result || []
         setTags(Array.isArray(tags) ? tags : [])
-        console.log('🏷️ [TagsSidebar] Tags definidas no estado:', tags.length)
+        console.log('🏷️ [TagsSidebar] Total de tags:', tags.length)
       }
     } catch (error) {
-      console.error('Erro:', error)
+      console.error('Erro ao buscar tags:', error)
     } finally {
       setLoading(false)
     }
