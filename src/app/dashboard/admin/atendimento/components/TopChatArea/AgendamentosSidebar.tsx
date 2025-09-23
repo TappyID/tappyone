@@ -6,33 +6,75 @@ import { X, Calendar, Clock } from 'lucide-react'
 interface AgendamentosSidebarProps {
   isOpen: boolean
   onClose: () => void
-  chatId?: string
+  contatoId?: string
 }
 
-export default function AgendamentosSidebar({ isOpen, onClose, chatId }: AgendamentosSidebarProps) {
+export default function AgendamentosSidebar({ isOpen, onClose, contatoId }: AgendamentosSidebarProps) {
   const [agendamentos, setAgendamentos] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (isOpen && chatId) {
+    if (isOpen && contatoId) {
       fetchAgendamentos()
     }
-  }, [isOpen, chatId])
+  }, [isOpen, contatoId])
 
   const fetchAgendamentos = async () => {
     setLoading(true)
+    console.log('📅 [AgendamentosSidebar] Buscando agendamentos do contato:', contatoId)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/agendamentos`, {
+      
+      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone
+      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${contatoId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!contactResponse.ok) {
+        console.log('📅 [AgendamentosSidebar] Erro ao buscar contato:', contactResponse.status)
+        setAgendamentos([])
+        return
+      }
+      
+      const contactData = await contactResponse.json()
+      let contatoUUID = null
+      
+      if (Array.isArray(contactData) && contactData.length > 0) {
+        const specificContact = contactData.find(contact => contact.numeroTelefone === contatoId)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('📅 [AgendamentosSidebar] UUID do contato encontrado:', contatoUUID)
+        }
+      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
+        const specificContact = contactData.data.find(contact => contact.numeroTelefone === contatoId)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('📅 [AgendamentosSidebar] UUID do contato encontrado:', contatoUUID)
+        }
+      }
+      
+      if (!contatoUUID) {
+        console.log('📅 [AgendamentosSidebar] UUID do contato não encontrado')
+        setAgendamentos([])
+        return
+      }
+      
+      // 2. AGORA: Buscar agendamentos usando o UUID
+      const response = await fetch(`http://159.65.34.199:8081/api/agendamentos?contato_id=${contatoUUID}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (response.ok) {
-        const data = await response.json()
-        setAgendamentos(data || [])
+        const result = await response.json()
+        console.log('📅 [AgendamentosSidebar] Agendamentos recebidos:', result)
+        
+        // A API retorna {data: Array, success: true}
+        const agendamentos = result.data || result || []
+        setAgendamentos(Array.isArray(agendamentos) ? agendamentos : [])
+        console.log('📅 [AgendamentosSidebar] Total de agendamentos:', agendamentos.length)
       }
     } catch (error) {
-      console.error('Erro:', error)
+      console.error('Erro ao buscar agendamentos:', error)
     } finally {
       setLoading(false)
     }

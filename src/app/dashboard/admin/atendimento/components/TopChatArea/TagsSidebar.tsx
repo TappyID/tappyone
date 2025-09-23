@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Tag, Plus, Search } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, Tag, Plus, Search, Trash2 } from 'lucide-react'
 
 interface TagsSidebarProps {
   isOpen: boolean
@@ -27,9 +28,10 @@ export default function TagsSidebar({ isOpen, onClose, contatoId }: TagsSidebarP
     setLoading(true)
     console.log('🏷️ [TagsSidebar] Buscando tags do contato:', contatoId)
     try {
-      const response = await fetch(`/api/contatos/${contatoId}/tags`, {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://159.65.34.199:8081/api/contatos/${contatoId}/tags`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         }
       })
       

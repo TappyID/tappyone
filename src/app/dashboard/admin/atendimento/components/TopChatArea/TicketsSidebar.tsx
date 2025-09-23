@@ -2,37 +2,51 @@
 
 import React, { useState, useEffect } from 'react'
 import { X, Ticket } from 'lucide-react'
+import { getContactUUID } from './utils/getContactUUID'
 
 interface TicketsSidebarProps {
   isOpen: boolean
   onClose: () => void
-  chatId?: string
+  contatoId?: string
 }
 
-export default function TicketsSidebar({ isOpen, onClose, chatId }: TicketsSidebarProps) {
+export default function TicketsSidebar({ isOpen, onClose, contatoId }: TicketsSidebarProps) {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (isOpen && chatId) {
+    if (isOpen && contatoId) {
       fetchTickets()
     }
-  }, [isOpen, chatId])
+  }, [isOpen, contatoId])
 
   const fetchTickets = async () => {
     setLoading(true)
+    console.log('🎫 [TicketsSidebar] Buscando tickets do contato:', contatoId)
     try {
+      // 1. Buscar UUID do contato
+      const contatoUUID = await getContactUUID(contatoId!)
+      if (!contatoUUID) {
+        console.log('🎫 [TicketsSidebar] UUID não encontrado')
+        setTickets([])
+        return
+      }
+      
+      // 2. Buscar tickets usando o UUID
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/tickets`, {
+      const response = await fetch(`http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (response.ok) {
-        const data = await response.json()
-        setTickets(data || [])
+        const result = await response.json()
+        console.log('🎫 [TicketsSidebar] Tickets recebidos:', result)
+        const tickets = result.data || result || []
+        setTickets(Array.isArray(tickets) ? tickets : [])
+        console.log('🎫 [TicketsSidebar] Total de tickets:', tickets.length)
       }
     } catch (error) {
-      console.error('Erro:', error)
+      console.error('Erro ao buscar tickets:', error)
     } finally {
       setLoading(false)
     }

@@ -902,16 +902,31 @@ export default function AtendimentoPage() {
             }}
             onSendList={(listData) => {
               if (!selectedChatId) return
-              // Usar API WAHA para enviar lista/menu
+              
+              console.log('🔗 Enviando lista/menu:', listData)
+              
+              // Usar API WAHA para enviar lista/menu - formato correto da documentação
               fetch(getWahaUrl('/api/sendList'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
                 body: JSON.stringify({
-                  session: 'user_fb8da1d7_1758158816675',
                   chatId: selectedChatId,
-                  message: listData
+                  session: 'user_fb8da1d7_1758158816675',
+                  message: listData, // Envolver em 'message' como a API espera
+                  reply_to: null
                 })
-              }).then(() => console.log('🔗 Lista enviada'))
+              }).then(async response => {
+                if (response.ok) {
+                  const result = await response.json()
+                  console.log('✅ Lista enviada com sucesso:', result)
+                  setTimeout(() => refreshMessages(), 500)
+                } else {
+                  const errorData = await response.json().catch(() => null)
+                  console.error('❌ Erro ao enviar lista:', response.status, errorData)
+                }
+              }).catch(error => {
+                console.error('❌ Erro de rede ao enviar lista:', error)
+              })
             }}
             onSendEvent={(eventData) => {
               if (!selectedChatId) return

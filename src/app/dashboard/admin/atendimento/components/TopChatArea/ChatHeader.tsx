@@ -11,10 +11,10 @@ import {
   MapPin
 } from 'lucide-react'
 
-// import AgendamentosSidebar from './AgendamentosSidebar'
-// import OrcamentosSidebar from './OrcamentosSidebar'
-// import TicketsSidebar from './TicketsSidebar'
-// import TagsSidebar from './TagsSidebar'
+import AgendamentosSidebar from './AgendamentosSidebar'
+import OrcamentosSidebar from './OrcamentosSidebar'
+import TicketsSidebar from './TicketsSidebar'
+import TagsSidebar from './TagsSidebar'
 // import AtendenteSidebar from './AtendenteSidebar'
 // import FilaSidebar from './FilaSidebar'
 // import KanbanSidebar from './KanbanSidebar'
@@ -170,22 +170,22 @@ export default function ChatHeader({
         <AgendamentosIndicator 
           contatoId={contatoId}
           onClick={() => {
-            console.log('📅 [ChatHeader] Clique no AgendamentosIndicator - contatoId:', contatoId)
-            alert('Modal de agendamentos em desenvolvimento!')
+            console.log('📅 [ChatHeader] Abrindo sidebar de agendamentos - contatoId:', contatoId)
+            setAgendamentosSidebarOpen(true)
           }} 
         />
         <OrcamentosIndicator 
           contatoId={contatoId}
           onClick={() => {
-            console.log('💰 [ChatHeader] Clique no OrcamentosIndicator - contatoId:', contatoId)
-            alert('Modal de orçamentos em desenvolvimento!')
+            console.log('💰 [ChatHeader] Abrindo sidebar de orçamentos - contatoId:', contatoId)
+            setOrcamentosSidebarOpen(true)
           }} 
         />
         <TicketsIndicator 
           contatoId={contatoId}
           onClick={() => {
-            console.log('🎫 [ChatHeader] Clique no TicketsIndicator - contatoId:', contatoId)
-            alert('Modal de tickets em desenvolvimento!')
+            console.log('🎫 [ChatHeader] Abrindo sidebar de tickets - contatoId:', contatoId)
+            setTicketsSidebarOpen(true)
           }} 
         />
         {/* TEMPORARIAMENTE COMENTADO - OUTROS INDICADORES */}
@@ -207,6 +207,31 @@ export default function ChatHeader({
         onClose={() => setCreateContactModalOpen(false)}
         chatId={selectedChatId}
         chatName={chat?.name}
+      />
+
+      {/* Sidebars */}
+      <TagsSidebar
+        isOpen={tagsSidebarOpen}
+        onClose={() => setTagsSidebarOpen(false)}
+        contatoId={contatoId}
+      />
+      
+      <AgendamentosSidebar
+        isOpen={agendamentosSidebarOpen}
+        onClose={() => setAgendamentosSidebarOpen(false)}
+        contatoId={contatoId}
+      />
+      
+      <OrcamentosSidebar
+        isOpen={orcamentosSidebarOpen}
+        onClose={() => setOrcamentosSidebarOpen(false)}
+        contatoId={contatoId}
+      />
+      
+      <TicketsSidebar
+        isOpen={ticketsSidebarOpen}
+        onClose={() => setTicketsSidebarOpen(false)}
+        contatoId={contatoId}
       />
     </motion.div>
   )

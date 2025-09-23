@@ -154,17 +154,19 @@ export default function FooterChatArea({
       onSendMenu={onSendList ? async (title: string, description: string, options: string[]) => {
         console.log('🔗 FooterChatArea - Dados do menu recebidos:', { title, description, options })
         
-        // Formato correto para WAHA API sendList
+        // Formato correto para WAHA API sendList (igual ao CURL que funcionou)
         const listData = {
-          title: description || 'Selecione uma opção', // ✅ Título da mensagem (obrigatório)
-          button: title || 'Ver opções', // ✅ Texto do botão (obrigatório)
+          title: title || 'Menu Interativo', // ✅ Título da mensagem (obrigatório)
+          description: description || 'Escolha uma das opções abaixo', // ✅ Descrição (obrigatório)
+          footer: 'TappyOne CRM', // ✅ Footer (obrigatório)
+          button: 'Ver Opções', // ✅ Texto do botão (obrigatório)
           sections: [
             {
-              title: 'Opções disponíveis', // ✅ Título da seção
+              title: 'Principais', // ✅ Título da seção
               rows: options.map((option, index) => ({
                 rowId: `option_${index + 1}`, // ✅ rowId (obrigatório)
                 title: option, // ✅ Texto da opção
-                description: `Opção ${index + 1}` // ✅ Descrição
+                description: null // ✅ Descrição (pode ser null)
               }))
             }
           ]

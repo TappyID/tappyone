@@ -2,37 +2,51 @@
 
 import React, { useState, useEffect } from 'react'
 import { X, DollarSign } from 'lucide-react'
+import { getContactUUID } from './utils/getContactUUID'
 
 interface OrcamentosSidebarProps {
   isOpen: boolean
   onClose: () => void
-  chatId?: string
+  contatoId?: string
 }
 
-export default function OrcamentosSidebar({ isOpen, onClose, chatId }: OrcamentosSidebarProps) {
+export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: OrcamentosSidebarProps) {
   const [orcamentos, setOrcamentos] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (isOpen && chatId) {
+    if (isOpen && contatoId) {
       fetchOrcamentos()
     }
-  }, [isOpen, chatId])
+  }, [isOpen, contatoId])
 
   const fetchOrcamentos = async () => {
     setLoading(true)
+    console.log('💰 [OrcamentosSidebar] Buscando orçamentos do contato:', contatoId)
     try {
+      // 1. Buscar UUID do contato
+      const contatoUUID = await getContactUUID(contatoId!)
+      if (!contatoUUID) {
+        console.log('💰 [OrcamentosSidebar] UUID não encontrado')
+        setOrcamentos([])
+        return
+      }
+      
+      // 2. Buscar orçamentos usando o UUID
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/orcamentos`, {
+      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (response.ok) {
-        const data = await response.json()
-        setOrcamentos(data || [])
+        const result = await response.json()
+        console.log('💰 [OrcamentosSidebar] Orçamentos recebidos:', result)
+        const orcamentos = result.data || result || []
+        setOrcamentos(Array.isArray(orcamentos) ? orcamentos : [])
+        console.log('💰 [OrcamentosSidebar] Total de orçamentos:', orcamentos.length)
       }
     } catch (error) {
-      console.error('Erro:', error)
+      console.error('Erro ao buscar orçamentos:', error)
     } finally {
       setLoading(false)
     }
