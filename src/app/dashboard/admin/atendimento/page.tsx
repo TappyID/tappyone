@@ -89,6 +89,15 @@ export default function AtendimentoPage() {
   const [forwardingMessage, setForwardingMessage] = useState<string | null>(null)
   const [showAudioModal, setShowAudioModal] = useState(false)
   
+  // Estados para paginação dos chats
+  const [displayedChatsCount, setDisplayedChatsCount] = useState(10)
+  const [isLoadingMoreChats, setIsLoadingMoreChats] = useState(false)
+  
+  // Estados para dados reais dos filtros
+  const [realTags, setRealTags] = useState<any[]>([])
+  const [realFilas, setRealFilas] = useState<any[]>([])
+  const [loadingFilters, setLoadingFilters] = useState(false)
+  
   // Estados de tradução
   const [translatedMessages, setTranslatedMessages] = useState<{[messageId: string]: string}>({})
   
@@ -119,6 +128,49 @@ export default function AtendimentoPage() {
   } = useChatsOverview()
 
   console.log('📊 Overview chats recebidos:', overviewChats.length)
+
+  // Buscar dados reais para os filtros
+  useEffect(() => {
+    const fetchFilterData = async () => {
+      setLoadingFilters(true)
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        // Buscar tags reais
+        const tagsResponse = await fetch('http://159.65.34.199:8081/api/tags', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (tagsResponse.ok) {
+          const tagsData = await tagsResponse.json()
+          setRealTags(tagsData.data || tagsData || [])
+          console.log('🏷️ Tags carregadas:', tagsData.data?.length || 0)
+        }
+
+        // Buscar filas reais (quando implementadas)
+        // const filasResponse = await fetch('http://159.65.34.199:8081/api/filas', {
+        //   headers: { 'Authorization': `Bearer ${token}` }
+        // })
+        // if (filasResponse.ok) {
+        //   const filasData = await filasResponse.json()
+        //   setRealFilas(filasData.data || filasData || [])
+        // }
+      } catch (error) {
+        console.error('Erro ao buscar dados dos filtros:', error)
+      } finally {
+        setLoadingFilters(false)
+      }
+    }
+
+    fetchFilterData()
+  }, [])
+
+  // Reset da paginação quando filtros mudam
+  useEffect(() => {
+    if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') {
+      setDisplayedChatsCount(10) // Reset para 10 quando há filtros
+    }
+  }, [searchQuery, selectedTag, selectedFila])
 
   // Estado para armazenar dados extras dos chats
   const [chatsExtraData, setChatsExtraData] = useState<Record<string, any>>({})
@@ -207,9 +259,41 @@ export default function AtendimentoPage() {
     }
   }, [overviewChats])
 
-  // Transformar overview chats para formato da SideChat
+  // Filtrar e transformar overview chats para formato da SideChat
   const transformedChats = useMemo(() => {
-    return overviewChats.map(chat => {
+    let filteredChats = overviewChats
+    
+    // Aplicar filtro de busca
+    if (searchQuery.trim()) {
+      filteredChats = overviewChats.filter(chat => 
+        chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        chat.lastMessage?.body?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      console.log(`🔍 Busca "${searchQuery}": ${filteredChats.length} de ${overviewChats.length} chats`)
+    }
+    
+    // Aplicar filtro de tag
+    if (selectedTag !== 'todas') {
+      filteredChats = filteredChats.filter(chat => {
+        const extraData = chatsExtraData[chat.id] || {}
+        return extraData.tags?.some((tag: any) => tag.id === selectedTag)
+      })
+      console.log(`🏷️ Filtro tag "${selectedTag}": ${filteredChats.length} chats`)
+    }
+    
+    // Aplicar filtro de fila
+    if (selectedFila !== 'todas') {
+      filteredChats = filteredChats.filter(chat => {
+        const extraData = chatsExtraData[chat.id] || {}
+        return extraData.fila?.id === selectedFila
+      })
+      console.log(`📋 Filtro fila "${selectedFila}": ${filteredChats.length} chats`)
+    }
+    
+    // Limitar para performance (apenas se não há busca)
+    const chatsToShow = searchQuery.trim() ? filteredChats : filteredChats.slice(0, displayedChatsCount)
+    
+    return chatsToShow.map(chat => {
       const extraData = chatsExtraData[chat.id] || {}
       
       return {
@@ -243,9 +327,25 @@ export default function AtendimentoPage() {
         fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
       }
     })
-  }, [overviewChats, selectedChatId, chatsExtraData])
+  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila])
 
-  console.log('🔄 Chats transformados:', transformedChats.length)
+  console.log('🔄 Chats transformados:', transformedChats.length, 'de', overviewChats.length, 'total')
+
+  // Função para carregar mais chats
+  const handleLoadMoreChats = useCallback(async () => {
+    // Não carregar mais se há filtros ativos (busca, tag, fila)
+    if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') return
+    if (isLoadingMoreChats || displayedChatsCount >= overviewChats.length) return
+    
+    setIsLoadingMoreChats(true)
+    console.log('📄 Carregando mais chats...', { atual: displayedChatsCount, total: overviewChats.length })
+    
+    // Simular delay de carregamento
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    setDisplayedChatsCount(prev => Math.min(prev + 10, overviewChats.length))
+    setIsLoadingMoreChats(false)
+  }, [isLoadingMoreChats, displayedChatsCount, overviewChats.length, searchQuery, selectedTag, selectedFila])
 
   // Função helper para obter URL base
   const getWahaUrl = useCallback((path: string = '') => {
@@ -554,10 +654,12 @@ export default function AtendimentoPage() {
               onSearchChange={setSearchQuery}
               selectedTag={selectedTag}
               onTagChange={setSelectedTag}
-              tags={mockTags}
+              tags={realTags.length > 0 ? realTags : mockTags}
               selectedFila={selectedFila}
               onFilaChange={setSelectedFila}
-              filas={mockFilas}
+              filas={realFilas.length > 0 ? realFilas : mockFilas}
+              isLoadingTags={loadingFilters}
+              isLoadingFilas={loadingFilters}
             />
           </div>
 
@@ -568,6 +670,9 @@ export default function AtendimentoPage() {
               selectedChatId={selectedChatId}
               onSelectChat={setSelectedChatId}
               isLoading={loadingOverview}
+              onLoadMore={handleLoadMoreChats}
+              hasMoreChats={!searchQuery.trim() && selectedTag === 'todas' && selectedFila === 'todas' && displayedChatsCount < overviewChats.length}
+              isLoadingMore={isLoadingMoreChats}
               onTagsClick={(chatId, e) => {
                 e.stopPropagation()
                 console.log('🏷️ Tags clicadas:', chatId)
