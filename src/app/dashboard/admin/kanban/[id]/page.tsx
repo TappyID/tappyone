@@ -2316,6 +2316,10 @@ onError={(e) => {
             title="Abrir Chat"
           >
             <MessageCircle className="w-[11px] h-[11px]" />
+            {/* Badge verde com contagem de mensagens */}
+            <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center px-1 font-medium shadow-sm">
+              898
+            </span>
           </motion.button>
         </div>
         
