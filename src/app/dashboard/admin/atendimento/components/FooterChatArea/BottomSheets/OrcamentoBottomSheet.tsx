@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, DollarSign, Plus, Trash2 } from 'lucide-react'
+import { X, DollarSign, Plus, Trash2, FileText } from 'lucide-react'
 
 interface OrcamentoBottomSheetProps {
   isOpen: boolean
@@ -16,6 +16,94 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
   const [itens, setItens] = useState([{ descricao: '', quantidade: 1, valor: 0 }])
   const [desconto, setDesconto] = useState(0)
   const [observacoes, setObservacoes] = useState('')
+  const [orcamentosExistentes, setOrcamentosExistentes] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  console.log('💰 [OrcamentoBottomSheet] Renderizado com chatId:', chatId)
+
+  // Buscar orçamentos do contato - IGUAL AO AnotacoesBottomSheet
+  const fetchOrcamentos = useCallback(async () => {
+    if (!chatId) return
+    
+    try {
+      setLoading(true)
+      const telefone = chatId.replace('@c.us', '')
+      
+      console.log('💰 [OrcamentoBottomSheet] Buscando orçamentos para telefone:', telefone)
+      
+      // 1. Buscar UUID do contato - USAR BACKEND CORRETO
+      const token = localStorage.getItem('token')
+      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!contactResponse.ok) {
+        console.log('💰 [OrcamentoBottomSheet] Erro ao buscar contato:', contactResponse.status)
+        return
+      }
+      
+      const contactData = await contactResponse.json()
+      let contatoUUID = null
+      
+      if (Array.isArray(contactData) && contactData.length > 0) {
+        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('💰 [OrcamentoBottomSheet] UUID do contato encontrado:', contatoUUID)
+        }
+      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
+        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('💰 [OrcamentoBottomSheet] UUID do contato encontrado:', contatoUUID)
+        }
+      }
+      
+      if (!contatoUUID) {
+        console.log('💰 [OrcamentoBottomSheet] UUID do contato não encontrado')
+        return
+      }
+      
+      // 2. Buscar orçamentos usando UUID - USAR BACKEND CORRETO
+      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('💰 [OrcamentoBottomSheet] Resposta completa da API:', data)
+        console.log('💰 [OrcamentoBottomSheet] Status da resposta:', response.status)
+        console.log('💰 [OrcamentoBottomSheet] URL consultada:', `http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`)
+        
+        const orcamentosData = data.data || data || []
+        console.log('💰 [OrcamentoBottomSheet] Orçamentos processados:', orcamentosData)
+        console.log('💰 [OrcamentoBottomSheet] Tipo dos dados:', typeof orcamentosData, Array.isArray(orcamentosData))
+        
+        setOrcamentosExistentes(Array.isArray(orcamentosData) ? orcamentosData : [])
+      } else {
+        console.log('💰 [OrcamentoBottomSheet] Erro na resposta:', response.status, response.statusText)
+        const errorData = await response.text()
+        console.log('💰 [OrcamentoBottomSheet] Detalhes do erro:', errorData)
+        setOrcamentosExistentes([])
+      }
+    } catch (error) {
+      console.error('❌ [OrcamentoBottomSheet] Erro ao buscar orçamentos:', error)
+      setOrcamentosExistentes([])
+    } finally {
+      setLoading(false)
+    }
+  }, [chatId])
+
+  // Carregar orçamentos quando abrir
+  useEffect(() => {
+    if (isOpen) {
+      fetchOrcamentos()
+    }
+  }, [isOpen, fetchOrcamentos])
 
   if (!isOpen) return null
 
@@ -160,6 +248,35 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
     }
     
     onClose()
+  }
+
+  // Deletar orçamento
+  const handleDeletarOrcamento = async (orcamentoId: string) => {
+    if (!confirm('Deseja realmente deletar este orçamento?')) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos/${orcamentoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        console.log('✅ Orçamento deletado com sucesso!')
+        fetchOrcamentos() // Recarregar orçamentos
+        
+        // Disparar evento para atualizar indicadores
+        window.dispatchEvent(new CustomEvent('orcamentoDeleted', { 
+          detail: { orcamentoId } 
+        }))
+      } else {
+        console.error('❌ Erro ao deletar orçamento:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao deletar orçamento:', error)
+    }
   }
 
   return (
@@ -309,6 +426,89 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
               rows={3}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
             />
+          </div>
+
+          {/* Orçamentos Existentes */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              Orçamentos Existentes ({orcamentosExistentes.length})
+            </h3>
+            
+            {loading && orcamentosExistentes.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                <p className="text-sm text-gray-500 mt-2">Carregando orçamentos...</p>
+              </div>
+            ) : orcamentosExistentes.length > 0 ? (
+              <div className="space-y-3">
+                {orcamentosExistentes.map((orcamento) => (
+                  <motion.div
+                    key={orcamento.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {orcamento.titulo}
+                        </h4>
+                        {orcamento.descricao && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {orcamento.descricao}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                          R$ {(orcamento.valorTotal || 0).toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() => handleDeletarOrcamento(orcamento.id)}
+                          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Deletar orçamento"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {orcamento.itens && orcamento.itens.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Itens:</p>
+                        {orcamento.itens.map((item: any, index: number) => (
+                          <div key={index} className="text-xs text-gray-600 dark:text-gray-400">
+                            {item.quantidade}x {item.descricao} - R$ {(item.valor || 0).toFixed(2)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-xs text-gray-500">
+                        {new Date(orcamento.criadoEm).toLocaleDateString('pt-BR')} às{' '}
+                        {new Date(orcamento.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {orcamento.status && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          orcamento.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                          orcamento.status === 'rejeitado' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {orcamento.status}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhum orçamento encontrado</p>
+                <p className="text-xs mt-1">Crie o primeiro orçamento acima</p>
+              </div>
+            )}
           </div>
 
           </div>

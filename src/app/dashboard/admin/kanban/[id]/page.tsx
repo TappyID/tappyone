@@ -3410,7 +3410,42 @@ const getContactData = () => {
       const numeroTelefone = chatId.replace('@c.us', '')
       console.log('🎫 [FETCH TICKETS] Para card:', chatId, 'numeroTelefone:', numeroTelefone)
       
-      const response = await fetch(`/api/tickets?contato_id=${numeroTelefone}`, {
+      // 1. Buscar UUID do contato - IGUAL AO TicketBottomSheet
+      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${numeroTelefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!contactResponse.ok) {
+        console.log('🎫 [FETCH TICKETS] Erro ao buscar contato:', contactResponse.status)
+        return []
+      }
+      
+      const contactData = await contactResponse.json()
+      let contatoUUID = null
+      
+      if (Array.isArray(contactData) && contactData.length > 0) {
+        const specificContact = contactData.find(contact => contact.numeroTelefone === numeroTelefone)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('🎫 [FETCH TICKETS] UUID do contato encontrado:', contatoUUID)
+        }
+      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
+        const specificContact = contactData.data.find(contact => contact.numeroTelefone === numeroTelefone)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('🎫 [FETCH TICKETS] UUID do contato encontrado:', contatoUUID)
+        }
+      }
+      
+      if (!contatoUUID) {
+        console.log('🎫 [FETCH TICKETS] UUID do contato não encontrado')
+        return []
+      }
+      
+      // 2. Buscar tickets usando UUID
+      const response = await fetch(`http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -3422,7 +3457,8 @@ const getContactData = () => {
         console.log('🎫 [FETCH TICKETS] Data recebida para', chatId, ':', data)
         console.log('🎫 [FETCH TICKETS] É array?', Array.isArray(data))
         console.log('🎫 [FETCH TICKETS] Tamanho:', data?.length)
-        return Array.isArray(data) ? data : []
+        const ticketsData = data.data || data || []
+        return Array.isArray(ticketsData) ? ticketsData : []
       } else {
         console.log('🎫 [FETCH TICKETS] Response não OK:', response.status, response.statusText)
       }
@@ -5470,11 +5506,7 @@ const persistirEdicaoColuna = async (colunaId: string, novoNome: string) => {
         <TagsBottomSheet
           isOpen={tagsModal.isOpen}
           onClose={() => setTagsModal({ isOpen: false, card: null })}
-          contactData={{
-            id: tagsModal.card.id,
-            nome: tagsModal.card.name || tagsModal.card.nome,
-            telefone: tagsModal.card.id.replace('@c.us', '')
-          }}
+          chatId={tagsModal.card.id}
         />
       )}
 

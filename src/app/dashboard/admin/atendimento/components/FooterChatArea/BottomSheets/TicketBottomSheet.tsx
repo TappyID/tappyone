@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, Ticket, AlertCircle, Clock, CheckCircle } from 'lucide-react'
+import { X, Ticket, AlertCircle, Clock, CheckCircle, Trash2, FileText } from 'lucide-react'
 
 interface TicketBottomSheetProps {
   isOpen: boolean
@@ -16,6 +16,94 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
   const [prioridade, setPrioridade] = useState<'baixa' | 'media' | 'alta'>('media')
   const [categoria, setCategoria] = useState('suporte')
   const [status, setStatus] = useState<'aberto' | 'em_andamento' | 'resolvido' | 'fechado'>('aberto')
+  const [ticketsExistentes, setTicketsExistentes] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  console.log('🎫 [TicketBottomSheet] Renderizado com chatId:', chatId)
+
+  // Buscar tickets do contato - IGUAL AO AnotacoesBottomSheet
+  const fetchTickets = useCallback(async () => {
+    if (!chatId) return
+    
+    try {
+      setLoading(true)
+      const telefone = chatId.replace('@c.us', '')
+      
+      console.log('🎫 [TicketBottomSheet] Buscando tickets para telefone:', telefone)
+      
+      // 1. Buscar UUID do contato - USAR BACKEND CORRETO
+      const token = localStorage.getItem('token')
+      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!contactResponse.ok) {
+        console.log('🎫 [TicketBottomSheet] Erro ao buscar contato:', contactResponse.status)
+        return
+      }
+      
+      const contactData = await contactResponse.json()
+      let contatoUUID = null
+      
+      if (Array.isArray(contactData) && contactData.length > 0) {
+        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('🎫 [TicketBottomSheet] UUID do contato encontrado:', contatoUUID)
+        }
+      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
+        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
+        if (specificContact) {
+          contatoUUID = specificContact.id
+          console.log('🎫 [TicketBottomSheet] UUID do contato encontrado:', contatoUUID)
+        }
+      }
+      
+      if (!contatoUUID) {
+        console.log('🎫 [TicketBottomSheet] UUID do contato não encontrado')
+        return
+      }
+      
+      // 2. Buscar tickets usando UUID - USAR BACKEND CORRETO
+      const response = await fetch(`http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🎫 [TicketBottomSheet] Resposta completa da API:', data)
+        console.log('🎫 [TicketBottomSheet] Status da resposta:', response.status)
+        console.log('🎫 [TicketBottomSheet] URL consultada:', `http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`)
+        
+        const ticketsData = data.data || data || []
+        console.log('🎫 [TicketBottomSheet] Tickets processados:', ticketsData)
+        console.log('🎫 [TicketBottomSheet] Tipo dos dados:', typeof ticketsData, Array.isArray(ticketsData))
+        
+        setTicketsExistentes(Array.isArray(ticketsData) ? ticketsData : [])
+      } else {
+        console.log('🎫 [TicketBottomSheet] Erro na resposta:', response.status, response.statusText)
+        const errorData = await response.text()
+        console.log('🎫 [TicketBottomSheet] Detalhes do erro:', errorData)
+        setTicketsExistentes([])
+      }
+    } catch (error) {
+      console.error('❌ [TicketBottomSheet] Erro ao buscar tickets:', error)
+      setTicketsExistentes([])
+    } finally {
+      setLoading(false)
+    }
+  }, [chatId])
+
+  // Carregar tickets quando abrir
+  useEffect(() => {
+    if (isOpen) {
+      fetchTickets()
+    }
+  }, [isOpen, fetchTickets])
 
   if (!isOpen) return null
 
@@ -112,11 +200,12 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
       
       console.log('🎫 [TicketBottomSheet] Criando ticket:', ticketData)
       
-      const response = await fetch('/api/tickets', {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://159.65.34.199:8081/api/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(ticketData),
       })
@@ -165,6 +254,35 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
     } catch (error) {
       console.error('❌ [TicketBottomSheet] Erro ao salvar ticket:', error)
       alert(`❌ Erro ao salvar ticket: ${error.message}`)
+    }
+  }
+
+  // Deletar ticket
+  const handleDeletarTicket = async (ticketId: string) => {
+    if (!confirm('Deseja realmente deletar este ticket?')) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://159.65.34.199:8081/api/tickets/${ticketId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        console.log('✅ Ticket deletado com sucesso!')
+        fetchTickets() // Recarregar tickets
+        
+        // Disparar evento para atualizar indicadores
+        window.dispatchEvent(new CustomEvent('ticketDeleted', { 
+          detail: { ticketId } 
+        }))
+      } else {
+        console.error('❌ Erro ao deletar ticket:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao deletar ticket:', error)
     }
   }
 
@@ -286,6 +404,99 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
               rows={4}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
             />
+          </div>
+
+          {/* Tickets Existentes */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              Tickets Existentes ({ticketsExistentes.length})
+            </h3>
+            
+            {loading && ticketsExistentes.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
+                <p className="text-sm text-gray-500 mt-2">Carregando tickets...</p>
+              </div>
+            ) : ticketsExistentes.length > 0 ? (
+              <div className="space-y-3">
+                {ticketsExistentes.map((ticket) => {
+                  const statusOption = statusOptions.find(s => s.value === ticket.status?.toLowerCase())
+                  const StatusIcon = statusOption?.icon || AlertCircle
+                  const prioridadeOption = prioridades.find(p => p.value === ticket.prioridade?.toLowerCase())
+                  
+                  return (
+                    <motion.div
+                      key={ticket.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-gray-900 dark:text-white">
+                              {ticket.titulo}
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              #{ticket.id?.slice(-8)}
+                            </span>
+                          </div>
+                          {ticket.descricao && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              {ticket.descricao}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeletarTicket(ticket.id)}
+                          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Deletar ticket"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 mt-3">
+                        {/* Status */}
+                        <div className="flex items-center gap-1">
+                          <StatusIcon className={`w-4 h-4 ${statusOption?.color || 'text-gray-500'}`} />
+                          <span className="text-xs font-medium">
+                            {ticket.status?.replace('_', ' ') || 'Aberto'}
+                          </span>
+                        </div>
+                        
+                        {/* Prioridade */}
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          prioridadeOption?.bg || 'bg-gray-50'
+                        } ${prioridadeOption?.color || 'text-gray-600'}`}>
+                          {ticket.prioridade || 'Média'}
+                        </div>
+                        
+                        {/* Categoria */}
+                        {ticket.categoria && (
+                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {ticket.categoria}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <span className="text-xs text-gray-500">
+                          {new Date(ticket.criadoEm).toLocaleDateString('pt-BR')} às{' '}
+                          {new Date(ticket.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhum ticket encontrado</p>
+                <p className="text-xs mt-1">Crie o primeiro ticket acima</p>
+              </div>
+            )}
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">

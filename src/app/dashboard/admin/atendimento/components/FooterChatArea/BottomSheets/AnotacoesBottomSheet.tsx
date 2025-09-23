@@ -36,10 +36,11 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
       
       console.log('📝 [AnotacoesBottomSheet] Buscando anotações para telefone:', telefone)
       
-      // 1. Buscar UUID do contato
-      const contactResponse = await fetch(`/api/contatos?telefone=${telefone}`, {
+      // 1. Buscar UUID do contato - USAR BACKEND CORRETO
+      const token = localStorage.getItem('token')
+      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         }
       })
       
@@ -70,20 +71,28 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
         return
       }
       
-      // 2. Buscar anotações usando UUID
-      const response = await fetch(`/api/anotacoes?contato_id=${contatoUUID}`, {
+      // 2. Buscar anotações usando UUID - USAR BACKEND CORRETO
+      const response = await fetch(`http://159.65.34.199:8081/api/anotacoes?contato_id=${contatoUUID}`, {
         headers: { 
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         }
       })
       
       if (response.ok) {
         const data = await response.json()
+        console.log('📝 [AnotacoesBottomSheet] Resposta completa da API:', data)
+        console.log('📝 [AnotacoesBottomSheet] Status da resposta:', response.status)
+        console.log('📝 [AnotacoesBottomSheet] URL consultada:', `http://159.65.34.199:8081/api/anotacoes?contato_id=${contatoUUID}`)
+        
         const anotacoesData = data.data || data || []
-        console.log('📝 [AnotacoesBottomSheet] Anotações encontradas:', anotacoesData)
+        console.log('📝 [AnotacoesBottomSheet] Anotações processadas:', anotacoesData)
+        console.log('📝 [AnotacoesBottomSheet] Tipo dos dados:', typeof anotacoesData, Array.isArray(anotacoesData))
+        
         setAnotacoes(Array.isArray(anotacoesData) ? anotacoesData : [])
       } else {
-        console.log('📝 [AnotacoesBottomSheet] Nenhuma anotação encontrada')
+        console.log('📝 [AnotacoesBottomSheet] Erro na resposta:', response.status, response.statusText)
+        const errorData = await response.text()
+        console.log('📝 [AnotacoesBottomSheet] Detalhes do erro:', errorData)
         setAnotacoes([])
       }
     } catch (error) {
@@ -109,10 +118,11 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
       setLoading(true)
       const telefone = chatId.replace('@c.us', '')
       
-      // Buscar UUID do contato primeiro
-      const contactResponse = await fetch(`/api/contatos?telefone=${telefone}`, {
+      // Buscar UUID do contato primeiro - USAR BACKEND CORRETO
+      const token = localStorage.getItem('token')
+      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         }
       })
       
@@ -136,11 +146,11 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
       if (!contatoUUID) return
       
       // Criar anotação
-      const response = await fetch('/api/anotacoes', {
+      const response = await fetch('http://159.65.34.199:8081/api/anotacoes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           titulo: novaAnotacao.titulo,
@@ -180,10 +190,11 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
     if (!confirm('Deseja realmente deletar esta anotação?')) return
     
     try {
-      const response = await fetch(`/api/anotacoes/${anotacaoId}`, {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://159.65.34.199:8081/api/anotacoes/${anotacaoId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         }
       })
       
