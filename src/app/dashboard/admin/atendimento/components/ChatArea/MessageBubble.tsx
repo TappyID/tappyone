@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import { 
   Check, 
   CheckCheck,
-  Languages
+  Languages,
+  Reply
 } from 'lucide-react'
 
 import {
@@ -32,6 +33,13 @@ interface MessageBubbleProps {
     status?: 'sending' | 'sent' | 'delivered' | 'read'
     mediaUrl?: string
     translation?: string
+    // Suporte a reply/resposta
+    replyTo?: {
+      id: string
+      content: string
+      sender: 'user' | 'agent'
+      type?: string
+    }
     // Dados específicos por tipo
     metadata?: {
       // Para áudio
@@ -119,6 +127,98 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
     }
   }
 
+  const renderReplyPreview = () => {
+    if (!message.replyTo) return null
+
+    return (
+      <div className={`mb-2 p-2 rounded-lg border-l-4 ${
+        isFromUser 
+          ? 'bg-blue-600/20 border-blue-300' 
+          : 'bg-gray-100 dark:bg-gray-800 border-gray-400'
+      }`}>
+        <div className="flex items-start gap-2">
+          <Reply className={`w-3 h-3 mt-0.5 flex-shrink-0 ${
+            isFromUser ? 'text-blue-200' : 'text-gray-500'
+          }`} />
+          <div className="flex-1 min-w-0">
+            <div className={`text-xs font-medium mb-1 ${
+              isFromUser ? 'text-blue-200' : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              {message.replyTo.sender === 'user' ? 'Cliente' : 'Atendente'}
+            </div>
+            <div className={`text-xs overflow-hidden ${
+              isFromUser ? 'text-blue-100' : 'text-gray-700 dark:text-gray-300'
+            }`}
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical' as any,
+              maxHeight: '2.4em',
+              lineHeight: '1.2em'
+            }}>
+              {message.replyTo.type === 'image' && (
+                <>
+                  📷 {message.replyTo.content && message.replyTo.content !== 'Imagem' 
+                    ? message.replyTo.content 
+                    : 'Imagem'}
+                </>
+              )}
+              {message.replyTo.type === 'audio' && (
+                <>
+                  🎵 {message.replyTo.content && message.replyTo.content !== 'Áudio' 
+                    ? message.replyTo.content 
+                    : 'Mensagem de áudio'}
+                </>
+              )}
+              {message.replyTo.type === 'video' && (
+                <>
+                  🎥 {message.replyTo.content && message.replyTo.content !== 'Vídeo' 
+                    ? message.replyTo.content 
+                    : 'Vídeo'}
+                </>
+              )}
+              {message.replyTo.type === 'document' && (
+                <>
+                  📄 {message.replyTo.content || 'Documento'}
+                </>
+              )}
+              {message.replyTo.type === 'location' && (
+                <>
+                  📍 {message.replyTo.content || 'Localização compartilhada'}
+                </>
+              )}
+              {message.replyTo.type === 'contact' && (
+                <>
+                  👤 {message.replyTo.content || 'Contato compartilhado'}
+                </>
+              )}
+              {message.replyTo.type === 'poll' && (
+                <>
+                  📊 {message.replyTo.content || 'Enquete'}
+                </>
+              )}
+              {message.replyTo.type === 'menu' && (
+                <>
+                  📋 {message.replyTo.content || 'Menu interativo'}
+                </>
+              )}
+              {message.replyTo.type === 'event' && (
+                <>
+                  📅 {message.replyTo.content || 'Evento'}
+                </>
+              )}
+              {(!message.replyTo.type || message.replyTo.type === 'text') && 
+                (message.replyTo.content.length > 50 
+                  ? `${message.replyTo.content.substring(0, 50)}...` 
+                  : message.replyTo.content)
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderMessageContent = () => {
     const { type, content, mediaUrl, metadata } = message
 
@@ -126,36 +226,48 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
     switch (type) {
       case 'audio':
         return (
-          <MessageAudio
-            audioUrl={message.mediaUrl || ''}
-            duration={message.metadata?.duration}
-            isFromUser={isFromUser}
-            caption={message.content !== 'Áudio' ? message.content : undefined}
-            onTranscribe={(audioUrl) => console.log('🎙️ Transcrever áudio:', audioUrl)}
-          />
+          <div>
+            {/* Reply Preview para Áudio */}
+            {message.replyTo && renderReplyPreview()}
+            <MessageAudio
+              audioUrl={message.mediaUrl || ''}
+              duration={message.metadata?.duration}
+              isFromUser={isFromUser}
+              caption={message.content !== 'Áudio' ? message.content : undefined}
+              onTranscribe={(audioUrl) => console.log('🎙️ Transcrever áudio:', audioUrl)}
+            />
+          </div>
         )
 
       case 'document':
         return (
-          <MessageDocument
-            documentUrl={mediaUrl || ''}
-            fileName={metadata?.fileName || 'Documento'}
-            fileSize={metadata?.fileSize}
-            mimeType={metadata?.mimeType}
-            isFromUser={isFromUser}
-            caption={content}
-          />
+          <div>
+            {/* Reply Preview para Documento */}
+            {message.replyTo && renderReplyPreview()}
+            <MessageDocument
+              documentUrl={mediaUrl || ''}
+              fileName={metadata?.fileName || 'Documento'}
+              fileSize={metadata?.fileSize}
+              mimeType={metadata?.mimeType}
+              isFromUser={isFromUser}
+              caption={message.content !== metadata?.fileName ? message.content : undefined}
+            />
+          </div>
         )
 
       case 'video':
         return (
-          <MessageVideo
-            videoUrl={mediaUrl || ''}
-            thumbnailUrl={metadata?.thumbnailUrl}
-            duration={metadata?.duration}
-            isFromUser={isFromUser}
-            caption={content}
-          />
+          <div>
+            {/* Reply Preview para Vídeo */}
+            {message.replyTo && renderReplyPreview()}
+            <MessageVideo
+              videoUrl={mediaUrl || ''}
+              thumbnailUrl={metadata?.thumbnailUrl}
+              duration={metadata?.duration}
+              isFromUser={isFromUser}
+              caption={content}
+            />
+          </div>
         )
 
       case 'location':
@@ -255,7 +367,13 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
       default:
         return (
           <div>
+            {/* Reply Preview para Texto */}
+            {message.replyTo && renderReplyPreview()}
+
+            {/* Conteúdo da mensagem */}
             <p className="text-sm break-words">{content}</p>
+            
+            {/* Tradução */}
             {message.translation && (
               <div className="mt-2 p-2 rounded-md border-l-2 border-blue-300 bg-blue-50/50">
                 <div className="flex items-start gap-2">

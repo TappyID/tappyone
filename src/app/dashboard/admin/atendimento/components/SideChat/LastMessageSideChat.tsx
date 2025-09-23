@@ -60,7 +60,6 @@ export default function LastMessageSideChat({
     if (!message) return 'Mensagem'
     
     switch (message.type) {
-      case 'image': return '📷 Imagem'
       case 'video': return '🎥 Vídeo'
       case 'audio': return '🎵 Áudio'
       case 'document': return '📄 Documento'

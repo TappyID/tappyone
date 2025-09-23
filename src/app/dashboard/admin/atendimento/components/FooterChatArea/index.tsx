@@ -106,8 +106,8 @@ export default function FooterChatArea({
     if (enableSignature) {
       const adminName = getAdminName()
       
-      // Adicionar assinatura com formatação em negrito (WhatsApp usa *texto* para negrito)
-      finalMessage = `${content}\n\n*- ${adminName}*`
+      // Adicionar assinatura no início com formatação de citação + negrito do WhatsApp
+      finalMessage = `> *${adminName}*\n\n${content}`
       
       console.log('📤 Enviando mensagem com assinatura:', { 
         original: content, 

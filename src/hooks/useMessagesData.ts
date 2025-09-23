@@ -8,6 +8,13 @@ interface Message {
   timestamp: number
   status?: 'sending' | 'sent' | 'delivered' | 'read'
   mediaUrl?: string
+  // Suporte a reply/resposta
+  replyTo?: {
+    id: string
+    content: string
+    sender: 'user' | 'agent'
+    type?: string
+  }
   metadata?: {
     // Para áudio
     duration?: number
@@ -190,6 +197,88 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
           })
         }
         
+        // Debug completo da mensagem para entender estrutura de reply
+        if (msg.body?.includes('respondend') || msg.caption?.includes('respondend') || 
+            Object.keys(msg).some(key => key.toLowerCase().includes('quot') || key.toLowerCase().includes('reply'))) {
+          console.log('🔍 Mensagem com possível reply - estrutura completa:', {
+            msgId: msg.id,
+            keys: Object.keys(msg),
+            msg: JSON.stringify(msg, null, 2)
+          })
+        }
+
+        // Processar reply/quoted message - tentar várias estruturas possíveis
+        let replyToData = null
+        
+        // Tentar diferentes estruturas da API WAHA
+        const quotedMsg = msg.quoted || 
+                         msg.quotedMessage || 
+                         msg._data?.quotedMessage ||
+                         msg.contextInfo?.quotedMessage ||
+                         msg.quotedMsg ||
+                         msg.replyTo ||
+                         msg.repliedTo
+        
+        if (quotedMsg) {
+          // Extrair conteúdo mais inteligente baseado no tipo
+          let replyContent = 'Mensagem'
+          const msgType = quotedMsg.type || quotedMsg.messageType || 'text'
+          
+          // Para cada tipo, tentar extrair a informação mais útil
+          switch (msgType) {
+            case 'image':
+              replyContent = quotedMsg.caption || quotedMsg.body || 'Imagem'
+              break
+            case 'video':  
+              replyContent = quotedMsg.caption || quotedMsg.body || 'Vídeo'
+              break
+            case 'audio':
+              replyContent = quotedMsg.caption || quotedMsg.body || 'Mensagem de áudio'
+              break
+            case 'document':
+              // Tentar pegar nome do arquivo
+              replyContent = quotedMsg.filename || 
+                           quotedMsg._data?.filename || 
+                           quotedMsg.body || 
+                           quotedMsg.caption || 
+                           'Documento'
+              break
+            case 'location':
+              replyContent = quotedMsg.locationName || 
+                           quotedMsg.address || 
+                           quotedMsg.body || 
+                           'Localização compartilhada'
+              break
+            case 'contact':
+              replyContent = quotedMsg.contactName || 
+                           quotedMsg.name || 
+                           quotedMsg.body || 
+                           'Contato compartilhado'
+              break
+            case 'poll':
+              replyContent = quotedMsg.pollName || 
+                           quotedMsg.question || 
+                           quotedMsg.body || 
+                           'Enquete'
+              break
+            default:
+              replyContent = quotedMsg.body || quotedMsg.caption || quotedMsg.text || 'Mensagem'
+          }
+
+          replyToData = {
+            id: quotedMsg.id || quotedMsg._serialized || quotedMsg.messageId || 'unknown',
+            content: replyContent,
+            sender: quotedMsg.fromMe ? 'agent' : 'user',
+            type: msgType
+          }
+          
+          console.log('📨 Reply detectado:', {
+            messageId: msg.id,
+            quotedStructure: Object.keys(quotedMsg),
+            replyTo: replyToData
+          })
+        }
+
         return {
           id: msg.id || `msg_${msg.timestamp}`,
           content: msg.body || msg.caption || getDefaultContent(msg),
@@ -198,11 +287,18 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
           timestamp: msg.timestamp * 1000, // WAHA usa segundos, precisamos milissegundos
           status: msg.fromMe ? getMessageStatus(msg) : undefined,
           mediaUrl: msg.mediaUrl || msg.media?.url,
-          metadata: extractedMetadata
+          metadata: extractedMetadata,
+          replyTo: replyToData
         }
       })
       
       console.log('🔄 Mensagens transformadas:', transformedMessages.slice(0, 2)) // Debug das mensagens processadas
+      
+      // Debug específico para mensagens com reply
+      const messagesWithReply = transformedMessages.filter(m => m.replyTo)
+      if (messagesWithReply.length > 0) {
+        console.log('📨 Mensagens com reply encontradas:', messagesWithReply.length, messagesWithReply)
+      }
 
       if (append) {
         // Para append, adicionar mensagens mais antigas no início

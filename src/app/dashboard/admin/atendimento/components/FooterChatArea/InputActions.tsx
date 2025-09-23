@@ -329,26 +329,51 @@ export const RespostaRapidaButton = ({ onClick }: { onClick?: () => void }) => (
   </motion.button>
 )
 
-// Micro componente Enviar
+// Micro componente Enviar Expansivo
 export const EnviarButton = ({ 
   onClick,
   disabled = false 
 }: { 
   onClick?: () => void,
   disabled?: boolean 
-}) => (
-  <motion.button
-    whileHover={{ scale: disabled ? 1 : 1.1 }}
-    whileTap={{ scale: disabled ? 1 : 0.9 }}
-    onClick={onClick}
-    disabled={disabled}
-    className={`p-3 rounded-full transition-colors ${
-      disabled 
-        ? 'bg-gray-400 cursor-not-allowed' 
-        : 'bg-blue-500 hover:bg-blue-600'
-    } text-white`}
-    title="Enviar mensagem"
-  >
-    <Send className="w-5 h-5" />
-  </motion.button>
-)
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  return (
+    <motion.button
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      className={`flex items-center gap-2 rounded-full transition-all duration-300 ease-in-out ${
+        disabled 
+          ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed' 
+          : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer'
+      } text-white shadow-lg hover:shadow-xl`}
+      style={{
+        padding: isExpanded ? '12px 20px 12px 16px' : '12px',
+        width: isExpanded ? 'auto' : '48px',
+        minWidth: '48px'
+      }}
+    >
+      <Send className="w-5 h-5 flex-shrink-0" />
+      <motion.span
+        initial={false}
+        animate={{
+          width: isExpanded ? 'auto' : 0,
+          opacity: isExpanded ? 1 : 0,
+        }}
+        transition={{ 
+          duration: 0.3, 
+          ease: "easeInOut",
+          opacity: { delay: isExpanded ? 0.1 : 0 }
+        }}
+        className="overflow-hidden whitespace-nowrap font-medium text-sm"
+      >
+        {disabled ? 'Aguarde...' : 'Enviar'}
+      </motion.span>
+    </motion.button>
+  )
+}

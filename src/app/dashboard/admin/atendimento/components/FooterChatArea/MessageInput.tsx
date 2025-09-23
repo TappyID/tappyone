@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Smile,
   X,
   Calendar,
+  Clock,
   DollarSign,
   Paperclip,
   Video,
@@ -14,6 +15,7 @@ import {
   Mic,
   Send,
   List,
+  ListOrdered,
   Plus,
   Trash2,
   Camera,
@@ -23,7 +25,14 @@ import {
   User,
   Zap,
   Bot,
-  Reply
+  Reply,
+  Bold,
+  Italic,
+  Code,
+  Strikethrough,
+  Quote,
+  Type,
+  GripHorizontal
 } from 'lucide-react'
 
 import {
@@ -116,6 +125,11 @@ interface ExtendedSpecialModalProps {
 }
 
 const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: ExtendedSpecialModalProps) => {
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [showSpecialModal, setShowSpecialModal] = useState<string | null>(null)
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [menuTitle, setMenuTitle] = useState('')
   const [menuDescription, setMenuDescription] = useState('')
   const [menuOptions, setMenuOptions] = useState<string[]>([''])
@@ -421,11 +435,123 @@ export default function MessageInput({
   const [showAgenteModal, setShowAgenteModal] = useState(false)
   const [agenteAtual, setAgenteAtual] = useState<any>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  
+  // Ref para textarea expansivo
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [textareaHeight, setTextareaHeight] = useState(48)
+  const [isDragging, setIsDragging] = useState(false)
+  const [showFormatting, setShowFormatting] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const [manualHeight, setManualHeight] = useState<number | null>(null)
+  
+  // Auto-resize inteligente - só expande quando necessário
+  const adjustHeight = useCallback(() => {
+    const textarea = textareaRef.current
+    if (textarea && !isDragging) {
+      // Altura base
+      const baseHeight = 48
+      const focusBoost = isFocused ? 8 : 0 // pequeno aumento no foco
+      const minHeight = baseHeight + focusBoost
+      
+      // Calcular altura necessária para o conteúdo
+      textarea.style.height = `${baseHeight}px`
+      const scrollHeight = textarea.scrollHeight
+      
+      // Se não há conteúdo que excede uma linha, manter mínimo
+      const contentHeight = scrollHeight <= baseHeight + 2 ? minHeight : scrollHeight + focusBoost
+      
+      // Usar altura manual se definida, senão usar altura do conteúdo
+      const targetHeight = manualHeight || contentHeight
+      const maxHeight = 300 // altura máxima
+      
+      const newHeight = Math.max(minHeight, Math.min(targetHeight, maxHeight))
+      setTextareaHeight(newHeight)
+      textarea.style.height = `${newHeight}px`
+    }
+  }, [isFocused, isDragging, manualHeight])
+  
+  // Ajustar altura quando mensagem muda
+  useLayoutEffect(() => {
+    adjustHeight()
+  }, [message, adjustHeight])
+
+  // Redimensionamento manual
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true)
+    const startY = e.clientY
+    const startHeight = textareaHeight
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = startY - e.clientY // invertido para arrastar para cima aumentar
+      const newHeight = Math.max(48, Math.min(300, startHeight + deltaY))
+      setTextareaHeight(newHeight)
+      setManualHeight(newHeight) // salvar altura manual
+      if (textareaRef.current) {
+        textareaRef.current.style.height = `${newHeight}px`
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  // Formatação de texto para WhatsApp
+  const applyFormat = (format: 'bold' | 'italic' | 'code' | 'strike' | 'quote' | 'list' | 'numbered') => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = message.substring(start, end)
+    let formattedText = selectedText
+
+    switch (format) {
+      case 'bold':
+        formattedText = `*${selectedText}*`
+        break
+      case 'italic':
+        formattedText = `_${selectedText}_`
+        break
+      case 'code':
+        formattedText = selectedText.includes('\n') ? `\`\`\`\n${selectedText}\n\`\`\`` : `\`${selectedText}\``
+        break
+      case 'strike':
+        formattedText = `~${selectedText}~`
+        break
+      case 'quote':
+        formattedText = `> ${selectedText}`
+        break
+      case 'list':
+        formattedText = selectedText.split('\n').map(line => `• ${line}`).join('\n')
+        break
+      case 'numbered':
+        formattedText = selectedText.split('\n').map((line, i) => `${i + 1}. ${line}`).join('\n')
+        break
+    }
+
+    const newMessage = message.substring(0, start) + formattedText + message.substring(end)
+    setMessage(newMessage)
+    
+    // Reposicionar cursor
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start, start + formattedText.length)
+    }, 0)
+  }
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
       onSendMessage(message.trim())
       setMessage('')
+      setManualHeight(null) // resetar altura manual
+      // Resetar altura do textarea após enviar
+      setTimeout(() => adjustHeight(), 0)
     }
   }
 
@@ -696,25 +822,141 @@ export default function MessageInput({
           </div>
         )}
 
-        {/* Input de mensagem */}
+        {/* Input de mensagem com formatação */}
         <div className="flex-1 relative">
-          <textarea
-            value={message}
-            onChange={handleMessageChange}
-            onKeyPress={handleKeyPress}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={1}
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 
-                       rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       placeholder-gray-500 dark:placeholder-gray-400 resize-none
-                       transition-all duration-200"
-            style={{
-              maxHeight: '120px',
-              minHeight: '48px'
-            }}
-          />
+          {/* Container do textarea com resize handle */}
+          <div className="relative border border-gray-300 dark:border-gray-600 rounded-2xl bg-white dark:bg-gray-800 overflow-hidden">
+            {/* Resize Handle */}
+            <div
+              onMouseDown={handleMouseDown}
+              className={`absolute top-0 left-0 right-0 h-1 cursor-ns-resize group ${
+                isDragging ? 'bg-blue-500' : 'hover:bg-gray-300 dark:hover:bg-gray-600'
+              } transition-colors`}
+            >
+              <div className="flex justify-center items-center h-full">
+                <GripHorizontal className="w-4 h-4 text-gray-400 group-hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+
+            {/* Toolbar de formatação */}
+            {showFormatting && (
+              <div className="flex items-center gap-1 p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('bold')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Negrito (*texto*)"
+                >
+                  <Bold className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('italic')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Itálico (_texto_)"
+                >
+                  <Italic className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('code')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Código (`código`)"
+                >
+                  <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('strike')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Riscado (~texto~)"
+                >
+                  <Strikethrough className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('quote')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Citação (> texto)"
+                >
+                  <Quote className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('list')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Lista com marcadores"
+                >
+                  <List className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => applyFormat('numbered')}
+                  className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Lista numerada"
+                >
+                  <ListOrdered className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </motion.button>
+              </div>
+            )}
+
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onChange={handleMessageChange}
+              onKeyPress={handleKeyPress}
+              placeholder={placeholder}
+              disabled={disabled}
+              rows={1}
+              className="w-full px-4 py-3 bg-transparent text-gray-900 dark:text-gray-100
+                         focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 
+                         resize-none transition-all duration-200 overflow-hidden"
+              style={{
+                height: `${textareaHeight}px`,
+                minHeight: '48px',
+                paddingTop: showFormatting ? '12px' : '12px'
+              }}
+              onFocus={() => {
+                setIsFocused(true)
+                setShowFormatting(true)
+              }}
+              onBlur={() => {
+                setIsFocused(false)
+                // Só esconder formatação se não tem conteúdo
+                if (!message.trim()) {
+                  setShowFormatting(false)
+                }
+              }}
+            />
+          </div>
+
+          {/* Toggle para toolbar */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowFormatting(!showFormatting)}
+            className="absolute bottom-2 right-2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 
+                       dark:hover:text-gray-400 rounded transition-colors"
+            title="Formatação de texto"
+          >
+            <Type className="w-4 h-4" />
+          </motion.button>
         </div>
 
         {/* Botão de Emojis (fora do input) */}

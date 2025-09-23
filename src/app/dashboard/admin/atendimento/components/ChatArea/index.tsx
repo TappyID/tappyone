@@ -16,6 +16,13 @@ interface ChatAreaProps {
     timestamp: number
     status?: 'sending' | 'sent' | 'delivered' | 'read'
     mediaUrl?: string
+    // Suporte a reply/resposta
+    replyTo?: {
+      id: string
+      content: string
+      sender: 'user' | 'agent'
+      type?: string
+    }
     metadata?: {
       // Para áudio
       duration?: number
