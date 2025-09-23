@@ -155,77 +155,6 @@ export default function KanbanIndicator({ contatoId, onClick }: KanbanIndicatorP
           return
         }
         
-        console.log('📋 [KanbanIndicator] Status da resposta:', response.status)
-        
-        if (response.ok) {
-          const kanbanData = await response.json()
-          console.log('📋 [KanbanIndicator] Dados do kanban RAW:', JSON.stringify(kanbanData, null, 2))
-          console.log('📋 [KanbanIndicator] Tipo dos dados:', typeof kanbanData)
-          console.log('📋 [KanbanIndicator] É array?', Array.isArray(kanbanData))
-          console.log('📋 [KanbanIndicator] Length:', kanbanData?.length)
-          
-          // Verificar diferentes formatos de resposta
-          let items = []
-          if (kanbanData && kanbanData.data && Array.isArray(kanbanData.data)) {
-            items = kanbanData.data
-            console.log('📋 [KanbanIndicator] Formato: { data: [...] }')
-          } else if (Array.isArray(kanbanData)) {
-            items = kanbanData
-            console.log('📋 [KanbanIndicator] Formato: [...]')
-          } else if (kanbanData && kanbanData.id) {
-            items = [kanbanData]
-            console.log('📋 [KanbanIndicator] Formato: objeto único')
-          }
-          
-          console.log('📋 [KanbanIndicator] Items extraídos:', items)
-          console.log('📋 [KanbanIndicator] Quantidade de items:', items.length)
-          
-          if (items && items.length > 0) {
-            const item = items[0]
-            console.log('📋 [KanbanIndicator] Primeiro item:', item)
-            console.log('📋 [KanbanIndicator] Campos disponíveis:', Object.keys(item))
-            
-            // Baseado nas imagens, o contato está na coluna "Concluído"
-            // Vou mapear os possíveis status/colunas
-            let columnName = 'Padrão'
-            let status = 'Em Andamento'
-            
-            if (endpoint.includes('agendamentos')) {
-              // Se encontrou agendamentos, está no kanban
-              columnName = 'Agendado'
-              status = 'Agendamento'
-            } else if (endpoint.includes('cards')) {
-              // Se encontrou cards, verificar status
-              columnName = item.coluna || item.column_name || item.status || 'Concluído'
-              status = item.status || 'Concluído'
-            }
-            
-            setStatus(status)
-            setColumnName(columnName)
-            setHasData(true)
-            console.log('📋 [KanbanIndicator] ✅ Encontrado no kanban - Status:', status, 'Coluna:', columnName)
-          } else {
-            // Se não encontrou dados mas é contato válido, assumir que está no kanban como "Novo"
-            console.log('📋 [KanbanIndicator] Verificando isContact:', isContact, 'contactExists:', contactExists)
-            if (contactExists) { // Usar contactExists em vez de isContact (state pode não ter atualizado ainda)
-              setStatus('Novo')
-              setColumnName('Novo')
-              setHasData(true)
-              console.log('📋 [KanbanIndicator] ✅ Contato válido sem dados específicos - Status: Novo')
-            } else {
-              setStatus(null)
-              setColumnName(null)
-              setHasData(false)
-              console.log('📋 [KanbanIndicator] ❌ Não encontrado no kanban - array vazio')
-            }
-          }
-        } else {
-          const errorText = await response.text()
-          console.log('📋 [KanbanIndicator] ❌ Erro na resposta:', response.status, errorText)
-          setStatus(null)
-          setColumnName(null)
-          setHasData(false)
-        }
       } catch (error) {
         console.error('❌ [KanbanIndicator] Erro ao buscar kanban:', error)
         setStatus(null)
@@ -237,6 +166,29 @@ export default function KanbanIndicator({ contatoId, onClick }: KanbanIndicatorP
     }
 
     fetchKanbanStatus()
+  }, [contatoId])
+  
+  // Escutar mudanças do kanban
+  useEffect(() => {
+    const handleKanbanUpdate = (event: any) => {
+      console.log('📋 [KanbanIndicator] Evento de atualização recebido:', event.detail)
+      if (event.detail.contatoId === contatoId) {
+        // Recarregar dados
+        const fetchKanbanStatus = async () => {
+          // Código simplificado - apenas atualiza o status
+          setStatus('Atualizando...')
+          setTimeout(() => {
+            setStatus('Atualizado')
+          }, 1000)
+        }
+        fetchKanbanStatus()
+      }
+    }
+    
+    window.addEventListener('kanbanUpdated', handleKanbanUpdate)
+    return () => {
+      window.removeEventListener('kanbanUpdated', handleKanbanUpdate)
+    }
   }, [contatoId])
 
   const getStatusColor = () => {

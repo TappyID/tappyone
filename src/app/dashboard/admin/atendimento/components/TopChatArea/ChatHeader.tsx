@@ -11,10 +11,12 @@ import {
   MapPin
 } from 'lucide-react'
 
+import CreateContactModal from './CreateContactModal'
+import KanbanModal from './KanbanModal'
+import TagsSidebar from './TagsSidebar'
 import AgendamentosSidebar from './AgendamentosSidebar'
 import OrcamentosSidebar from './OrcamentosSidebar'
 import TicketsSidebar from './TicketsSidebar'
-import TagsSidebar from './TagsSidebar'
 // import AtendenteSidebar from './AtendenteSidebar'
 // import FilaSidebar from './FilaSidebar'
 // import KanbanSidebar from './KanbanSidebar'
@@ -26,7 +28,6 @@ import TicketsIndicator from './Indicators/TicketsIndicator'
 import KanbanIndicator from './Indicators/KanbanIndicator'
 // import FilaIndicator from './Indicators/FilaIndicator'
 // import AgenteIndicator from './Indicators/AgenteIndicator'
-import CreateContactModal from './CreateContactModal'
 import { useChatPicture } from '@/hooks/useChatPicture'
 
 interface ChatHeaderProps {
@@ -37,6 +38,7 @@ interface ChatHeaderProps {
     isOnline?: boolean
     lastSeen?: number
     location?: string
+    unreadCount?: number // Adicionar contador de não lidas
   }
   selectedChatId?: string // Chat ID selecionado para integração com módulos
   onCallClick?: () => void
@@ -57,6 +59,7 @@ export default function ChatHeader({
   const [agendamentosSidebarOpen, setAgendamentosSidebarOpen] = useState(false)
   const [orcamentosSidebarOpen, setOrcamentosSidebarOpen] = useState(false)
   const [ticketsSidebarOpen, setTicketsSidebarOpen] = useState(false)
+  const [kanbanModalOpen, setKanbanModalOpen] = useState(false)
   const [tagsSidebarOpen, setTagsSidebarOpen] = useState(false)
   const [atendenteSidebarOpen, setAtendenteSidebarOpen] = useState(false)
   const [filaSidebarOpen, setFilaSidebarOpen] = useState(false)
@@ -143,15 +146,25 @@ export default function ChatHeader({
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
             {chat.name}
           </h3>
-          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-            <Clock className="w-3 h-3" />
-            <span>{formatLastSeen(chat.lastSeen)}</span>
-            {chat.location && (
-              <>
-                <span>•</span>
-                <MapPin className="w-3 h-3" />
-                <span>{chat.location}</span>
-              </>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <Clock className="w-3 h-3" />
+              <span>{formatLastSeen(chat.lastSeen)}</span>
+              {chat.location && (
+                <>
+                  <span>•</span>
+                  <MapPin className="w-3 h-3" />
+                  <span>{chat.location}</span>
+                </>
+              )}
+            </div>
+            {/* Indicador de mensagens novas - estilo WhatsApp */}
+            {!!(chat.unreadCount && chat.unreadCount > 0) && (
+              <div className="flex items-center gap-2">
+                <div className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                  {chat.unreadCount} {chat.unreadCount === 1 ? 'nova mensagem' : 'novas mensagens'}
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -173,9 +186,8 @@ export default function ChatHeader({
         <KanbanIndicator 
           contatoId={contatoId}
           onClick={() => {
-            console.log('📋 [ChatHeader] Clique no KanbanIndicator - contatoId:', contatoId)
-            // TODO: Abrir modal do kanban ou navegar para kanban
-            alert('Funcionalidade do kanban em desenvolvimento!')
+            console.log('📋 [ChatHeader] Abrindo KanbanModal - contatoId:', contatoId)
+            setKanbanModalOpen(true)
           }} 
         />
         <SimpleTagsIndicator 
@@ -216,11 +228,20 @@ export default function ChatHeader({
         */}
       </div>
       
-      {/* Modal de Criar Contato */}
-      <CreateContactModal
+      {/* Modal */}
+      {/* Contact Modal */}
+      <CreateContactModal 
         isOpen={createContactModalOpen}
         onClose={() => setCreateContactModalOpen(false)}
         chatId={selectedChatId}
+        chatName={chat?.name}
+      />
+      
+      {/* Kanban Modal */}
+      <KanbanModal
+        isOpen={kanbanModalOpen}
+        onClose={() => setKanbanModalOpen(false)}
+        contatoId={contatoId || ''}
         chatName={chat?.name}
       />
 

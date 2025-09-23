@@ -75,11 +75,12 @@ export default function SideChat({
   onLoadMore,
   hasMoreChats = false,
   isLoadingMore = false,
-  isLoading = false,
+  isLoading,
   isCollapsed = false
 }: SideChatProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
+  const [preserveScroll, setPreserveScroll] = useState<number | null>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   // IntersectionObserver para scroll infinito
@@ -109,6 +110,34 @@ export default function SideChat({
       }
     }
   }, [onLoadMore, hasMoreChats, isLoadingMore])
+
+  // Preservar posição do scroll durante updates
+  useEffect(() => {
+    if (preserveScroll !== null && scrollContainerRef.current) {
+      console.log('📜 Restaurando posição do scroll:', preserveScroll)
+      scrollContainerRef.current.scrollTop = preserveScroll
+      setPreserveScroll(null)
+    }
+  }, [chats, preserveScroll])
+
+  // Salvar posição antes de updates APENAS se não estamos no final da lista (scroll infinito)
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current
+      const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 100
+      const isScrolled = container.scrollTop > 50
+      
+      // Só preservar scroll se estivermos no meio da lista, não no final (scroll infinito)
+      if (isScrolled && !isNearBottom) {
+        const currentScroll = container.scrollTop
+        console.log('📜 Salvando posição do scroll:', currentScroll, '(não está no final)')
+        setPreserveScroll(currentScroll)
+      } else if (isNearBottom) {
+        console.log('📜 Próximo ao final - permitindo scroll infinito')
+        setPreserveScroll(null)
+      }
+    }
+  }, [chats.length])
 
   // Handler do scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -176,11 +205,11 @@ export default function SideChat({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 custom-scrollbar border-r border-gray-200 dark:border-gray-700">
+    <div className="relative flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       {/* Lista de Chats com scroll */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar"
+        className="flex-1 overflow-y-auto overflow-x-hidden modern-scrollbar"
         onScroll={handleScroll}
       >
         {/* Loading inicial */}
@@ -249,30 +278,30 @@ export default function SideChat({
             </motion.div>
           </div>
         )}
-      </div>
 
-      {/* Botão Scroll to Top */}
-      <AnimatePresence>
-        {showScrollTop && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.3 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.3 }}
-            transition={{ 
-              type: "spring",
-              stiffness: 260,
-              damping: 20 
-            }}
-            onClick={scrollToTop}
-            className="absolute bottom-6 right-6 p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 z-50"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            title="Voltar ao topo"
-          >
-            <ArrowUp className="w-5 h-5" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+        {/* Botão Scroll to Top - Dentro da sidebar */}
+        <AnimatePresence>
+          {showScrollTop && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.3 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 260,
+                damping: 20 
+              }}
+              onClick={scrollToTop}
+              className="absolute bottom-4 right-4 p-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 z-10"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title="Voltar ao topo"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

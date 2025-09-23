@@ -109,20 +109,11 @@ export default function MessageActions({
     try {
       console.log('🌍 Traduzindo mensagem para PT-BR:', messageContent.substring(0, 50))
       
-      // Detectar idioma original - melhorada para múltiplos idiomas
-      const isPortuguese = /\b(é|ã|ç|ê|ô|õ|á|à|â|í|ó|ú|não|sim|com|para|que|uma|um|de|do|da|em|por|mas|ou|este|esta|isso)\b/i.test(messageContent)
-      const isSpanish = /\b(ñ|é|í|ó|ú|á|ü|el|la|es|con|para|que|una|uno|de|del|en|por|pero|o|este|esta|esto)\b/i.test(messageContent)
-      const isEnglish = /\b(the|and|or|is|are|was|were|have|has|had|will|would|could|should|this|that|with|from|they|them|their)\b/i.test(messageContent)
-      
-      let sourceLanguage = 'pt' // default português
-      if (isEnglish && !isPortuguese && !isSpanish) {
-        sourceLanguage = 'en'
-      } else if (isSpanish && !isPortuguese && !isEnglish) {
-        sourceLanguage = 'es'
-      }
+      // Usar nova função de detecção de idioma
+      const sourceLanguage = detectLanguage(messageContent)
       
       // Se já está em português, não precisa traduzir
-      if (isPortuguese || sourceLanguage === 'pt') {
+      if (sourceLanguage === 'pt') {
         console.log('⚠️ Mensagem já está em português')
         onTranslate?.(messageId, 'Mensagem já está em português')
         return
@@ -130,24 +121,26 @@ export default function MessageActions({
       
       console.log('🎯 Traduzindo para português:', sourceLanguage, '→ pt')
       
-      const response = await fetch('/api/translate', {
+      const prompt = `Traduza o seguinte texto para português brasileiro de forma natural e contextual: "${messageContent}"`
+      
+      const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: messageContent,
-          sourceLanguage: sourceLanguage,
-          targetLanguage: 'pt' // SEMPRE para português
+          prompt,
+          context: `Tradução de ${sourceLanguage} para português brasileiro`,
+          type: 'translation'
         })
       })
 
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.translatedText) {
-          console.log('✅ Tradução para PT-BR recebida:', data.translatedText)
+        if (data.success && data.text) {
+          console.log('✅ Tradução para PT-BR via Deepseek recebida:', data.text)
           // Chamar callback com a tradução
-          onTranslate?.(messageId, data.translatedText)
+          onTranslate?.(messageId, data.text)
         }
       }
     } catch (error) {
@@ -176,24 +169,26 @@ export default function MessageActions({
       
       console.log('🎯 Traduzindo para português no modal:', sourceLanguage, '→ pt')
       
-      // Traduzir mensagem original SEMPRE para PT-BR
-      const response = await fetch('/api/translate', {
+      // Traduzir mensagem original SEMPRE para PT-BR usando Deepseek
+      const prompt = `Traduza o seguinte texto para português brasileiro de forma natural e contextual: "${messageContent}"`
+      
+      const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: messageContent,
-          sourceLanguage: sourceLanguage,
-          targetLanguage: 'pt' // SEMPRE para português
+          prompt,
+          context: `Tradução de ${sourceLanguage} para português brasileiro`,
+          type: 'translation'
         })
       })
 
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.translatedText) {
-          console.log('✅ Tradução PT-BR para modal recebida:', data.translatedText)
-          setTranslatedMessage(data.translatedText)
+        if (data.success && data.text) {
+          console.log('✅ Tradução PT-BR via Deepseek recebida:', data.text)
+          setTranslatedMessage(data.text)
         }
       } else {
         setTranslatedMessage('Erro na tradução')
@@ -215,38 +210,34 @@ export default function MessageActions({
       console.log('📤🌍 Enviando resposta traduzida:', replyText)
       
       // Detectar idioma da mensagem original para traduzir resposta de volta
-      const isOriginalPortuguese = /\b(é|ã|ç|ê|ô|õ|á|à|â|í|ó|ú|não|sim|com|para|que|uma|um|de|do|da|em|por|mas|ou|este|esta|isso)\b/i.test(messageContent)
-      const isOriginalSpanish = /\b(ñ|é|í|ó|ú|á|ü|el|la|es|con|para|que|una|uno|de|del|en|por|pero|o|este|esta|esto)\b/i.test(messageContent)
-      const isOriginalEnglish = /\b(the|and|or|is|are|was|were|have|has|had|will|would|could|should|this|that|with|from|they|them|their)\b/i.test(messageContent)
+      const replyTargetLanguage = detectLanguage(messageContent)
       
-      let replyTargetLanguage = 'pt' // default português
-      if (isOriginalEnglish && !isOriginalPortuguese && !isOriginalSpanish) {
-        replyTargetLanguage = 'en'
-      } else if (isOriginalSpanish && !isOriginalPortuguese && !isOriginalEnglish) {
-        replyTargetLanguage = 'es'
-      }
+      console.log('🔄 Traduzindo resposta DE português PARA:', replyTargetLanguage)
       
-      const replySourceLanguage = 'pt' // sempre traduzindo DE português
+      // Traduzir resposta para o idioma original da mensagem usando Deepseek
+      const targetLangName = replyTargetLanguage === 'es' ? 'espanhol' : 
+                           replyTargetLanguage === 'en' ? 'inglês' : 'português'
       
-      // Traduzir resposta para o idioma original da mensagem
-      const response = await fetch('/api/translate', {
+      const prompt = `Traduza o seguinte texto do português para ${targetLangName} de forma natural e contextual: "${replyText}"`
+      
+      const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: replyText,
-          sourceLanguage: replySourceLanguage,
-          targetLanguage: replyTargetLanguage
+          prompt,
+          context: `Tradução de português para ${targetLangName} - Atendimento ao cliente`,
+          type: 'translation'
         })
       })
 
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.translatedText) {
-          console.log('✅ Resposta traduzida:', data.translatedText)
+        if (data.success && data.text) {
+          console.log('✅ Resposta traduzida via Deepseek:', data.text)
           // Enviar resposta traduzida
-          onAIReply?.(messageId, data.translatedText)
+          onAIReply?.(messageId, data.text)
           
           // Fechar modal e limpar campos
           setShowTranslateReply(false)
@@ -349,13 +340,15 @@ export default function MessageActions({
     }
   }
 
-  // Função para gerar resposta com IA no modal
+  // Função para gerar resposta com IA no modal - SEMPRE em português
   const handleGenerateAIResponse = async () => {
     try {
       setIsGeneratingAI(true)
-      console.log('🤖 Gerando resposta IA para mensagem:', translatedMessage || messageContent)
+      console.log('🤖 Gerando resposta IA em PT-BR para:', translatedMessage || messageContent)
       
-      const prompt = `Gere uma resposta profissional e amigável para esta mensagem: "${translatedMessage || messageContent}"`
+      // Usar mensagem traduzida (em português) como contexto
+      const messageForContext = translatedMessage || messageContent
+      const prompt = `Gere uma resposta profissional, amigável e útil em português brasileiro para esta mensagem: "${messageForContext}"`
       
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
@@ -364,7 +357,7 @@ export default function MessageActions({
         },
         body: JSON.stringify({
           prompt,
-          context: 'Atendimento ao cliente via WhatsApp',
+          context: 'Atendimento ao cliente via WhatsApp - Responda sempre em português brasileiro',
           type: 'response'
         })
       })
@@ -372,9 +365,9 @@ export default function MessageActions({
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Resposta IA gerada:', data.text)
+          console.log('✅ Resposta IA gerada em PT-BR:', data.text)
           
-          // Adicionar resposta da IA ao campo
+          // Adicionar resposta da IA ao campo (já em português)
           setReplyText(data.text)
         }
       } else {
@@ -535,10 +528,11 @@ export default function MessageActions({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
+              className="bg-background rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto border border-border"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   🌍 Responder com Tradução
                 </h3>
@@ -576,15 +570,15 @@ export default function MessageActions({
               {/* Campo de Resposta */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Sua resposta (será traduzida automaticamente):
+                  Sua resposta em português (será traduzida na hora do envio):
                 </label>
                 <div className="relative">
                   <textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Digite sua resposta em português ou use o microfone..."
+                    placeholder="Digite, fale no microfone ou gere com IA - tudo em português. Será traduzido automaticamente ao enviar..."
                     className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    rows={3}
+                    rows={6}
                     autoFocus={!isRecording}
                   />
                   
@@ -668,7 +662,7 @@ export default function MessageActions({
               </div>
 
               {/* Botões */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
                 <button
                   onClick={() => {
                     setShowTranslateReply(false)
@@ -696,6 +690,7 @@ export default function MessageActions({
                     </>
                   )}
                 </button>
+              </div>
               </div>
             </motion.div>
           </div>

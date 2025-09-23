@@ -16,7 +16,8 @@ import {
   Users,
   Tag,
   Ticket,
-  UserCheck
+  UserCheck,
+  MessageCircle
 } from 'lucide-react'
 
 import LastMessageSideChat from './LastMessageSideChat'
@@ -143,15 +144,36 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     setShowTransferModal(false)
   }
   
-  // Formatação do timestamp
+  // Formatação do timestamp igual WhatsApp Web
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp)
     const now = new Date()
-    const diff = now.getTime() - date.getTime()
     
-    if (diff < 60000) return 'Agora'
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`
+    // Comparar apenas as datas (sem horário) para melhor precisão
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const diffDays = Math.floor((today.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Se for hoje (mesmo dia)
+    if (diffDays === 0) {
+      return date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      })
+    }
+    
+    // Se for ontem (1 dia atrás)
+    if (diffDays === 1) {
+      return 'Ontem'
+    }
+    
+    // Se for esta semana (2-6 dias atrás)
+    if (diffDays >= 2 && diffDays <= 6) {
+      return date.toLocaleDateString('pt-BR', { weekday: 'short' })
+    }
+    
+    // Mais antigo, mostrar data (12/09)
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
   }
 
@@ -162,7 +184,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         onClick={onSelect}
-      className={`group relative flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all ${
+      className={`group relative flex items-center space-x-2 p-3 rounded-lg cursor-pointer transition-all border-b border-gray-100/50 dark:border-gray-700/30 ${
         chat.isSelected
           ? 'bg-blue-50 dark:bg-blue-900/20'
           : 'hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -191,31 +213,20 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           </div>
         )}
       </div>
-      {/* Avatar com foto real do WAHA ou fallback */}
-      <div className="relative flex-shrink-0">
+      {/* Avatar maior e mais à esquerda */}
+      <div className="relative flex-shrink-0 ml-1">
           {/* Foto do WAHA ou avatar fornecido */}
           {profileImage ? (
             <img 
               src={profileImage} 
-              alt={chat.name}
-              className={`w-12 h-12 rounded-full object-cover border-2 ${
-                chat.isSelected 
-                  ? 'border-blue-400 shadow-lg' 
-                  : 'border-gray-200 dark:border-gray-700'
-              } ${isLoadingPicture ? 'animate-pulse' : ''}`}
-              onError={(e) => {
-                // Fallback se a imagem falhar
-                e.currentTarget.style.display = 'none'
-                e.currentTarget.nextElementSibling?.classList.remove('hidden')
-              }}
-            />
+              alt={chat.name} 
+              className="w-14 h-14 rounded-full object-cover" 
+            /> 
           ) : null}
           
           {/* Fallback avatar com inicial */}
-          <div className={`${profileImage ? 'hidden' : ''} w-12 h-12 rounded-full 
-                         bg-gradient-to-br from-blue-400 to-purple-500
-                         flex items-center justify-center border-2 ${
-                chat.isSelected 
+          <div className={`${profileImage ? 'hidden' : ''} w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold border-2 ${
+                  chat.isSelected
                   ? 'border-blue-400 shadow-lg' 
                   : 'border-gray-200 dark:border-gray-700'
               }`}>
@@ -244,9 +255,9 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       {/* Informações do Chat */}
       <div className="flex-1 min-w-0">
-          {/* Nome e Badge */}
+          {/* Nome e contador */}
           <div className="flex items-center justify-between mb-1">
-            <h3 className={`font-medium truncate ${
+            <h3 className={`text-sm font-medium truncate ${
               chat.isSelected
                 ? 'text-blue-700 dark:text-blue-300 font-semibold'
                 : chat.lastMessage?.isRead === false 
@@ -255,6 +266,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             }`}>
               {chat.name.length > 15 ? `${chat.name.substring(0, 15)}...` : chat.name}
             </h3>
+            
             {/* Contador de não lidas */}
             {!!(chat.unreadCount && chat.unreadCount > 0) && (
               <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
@@ -263,98 +275,113 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
           </div>
 
+          {/* Telefone abaixo do nome */}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {chat.id.replace('@c.us', '').replace(/(\d{2})(\d{2})(\d{4,5})(\d{4})/, '($1) $2 $3-$4')}
+          </div>
+
           {/* Última Mensagem */}
           <LastMessageSideChat 
             message={chat.lastMessage}
             maxLength={25}
           />
 
-          {/* Badges de indicadores - Micro tamanho */}
+          {/* Todas as badges abaixo do telefone */}
           <div className="flex items-center gap-0.5 mt-0.5 flex-wrap">
             {/* Indicador de Contato Cadastrado */}
             {chat.isContact && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded">
-                <UserCheck className="w-2.5 h-2.5 text-purple-500" />
+              <div className="flex items-center px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded-full">
+                <UserCheck className="w-2 h-2 text-purple-500" />
               </div>
             )}
             
             {/* Tags */}
             {!!(chat.tags && chat.tags.length > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
-                <Tag className="w-2.5 h-2.5 text-gray-500" />
-                <span className="text-[10px] font-medium text-gray-600">{chat.tags.length}</span>
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+                <Tag className="w-2 h-2 text-gray-500" />
+                <span className="text-[9px] font-medium text-gray-600">{chat.tags.length}</span>
               </div>
             )}
             
             {/* Agendamentos */}
             {!!(chat.agendamentos && chat.agendamentos.length > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded">
-                <Calendar className="w-2.5 h-2.5 text-blue-500" />
-                <span className="text-[10px] font-medium text-blue-600">{chat.agendamentos.length}</span>
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                <Calendar className="w-2 h-2 text-blue-500" />
+                <span className="text-[9px] font-medium text-blue-600">{chat.agendamentos.length}</span>
               </div>
             )}
             
             {/* Orçamentos */}
             {!!(chat.orcamentos && chat.orcamentos.length > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded">
-                <DollarSign className="w-2.5 h-2.5 text-green-500" />
-                <span className="text-[10px] font-medium text-green-600">{chat.orcamentos.length}</span>
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded-full">
+                <DollarSign className="w-2 h-2 text-green-500" />
+                <span className="text-[9px] font-medium text-green-600">{chat.orcamentos.length}</span>
               </div>
             )}
             
             {/* Tickets */}
             {!!(chat.tickets && chat.tickets.length > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded">
-                <Ticket className="w-2.5 h-2.5 text-orange-500" />
-                <span className="text-[10px] font-medium text-orange-600">{chat.tickets.length}</span>
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded-full">
+                <Ticket className="w-2 h-2 text-orange-500" />
+                <span className="text-[9px] font-medium text-orange-600">{chat.tickets.length}</span>
               </div>
             )}
             
             {/* Kanban */}
             {chat.kanbanStatus && (
               <div 
-                className="flex items-center gap-0.5 px-1 py-0.5 rounded"
+                className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
                 style={{ 
                   backgroundColor: `${chat.kanbanStatus.cor || '#6b7280'}20`,
                   color: chat.kanbanStatus.cor || '#6b7280'
                 }}
               >
-                <Layers className="w-2.5 h-2.5" />
-                <span className="text-[10px] font-medium truncate max-w-[40px]">{chat.kanbanStatus.nome}</span>
+                <Layers className="w-2 h-2" />
+                <span className="text-[9px] font-medium truncate max-w-[40px]">{chat.kanbanStatus.nome}</span>
               </div>
             )}
             
             {/* Fila */}
             {chat.fila && (
               <div 
-                className="flex items-center gap-0.5 px-1 py-0.5 rounded"
+                className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
                 style={{ 
                   backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
                   color: chat.fila.cor || '#9333ea'
                 }}
               >
-                <Users className="w-2.5 h-2.5" />
-                <span className="text-[10px] font-medium truncate max-w-[40px]">{chat.fila.nome}</span>
+                <Users className="w-2 h-2" />
+                <span className="text-[9px] font-medium truncate max-w-[40px]">{chat.fila.nome}</span>
               </div>
             )}
             
             {/* Rating */}
             {!!(chat.rating && chat.rating > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-yellow-100 dark:bg-yellow-900/20 rounded">
-                <span className="text-[10px] font-bold text-yellow-600">⭐{chat.rating}</span>
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-yellow-100 dark:bg-yellow-900/20 rounded-full">
+                <span className="text-[9px] font-bold text-yellow-600">⭐{chat.rating}</span>
               </div>
             )}
+          
           </div>
 
       </div>
 
       {/* Timestamp no canto superior direito */}
-      <div className="absolute top-3 right-3 text-xs text-gray-400">
-        {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
+      <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+        <div className="text-xs text-gray-400">
+          {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
+        </div>
+        
+        {/* Pin/Badge de mensagens novas - estilo WhatsApp */}
+        {!!(chat.unreadCount && chat.unreadCount > 0) && (
+          <div className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
+            {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+          </div>
+        )}
       </div>
 
-      {/* Ações rápidas no hover - IGUAL AO CONVERSATIONSIDEBAR ANTIGO */}
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+      {/* Ações rápidas no hover - MOVIDAS PARA BAIXO */}
+      <div className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0">
         {/* Favoritar - IGUAL AO ANTIGO */}
         <button
           onClick={(e) => {
@@ -372,7 +399,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           }`}
           title={chat.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
-          <Star className="w-4 h-4" fill={chat.isFavorite ? 'currentColor' : 'none'} />
+          <Star className="w-3 h-3" fill={chat.isFavorite ? 'currentColor' : 'none'} />
         </button>
         
         {/* Transferir - IGUAL AO ANTIGO */}
@@ -384,7 +411,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
           title="Transferir conversa"
         >
-          <UserPlus className="w-4 h-4" />
+          <UserPlus className="w-3 h-3" />
         </button>
         
         {/* Arquivar - IGUAL AO ANTIGO */}
@@ -404,7 +431,40 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           }`}
           title={chat.isArchived ? 'Desarquivar conversa' : 'Arquivar conversa'}
         >
-          <Archive className="w-4 h-4" />
+          <Archive className="w-3 h-3" />
+        </button>
+        
+        {/* Mensagens com badge - RECOLOCADO */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            console.log('Ver mensagens para:', chat.id)
+            // TODO: Implementar ação de ver mensagens
+          }}
+          className="p-1.5 text-slate-400 hover:text-blue-500 rounded-lg transition-colors relative"
+          title={!!(chat.unreadCount && chat.unreadCount > 0) ? `${chat.unreadCount} mensagens não lidas` : 'Mensagens'}
+        >
+          <MessageCircle className="w-3 h-3" />
+          {/* Badge verde com fallback "1" - TEMPORÁRIO PARA VISUALIZAR */}
+          <span className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white">
+            {(chat.unreadCount && chat.unreadCount > 0) ? (chat.unreadCount > 9 ? '9+' : chat.unreadCount) : '1'}
+          </span>
+        </button>
+
+        {/* Transferir - IGUAL AO ANTIGO */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            if (onTransfer) {
+              onTransfer(chat.id)
+            } else {
+              console.log('onTransfer não implementado para:', chat.id)
+            }
+          }}
+          className="p-1.5 text-slate-400 hover:text-blue-500 rounded-lg transition-colors"
+          title="Transferir conversa"
+        >
+          <UserPlus className="w-3 h-3" />
         </button>
         
         {/* Ocultar/Mostrar - IGUAL AO ANTIGO */}
@@ -420,7 +480,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg transition-colors"
           title={chat.isHidden ? 'Mostrar conversa' : 'Ocultar conversa'}
         >
-          {chat.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          {chat.isHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </button>
         
         {/* Excluir - IGUAL AO ANTIGO */}
@@ -438,7 +498,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
           title="Excluir conversa"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3 h-3" />
         </button>
       </div>
     </motion.div>

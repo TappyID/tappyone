@@ -1,24 +1,15 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
-import { motion } from 'framer-motion'
-import {
-  Smile,
-  Mic,
-  MicOff,
-  Bold,
-  Italic,
-  Code,
-  Strikethrough,
-  List,
-  ListOrdered,
-  Quote,
-  GripHorizontal,
-  Type,
-  Reply,
-  X,
-  Send
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Smile, Send, Mic, MicOff, Zap, Bot, MessageSquare, X, Reply, 
+  GripHorizontal, Bold, Italic, Code, Strikethrough, Quote, List, 
+  ListOrdered, Type
 } from 'lucide-react'
+import { useMessagesData } from '@/hooks/useMessagesData'
+import { useChatAgente } from '@/hooks/useChatAgente'
+import { Dispatch, SetStateAction } from 'react'
 
 import {
   AnexoMenuButton,
@@ -418,8 +409,10 @@ export default function MessageInput({
   
   // Estados para agente IA
   const [showAgenteModal, setShowAgenteModal] = useState(false)
-  const [agenteAtual, setAgenteAtual] = useState<any>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  
+  // Hook para buscar agente ativo do chat
+  const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(chatId)
   
   // Ref para textarea expansivo
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -1049,7 +1042,7 @@ export default function MessageInput({
         <AgenteButton 
           onClick={() => setShowAgenteModal(true)}
           isGenerating={isGenerating}
-          agenteAtivo={!!agenteAtual}
+          agenteAtivo={agenteAtivo}
           agenteNome={agenteAtual?.nome || ''}
         />
         
@@ -1210,10 +1203,15 @@ export default function MessageInput({
         isOpen={showAgenteModal}
         onClose={() => setShowAgenteModal(false)}
         onSelect={(agente) => {
-          setAgenteAtual(agente)
           console.log('🤖 Agente selecionado:', agente)
+          // Recarregar dados do agente após seleção
+          refetchAgente()
         }}
-        agenteAtual={agenteAtual}
+        agenteAtual={agenteAtual ? { 
+          ...agenteAtual, 
+          cor: '#3b82f6',
+          descricao: agenteAtual.descricao || 'Agente IA'
+        } : null}
         chatId={chatId}
       />
     </div>

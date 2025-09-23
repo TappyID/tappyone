@@ -381,17 +381,53 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       })
       .then(response => response.json())
       .then(data => {
-        // Atualizar apenas o status das mensagens existentes
-        setMessages(prev => prev.map(msg => {
-          const updated = data.find((newMsg: any) => newMsg.id === msg.id)
-          if (updated) {
-            return {
-              ...msg,
-              status: getMessageStatus(updated)
+        if (!Array.isArray(data)) return
+        
+        setMessages(prev => {
+          // 1. Encontrar mensagens completamente NOVAS que não existem
+          const existingIds = new Set(prev.map(msg => msg.id))
+          const newMessages = data
+            .filter((newMsg: any) => !existingIds.has(newMsg.id))
+            .map((msg: any) => {
+              const detectedType = getMessageType(msg)
+              const extractedMetadata = extractMetadata(msg)
+              
+              return {
+                id: msg.id || `msg_${msg.timestamp}`,
+                content: msg.body || msg.caption || getDefaultContent(msg),
+                type: detectedType,
+                sender: msg.fromMe ? 'agent' : 'user',
+                timestamp: msg.timestamp * 1000,
+                status: msg.fromMe ? getMessageStatus(msg) : undefined,
+                mediaUrl: msg.mediaUrl || msg.media?.url,
+                metadata: extractedMetadata,
+                replyTo: undefined // Simplificado para polling - reply será detectado no carregamento completo
+              } as Message
+            })
+          
+          // 2. Atualizar status das mensagens existentes
+          const updatedExisting = prev.map(msg => {
+            const updated = data.find((newMsg: any) => newMsg.id === msg.id)
+            if (updated) {
+              return {
+                ...msg,
+                status: getMessageStatus(updated)
+              }
             }
+            return msg
+          })
+          
+          // 3. Se há mensagens novas, adicionar ao FINAL da lista (mais recentes)
+          if (newMessages.length > 0) {
+            console.log('🆕 Novas mensagens detectadas:', newMessages.length)
+            // Ordenar por timestamp para garantir ordem correta
+            const allMessages = [...updatedExisting, ...newMessages]
+              .sort((a, b) => a.timestamp - b.timestamp)
+            return allMessages
           }
-          return msg
-        }))
+          
+          return updatedExisting
+        })
       })
       .catch(error => console.log('Status polling error:', error))
     }, 5000)
