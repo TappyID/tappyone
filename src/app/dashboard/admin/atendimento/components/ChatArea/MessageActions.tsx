@@ -78,16 +78,23 @@ export default function MessageActions({
     }
   }
 
-  // Função para traduzir mensagem
+  // Função para traduzir mensagem - SEMPRE para PT-BR
   const handleTranslate = async () => {
     try {
-      console.log('🌍 Traduzindo mensagem:', messageContent.substring(0, 50))
+      console.log('🌍 Traduzindo mensagem para PT-BR:', messageContent.substring(0, 50))
       
-      // Detectar idioma e definir tradução inteligente
+      // Detectar idioma original
       const isEnglish = /^[a-zA-Z\s.,!?'"()-]+$/.test(messageContent)
-      const targetLanguage = isEnglish ? 'pt' : 'en'
+      const sourceLanguage = isEnglish ? 'en' : 'pt'
       
-      console.log('🎯 Idioma detectado:', isEnglish ? 'Inglês → Português' : 'Português → Inglês')
+      // Se já está em português, não precisa traduzir
+      if (!isEnglish) {
+        console.log('⚠️ Mensagem já está em português')
+        onTranslate?.(messageId, 'Mensagem já está em português')
+        return
+      }
+      
+      console.log('🎯 Traduzindo para português:', sourceLanguage, '→ pt')
       
       const response = await fetch('/api/translate', {
         method: 'POST',
@@ -96,15 +103,15 @@ export default function MessageActions({
         },
         body: JSON.stringify({
           text: messageContent,
-          sourceLanguage: isEnglish ? 'en' : 'pt',
-          targetLanguage: targetLanguage
+          sourceLanguage: sourceLanguage,
+          targetLanguage: 'pt' // SEMPRE para português
         })
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.translatedText) {
-          console.log('✅ Tradução recebida:', data.translatedText)
+          console.log('✅ Tradução para PT-BR recebida:', data.translatedText)
           // Chamar callback com a tradução
           onTranslate?.(messageId, data.translatedText)
         }
@@ -114,17 +121,27 @@ export default function MessageActions({
     }
   }
 
-  // Função para abrir modal de resposta com tradução
+  // Função para abrir modal de resposta com tradução - SEMPRE traduz para PT-BR
   const handleOpenTranslateReply = async () => {
     try {
       setIsTranslating(true)
-      console.log('🌍📝 Preparando resposta com tradução para:', messageContent.substring(0, 50))
+      console.log('🌍📝 Traduzindo mensagem para PT-BR no modal:', messageContent.substring(0, 50))
       
       // Detectar idioma da mensagem original
       const isEnglish = /^[a-zA-Z\s.,!?'"()-]+$/.test(messageContent)
-      const targetLanguage = isEnglish ? 'pt' : 'en'
+      const sourceLanguage = isEnglish ? 'en' : 'pt'
       
-      // Traduzir mensagem original para mostrar no modal
+      // Se já está em português, mostrar original
+      if (!isEnglish) {
+        console.log('⚠️ Mensagem já está em português, mostrando original')
+        setTranslatedMessage(messageContent)
+        setIsTranslating(false)
+        return
+      }
+      
+      console.log('🎯 Traduzindo para português no modal:', sourceLanguage, '→ pt')
+      
+      // Traduzir mensagem original SEMPRE para PT-BR
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
@@ -132,16 +149,19 @@ export default function MessageActions({
         },
         body: JSON.stringify({
           text: messageContent,
-          sourceLanguage: isEnglish ? 'en' : 'pt',
-          targetLanguage: targetLanguage
+          sourceLanguage: sourceLanguage,
+          targetLanguage: 'pt' // SEMPRE para português
         })
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.translatedText) {
+          console.log('✅ Tradução PT-BR para modal recebida:', data.translatedText)
           setTranslatedMessage(data.translatedText)
         }
+      } else {
+        setTranslatedMessage('Erro na tradução')
       }
     } catch (error) {
       console.error('❌ Erro ao traduzir para modal:', error)
