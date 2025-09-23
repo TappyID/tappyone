@@ -34,6 +34,9 @@ interface UseChatsOverviewReturn {
   markChatAsRead: (chatId: string) => Promise<void>
   markChatAsUnread: (chatId: string) => Promise<boolean>
   totalChatsCount: number // Total real de chats do WhatsApp
+  unreadChatsCount: number // Total real de chats não lidos
+  readNoReplyCount: number // Total de chats lidos mas não respondidos
+  groupChatsCount: number // Total real de grupos
 }
 
 export default function useChatsOverview(): UseChatsOverviewReturn {
@@ -43,6 +46,9 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [totalChatsCount, setTotalChatsCount] = useState(0)
+  const [unreadChatsCount, setUnreadChatsCount] = useState(0)
+  const [readNoReplyCount, setReadNoReplyCount] = useState(0)
+  const [groupChatsCount, setGroupChatsCount] = useState(0)
 
   const fetchChatsOverview = async (limit = 12, offset = 0, append = false) => {
     try {
@@ -84,17 +90,31 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       console.log('🔍 DEBUG WAHA - Dados brutos recebidos:', data.slice(0, 2))
       
       // Debug específico para estrutura de unreadCount
-      data.slice(0, 3).forEach((chat: any, index: number) => {
-        console.log(`🔍 DEBUG WAHA - Chat ${index + 1} estrutura:`, {
+      data.slice(0, 5).forEach((chat: any, index: number) => {
+        console.log(`🔍 DEBUG WAHA - Chat ${index + 1} estrutura COMPLETA:`, {
           id: chat.id,
           name: chat.name,
           unreadCount: chat.unreadCount,
           '_chat existe': !!chat._chat,
-          '_chat.unreadCount': chat._chat?.unreadCount,
+          '_chat completo': chat._chat,
           'lastMessage.fromMe': chat.lastMessage?.fromMe,
-          'estrutura completa _chat': chat._chat
+          'TODAS AS PROPRIEDADES': Object.keys(chat),
+          'CHAT COMPLETO': chat
         })
       })
+      
+      // Procurar qualquer propriedade que possa indicar mensagens não lidas
+      const chatComMensagens = data.find((chat: any) => 
+        chat.lastMessage && !chat.lastMessage.fromMe
+      )
+      if (chatComMensagens) {
+        console.log('🔍 DEBUG - Chat que RECEBEU mensagem (pode ter unread):', {
+          id: chatComMensagens.id,
+          name: chatComMensagens.name,
+          'OBJETO COMPLETO': chatComMensagens,
+          'Propriedades disponíveis': Object.keys(chatComMensagens)
+        })
+      }
       
       // Transformar dados da WAHA para formato interno
       const transformedChats: ChatOverview[] = data.map((chat: any) => {
@@ -133,7 +153,12 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
           type: chat.lastMessage.type || 'text',
           hasMedia: chat.lastMessage.hasMedia || false
         } : undefined,
-        unreadCount: chat.unreadCount || chat._chat?.unreadCount,
+        unreadCount: (() => {
+          // Usar lógica ultra restritiva: APENAS ack=2 (entregue)
+          if (!chat.lastMessage || chat.lastMessage.fromMe) return undefined
+          const isUnread = chat.lastMessage.ack === 2
+          return isUnread ? 1 : undefined // Retorna 1 se não lida, undefined se lida
+        })(),
         contact: chat.contact ? {
           id: chat.contact.id,
           name: chat.contact.name,
@@ -189,13 +214,13 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     fetchChatsOverview()
   }
 
-  // Função para buscar apenas o total de chats (sem carregar todos)
+  // Função para buscar totais de chats (total e não lidos)
   const fetchTotalChatsCount = async () => {
     try {
       const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
       const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
       
-      console.log('📊 Buscando total de chats da WAHA...')
+      console.log('📊 Buscando totais de chats da WAHA...')
       
       // Buscar com limit muito alto para pegar o total real
       const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=9999&offset=0`, {
@@ -211,13 +236,74 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       const data = await response.json()
       const totalCount = data.length
       
-      console.log(`📊 Total de chats no WhatsApp: ${totalCount}`)
-      setTotalChatsCount(totalCount)
+      // Debug: contar distribuição de ACK para entender melhor
+      const ackDistribution = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, undefined: 0, fromMe: 0 }
+      data.forEach((chat: any) => {
+        if (!chat.lastMessage) return
+        if (chat.lastMessage.fromMe) {
+          ackDistribution.fromMe++
+        } else {
+          const ack = chat.lastMessage.ack
+          if (ack === undefined) ackDistribution.undefined++
+          else ackDistribution[ack as keyof typeof ackDistribution]++
+        }
+      })
+      console.log('📊 Distribuição de ACK (últimas mensagens recebidas):', ackDistribution)
       
-      return totalCount
+      // Contar chats não lidos - LÓGICA ULTRA RESTRITIVA
+      // Vamos ser MUITO mais rigorosos: só conta como não lida se:
+      // 1. Última mensagem não é nossa (fromMe: false)
+      // 2. E tem ack = 2 (entregue) APENAS (sem ack pode ser antigo)
+      const unreadCount = data.filter((chat: any) => {
+        if (!chat.lastMessage) return false
+        
+        // Se a última mensagem é nossa, não conta como não lida
+        if (chat.lastMessage.fromMe) return false
+        
+        // Só conta como não lida se ack = 2 EXATAMENTE (entregue mas não lida)
+        // ack: 1 = enviada, 2 = entregue, 3 = lida, 4 = visualizada
+        const isUnread = chat.lastMessage.ack === 2
+        
+        if (isUnread) {
+          console.log('🔍 Chat não lido encontrado (APENAS ack=2):', {
+            name: chat.name,
+            lastMessage: chat.lastMessage.body?.substring(0, 50) + '...',
+            fromMe: chat.lastMessage.fromMe,
+            ack: chat.lastMessage.ack,
+            timestamp: new Date(chat.lastMessage.timestamp * 1000).toLocaleString()
+          })
+        }
+        
+        return isUnread
+      }).length
+      
+      // Contar grupos (contém @g.us)
+      const groupsCount = data.filter((chat: any) => chat.id?.includes('@g.us')).length
+      
+      // Contar "lidas mas não respondidas" (última mensagem deles com ack=3 ou 4)
+      const readNoReply = data.filter((chat: any) => {
+        if (!chat.lastMessage) return false
+        if (chat.lastMessage.fromMe) return false // Se última mensagem é nossa, respondemos
+        
+        // Se última mensagem é deles e foi lida (ack=3 ou 4), mas não respondemos
+        const wasRead = chat.lastMessage.ack === 3 || chat.lastMessage.ack === 4
+        return wasRead
+      }).length
+      
+      console.log(`📊 Total de chats no WhatsApp: ${totalCount}`)
+      console.log(`📊 Chats não lidos (ack=2 ou sem ack): ${unreadCount}`)
+      console.log(`📊 Chats lidos mas não respondidos (ack=3/4): ${readNoReply}`)
+      console.log(`📊 Grupos (@g.us): ${groupsCount}`)
+      
+      setTotalChatsCount(totalCount)
+      setUnreadChatsCount(unreadCount)
+      setReadNoReplyCount(readNoReply)
+      setGroupChatsCount(groupsCount)
+      
+      return { totalCount, unreadCount }
     } catch (error) {
-      console.error('❌ Erro ao buscar total de chats:', error)
-      return 0
+      console.error('❌ Erro ao buscar totais de chats:', error)
+      return { totalCount: 0, unreadCount: 0 }
     }
   }
 
@@ -351,7 +437,10 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     isLoadingMore,
     markChatAsRead, // Marcar como lida via WAHA
     markChatAsUnread, // Marcar como não lida via WAHA (teste)
-    totalChatsCount // Total real de chats do WhatsApp
+    totalChatsCount, // Total real de chats do WhatsApp
+    unreadChatsCount, // Total real de chats não lidos
+    readNoReplyCount, // Total de chats lidos mas não respondidos
+    groupChatsCount // Total real de grupos
   }
 }
 

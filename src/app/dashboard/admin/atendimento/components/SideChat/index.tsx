@@ -111,33 +111,33 @@ export default function SideChat({
     }
   }, [onLoadMore, hasMoreChats, isLoadingMore])
 
-  // Preservar posição do scroll durante updates
+  // Preservar posição do scroll durante updates - MELHORADO
   useEffect(() => {
     if (preserveScroll !== null && scrollContainerRef.current) {
       console.log('📜 Restaurando posição do scroll:', preserveScroll)
-      scrollContainerRef.current.scrollTop = preserveScroll
-      setPreserveScroll(null)
+      // Usar requestAnimationFrame para garantir que o DOM foi atualizado
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = preserveScroll
+          setPreserveScroll(null)
+        }
+      })
     }
   }, [chats, preserveScroll])
 
-  // Salvar posição antes de updates APENAS se não estamos no final da lista (scroll infinito)
-  useEffect(() => {
-    if (scrollContainerRef.current) {
+  // Salvar posição antes de carregar mais chats - CORRIGIDO
+  const handleLoadMore = useCallback(() => {
+    if (scrollContainerRef.current && onLoadMore) {
       const container = scrollContainerRef.current
-      const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 100
-      const isScrolled = container.scrollTop > 50
+      const currentScroll = container.scrollTop
       
-      // Só preservar scroll se estivermos no meio da lista, não no final (scroll infinito)
-      if (isScrolled && !isNearBottom) {
-        const currentScroll = container.scrollTop
-        console.log('📜 Salvando posição do scroll:', currentScroll, '(não está no final)')
-        setPreserveScroll(currentScroll)
-      } else if (isNearBottom) {
-        console.log('📜 Próximo ao final - permitindo scroll infinito')
-        setPreserveScroll(null)
-      }
+      console.log('📜 Salvando posição antes de carregar mais:', currentScroll)
+      setPreserveScroll(currentScroll)
+      
+      // Chamar onLoadMore
+      onLoadMore()
     }
-  }, [chats.length])
+  }, [onLoadMore])
 
   // Handler do scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {

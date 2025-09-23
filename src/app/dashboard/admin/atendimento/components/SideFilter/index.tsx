@@ -131,12 +131,22 @@ export default function SideFilter({
     searchInContacts: false
   })
 
+  // DEBUG VISUAL - Mostrar valores na interface
+  console.log('🔍 DEBUG SideFilter - Valores recebidos:', {
+    totalChats,
+    unreadChats,
+    readChats,
+    archivedChats,
+    groupChats,
+    favoriteChats,
+    hiddenChats
+  })
+
   // Definir tabs de filtros igual ao antigo
   const filterTabs = [
     { id: 'all', label: 'Todas', icon: MessageCircle, count: totalChats },
     { id: 'unread', label: 'Não lidas', icon: Circle, count: unreadChats },
-    { id: 'read', label: 'Lidas', icon: CheckCircle2, count: readChats },
-    { id: 'read-no-reply', label: 'Lidas não respondidas', icon: CheckCircle2, count: readChats },
+    { id: 'read-no-reply', label: 'Não respondidas', icon: CheckCircle2, count: readChats },
     { id: 'favorites', label: 'Favoritos', icon: Star, count: favoriteChats },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: archivedChats },
     { id: 'groups', label: 'Grupos', icon: Users, count: groupChats },
@@ -234,12 +244,27 @@ export default function SideFilter({
             }`}
             title="Filtros Avançados"
           >
-            <Filter className="w-4 h-4" />
+            <Settings className="w-3 h-3" />
           </button>
         </div>
       </div>
 
-      {/* 📊 TABS DE FILTROS COM SCROLL HORIZONTAL */}
+      {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}
+      <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg mx-4 mb-2">
+        <div className="text-xs font-mono text-yellow-800 dark:text-yellow-200">
+          <div className="font-bold mb-1">📊 DEBUG - Contadores:</div>
+          <div className="grid grid-cols-2 gap-1">
+            <div>Total: <span className="font-bold text-blue-600">{totalChats}</span></div>
+            <div>Não lidas: <span className="font-bold text-red-600">{unreadChats}</span></div>
+            <div>Lidas: <span className="font-bold text-green-600">{readChats}</span></div>
+            <div>Arquivados: <span className="font-bold text-orange-600">{archivedChats}</span></div>
+            <div>Grupos: <span className="font-bold text-purple-600">{groupChats}</span></div>
+            <div>Favoritos: <span className="font-bold text-pink-600">{favoriteChats}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* 🎯 TABS DE FILTROS PRINCIPAIS */}
       <div className="px-4 pb-4">
         <div className="bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
           <div 

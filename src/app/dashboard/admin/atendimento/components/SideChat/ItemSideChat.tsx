@@ -16,8 +16,7 @@ import {
   Users,
   Tag,
   Ticket,
-  UserCheck,
-  MessageCircle
+  UserCheck
 } from 'lucide-react'
 
 import LastMessageSideChat from './LastMessageSideChat'
@@ -235,16 +234,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               </span>
           </div>
           
-          {/* Badge de mensagens não lidas */}
-          {!!(chat.unreadCount && chat.unreadCount > 0) && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full 
-                           border-2 border-white dark:border-gray-800 flex items-center justify-center
-                           shadow-md">
-              <span className="text-xs font-bold text-white">
-                {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
-              </span>
-            </div>
-          )}
+          {/* Badge removida - usando só o pin abaixo do horário */}
           
           {/* Indicador de online */}
           {chat.isOnline && (
@@ -267,12 +257,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               {chat.name.length > 15 ? `${chat.name.substring(0, 15)}...` : chat.name}
             </h3>
             
-            {/* Contador de não lidas */}
-            {!!(chat.unreadCount && chat.unreadCount > 0) && (
-              <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
-                {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
-              </div>
-            )}
+            {/* Contador removido - usando só o pin abaixo do horário */}
           </div>
 
           {/* Telefone abaixo do nome */}
@@ -434,22 +419,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           <Archive className="w-3 h-3" />
         </button>
         
-        {/* Mensagens com badge - RECOLOCADO */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            console.log('Ver mensagens para:', chat.id)
-            // TODO: Implementar ação de ver mensagens
-          }}
-          className="p-1.5 text-slate-400 hover:text-blue-500 rounded-lg transition-colors relative"
-          title={!!(chat.unreadCount && chat.unreadCount > 0) ? `${chat.unreadCount} mensagens não lidas` : 'Mensagens'}
-        >
-          <MessageCircle className="w-3 h-3" />
-          {/* Badge verde com fallback "1" - TEMPORÁRIO PARA VISUALIZAR */}
-          <span className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white">
-            {(chat.unreadCount && chat.unreadCount > 0) ? (chat.unreadCount > 9 ? '9+' : chat.unreadCount) : '1'}
-          </span>
-        </button>
+        {/* Ícone de mensagens removido - usando só o pin abaixo do horário */}
 
         {/* Transferir - IGUAL AO ANTIGO */}
         <button

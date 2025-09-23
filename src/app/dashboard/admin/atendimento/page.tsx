@@ -244,7 +244,10 @@ export default function AtendimentoPage() {
     isLoadingMore: isLoadingMoreFromAPI,
     markChatAsRead,
     markChatAsUnread,
-    totalChatsCount
+    totalChatsCount,
+    unreadChatsCount,
+    readNoReplyCount,
+    groupChatsCount
   } = useChatsOverview()
 
 
@@ -931,9 +934,42 @@ export default function AtendimentoPage() {
       (window as any).testMarkAsRead = markChatAsRead
       (window as any).testMarkAsUnread = markChatAsUnread
       
+      // Função para testar API da WAHA diretamente
+      (window as any).testWahaAPI = async () => {
+        try {
+          console.log('🔍 Testando API da WAHA diretamente...')
+          const response = await fetch('http://159.65.34.199:3001/api/user_fb8da1d7_1758158816675/chats/overview?limit=5&offset=0', {
+            headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
+          })
+          const data = await response.json()
+          console.log('🔍 TESTE DIRETO WAHA - Primeiros 5 chats:', data)
+          
+          // Procurar qualquer campo relacionado a unread
+          data.forEach((chat: any, i: number) => {
+            const unreadFields = Object.keys(chat).filter(key => 
+              key.toLowerCase().includes('unread') || 
+              key.toLowerCase().includes('read') ||
+              key.toLowerCase().includes('count')
+            )
+            console.log(`Chat ${i+1} - Campos relacionados a unread/read:`, {
+              id: chat.id,
+              name: chat.name,
+              unreadFields,
+              valores: unreadFields.reduce((acc: any, field) => {
+                acc[field] = chat[field]
+                return acc
+              }, {})
+            })
+          })
+        } catch (error) {
+          console.error('❌ Erro no teste direto:', error)
+        }
+      }
+      
       console.log('🧪 Funções WAHA disponíveis no console:')
       console.log('  window.testMarkAsRead("CHAT_ID") - Marca mensagens como lidas via WAHA')
       console.log('  window.testMarkAsUnread("CHAT_ID") - Tenta marcar como não lido via WAHA')
+      console.log('  window.testWahaAPI() - Testa API da WAHA diretamente')
     }
   }, []) // Removido overviewChats da dependência
 
@@ -973,6 +1009,18 @@ export default function AtendimentoPage() {
               ticketStatuses={realTicketStatuses}
               priceRanges={realPriceRanges}
               selectedKanbanStatus={selectedKanbanStatus}
+              // Dados para contadores das tabs
+              conversations={processedChats}
+              totalChats={totalChatsCount} // Total real da WAHA
+              unreadChats={unreadChatsCount} // Total real de não lidas da WAHA
+              readChats={readNoReplyCount} // Total real de lidas mas não respondidas da WAHA
+              archivedChats={archivedChats.size}
+              groupChats={groupChatsCount} // Total real de grupos da WAHA
+              favoriteChats={favoriteChats.size}
+              hiddenChats={hiddenChats.size}
+              // Controle do filtro ativo
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
             />
           </div>
 
