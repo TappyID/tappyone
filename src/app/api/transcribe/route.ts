@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      text: transcription.text, // Mudança aqui para compatibilidade
       transcription: transcription.text,
       language: 'pt-BR'
     })

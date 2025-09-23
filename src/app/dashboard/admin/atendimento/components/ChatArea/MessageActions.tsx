@@ -84,12 +84,20 @@ export default function MessageActions({
     try {
       console.log('🌍 Traduzindo mensagem para PT-BR:', messageContent.substring(0, 50))
       
-      // Detectar idioma original
-      const isEnglish = /^[a-zA-Z\s.,!?'"()-]+$/.test(messageContent)
-      const sourceLanguage = isEnglish ? 'en' : 'pt'
+      // Detectar idioma original - melhorada para múltiplos idiomas
+      const isPortuguese = /\b(é|ã|ç|ê|ô|õ|á|à|â|í|ó|ú|não|sim|com|para|que|uma|um|de|do|da|em|por|mas|ou|este|esta|isso)\b/i.test(messageContent)
+      const isSpanish = /\b(ñ|é|í|ó|ú|á|ü|el|la|es|con|para|que|una|uno|de|del|en|por|pero|o|este|esta|esto)\b/i.test(messageContent)
+      const isEnglish = /\b(the|and|or|is|are|was|were|have|has|had|will|would|could|should|this|that|with|from|they|them|their)\b/i.test(messageContent)
+      
+      let sourceLanguage = 'pt' // default português
+      if (isEnglish && !isPortuguese && !isSpanish) {
+        sourceLanguage = 'en'
+      } else if (isSpanish && !isPortuguese && !isEnglish) {
+        sourceLanguage = 'es'
+      }
       
       // Se já está em português, não precisa traduzir
-      if (!isEnglish) {
+      if (isPortuguese || sourceLanguage === 'pt') {
         console.log('⚠️ Mensagem já está em português')
         onTranslate?.(messageId, 'Mensagem já está em português')
         return
@@ -128,12 +136,20 @@ export default function MessageActions({
       setIsTranslating(true)
       console.log('🌍📝 Traduzindo mensagem para PT-BR no modal:', messageContent.substring(0, 50))
       
-      // Detectar idioma da mensagem original
-      const isEnglish = /^[a-zA-Z\s.,!?'"()-]+$/.test(messageContent)
-      const sourceLanguage = isEnglish ? 'en' : 'pt'
+      // Detectar idioma da mensagem original - melhorada para múltiplos idiomas
+      const isPortuguese = /\b(é|ã|ç|ê|ô|õ|á|à|â|í|ó|ú|não|sim|com|para|que|uma|um|de|do|da|em|por|mas|ou|este|esta|isso)\b/i.test(messageContent)
+      const isSpanish = /\b(ñ|é|í|ó|ú|á|ü|el|la|es|con|para|que|una|uno|de|del|en|por|pero|o|este|esta|esto)\b/i.test(messageContent)
+      const isEnglish = /\b(the|and|or|is|are|was|were|have|has|had|will|would|could|should|this|that|with|from|they|them|their)\b/i.test(messageContent)
+      
+      let sourceLanguage = 'pt' // default português
+      if (isEnglish && !isPortuguese && !isSpanish) {
+        sourceLanguage = 'en'
+      } else if (isSpanish && !isPortuguese && !isEnglish) {
+        sourceLanguage = 'es'
+      }
       
       // Se já está em português, mostrar original
-      if (!isEnglish) {
+      if (isPortuguese || sourceLanguage === 'pt') {
         console.log('⚠️ Mensagem já está em português, mostrando original')
         setTranslatedMessage(messageContent)
         setIsTranslating(false)
@@ -181,9 +197,18 @@ export default function MessageActions({
       console.log('📤🌍 Enviando resposta traduzida:', replyText)
       
       // Detectar idioma da mensagem original para traduzir resposta de volta
-      const isOriginalEnglish = /^[a-zA-Z\s.,!?'"()-]+$/.test(messageContent)
-      const replyTargetLanguage = isOriginalEnglish ? 'en' : 'pt'
-      const replySourceLanguage = isOriginalEnglish ? 'pt' : 'en'
+      const isOriginalPortuguese = /\b(é|ã|ç|ê|ô|õ|á|à|â|í|ó|ú|não|sim|com|para|que|uma|um|de|do|da|em|por|mas|ou|este|esta|isso)\b/i.test(messageContent)
+      const isOriginalSpanish = /\b(ñ|é|í|ó|ú|á|ü|el|la|es|con|para|que|una|uno|de|del|en|por|pero|o|este|esta|esto)\b/i.test(messageContent)
+      const isOriginalEnglish = /\b(the|and|or|is|are|was|were|have|has|had|will|would|could|should|this|that|with|from|they|them|their)\b/i.test(messageContent)
+      
+      let replyTargetLanguage = 'pt' // default português
+      if (isOriginalEnglish && !isOriginalPortuguese && !isOriginalSpanish) {
+        replyTargetLanguage = 'en'
+      } else if (isOriginalSpanish && !isOriginalPortuguese && !isOriginalEnglish) {
+        replyTargetLanguage = 'es'
+      }
+      
+      const replySourceLanguage = 'pt' // sempre traduzindo DE português
       
       // Traduzir resposta para o idioma original da mensagem
       const response = await fetch('/api/translate', {
@@ -231,7 +256,14 @@ export default function MessageActions({
       }
       
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        // Tentar diferentes formatos para compatibilidade
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm') 
+          ? 'audio/webm'
+          : 'audio/ogg'
+          
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
         await transcribeAudio(audioBlob)
         
         // Parar todas as tracks do stream
@@ -261,7 +293,10 @@ export default function MessageActions({
       console.log('🔄 Transcrevendo áudio para texto...')
       
       const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
+      // Usar extensão baseada no tipo de mídia
+      const extension = audioBlob.type.includes('webm') ? 'webm' : 
+                       audioBlob.type.includes('ogg') ? 'ogg' : 'wav'
+      formData.append('audio', audioBlob, `recording.${extension}`)
       
       const response = await fetch('/api/transcribe', {
         method: 'POST',
