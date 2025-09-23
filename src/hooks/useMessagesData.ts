@@ -82,7 +82,6 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
-  const [currentOffset, setCurrentOffset] = useState(0)
   const [totalMessages, setTotalMessages] = useState<number | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
@@ -141,21 +140,15 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       
       console.log(`📊 Retornado: ${data.length} mensagens de ${limit} solicitadas`)
       
-      // Se retornou menos que solicitado, não há mais mensagens
-      if (data.length < limit) {
-        setHasMore(false)
-        setTotalMessages(offset + data.length)
-        console.log(`🏁 Fim das mensagens: total estimado ${offset + data.length}`)
+      // Se retornou a quantidade completa solicitada, provavelmente há mais mensagens
+      // Se retornou menos que solicitado, chegamos ao fim
+      const hasMoreMessages = data.length === limit
+      setHasMore(hasMoreMessages)
+      
+      if (hasMoreMessages) {
+        console.log(`🔄 Há mais mensagens: carregadas ${data.length}/${limit} (completo)`)
       } else {
-        // Retornou a quantidade completa - provavelmente há mais mensagens
-        setHasMore(true)
-        // Para o carregamento inicial (offset 0), assumir pelo menos mais algumas
-        if (offset === 0) {
-          setTotalMessages(data.length + 10) // Estimativa inicial
-        } else {
-          setTotalMessages((offset + data.length) + 5)
-        }
-        console.log(`🔄 Há mais mensagens: total estimado ${offset === 0 ? data.length + 10 : (offset + data.length) + 5}`)
+        console.log(`🏁 Fim das mensagens: carregadas ${data.length}/${limit} (incompleto)`)
       }
       
       if (data.length === 0) {
@@ -212,13 +205,12 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       console.log('🔄 Mensagens transformadas:', transformedMessages.slice(0, 2)) // Debug das mensagens processadas
 
       if (append) {
-        setMessages(prev => [...prev, ...transformedMessages])
+        // Para append, adicionar mensagens mais antigas no início
+        setMessages(prev => [...transformedMessages.reverse(), ...prev])
       } else {
-        setMessages(transformedMessages.reverse()) // Mensagens mais antigas primeiro
+        // Para carregamento inicial, mostrar mensagens mais recentes no final
+        setMessages(transformedMessages.reverse())
       }
-
-      // Se retornou menos que o limite, não há mais mensagens
-      setHasMore(data.length === 50)
       
     } catch (err) {
       console.error('Erro ao buscar mensagens:', err)
@@ -230,7 +222,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
   }
 
   const loadMore = () => {
-    console.log('🔄 LoadMore chamado:', { chatId, loading, hasMore, currentOffset, currentMessages: messages.length })
+    console.log('🔄 LoadMore chamado:', { chatId, loading, hasMore, currentMessages: messages.length })
     
     if (!chatId) {
       console.log('❌ LoadMore: Sem chatId')
@@ -245,9 +237,9 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       return
     }
     
-    const newOffset = currentOffset + (currentOffset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT)
-    console.log('✅ LoadMore: Carregando com offset', newOffset)
-    setCurrentOffset(newOffset)
+    // Usar o número real de mensagens como offset
+    const newOffset = messages.length
+    console.log('✅ LoadMore: Carregando mais mensagens com offset', newOffset)
     fetchMessages(chatId, newOffset, true)
   }
 
@@ -257,9 +249,8 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
     // Reset messages when chat changes
     setMessages([])
     setError(null)
-    setCurrentOffset(0)
     setHasMore(true)
-    setTotalMessages(0)
+    setTotalMessages(null)
 
     // Fetch initial messages
     fetchMessages(chatId, 0, false)

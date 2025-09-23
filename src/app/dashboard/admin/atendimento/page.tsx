@@ -839,12 +839,19 @@ export default function AtendimentoPage() {
         <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
           {/* Header do Chat */}
           <ChatHeader 
-            chat={selectedChatId ? {
-              id: selectedChatId,
-              name: transformedChats.find(c => c.id === selectedChatId)?.name || 'Usuário',
-              isOnline: true,
-              lastSeen: Date.now()
-            } : undefined}
+            chat={selectedChatId ? (() => {
+              const foundChat = transformedChats.find(c => c.id === selectedChatId)
+              console.log('🔍 DEBUG ChatHeader - selectedChatId:', selectedChatId)
+              console.log('🔍 DEBUG ChatHeader - foundChat:', foundChat)
+              console.log('🔍 DEBUG ChatHeader - transformedChats IDs:', transformedChats.map(c => c.id))
+              
+              return {
+                id: selectedChatId,
+                name: foundChat?.name || 'Usuário',
+                isOnline: true,
+                lastSeen: Date.now()
+              }
+            })() : undefined}
             selectedChatId={selectedChatId}
             onCallClick={() => console.log('📞 Chamada iniciada')}
             onVideoClick={() => console.log('📹 Videochamada iniciada')}

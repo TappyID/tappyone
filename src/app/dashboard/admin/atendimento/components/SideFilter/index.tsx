@@ -20,7 +20,8 @@ import {
   Eye,
   Calendar,
   FileText,
-  Ticket
+  Ticket,
+  DollarSign
 } from 'lucide-react'
 
 // import SearchInput from './SearchInput' // Não usado mais
@@ -28,7 +29,8 @@ import FilterTags from './FilterTags'
 import FilterFilas from './FilterFilas'
 import FilterKanban from './FilterKanban'
 import FilterTickets from './FilterTickets'
-import FilterAgendamentos from './FilterAgendamentos'
+// import FilterAgendamentos from './FilterAgendamentos' // REMOVIDO
+import FilterPrecos from './FilterPrecos'
 
 interface SideFilterProps {
   // Search
@@ -45,9 +47,27 @@ interface SideFilterProps {
   onFilaChange: (filaId: string) => void
   filas: any[]
   
+  // Price Range Filter
+  selectedPriceRange?: string
+  onPriceRangeChange?: (rangeId: string) => void
+  priceRanges?: any[]
+  
+  // Kanban Filter
+  kanbanStatuses?: any[]
+  selectedKanbanStatus?: string
+  onKanbanStatusChange?: (statusId: string) => void
+  
+  // Ticket Filter
+  ticketStatuses?: any[]
+  selectedTicketStatus?: string
+  onTicketStatusChange?: (statusId: string) => void
+  
   // Loading states
   isLoadingTags?: boolean
   isLoadingFilas?: boolean
+  isLoadingPrices?: boolean
+  isLoadingKanban?: boolean
+  isLoadingTickets?: boolean
   
   // Layout
   isCollapsed?: boolean
@@ -69,8 +89,20 @@ export default function SideFilter({
   selectedFila,
   onFilaChange,
   filas,
+  selectedPriceRange = 'todos',
+  onPriceRangeChange = () => {},
+  priceRanges = [],
+  kanbanStatuses = [],
+  selectedKanbanStatus = 'todos',
+  onKanbanStatusChange = () => {},
+  ticketStatuses = [],
+  selectedTicketStatus = 'todos',
+  onTicketStatusChange = () => {},
   isLoadingTags = false,
   isLoadingFilas = false,
+  isLoadingPrices = false,
+  isLoadingKanban = false,
+  isLoadingTickets = false,
   isCollapsed = false,
   totalChats = 0,
   unreadChats = 0,
@@ -349,20 +381,17 @@ export default function SideFilter({
                 />
               </div>
 
-              {/* Filtro de Agendamentos */}
+              {/* Filtro de Preços de Orçamentos */}
               <div>
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <Calendar className="w-4 h-4 text-red-500" />
-                  Agendamentos
+                  <DollarSign className="w-4 h-4 text-green-500" />
+                  Faixa de Preços
                 </h4>
-                <FilterAgendamentos 
-                  selectedPeriodo="todos"
-                  onPeriodoChange={() => {}}
-                  agendamentoPeriodos={[
-                    { id: '1', nome: 'Hoje', count: 8 },
-                    { id: '2', nome: 'Esta Semana', count: 25 },
-                    { id: '3', nome: 'Este Mês', count: 67 }
-                  ]}
+                <FilterPrecos 
+                  selectedRange={selectedPriceRange}
+                  onRangeChange={onPriceRangeChange}
+                  priceRanges={priceRanges}
+                  isLoading={isLoadingPrices}
                 />
               </div>
 

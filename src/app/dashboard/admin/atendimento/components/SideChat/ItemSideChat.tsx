@@ -47,6 +47,7 @@ interface ItemSideChatProps {
     id: string
     name: string
     avatar?: string
+    profilePictureUrl?: string
     lastMessage: {
       type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
       content: string
@@ -81,9 +82,8 @@ interface ItemSideChatProps {
     kanbanStatus?: {
       id: string
       nome: string
-      cor?: string
     }
-    fila?: {
+    fila?: string | {
       id: string
       nome: string
       cor?: string
@@ -100,32 +100,41 @@ interface ItemSideChatProps {
       nome: string
       avatar?: string
     }
+    
+    // Estados de UI
     isSelected?: boolean
     isArchived?: boolean
-    isHidden?: boolean
     isFavorite?: boolean
-    unreadCount?: number
+    isHidden?: boolean
     isContact?: boolean
+    unreadCount?: number
   }
-  
-  // Callbacks
   onSelect: () => void
   onTagsClick: (e: React.MouseEvent) => void
   onTransferClick: (e: React.MouseEvent) => void
+  onToggleFavorite?: (chatId: string) => void
+  onToggleArchive?: (chatId: string) => void
+  onToggleHidden?: (chatId: string) => void
+  onDelete?: (chatId: string) => void
 }
 
 const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   chat,
   onSelect,
   onTagsClick,
-  onTransferClick
+  onTransferClick,
+  onToggleFavorite,
+  onToggleArchive,
+  onToggleHidden,
+  onDelete
 }, ref) => {
   
   // Estado para o modal de transferência
   const [showTransferModal, setShowTransferModal] = useState(false)
   
-  // Buscar foto de perfil do WAHA
+  // Buscar foto de perfil do WAHA - usar profilePictureUrl se já vier no chat
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat.id)
+  const profileImage = chat.profilePictureUrl || pictureUrl || chat.avatar
   
   // Função para lidar com a transferência
   const handleTransfer = (targetId: string, type: 'atendente' | 'fila', notes?: string) => {
@@ -185,9 +194,9 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       {/* Avatar com foto real do WAHA ou fallback */}
       <div className="relative flex-shrink-0">
           {/* Foto do WAHA ou avatar fornecido */}
-          {(pictureUrl || chat.avatar) ? (
+          {profileImage ? (
             <img 
-              src={pictureUrl || chat.avatar} 
+              src={profileImage} 
               alt={chat.name}
               className={`w-12 h-12 rounded-full object-cover border-2 ${
                 chat.isSelected 
@@ -203,7 +212,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           ) : null}
           
           {/* Fallback avatar com inicial */}
-          <div className={`${(pictureUrl || chat.avatar) ? 'hidden' : ''} w-12 h-12 rounded-full 
+          <div className={`${profileImage ? 'hidden' : ''} w-12 h-12 rounded-full 
                          bg-gradient-to-br from-blue-400 to-purple-500
                          flex items-center justify-center border-2 ${
                 chat.isSelected 
@@ -350,8 +359,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            // TODO: Implementar favoritar
-            console.log('Favoritar:', chat.id)
+            if (onToggleFavorite) {
+              onToggleFavorite(chat.id)
+            } else {
+              console.log('onToggleFavorite não implementado para:', chat.id)
+            }
           }}
           className={`p-1.5 rounded-lg transition-colors ${
             chat.isFavorite 
@@ -379,8 +391,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            // TODO: Implementar arquivar
-            console.log('Arquivar:', chat.id)
+            if (onToggleArchive) {
+              onToggleArchive(chat.id)
+            } else {
+              console.log('onToggleArchive não implementado para:', chat.id)
+            }
           }}
           className={`p-1.5 rounded-lg transition-colors ${
             chat.isArchived
@@ -396,8 +411,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            // TODO: Implementar ocultar
-            console.log('Ocultar:', chat.id)
+            if (onToggleHidden) {
+              onToggleHidden(chat.id)
+            } else {
+              console.log('onToggleHidden não implementado para:', chat.id)
+            }
           }}
           className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg transition-colors"
           title={chat.isHidden ? 'Mostrar conversa' : 'Ocultar conversa'}
@@ -409,8 +427,13 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            // TODO: Implementar deletar
-            console.log('Deletar:', chat.id)
+            if (onDelete) {
+              if (confirm('Tem certeza que deseja excluir esta conversa?')) {
+                onDelete(chat.id)
+              }
+            } else {
+              console.log('onDelete não implementado para:', chat.id)
+            }
           }}
           className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
           title="Excluir conversa"

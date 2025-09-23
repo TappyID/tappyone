@@ -25,24 +25,23 @@ export function useChatPicture(chatId: string, options: UseChatPictureOptions = 
       setError(null)
 
       try {
-        // Limpar o chatId removendo @c.us ou @g.us se existir
-        const cleanChatId = chatId.replace(/@c\.us|@g\.us/g, '')
+        // Usar a sessão padrão definida no .env
+        const wahaSession = 'user_fb8da1d7_1758158816675'
         
-        // Buscar a foto do perfil via WAHA
+        // Buscar a foto do perfil via WAHA - usar chatId completo
         const response = await axios.get(
-          `http://159.65.34.199:3001/api/${session}/chats/${cleanChatId}/picture`,
+          `http://159.65.34.199:3001/api/${wahaSession}/chats/${chatId}/picture`,
           {
             headers: {
+              'X-API-Key': 'tappyone-waha-2024-secretkey',
               'Content-Type': 'application/json'
-            },
-            responseType: 'blob' // Importante para receber a imagem como blob
+            }
           }
         )
 
-        // Criar URL da imagem a partir do blob
-        if (response.data) {
-          const imageUrl = URL.createObjectURL(response.data)
-          setPictureUrl(imageUrl)
+        // WAHA retorna JSON com URL da imagem
+        if (response.data && response.data.url) {
+          setPictureUrl(response.data.url)
         }
       } catch (err: any) {
         console.error(`❌ Erro ao buscar foto do chat ${chatId}:`, err)
@@ -54,13 +53,6 @@ export function useChatPicture(chatId: string, options: UseChatPictureOptions = 
     }
 
     fetchPicture()
-
-    // Cleanup: revogar URL quando componente desmontar
-    return () => {
-      if (pictureUrl && pictureUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(pictureUrl)
-      }
-    }
   }, [chatId, session, enabled])
 
   return {
@@ -101,17 +93,19 @@ export function useChatPictures(chatIds: string[], options: UseChatPictureOption
         await Promise.all(
           chunk.map(async (chatId) => {
             try {
-              const cleanChatId = chatId.replace(/@c\.us|@g\.us/g, '')
+              const wahaSession = 'user_fb8da1d7_1758158816675'
               const response = await axios.get(
-                `http://159.65.34.199:3001/api/${session}/chats/${cleanChatId}/picture`,
+                `http://159.65.34.199:3001/api/${wahaSession}/chats/${chatId}/picture`,
                 {
-                  headers: { 'Content-Type': 'application/json' },
-                  responseType: 'blob'
+                  headers: { 
+                    'X-API-Key': 'tappyone-waha-2024-secretkey',
+                    'Content-Type': 'application/json' 
+                  }
                 }
               )
 
-              if (response.data) {
-                newPictures[chatId] = URL.createObjectURL(response.data)
+              if (response.data && response.data.url) {
+                newPictures[chatId] = response.data.url
               }
             } catch (err) {
               console.error(`❌ Erro ao buscar foto do chat ${chatId}:`, err)
@@ -126,15 +120,6 @@ export function useChatPictures(chatIds: string[], options: UseChatPictureOption
     }
 
     fetchPictures()
-
-    // Cleanup
-    return () => {
-      Object.values(pictures).forEach(url => {
-        if (url && url.startsWith('blob:')) {
-          URL.revokeObjectURL(url)
-        }
-      })
-    }
   }, [JSON.stringify(chatIds), session, enabled])
 
   return {

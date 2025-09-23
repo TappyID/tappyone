@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import './ScrollbarStyles.css'
 import { Loader2, MessageCircle, ArrowUp } from 'lucide-react'
 
 import ItemSideChat from './ItemSideChat'
@@ -12,29 +13,31 @@ interface SideChatProps {
     id: string
     name: string
     avatar?: string
+    profilePictureUrl?: string
     lastMessage: {
       type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
       content: string
       timestamp: number
-      sender: 'user' | 'agent'  
+      sender: 'user' | 'agent'
       isRead?: boolean
     }
+    phoneNumber?: string
     tags?: Array<{
       id: string
       nome: string
       cor?: string
     }>
-    rating?: number
-    isTransferred?: boolean
-    transferredTo?: {
+    fila?: string | {
+      id: string
       nome: string
-      avatar?: string
+      cor?: string
     }
-    isSelected?: boolean
+    isGroup?: boolean
+    isContact?: boolean
+    isFavorite?: boolean
     isArchived?: boolean
     isHidden?: boolean
     unreadCount?: number
-    isContact?: boolean
   }>
   
   // Chat selecionado
@@ -173,11 +176,11 @@ export default function SideChat({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 custom-scrollbar border-r border-gray-200 dark:border-gray-700">
       {/* Lista de Chats com scroll */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar"
         onScroll={handleScroll}
       >
         {/* Loading inicial */}
@@ -202,6 +205,35 @@ export default function SideChat({
                   onSelect={() => onSelectChat(chat.id)}
                   onTagsClick={(e) => onTagsClick(chat.id, e)}
                   onTransferClick={(e) => onTransferClick(chat.id, e)}
+                  onToggleFavorite={(chatId) => {
+                    // TODO: Implementar API de favoritar
+                    console.log('Favoritar chat:', chatId)
+                    // Atualizar estado local temporariamente
+                    const updatedChats = chats.map(c => 
+                      c.id === chatId ? { ...c, isFavorite: !c.isFavorite } : c
+                    )
+                    // setChats(updatedChats) // Quando tiver setState disponível
+                  }}
+                  onToggleArchive={(chatId) => {
+                    // TODO: Implementar API de arquivar
+                    console.log('Arquivar chat:', chatId)
+                    const updatedChats = chats.map(c => 
+                      c.id === chatId ? { ...c, isArchived: !c.isArchived } : c
+                    )
+                  }}
+                  onToggleHidden={(chatId) => {
+                    // TODO: Implementar API de ocultar
+                    console.log('Ocultar chat:', chatId)
+                    const updatedChats = chats.map(c => 
+                      c.id === chatId ? { ...c, isHidden: !c.isHidden } : c
+                    )
+                  }}
+                  onDelete={(chatId) => {
+                    // TODO: Implementar API de deletar
+                    console.log('Deletar chat:', chatId)
+                    // Remover da lista temporariamente
+                    const updatedChats = chats.filter(c => c.id !== chatId)
+                  }}
                 />
               ))}
             </AnimatePresence>

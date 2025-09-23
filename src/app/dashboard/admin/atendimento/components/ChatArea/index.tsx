@@ -111,15 +111,33 @@ export default function ChatArea({
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
     
-    console.log('📜 Scroll detectado:', { scrollTop, hasMore, isLoading })
+    console.log('📜 Scroll detectado:', { 
+      scrollTop, 
+      hasMore, 
+      isLoading, 
+      onLoadMoreExists: !!onLoadMore,
+      messagesCount: messages.length 
+    })
     
     // Mostrar botão "voltar ao topo" se scrollou muito
     setShowScrollToTop(scrollTop > 200)
     
     // Load more quando chegar próximo do topo (não exatamente 0)
     if (scrollTop < 100 && hasMore && onLoadMore && !isLoading) {
-      console.log('📤 Trigger: Carregando mais mensagens...')
+      console.log('📤 Trigger: Carregando mais mensagens...', {
+        scrollTop,
+        hasMore,
+        isLoading,
+        currentMessages: messages.length
+      })
       onLoadMore()
+    } else if (scrollTop < 100) {
+      console.log('🚫 LoadMore bloqueado:', {
+        scrollTop: scrollTop < 100,
+        hasMore,
+        onLoadMoreExists: !!onLoadMore,
+        isLoading
+      })
     }
   }
 
