@@ -140,32 +140,39 @@ export default function AtendimentoPage() {
 
   // Funções para gerenciar estados dos chats
   const toggleFavoriteChat = (chatId: string) => {
+    console.log('⭐ Toggle favorito para chat:', chatId)
     setFavoriteChats(prev => {
       const newSet = new Set(prev)
       if (newSet.has(chatId)) {
+        console.log('⭐ Removendo dos favoritos:', chatId)
         newSet.delete(chatId)
       } else {
+        console.log('⭐ Adicionando aos favoritos:', chatId)
         newSet.add(chatId)
       }
+      console.log('⭐ Favoritos atualizados:', Array.from(newSet))
       return newSet
     })
   }
 
   const toggleArchiveChat = (chatId: string) => {
+    console.log('📦 Toggle arquivo para chat:', chatId)
     setArchivedChats(prev => {
       const newSet = new Set(prev)
       if (newSet.has(chatId)) {
+        console.log('📦 Desarquivando chat:', chatId)
         newSet.delete(chatId)
-        console.log('📤 Chat desarquivado:', chatId)
+        // Se desarquivar, remover também dos ocultos
+        setHiddenChats(prevHidden => {
+          const newHiddenSet = new Set(prevHidden)
+          newHiddenSet.delete(chatId)
+          return newHiddenSet
+        })
       } else {
+        console.log('📦 Arquivando chat:', chatId)
         newSet.add(chatId)
-        console.log('📥 Chat arquivado:', chatId)
       }
-      
-      // Salvar no localStorage
-      localStorage.setItem('tappyone-archived-chats', JSON.stringify(Array.from(newSet)))
-      console.log('📦 Total arquivados:', newSet.size)
-      
+      console.log('📦 Arquivados atualizados:', Array.from(newSet))
       return newSet
     })
   }
@@ -195,17 +202,29 @@ export default function AtendimentoPage() {
       const savedArchived = localStorage.getItem('tappyone-archived-chats')
       const savedHidden = localStorage.getItem('tappyone-hidden-chats')
 
+      console.log('🔄 Carregando estados do localStorage:', {
+        savedFavorites,
+        savedArchived,
+        savedHidden
+      })
+
       if (savedFavorites) {
-        setFavoriteChats(new Set(JSON.parse(savedFavorites)))
+        const favorites = new Set<string>(JSON.parse(savedFavorites))
+        console.log('⭐ Favoritos carregados:', Array.from(favorites))
+        setFavoriteChats(favorites)
       }
       if (savedArchived) {
-        setArchivedChats(new Set(JSON.parse(savedArchived)))
+        const archived = new Set<string>(JSON.parse(savedArchived))
+        console.log('📦 Arquivados carregados:', Array.from(archived))
+        setArchivedChats(archived)
       }
       if (savedHidden) {
-        setHiddenChats(new Set(JSON.parse(savedHidden)))
+        const hidden = new Set<string>(JSON.parse(savedHidden))
+        console.log('👁️ Ocultos carregados:', Array.from(hidden))
+        setHiddenChats(hidden)
       }
     } catch (error) {
-      console.error('Erro ao carregar estados dos chats:', error)
+      console.error('Erro ao carregar estados do localStorage:', error)
     }
   }, [])
 

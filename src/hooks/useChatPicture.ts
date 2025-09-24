@@ -25,12 +25,16 @@ export function useChatPicture(chatId: string, options: UseChatPictureOptions = 
       setError(null)
 
       try {
+        // Detectar se estamos em produção HTTPS
+        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+        
         // Usar a sessão padrão definida no .env
         const wahaSession = 'user_fb8da1d7_1758158816675'
         
         // Buscar a foto do perfil via WAHA - usar chatId completo
         const response = await axios.get(
-          `http://159.65.34.199:3001/api/${wahaSession}/chats/${chatId}/picture`,
+          `${baseUrl}/api/${wahaSession}/chats/${chatId}/picture`,
           {
             headers: {
               'X-API-Key': 'tappyone-waha-2024-secretkey',
@@ -83,6 +87,10 @@ export function useChatPictures(chatIds: string[], options: UseChatPictureOption
       setIsLoading(true)
       const newPictures: Record<string, string | null> = {}
 
+      // Detectar se estamos em produção HTTPS
+      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+
       // Buscar fotos em paralelo (limitando a 5 por vez para não sobrecarregar)
       const chunks = []
       for (let i = 0; i < chatIds.length; i += 5) {
@@ -95,7 +103,7 @@ export function useChatPictures(chatIds: string[], options: UseChatPictureOption
             try {
               const wahaSession = 'user_fb8da1d7_1758158816675'
               const response = await axios.get(
-                `http://159.65.34.199:3001/api/${wahaSession}/chats/${chatId}/picture`,
+                `${baseUrl}/api/${wahaSession}/chats/${chatId}/picture`,
                 {
                   headers: { 
                     'X-API-Key': 'tappyone-waha-2024-secretkey',
