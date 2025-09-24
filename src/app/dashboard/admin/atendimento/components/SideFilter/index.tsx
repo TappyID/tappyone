@@ -88,6 +88,11 @@ interface SideFilterProps {
   // Opções de busca
   searchOptions: SearchOptions
   onSearchOptionsChange: (options: SearchOptions) => void
+  
+  // Ordenação
+  sortBy: 'name' | 'date'
+  sortOrder: 'asc' | 'desc'
+  onSortChange: (sortBy: 'name' | 'date', sortOrder: 'asc' | 'desc') => void
 }
 
 export default function SideFilter({
@@ -125,15 +130,16 @@ export default function SideFilter({
   activeFilter = 'all',
   onFilterChange = () => {},
   searchOptions,
-  onSearchOptionsChange
+  onSearchOptionsChange,
+  sortBy,
+  sortOrder,
+  onSortChange
 }: SideFilterProps) {
   // Estados para o novo sistema de filtros
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [showSortOptions, setShowSortOptions] = useState(false)
   
-  // Estados para ordenação
-  const [sortBy, setSortBy] = useState<'name' | 'date'>('date')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  // Estados para ordenação (agora vêm como props)
   
   // Estado para filtro sem fila
   const [showOnlyWithoutQueue, setShowOnlyWithoutQueue] = useState(false)
@@ -296,17 +302,6 @@ export default function SideFilter({
           </div>
         </div>
         
-        {/* Debug visual da busca */}
-        {searchQuery.trim() && (
-          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs">
-            <div className="font-medium text-blue-700 dark:text-blue-300 mb-1">🔍 Debug da Busca:</div>
-            <div className="space-y-1 text-blue-600 dark:text-blue-400">
-              <div>Query: "{searchQuery}"</div>
-              <div>Opções: {Object.entries(searchOptions).filter(([_, active]) => active).map(([key]) => key).join(', ') || 'Nenhuma'}</div>
-              <div>Status: {searchOptions.searchInChats || searchOptions.searchInMessages || searchOptions.searchInContacts ? 'Busca Avançada' : 'Busca Simples'}</div>
-            </div>
-          </div>
-        )}
 
         {/* Ícones de opções de busca - FORA do input */}
         <div className="flex items-center gap-2 mt-3 px-1">
@@ -650,8 +645,7 @@ export default function SideFilter({
                   <button
                     key={option.id}
                     onClick={() => {
-                      setSortBy(option.sortBy as 'name' | 'date')
-                      setSortOrder(option.sortOrder as 'asc' | 'desc')
+                      onSortChange(option.sortBy as 'name' | 'date', option.sortOrder as 'asc' | 'desc')
                       setShowSortOptions(false)
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${

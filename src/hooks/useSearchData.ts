@@ -58,8 +58,6 @@ export function useSearchData(query: string, options: SearchOptions) {
   }, [])
 
   const searchMessages = useCallback(async (searchQuery: string) => {
-    console.log('📨 [searchMessages] Iniciando busca em mensagens:', { searchQuery })
-    
     try {
       const token = localStorage.getItem('token')
       
@@ -71,24 +69,16 @@ export function useSearchData(query: string, options: SearchOptions) {
         }
       })
 
-      if (!chatsResponse.ok) {
-        console.log('📨 [searchMessages] Erro ao buscar chats:', chatsResponse.status)
-        return []
-      }
+      if (!chatsResponse.ok) return []
       
       const chats = await chatsResponse.json()
-      console.log('📨 [searchMessages] Chats obtidos:', chats.length)
-      
       const messagesResults = []
 
       // Buscar mensagens em cada chat (limitado aos primeiros 10 chats para performance)
       const limitedChats = chats.slice(0, 10)
-      console.log('📨 [searchMessages] Buscando mensagens em', limitedChats.length, 'chats')
       
       for (const chat of limitedChats) {
         try {
-          console.log('📨 [searchMessages] Buscando mensagens do chat:', chat.id)
-          
           const messagesResponse = await fetch(`/api/whatsapp/chats/${chat.id}/messages?limit=20`, {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -98,40 +88,27 @@ export function useSearchData(query: string, options: SearchOptions) {
 
           if (messagesResponse.ok) {
             const messages = await messagesResponse.json()
-            console.log('📨 [searchMessages] Mensagens obtidas do chat', chat.id, ':', messages.length)
             
             // Filtrar mensagens por conteúdo
-            const filteredMessages = messages.filter((msg: any) => {
-              const hasMatch = msg.body?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              msg.text?.toLowerCase().includes(searchQuery.toLowerCase())
-              
-              if (hasMatch) {
-                console.log('📨 [searchMessages] Mensagem encontrada:', {
-                  chatId: chat.id,
-                  body: msg.body?.substring(0, 50) + '...',
-                  text: msg.text?.substring(0, 50) + '...'
-                })
-              }
-              
-              return hasMatch
-            }).map((msg: any) => ({
+            const filteredMessages = messages.filter((msg: any) => 
+              msg.body?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              msg.text?.toLowerCase().includes(searchQuery.toLowerCase())
+            ).map((msg: any) => ({
               ...msg,
               chatId: chat.id,
               chatName: chat.name
             }))
             
-            console.log('📨 [searchMessages] Mensagens filtradas do chat', chat.id, ':', filteredMessages.length)
             messagesResults.push(...filteredMessages)
           }
         } catch (error) {
-          console.warn(`📨 [searchMessages] Erro ao buscar mensagens do chat ${chat.id}:`, error)
+          console.warn(`Erro ao buscar mensagens do chat ${chat.id}:`, error)
         }
       }
       
-      console.log('📨 [searchMessages] Total de mensagens encontradas:', messagesResults.length)
       return messagesResults
     } catch (error) {
-      console.error('📨 [searchMessages] Erro ao buscar mensagens:', error)
+      console.error('Erro ao buscar mensagens:', error)
       return []
     }
   }, [])
@@ -167,14 +144,7 @@ export function useSearchData(query: string, options: SearchOptions) {
   }, [])
 
   const performSearch = useCallback(async () => {
-    console.log('🔍 [useSearchData] performSearch chamado:', {
-      debouncedQuery,
-      options,
-      hasQuery: !!debouncedQuery.trim()
-    })
-
     if (!debouncedQuery.trim()) {
-      console.log('🔍 [useSearchData] Query vazia - limpando resultados')
       setResults({
         chats: [],
         messages: [],
@@ -185,41 +155,30 @@ export function useSearchData(query: string, options: SearchOptions) {
       return
     }
 
-    console.log('🔍 [useSearchData] Iniciando busca com loading=true')
     setResults(prev => ({ ...prev, loading: true, error: null }))
 
     try {
       const searchPromises = []
       
       if (options.searchInChats) {
-        console.log('🔍 [useSearchData] Adicionando busca em CHATS')
         searchPromises.push(searchChats(debouncedQuery))
       } else {
         searchPromises.push(Promise.resolve([]))
       }
       
       if (options.searchInMessages) {
-        console.log('🔍 [useSearchData] Adicionando busca em MENSAGENS')
         searchPromises.push(searchMessages(debouncedQuery))
       } else {
         searchPromises.push(Promise.resolve([]))
       }
       
       if (options.searchInContacts) {
-        console.log('🔍 [useSearchData] Adicionando busca em CONTATOS')
         searchPromises.push(searchContacts(debouncedQuery))
       } else {
         searchPromises.push(Promise.resolve([]))
       }
 
-      console.log('🔍 [useSearchData] Executando', searchPromises.length, 'promises de busca')
       const [chats, messages, contacts] = await Promise.all(searchPromises)
-
-      console.log('🔍 [useSearchData] Resultados obtidos:', {
-        chats: chats.length,
-        messages: messages.length,
-        contacts: contacts.length
-      })
 
       setResults({
         chats,
@@ -229,7 +188,7 @@ export function useSearchData(query: string, options: SearchOptions) {
         error: null
       })
     } catch (error) {
-      console.error('🔍 [useSearchData] Erro na busca:', error)
+      console.error('Erro na busca:', error)
       setResults(prev => ({
         ...prev,
         loading: false,
