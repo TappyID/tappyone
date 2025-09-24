@@ -46,11 +46,15 @@ import { useTickets } from '@/hooks/useTickets'
 interface AtendimentosTopBarProps {
   searchQuery: string
   onSearchChange: (query: string) => void
+  isCollapsed?: boolean
+  onToggleCollapse?: (collapsed: boolean) => void
 }
 
 export default function AtendimentosTopBar({ 
   searchQuery, 
-  onSearchChange
+  onSearchChange,
+  isCollapsed = false,
+  onToggleCollapse
 }: AtendimentosTopBarProps) {
   const { user, logout } = useAuth()
   const router = useRouter()

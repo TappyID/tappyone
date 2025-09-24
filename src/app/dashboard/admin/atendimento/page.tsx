@@ -75,7 +75,7 @@ const mockChats = [
   }
 ]
 
-export default function AtendimentoPage() {
+function AtendimentoPage() {
   // Estados para busca e filtros
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState('todas')
@@ -268,6 +268,13 @@ export default function AtendimentoPage() {
   const {
     chats: overviewChats,
     loading: loadingOverview,
+    error: errorOverview,
+    refreshChats: refreshOverviewChats,
+    loadMoreChats,
+    hasMore: hasMoreOverviewChats,
+    isLoadingMore: isLoadingMoreOverview,
+    markChatAsRead,
+    markChatAsUnread,
     totalChatsCount,
     unreadChatsCount,
     readNoReplyCount,
@@ -280,6 +287,12 @@ export default function AtendimentoPage() {
   // Reset displayedChatsCount quando há filtros
   useEffect(() => {
     if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') {
+      console.log('🔄 [displayedChatsCount] RESET para 10 devido a filtros:', {
+        searchQuery: searchQuery.trim(),
+        selectedTag,
+        selectedFila,
+        displayedChatsCountAntes: displayedChatsCount
+      })
       setDisplayedChatsCount(10) // Reset para 10 quando há filtros
     }
   }, [searchQuery, selectedTag, selectedFila])
@@ -373,6 +386,14 @@ export default function AtendimentoPage() {
 
   // Filtrar e transformar overview chats para formato da SideChat
   const transformedChats = useMemo(() => {
+    console.log('🔄 [transformedChats] Recalculando...', {
+      overviewChatsLength: overviewChats.length,
+      searchQuery: searchQuery.trim(),
+      selectedTag,
+      selectedFila,
+      displayedChatsCount
+    })
+    
     let filteredChats = overviewChats
     
     // Aplicar filtro de busca avançada
@@ -453,8 +474,17 @@ export default function AtendimentoPage() {
       }
     })
     
-    // Limitar para performance (apenas se não há busca)
-    const chatsToShow = searchQuery.trim() ? sortedChats : sortedChats.slice(0, displayedChatsCount)
+    // Limitar para performance (apenas se há filtros ativos)
+    const hasActiveFilters = searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas'
+    const chatsToShow = hasActiveFilters ? sortedChats.slice(0, displayedChatsCount) : sortedChats
+    
+    console.log('🔍 [chatsToShow] Debug:', {
+      hasActiveFilters,
+      sortedChatsLength: sortedChats.length,
+      displayedChatsCount,
+      chatsToShowLength: chatsToShow.length,
+      willSlice: hasActiveFilters
+    })
     
     return chatsToShow.map(chat => {
       const extraData = chatsExtraData[chat.id] || {}
@@ -495,12 +525,15 @@ export default function AtendimentoPage() {
 
   // Função para carregar mais chats (agora usa paginação real da API)
   const handleLoadMoreChats = useCallback(async () => {
-    console.log('🔄 handleLoadMoreChats chamado:', {
+    console.log('🔄 [handleLoadMoreChats] CHAMADO! Estado atual:', {
       searchQuery: searchQuery.trim(),
       selectedTag,
       selectedFila,
+      activeFilter,
       isLoadingMoreChats,
-      displayedChatsCount
+      displayedChatsCount,
+      overviewChatsLength: overviewChats.length,
+      processedChatsLength: processedChats.length
     })
     
     // Não carregar mais se há filtros ativos (busca, tag, fila) - nesse caso usa paginação local
@@ -524,8 +557,21 @@ export default function AtendimentoPage() {
     
     // Sem filtros - usar paginação real da API
     console.log('🌐 Sem filtros - usando paginação real da API')
-    // TODO: Implementar paginação real da API quando necessário
-  }, [searchQuery, selectedTag, selectedFila, isLoadingMoreChats, displayedChatsCount, overviewChats.length])
+    
+    if (isLoadingMoreOverview) {
+      console.log('❌ Já carregando mais chats (hook) - ignorando')
+      return
+    }
+    
+    try {
+      // Usar o hook useChatsOverview para carregar mais chats
+      console.log('📡 Carregando mais chats da API...')
+      await loadMoreChats() // Função do hook useChatsOverview (já gerencia isLoadingMore)
+      console.log('✅ Mais chats carregados com sucesso!')
+    } catch (error) {
+      console.error('❌ Erro ao carregar mais chats:', error)
+    }
+  }, [searchQuery, selectedTag, selectedFila, isLoadingMoreChats, isLoadingMoreOverview, displayedChatsCount, overviewChats.length, loadMoreChats])
 
   // Função helper para obter URL base
   const getWahaUrl = useCallback((path: string = '') => {
@@ -1102,19 +1148,35 @@ export default function AtendimentoPage() {
               hasMoreChats={(() => {
                 // Para filtros específicos (favoritos, arquivados, ocultos), nunca há mais para carregar
                 if (['favorites', 'archived', 'hidden'].includes(activeFilter)) {
+                  console.log('🔍 [hasMoreChats] Filtro específico ativo:', activeFilter, '- sem mais chats')
                   return false
                 }
                 
                 // Se há filtros de busca, usar paginação local
                 if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') {
                   const localHasMore = displayedChatsCount < overviewChats.length
+                  console.log('🔍 [hasMoreChats] Filtros ativos - paginação local:', {
+                    searchQuery: searchQuery.trim(),
+                    selectedTag,
+                    selectedFila,
+                    displayedChatsCount,
+                    overviewChatsLength: overviewChats.length,
+                    processedChatsLength: processedChats.length,
+                    localHasMore
+                  })
                   return localHasMore
                 }
                 
-                // Se não há filtros, usar paginação local
-                return displayedChatsCount < overviewChats.length
+                // Se não há filtros, usar paginação real da API
+                console.log('🔍 [hasMoreChats] Sem filtros - paginação real da API:', {
+                  displayedChatsCount,
+                  overviewChatsLength: overviewChats.length,
+                  processedChatsLength: processedChats.length,
+                  hasMoreOverviewChats
+                })
+                return hasMoreOverviewChats
               })()}
-              isLoadingMore={isLoadingMoreChats}
+              isLoadingMore={isLoadingMoreChats || isLoadingMoreOverview}
               onTagsClick={(chatId, e) => {
                 e.stopPropagation()
                 console.log('🏷️ Tags clicadas para chat:', chatId)
@@ -1727,3 +1789,5 @@ export default function AtendimentoPage() {
     </div>
   )
 }
+
+export default AtendimentoPage

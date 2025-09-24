@@ -1,12 +1,21 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot } from 'lucide-react'
+import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Ticket, UserCircle, StickyNote } from 'lucide-react'
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
 import EditTextModal from '../../../atendimentos/components/EditTextModal'
 import QuickActionsSidebar from '../../../atendimentos/components/QuickActionsSidebar'
+
+// Bottom Sheets
+import AgendamentoBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AgendamentoBottomSheet'
+import OrcamentoBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/OrcamentoBottomSheet'
+import TagsBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/TagsBottomSheet'
+import AnotacoesBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
+import TicketBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
+import AssinaturaBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AssinaturaBottomSheet'
+import ProfileSidebar from './ProfileSidebar'
 
 interface ChatModalKanbanProps {
   isOpen: boolean
@@ -31,6 +40,15 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
   const [showEditTextModal, setShowEditTextModal] = useState(false)
   const [showQuickActionsSidebar, setShowQuickActionsSidebar] = useState(false)
   const [showEmojisModal, setShowEmojisModal] = useState(false)
+  const [showProfileSidebar, setShowProfileSidebar] = useState(false)
+  
+  // Estados dos Bottom Sheets
+  const [showAgendamentoSheet, setShowAgendamentoSheet] = useState(false)
+  const [showOrcamentoSheet, setShowOrcamentoSheet] = useState(false)
+  const [showTagsSheet, setShowTagsSheet] = useState(false)
+  const [showAnotacoesSheet, setShowAnotacoesSheet] = useState(false)
+  const [showTicketsSheet, setShowTicketsSheet] = useState(false)
+  const [showAssinaturaSheet, setShowAssinaturaSheet] = useState(false)
   
   // Extrair o chatId do card
   const chatId = card?.id || ''
@@ -189,12 +207,18 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
   }
   
   if (!isOpen) return null
-  
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
-      <div className={`${
-        theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-      } rounded-xl shadow-2xl w-[90vw] h-[85vh] max-w-6xl flex flex-col overflow-hidden`}>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className={`flex h-[80vh] rounded-16xl shadow-1xl overflow-hidden transition-all duration-300 ${
+        showProfileSidebar ? 'w-full max-w-7xl' : 'w-full max-w-4xl'
+      }`}>
+        {/* Modal Principal do Chat */}
+        <div className={`flex flex-col overflow-hidden transition-all duration-300 ${
+          showProfileSidebar ? 'w-2/3' : 'w-full'
+        } ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'} ${
+          showProfileSidebar ? 'rounded-l-2xl' : 'rounded-2xl'
+        }`}>
         
         {/* Header do Modal */}
         <div className={`flex items-center justify-between p-4 border-b ${
@@ -216,20 +240,26 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
           
           {/* Ações do Kanban */}
           <div className="flex items-center gap-2">
-            {/* Voltar ao Kanban */}
+            {/* Perfil do Contato */}
             <button
-              title="Voltar ao Kanban"
+              onClick={() => setShowProfileSidebar(true)}
+              title="Ver Perfil"
               className={`p-2 rounded-lg transition-colors ${
-                theme === 'dark' 
-                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                showProfileSidebar
+                  ? theme === 'dark'
+                    ? 'bg-blue-500/20 text-blue-400'
+                    : 'bg-blue-100 text-blue-700'
+                  : theme === 'dark' 
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Trello className="w-4 h-4" />
+              <UserCircle className="w-4 h-4" />
             </button>
             
             {/* Tags */}
             <button
+              onClick={() => setShowTagsSheet(true)}
               title="Gerenciar Tags"
               className={`p-2 rounded-lg transition-colors ${
                 theme === 'dark' 
@@ -240,20 +270,9 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
               <Tag className="w-4 h-4" />
             </button>
             
-            {/* Fila */}
-            <button
-              title="Gerenciar Fila"
-              className={`p-2 rounded-lg transition-colors ${
-                theme === 'dark' 
-                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
-                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-            </button>
-            
             {/* Orçamento */}
             <button
+              onClick={() => setShowOrcamentoSheet(true)}
               title="Criar Orçamento"
               className={`p-2 rounded-lg transition-colors ${
                 theme === 'dark' 
@@ -266,6 +285,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
             
             {/* Agendamento */}
             <button
+              onClick={() => setShowAgendamentoSheet(true)}
               title="Criar Agendamento"
               className={`p-2 rounded-lg transition-colors ${
                 theme === 'dark' 
@@ -275,18 +295,46 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
             >
               <Calendar className="w-4 h-4" />
             </button>
-            
-            {/* Agente IA */}
+
+            {/* Anotações */}
             <button
-              title="Gerenciar Agente IA"
+              onClick={() => setShowAnotacoesSheet(true)}
+              title="Gerenciar Anotações"
               className={`p-2 rounded-lg transition-colors ${
                 theme === 'dark' 
                   ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Bot className="w-4 h-4" />
+              <StickyNote className="w-4 h-4" />
             </button>
+
+            {/* Assinatura */}
+            <button
+              onClick={() => setShowAssinaturaSheet(true)}
+              title="Gerenciar Assinatura"
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark' 
+                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+            </button>
+
+            {/* Tickets */}
+            <button
+              onClick={() => setShowTicketsSheet(true)}
+              title="Gerenciar Tickets"
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark' 
+                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Ticket className="w-4 h-4" />
+            </button>
+
             
             {/* Separador */}
             <div className={`w-px h-6 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`} />
@@ -315,8 +363,25 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
           />
         </div>
         
-        {/* Área de Mensagens com scroll */}
+        {/* Área de Mensagens com scroll customizado */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <style jsx>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: rgba(59, 130, 246, 0.1);
+              border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: linear-gradient(45deg, #3B82F6, #1D4ED8);
+              border-radius: 4px;
+              transition: background 0.3s ease;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: linear-gradient(45deg, #1D4ED8, #1E40AF);
+            }
+          `}</style>
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -616,7 +681,81 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
             </div>
           </div>
         )}
+        
+        </div>
+
+        {/* ProfileSidebar Componentizado */}
+        <ProfileSidebar
+          isOpen={showProfileSidebar}
+          onClose={() => setShowProfileSidebar(false)}
+          theme={theme}
+          contactName={contactName}
+          contactNumber={contactNumber}
+          chatId={chatId}
+          card={card}
+          onTagsClick={() => {
+            setShowProfileSidebar(false)
+            setShowTagsSheet(true)
+          }}
+          onOrcamentoClick={() => {
+            setShowProfileSidebar(false)
+            setShowOrcamentoSheet(true)
+          }}
+          onAgendamentoClick={() => {
+            setShowProfileSidebar(false)
+            setShowAgendamentoSheet(true)
+          }}
+        />
       </div>
+      
+      {/* Bottom Sheets */}
+      {showAgendamentoSheet && (
+        <AgendamentoBottomSheet 
+          isOpen={showAgendamentoSheet}
+          onClose={() => setShowAgendamentoSheet(false)}
+          chatId={chatId}
+        />
+      )}
+
+      {showOrcamentoSheet && (
+        <OrcamentoBottomSheet 
+          isOpen={showOrcamentoSheet}
+          onClose={() => setShowOrcamentoSheet(false)}
+          chatId={chatId}
+        />
+      )}
+
+      {showTagsSheet && (
+        <TagsBottomSheet 
+          isOpen={showTagsSheet}
+          onClose={() => setShowTagsSheet(false)}
+          chatId={chatId}
+        />
+      )}
+
+      {showAnotacoesSheet && (
+        <AnotacoesBottomSheet 
+          isOpen={showAnotacoesSheet}
+          onClose={() => setShowAnotacoesSheet(false)}
+          chatId={chatId}
+        />
+      )}
+
+      {showTicketsSheet && (
+        <TicketBottomSheet 
+          isOpen={showTicketsSheet}
+          onClose={() => setShowTicketsSheet(false)}
+          chatId={chatId}
+        />
+      )}
+
+      {showAssinaturaSheet && (
+        <AssinaturaBottomSheet 
+          isOpen={showAssinaturaSheet}
+          onClose={() => setShowAssinaturaSheet(false)}
+          chatId={chatId}
+        />
+      )}
     </div>
   )
 }

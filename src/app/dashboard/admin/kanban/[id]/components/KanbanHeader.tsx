@@ -1,0 +1,763 @@
+'use client'
+
+import React, { useState } from 'react'
+import { motion } from 'framer-motion'
+import { 
+  ChevronDown, 
+  Grid,
+  List,
+  LayoutGrid,
+  RefreshCw,
+  Search,
+  Filter,
+  Settings,
+  Download,
+  Upload,
+  Users,
+  MessageCircle,
+  User,
+  X,
+  Tag,
+  Calendar,
+  Ticket,
+  ArrowLeft,
+  RotateCcw,
+  Keyboard,
+  MoreVertical,
+  Trello,
+  CreditCard,
+  Package,
+  BarChart,
+  Columns
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
+interface KanbanHeaderProps {
+  theme: string
+  quadro: {
+    nome: string
+    descricao?: string
+  }
+  chats: any[]
+  colunas: any[]
+  searchQuery: string
+  onSearchChange: (query: string) => void
+  loading: boolean
+  hasManualChanges: boolean
+  showShortcuts: boolean
+  editingQuadroTitle: boolean
+  editingQuadroDescription: boolean
+  editingQuadroName: string
+  editingQuadroDescricao: string
+  mapearConversasParaColunas: () => any[]
+  refreshData: () => void
+  resetAndRemap: () => void
+  setShowShortcuts: (show: boolean) => void
+  handleDoubleClickQuadroTitle: () => void
+  handleDoubleClickQuadroDescription: () => void
+  handleSaveQuadroTitle: () => void
+  handleSaveQuadroDescription: () => void
+  setEditingQuadroName: (name: string) => void
+  setEditingQuadroDescricao: (desc: string) => void
+}
+
+export default function KanbanHeader({
+  theme,
+  quadro,
+  chats,
+  colunas,
+  searchQuery,
+  onSearchChange,
+  loading,
+  hasManualChanges,
+  showShortcuts,
+  editingQuadroTitle,
+  editingQuadroDescription,
+  editingQuadroName,
+  editingQuadroDescricao,
+  mapearConversasParaColunas,
+  refreshData,
+  resetAndRemap,
+  setShowShortcuts,
+  handleDoubleClickQuadroTitle,
+  handleDoubleClickQuadroDescription,
+  handleSaveQuadroTitle,
+  handleSaveQuadroDescription,
+  setEditingQuadroName,
+  setEditingQuadroDescricao
+}: KanbanHeaderProps) {
+  const router = useRouter()
+  
+  // Estados para filtros
+  const [searchOptions, setSearchOptions] = useState({
+    searchInChats: true,
+    searchInMessages: false,
+    searchInContacts: false
+  })
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [activeTab, setActiveTab] = useState('all')
+  const [showFiltersSection, setShowFiltersSection] = useState(false)
+  
+  // Função para toggle de opções de busca
+  const toggleSearchOption = (option: keyof typeof searchOptions) => {
+    setSearchOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }))
+  }
+
+  return (
+    <div className={`border-b backdrop-blur-sm ${
+      theme === 'dark' 
+        ? 'bg-slate-900/50 border-slate-700/50' 
+        : 'bg-white/50 border-gray-200/50'
+    }`}>
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Botão Voltar */}
+            <motion.button
+              onClick={() => router.push('/dashboard/admin/kanban')}
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft className="w-[19px] h-[19px]" />
+            </motion.button>
+            
+            <div className="flex items-center justify-between">
+              {/* Lado Esquerdo - Ícone e Título */}
+              <div className="flex items-center gap-4">
+                <motion.div
+                  className={`p-2.5 rounded-xl ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50'
+                      : 'bg-gradient-to-br from-blue-50 to-blue-100/50'
+                  }`}
+                  style={{ 
+                    boxShadow: theme === 'dark' 
+                      ? `0 0 20px #305e7315`  
+                      : `0 4px 20px #305e7320` 
+                  }}
+                  whileHover={{ rotate: 5, scale: 1.05 }}
+                >
+                  <Trello className="w-[19px] h-[19px]" style={{ color: '#305e73' }} />
+                </motion.div>
+                
+                <div>
+                  {editingQuadroTitle ? (
+                    <input
+                      type="text"
+                      value={editingQuadroName}
+                      onChange={(e) => setEditingQuadroName(e.target.value)}
+                      onBlur={() => handleSaveQuadroTitle()}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveQuadroTitle()
+                        }
+                      }}
+                      className={`text-base font-bold bg-transparent border-b-2 border-blue-500 outline-none ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}
+                      autoFocus
+                    />
+                  ) : (
+                    <h1 
+                      className={`text-base font-bold cursor-pointer hover:text-blue-600 transition-colors ${
+                        theme === 'dark' ? 'text-white hover:text-blue-400' : 'text-gray-900'
+                      }`}
+                      onDoubleClick={() => handleDoubleClickQuadroTitle()}
+                    >
+                      {quadro.nome}
+                    </h1>
+                  )}
+                  
+                  {editingQuadroDescription ? (
+                    <input
+                      type="text"
+                      value={editingQuadroDescricao}
+                      onChange={(e) => setEditingQuadroDescricao(e.target.value)}
+                      onBlur={() => handleSaveQuadroDescription()}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveQuadroDescription()
+                        }
+                      }}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 bg-transparent border border-blue-500 outline-none ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}
+                      autoFocus
+                    />
+                  ) : (
+                    <div 
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 cursor-pointer hover:bg-blue-100 transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-white/5 text-white/60 border border-white/10 hover:bg-blue-900/20'
+                          : 'bg-gray-100/80 text-gray-600 border border-gray-200/50'
+                      }`}
+                      onDoubleClick={() => handleDoubleClickQuadroDescription()}
+                    >
+                      {quadro.descricao}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Centro - Estatísticas Sofisticadas */}
+              <div className="flex items-center gap-3 mx-16">
+                {/* Conversas */}
+                <motion.div 
+                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-sm border transition-all ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                      : 'bg-white/60 border-white/20 hover:bg-white/80'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <MessageCircle className={`w-4 h-4 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'dark' ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Conversas
+                  </span>
+                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    theme === 'dark'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-blue-600 text-white'
+                  }`}>
+                    {chats.length}
+                  </div>
+                </motion.div>
+
+                {/* Cards */}
+                <motion.div 
+                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-sm border transition-all ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                      : 'bg-white/60 border-white/20 hover:bg-white/80'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <CreditCard className={`w-4 h-4 ${
+                    theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'dark' ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Cards
+                  </span>
+                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    theme === 'dark'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-green-600 text-white'
+                  }`}>
+                    {mapearConversasParaColunas().reduce((total, col) => total + col.cards.length, 0)}
+                  </div>
+                </motion.div>
+
+                {/* Colunas */}
+                <motion.div 
+                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-sm border transition-all ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                      : 'bg-white/60 border-white/20 hover:bg-white/80'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Columns className={`w-4 h-4 ${
+                    theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'dark' ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Colunas
+                  </span>
+                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    theme === 'dark'
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-purple-600 text-white'
+                  }`}>
+                    {colunas.length}
+                  </div>
+                </motion.div>
+
+                {/* Status do Filtro */}
+                {searchQuery && (
+                  <motion.div 
+                    className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-sm border transition-all ${
+                      theme === 'dark'
+                        ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
+                        : 'bg-orange-100/80 border-orange-200/40 hover:bg-orange-200/60'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                  >
+                    <Filter className={`w-4 h-4 ${
+                      theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      theme === 'dark' ? 'text-orange-300' : 'text-orange-700'
+                    }`}>
+                      Filtrado
+                    </span>
+                    <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
+                      theme === 'dark'
+                        ? 'bg-orange-400'
+                        : 'bg-orange-500'
+                    }`}></div>
+                  </motion.div>
+                )}
+                
+                {/* Botão de Atalhos */}
+                <motion.button
+                  onClick={() => setShowShortcuts(!showShortcuts)}
+                  className={`relative p-2 rounded-lg transition-colors ${
+                    theme === 'dark'
+                      ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Keyboard className="w-[15px] h-[15px]" />
+                  
+                  {/* Tooltip com atalhos */}
+                  {showShortcuts && (
+                    <motion.div
+                      className={`absolute top-full right-0 mt-2 p-3 rounded-lg shadow-lg border z-50 ${
+                        theme === 'dark'
+                          ? 'bg-slate-800 border-slate-700 text-white'
+                          : 'bg-white border-gray-200 text-gray-900'
+                      }`}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      <div className="text-sm font-medium mb-2">Atalhos:</div>
+                      <div className="space-y-1 text-xs whitespace-nowrap">
+                        <div>Ctrl+N - Nova coluna</div>
+                        <div>Ctrl+R - Atualizar conversas</div>
+                        <div>Esc - Fechar modais</div>
+                        <div>Arrastar - Mover cards</div>
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.button>
+
+                <motion.button
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark'
+                      ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <MoreVertical className="w-[19px] h-[19px]" />
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          {/* Centro - Filtros com Bordinha */}
+          <div className="flex items-center gap-3">
+            {/* Botão de Filtros */}
+            <motion.button
+              onClick={() => setShowFiltersSection(!showFiltersSection)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                showFiltersSection
+                  ? theme === 'dark'
+                    ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30'
+                    : 'bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300'
+                  : theme === 'dark'
+                    ? 'bg-white/5 hover:bg-white/10 text-white/80'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              title="Mostrar/Ocultar Filtros"
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm">Filtros</span>
+              <motion.div
+                animate={{ rotate: showFiltersSection ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="w-4 h-4" />
+              </motion.div>
+            </motion.button>
+
+            <motion.button
+              onClick={refreshData}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'bg-white/5 hover:bg-white/10 text-white/80'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={loading}
+            >
+              <motion.div
+                animate={loading ? { rotate: 360 } : {}}
+                transition={{ 
+                  duration: 1, 
+                  repeat: loading ? Infinity : 0,
+                  ease: 'linear'
+                }}
+              >
+                <Settings className={`w-4 h-4 ${
+                  loading ? 'text-blue-500' : ''
+                }`} />
+              </motion.div>
+              <span className="text-sm">
+                {loading ? 'Carregando...' : `Atualizar (${chats.length})`}
+              </span>
+              <span className={`text-xs opacity-60 ${
+                theme === 'dark' ? 'text-white/40' : 'text-gray-400'
+              }`}>
+                Ctrl+R
+              </span>
+            </motion.button>
+            
+            {/* Botão de Reset (só aparece se houve mudanças manuais) */}
+            {hasManualChanges && (
+              <motion.button
+                onClick={resetAndRemap}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  theme === 'dark'
+                    ? 'hover:bg-yellow-500/20 text-yellow-400 hover:text-yellow-300 border border-yellow-500/30'
+                    : 'hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 border border-yellow-300'
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Resetar mudanças manuais e remapear conversas"
+              >
+                <RotateCcw className="w-[15px] h-[15px]" />
+                <span className="text-sm">
+                  Remapear
+                </span>
+              </motion.button>
+            )}
+            
+            {/* Botão de Atalhos */}
+            <motion.button
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              className={`relative p-2 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Keyboard className="w-[15px] h-[15px]" />
+              
+              {/* Tooltip com atalhos */}
+              {showShortcuts && (
+                <motion.div
+                  className={`absolute top-full right-0 mt-2 p-3 rounded-lg shadow-lg border z-50 ${
+                    theme === 'dark'
+                      ? 'bg-slate-800 border-slate-700 text-white'
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <div className="text-sm font-medium mb-2">Atalhos:</div>
+                  <div className="space-y-1 text-xs whitespace-nowrap">
+                    <div>Ctrl+N - Nova coluna</div>
+                    <div>Ctrl+R - Atualizar conversas</div>
+                    <div>Esc - Fechar modais</div>
+                    <div>Arrastar - Mover cards</div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.button>
+
+            <motion.button
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <MoreVertical className="w-[19px] h-[19px]" />
+            </motion.button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Segunda linha - Filtros igual SideChat */}
+      <div className="px-6 py-3 border-t border-gray-200/20">
+        <div className="flex items-center gap-4">
+          {/* Input de busca com ícones DENTRO */}
+          <div className={`flex-1 flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+            theme === 'dark' 
+              ? 'bg-slate-800/50 border border-slate-700/50' 
+              : 'bg-white border border-gray-200'
+          }`}>
+            <Search className="w-4 h-4 opacity-50" />
+            
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Buscar chats..."
+              className={`flex-1 bg-transparent outline-none text-sm ${
+                theme === 'dark' ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'
+              }`}
+            />
+
+            {/* Ícones de Opções de Busca */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => toggleSearchOption('searchInChats')}
+                className={`p-1 rounded transition-colors ${
+                  searchOptions.searchInChats
+                    ? 'text-blue-500'
+                    : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}
+                title="Buscar em nomes"
+              >
+                <Users className="w-3.5 h-3.5" />
+              </button>
+              
+              <button
+                onClick={() => toggleSearchOption('searchInMessages')}
+                className={`p-1 rounded transition-colors ${
+                  searchOptions.searchInMessages
+                    ? 'text-blue-500'
+                    : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}
+                title="Buscar em mensagens"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+              </button>
+              
+              <button
+                onClick={() => toggleSearchOption('searchInContacts')}
+                className={`p-1 rounded transition-colors ${
+                  searchOptions.searchInContacts
+                    ? 'text-blue-500'
+                    : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}
+                title="Buscar em contatos"
+              >
+                <User className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Botão de Filtros Avançados */}
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`p-2 rounded-xl transition-all ${
+              showAdvancedFilters
+                ? theme === 'dark' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-blue-500 text-white'
+                : theme === 'dark'
+                  ? 'bg-slate-800/50 text-gray-400 hover:bg-slate-700/50'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+            } border ${
+              theme === 'dark' ? 'border-slate-700/50' : 'border-gray-200'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Tabs de Filtro - com scroll horizontal */}
+        <div className="mt-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide"
+               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {[
+              { id: 'all', label: 'Todas', count: chats.length },
+              { id: 'unread', label: 'Não lidas', count: chats.filter(c => c.unreadCount > 0).length },
+              { id: 'read', label: 'Lidas', count: chats.filter(c => !c.unreadCount).length },
+              { id: 'archived', label: 'Arquivados', count: 0 },
+              { id: 'groups', label: 'Grupos', count: chats.filter(c => c.isGroup).length },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? theme === 'dark'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-500 text-white'
+                    : theme === 'dark'
+                      ? 'bg-slate-800/50 text-gray-400 hover:bg-slate-700/50'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded text-xs ${
+                    activeTab === tab.id
+                      ? 'bg-white/20 text-white'
+                      : theme === 'dark'
+                        ? 'bg-slate-700 text-gray-300'
+                        : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar de Filtros Avançados - FORA do container */}
+      {showAdvancedFilters && (
+        <div className="fixed inset-0 z-[9999]">
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAdvancedFilters(false)}
+            className="absolute inset-0 bg-black/50"
+          />
+
+          {/* Sidebar */}
+          <motion.div
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            className={`absolute left-0 top-0 h-full w-80 shadow-xl ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-r border-slate-700' 
+                : 'bg-white border-r border-gray-200'
+            }`}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className={`text-lg font-semibold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Filtros Avançados
+                </h3>
+                <button
+                  onClick={() => setShowAdvancedFilters(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark'
+                      ? 'hover:bg-slate-800 text-gray-400'
+                      : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
+              {/* Seção de Tags */}
+              <div>
+                <h4 className={`text-sm font-medium mb-3 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  🏷️ Tags
+                </h4>
+                <div className="space-y-2">
+                  {['Cliente VIP', 'Urgente', 'Em Negociação', 'Aguardando'].map(tag => (
+                    <label key={tag} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" className="rounded" />
+                      <span className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>{tag}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Seção de Filas */}
+              <div>
+                <h4 className={`text-sm font-medium mb-3 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  👥 Filas de Atendimento
+                </h4>
+                <div className="space-y-2">
+                  {['Vendas', 'Suporte', 'Financeiro', 'Geral'].map(fila => (
+                    <label key={fila} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" className="rounded" />
+                      <span className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>{fila}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtros Especiais */}
+              <div>
+                <h4 className={`text-sm font-medium mb-3 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  ⭐ Filtros Especiais
+                </h4>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="rounded" />
+                    <span className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Favoritos</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="rounded" />
+                    <span className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Com Anexos</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="rounded" />
+                    <span className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Ocultos</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Botão Limpar Filtros */}
+              <button
+                className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
+                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
+              >
+                Limpar Filtros
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -85,13 +85,28 @@ export default function SideChat({
 
   // IntersectionObserver para scroll infinito
   useEffect(() => {
-    if (!onLoadMore || !hasMoreChats || isLoadingMore) return
+    console.log('🔄 [SideChat] IntersectionObserver setup:', {
+      hasOnLoadMore: !!onLoadMore,
+      hasMoreChats,
+      isLoadingMore,
+      chatsLength: chats.length
+    })
+
+    if (!onLoadMore || !hasMoreChats || isLoadingMore) {
+      console.log('🔄 [SideChat] Observer não criado - condições não atendidas')
+      return
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
+        console.log('🔄 [SideChat] Observer triggered:', {
+          isIntersecting: entry.isIntersecting,
+          intersectionRatio: entry.intersectionRatio
+        })
+        
         if (entry.isIntersecting) {
-          console.log('🔄 Trigger do scroll infinito ativado - carregando mais chats...')
+          console.log('🔄 [SideChat] Trigger do scroll infinito ativado - carregando mais chats...')
           
           // Salvar posição EXATA antes de carregar mais
           if (scrollContainerRef.current) {

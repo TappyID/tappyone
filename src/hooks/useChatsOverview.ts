@@ -55,7 +55,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       setLoading(true)
       setError(null)
 
-      console.log('🔄 Buscando chats overview da WAHA...')
+      console.log('🔄 [fetchChatsOverview] Buscando chats overview da WAHA...', { limit, offset, append })
       
       // Detectar se estamos em produção HTTPS
       const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
@@ -84,6 +84,14 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       
       // Se retornou menos que o limit, não há mais páginas
       const noMorePages = data.length < limit
+      console.log('🔍 [hasMore] Debug paginação:', {
+        dataLength: data.length,
+        limit,
+        noMorePages,
+        hasMoreWillBe: !noMorePages,
+        append,
+        currentChatsCount: append ? chats.length : 0
+      })
       setHasMore(!noMorePages)
 
       // Debug para verificar unreadCount da WAHA
@@ -168,21 +176,35 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
         }
       })
 
-      // Ordenar por timestamp da última mensagem (mais recente primeiro)
-      transformedChats.sort((a, b) => {
-        const timestampA = a.lastMessage?.timestamp || 0
-        const timestampB = b.lastMessage?.timestamp || 0
-        return timestampB - timestampA
-      })
-
       // Se append = true, adicionar aos chats existentes, senão substituir
       setChats(prevChats => {
         if (append) {
-          const newChats = [...prevChats, ...transformedChats]
-          console.log('✅ Chats adicionados! Total agora:', newChats.length, '(+' + transformedChats.length + ')')
+          // Evitar duplicatas - filtrar chats que já existem
+          const existingIds = new Set(prevChats.map(chat => chat.id))
+          const newUniqueChats = transformedChats.filter(chat => !existingIds.has(chat.id))
+          
+          console.log('🔍 [append] Debug duplicatas:', {
+            prevChatsLength: prevChats.length,
+            transformedChatsLength: transformedChats.length,
+            newUniqueChatsLength: newUniqueChats.length,
+            duplicatesFiltered: transformedChats.length - newUniqueChats.length,
+            existingIds: Array.from(existingIds).slice(0, 5),
+            newChatIds: transformedChats.slice(0, 5).map(c => c.id),
+            willAddDuplicates: newUniqueChats.length === 0 && transformedChats.length > 0
+          })
+          
+          // ALERTA se vamos adicionar duplicatas
+          if (newUniqueChats.length === 0 && transformedChats.length > 0) {
+            console.error('🚨 PROBLEMA: Todos os chats são duplicatas! API retornou os mesmos chats.')
+          }
+          
+          // NÃO ordenar - manter ordem da API para paginação correta
+          const newChats = [...prevChats, ...newUniqueChats]
+          console.log('✅ Chats adicionados! Total agora:', newChats.length, '(+' + newUniqueChats.length + ')')
           return newChats
         } else {
           console.log('✅ Chats iniciais carregados:', transformedChats.length)
+          // Para carregamento inicial, manter ordem da API (já vem ordenado)
           return transformedChats
         }
       })
@@ -198,13 +220,25 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
   // Função para carregar mais chats (próxima página)
   const loadMoreChats = async () => {
-    if (isLoadingMore || !hasMore) return
+    console.log('🔄 [loadMoreChats] Chamado! Estado atual:', {
+      isLoadingMore,
+      hasMore,
+      currentChatsLength: chats.length
+    })
+    
+    if (isLoadingMore || !hasMore) {
+      console.log('❌ [loadMoreChats] Bloqueado:', { isLoadingMore, hasMore })
+      return
+    }
     
     setIsLoadingMore(true)
-    console.log('🔄 Carregando mais chats..., offset:', chats.length)
+    console.log('🔄 [loadMoreChats] Carregando mais chats... offset:', chats.length)
     
     try {
       await fetchChatsOverview(12, chats.length, true) // append = true
+      console.log('✅ [loadMoreChats] Concluído! Novos chats carregados')
+    } catch (error) {
+      console.error('❌ [loadMoreChats] Erro:', error)
     } finally {
       setIsLoadingMore(false)
     }
