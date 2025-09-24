@@ -1,28 +1,31 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Filter, 
   Search, 
+  Filter, 
   MessageCircle, 
   Circle, 
   CheckCircle2, 
-  Clock, 
-  Tag, 
+  Star, 
   Archive, 
-  Users,
+  Users, 
+  EyeOff,
   User,
-  X,
   Settings,
   ChevronDown,
-  Star,
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Eye,
-  EyeOff,
   Calendar,
   FileText,
   Ticket,
-  DollarSign
+  DollarSign,
+  Tag
 } from 'lucide-react'
 
 // import SearchInput from './SearchInput' // Não usado mais
@@ -33,6 +36,12 @@ import FilterTickets from './FilterTickets'
 // import FilterAgendamentos from './FilterAgendamentos' // REMOVIDO
 import FilterPrecos from './FilterPrecos'
 
+interface SearchOptions {
+  searchInChats: boolean
+  searchInMessages: boolean
+  searchInContacts: boolean
+}
+
 interface SideFilterProps {
   // Search
   searchQuery: string
@@ -40,52 +49,45 @@ interface SideFilterProps {
   
   // Tags Filter
   selectedTag: string
-  onTagChange: (tagId: string) => void
-  tags: any[]
+  onTagChange: (tag: string) => void
+  tags: Array<{ id: string; nome: string; cor?: string }>
   
   // Filas Filter  
   selectedFila: string
-  onFilaChange: (filaId: string) => void
-  filas: any[]
+  onFilaChange: (fila: string) => void
+  filas: Array<{ id: string; nome: string; cor?: string }>
   
-  // Price Range Filter
-  selectedPriceRange?: string
-  onPriceRangeChange?: (rangeId: string) => void
-  priceRanges?: any[]
+  // Dados dos filtros avançados
+  kanbanStatuses: Array<{ id: string; nome: string; cor?: string }>
+  ticketStatuses: Array<{ id: string; nome: string; cor?: string }>
+  priceRanges: Array<{ id: string; nome: string; valor_min?: number; valor_max?: number }>
+  selectedKanbanStatus: string
+  selectedTicketStatus: string
+  selectedPriceRange: string
   
-  // Kanban Filter
-  kanbanStatuses?: any[]
-  selectedKanbanStatus?: string
-  onKanbanStatusChange?: (statusId: string) => void
+  // Estados de loading
+  isLoadingTags: boolean
+  isLoadingFilas: boolean
+  isLoadingKanban: boolean
+  isLoadingTickets: boolean
+  isLoadingAtendentes: boolean
   
-  // Ticket Filter
-  ticketStatuses?: any[]
-  selectedTicketStatus?: string
-  onTicketStatusChange?: (statusId: string) => void
+  // Dados para contadores
+  totalChats: number
+  unreadChats: number
+  readChats: number
+  archivedChats: number
+  groupChats: number
+  favoriteChats: number
+  hiddenChats: number
   
-  // Loading states
-  isLoadingTags?: boolean
-  isLoadingFilas?: boolean
-  isLoadingPrices?: boolean
-  isLoadingKanban?: boolean
-  isLoadingTickets?: boolean
-  isLoadingAtendentes?: boolean
+  // Controle do filtro ativo
+  activeFilter: string
+  onFilterChange: (filter: string) => void
   
-  // Layout
-  isCollapsed?: boolean
-  
-  // Chat counts for tabs
-  totalChats?: number
-  unreadChats?: number
-  readChats?: number
-  archivedChats?: number
-  groupChats?: number
-  favoriteChats?: number
-  hiddenChats?: number
-  
-  // Active filter control
-  activeFilter?: string
-  onFilterChange?: (filterId: string) => void
+  // Opções de busca
+  searchOptions: SearchOptions
+  onSearchOptionsChange: (options: SearchOptions) => void
 }
 
 export default function SideFilter({
@@ -121,26 +123,61 @@ export default function SideFilter({
   favoriteChats = 0,
   hiddenChats = 0,
   activeFilter = 'all',
-  onFilterChange = () => {}
+  onFilterChange = () => {},
+  searchOptions,
+  onSearchOptionsChange
 }: SideFilterProps) {
   // Estados para o novo sistema de filtros
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [searchOptions, setSearchOptions] = useState({
-    searchInChats: true,
-    searchInMessages: false,
-    searchInContacts: false
-  })
+  const [showSortOptions, setShowSortOptions] = useState(false)
+  
+  // Estados para ordenação
+  const [sortBy, setSortBy] = useState<'name' | 'date'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  // Estado para filtro sem fila
+  const [showOnlyWithoutQueue, setShowOnlyWithoutQueue] = useState(false)
+  
+  // Opções de ordenação
+  const sortOptions = [
+    { id: 'date-desc', label: 'Mais recentes primeiro', sortBy: 'date', sortOrder: 'desc', icon: ArrowDown },
+    { id: 'date-asc', label: 'Mais antigas primeiro', sortBy: 'date', sortOrder: 'asc', icon: ArrowUp },
+    { id: 'name-asc', label: 'Nome A-Z', sortBy: 'name', sortOrder: 'asc', icon: ArrowUp },
+    { id: 'name-desc', label: 'Nome Z-A', sortBy: 'name', sortOrder: 'desc', icon: ArrowDown },
+  ]
+  
+  const currentSort = sortOptions.find(opt => opt.sortBy === sortBy && opt.sortOrder === sortOrder)
+  const sortDropdownRef = useRef<HTMLDivElement>(null)
+  const sortButtonRef = useRef<HTMLButtonElement>(null)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
+  
+  // Calcular posição do dropdown
+  const updateDropdownPosition = () => {
+    if (sortButtonRef.current) {
+      const rect = sortButtonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right
+      })
+    }
+  }
+  
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node) &&
+          sortButtonRef.current && !sortButtonRef.current.contains(event.target as Node)) {
+        setShowSortOptions(false)
+      }
+    }
+    
+    if (showSortOptions) {
+      updateDropdownPosition()
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSortOptions])
 
-  // DEBUG VISUAL - Mostrar valores na interface
-  console.log('🔍 DEBUG SideFilter - Valores recebidos:', {
-    totalChats,
-    unreadChats,
-    readChats,
-    archivedChats,
-    groupChats,
-    favoriteChats,
-    hiddenChats
-  })
 
   // Definir tabs de filtros igual ao antigo
   const filterTabs = [
@@ -181,88 +218,152 @@ export default function SideFilter({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar conversas..."
-            className="w-full pl-10 pr-32 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 
+            className="w-full pl-10 pr-40 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 
                        dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        text-sm placeholder-gray-500 dark:placeholder-gray-400"
           />
           
-          {/* Ícones de opções de busca DENTRO do input */}
-          <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2">
-            {/* Ícone Chats */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSearchOptions(prev => ({ ...prev, searchInChats: !prev.searchInChats }))}
-              className={`p-1 rounded transition-colors ${
-                searchOptions.searchInChats 
-                  ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                  : 'text-gray-400 hover:text-gray-600'
+          {/* Loading indicator durante busca */}
+          {searchQuery.trim() && (searchOptions.searchInMessages || searchOptions.searchInContacts) && (
+            <div className="absolute right-44 top-1/2 -translate-y-1/2">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+              />
+            </div>
+          )}
+          
+          {/* Separador visual entre busca e filtros */}
+          <div className="absolute right-36 top-1/2 -translate-y-1/2 h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+          
+          {/* Ícones de Filtro e Ordenação */}
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {/* Ícone de Filtros Avançados */}
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`p-1.5 rounded-md transition-all duration-200 ${
+                showAdvancedFilters 
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-              title="Buscar em Chats (nomes)"
+              title="Filtros Avançados"
             >
-              <Users className="w-3.5 h-3.5" />
-            </motion.button>
+              <Filter className="w-3.5 h-3.5" />
+            </button>
             
-            {/* Ícone Mensagens */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSearchOptions(prev => ({ ...prev, searchInMessages: !prev.searchInMessages }))}
-              className={`p-1 rounded transition-colors ${
-                searchOptions.searchInMessages 
-                  ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-              title="Buscar em Mensagens"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-            </motion.button>
+            {/* Ícone de Ordenação com Dropdown */}
+            <div className="relative">
+              <button
+                ref={sortButtonRef}
+                onClick={() => setShowSortOptions(!showSortOptions)}
+                className={`p-1.5 rounded-md transition-all duration-200 ${
+                  showSortOptions 
+                    ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title={`Ordenar por: ${currentSort?.label}`}
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
             
-            {/* Ícone Contatos */}
+            {/* Ícone de Filtro Sem Fila */}
             <motion.button
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setSearchOptions(prev => ({ ...prev, searchInContacts: !prev.searchInContacts }))}
-              className={`p-1 rounded transition-colors ${
-                searchOptions.searchInContacts 
-                  ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                  : 'text-gray-400 hover:text-gray-600'
+              onClick={() => setShowOnlyWithoutQueue(!showOnlyWithoutQueue)}
+              className={`p-1.5 rounded-md transition-all duration-200 ${
+                showOnlyWithoutQueue 
+                  ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-              title="Buscar em Contatos (WAHA)"
+              title={showOnlyWithoutQueue ? "Mostrando apenas chats sem fila" : "Filtrar chats sem fila"}
             >
-              <User className="w-3.5 h-3.5" />
+              <motion.div
+                animate={{ 
+                  scale: showOnlyWithoutQueue ? [1, 1.2, 1] : 1,
+                  rotate: showOnlyWithoutQueue ? [0, 5, -5, 0] : 0
+                }}
+                transition={{ 
+                  duration: showOnlyWithoutQueue ? 0.6 : 0.2,
+                  ease: "easeInOut"
+                }}
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+              </motion.div>
             </motion.button>
           </div>
+        </div>
+        
+        {/* Debug visual da busca */}
+        {searchQuery.trim() && (
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs">
+            <div className="font-medium text-blue-700 dark:text-blue-300 mb-1">🔍 Debug da Busca:</div>
+            <div className="space-y-1 text-blue-600 dark:text-blue-400">
+              <div>Query: "{searchQuery}"</div>
+              <div>Opções: {Object.entries(searchOptions).filter(([_, active]) => active).map(([key]) => key).join(', ') || 'Nenhuma'}</div>
+              <div>Status: {searchOptions.searchInChats || searchOptions.searchInMessages || searchOptions.searchInContacts ? 'Busca Avançada' : 'Busca Simples'}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Ícones de opções de busca - FORA do input */}
+        <div className="flex items-center gap-2 mt-3 px-1">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Buscar em:</span>
           
-          {/* Ícone de filtros avançados CORRIGIDO */}
-          <button
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 ${
-              showAdvancedFilters 
-                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+          {/* Ícone Chats */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onSearchOptionsChange({ ...searchOptions, searchInChats: !searchOptions.searchInChats })}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              searchOptions.searchInChats 
+                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
+                : 'text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
             }`}
-            title="Filtros Avançados"
+            title="Buscar em Chats"
           >
-            <Settings className="w-3 h-3" />
-          </button>
+            <MessageCircle className="w-3 h-3" />
+            <span>Chats</span>
+          </motion.button>
+          
+          {/* Ícone Mensagens */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onSearchOptionsChange({ ...searchOptions, searchInMessages: !searchOptions.searchInMessages })}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              searchOptions.searchInMessages 
+                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
+                : 'text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+            }`}
+            title="Buscar em Mensagens"
+          >
+            <MessageCircle className="w-3 h-3" />
+            <span>Mensagens</span>
+          </motion.button>
+          
+          {/* Ícone Contatos */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onSearchOptionsChange({ ...searchOptions, searchInContacts: !searchOptions.searchInContacts })}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              searchOptions.searchInContacts 
+                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
+                : 'text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+            }`}
+            title="Buscar em Contatos (WAHA)"
+          >
+            <User className="w-3 h-3" />
+            <span>Contatos</span>
+          </motion.button>
         </div>
       </div>
 
       {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}
-      <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg mx-4 mb-2">
-        <div className="text-xs font-mono text-yellow-800 dark:text-yellow-200">
-          <div className="font-bold mb-1">📊 DEBUG - Contadores:</div>
-          <div className="grid grid-cols-2 gap-1">
-            <div>Total: <span className="font-bold text-blue-600">{totalChats}</span></div>
-            <div>Não lidas: <span className="font-bold text-red-600">{unreadChats}</span></div>
-            <div>Lidas: <span className="font-bold text-green-600">{readChats}</span></div>
-            <div>Arquivados: <span className="font-bold text-orange-600">{archivedChats}</span></div>
-            <div>Grupos: <span className="font-bold text-purple-600">{groupChats}</span></div>
-            <div>Favoritos: <span className="font-bold text-pink-600">{favoriteChats}</span></div>
-          </div>
-        </div>
-      </div>
+     
 
       {/* 🎯 TABS DE FILTROS PRINCIPAIS */}
       <div className="px-4 pb-4">
@@ -524,6 +625,51 @@ export default function SideFilter({
           />
         )}
       </AnimatePresence>
+      
+      {/* Portal para Dropdown de Ordenação */}
+      {showSortOptions && typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <motion.div
+            ref={sortDropdownRef}
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
+            style={{
+              top: dropdownPosition.top,
+              right: dropdownPosition.right
+            }}
+          >
+            <div className="p-1">
+              {sortOptions.map((option) => {
+                const IconComponent = option.icon
+                const isActive = sortBy === option.sortBy && sortOrder === option.sortOrder
+                
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => {
+                      setSortBy(option.sortBy as 'name' | 'date')
+                      setSortOrder(option.sortOrder as 'asc' | 'desc')
+                      setShowSortOptions(false)
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                      isActive
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <IconComponent className="w-3.5 h-3.5" />
+                    <span>{option.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }

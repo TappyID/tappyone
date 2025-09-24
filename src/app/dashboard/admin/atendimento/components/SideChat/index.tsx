@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './ScrollbarStyles.css'
-import { Loader2, MessageCircle, ArrowUp } from 'lucide-react'
+import { ArrowUp, Loader2, MessageCircle } from 'lucide-react'
 
 import ItemSideChat from './ItemSideChat'
 
@@ -249,9 +249,21 @@ export default function SideChat({
 
         {/* Lista de chats - Estilo vivaosim sem divisórias */}
         {!isLoading && (
-          <div className="space-y-1 p-2">
-            <AnimatePresence mode="popLayout">
-              {chats.map((chat, index) => (
+          <>
+            {chats.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <MessageCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  Nenhum chat encontrado
+                </p>
+                <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                  Tente ajustar os filtros ou adicionar chats
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1 p-2">
+                <AnimatePresence mode="popLayout">
+                  {chats.map((chat, index) => (
                 <ItemSideChat
                   key={chat.id}
                   chat={{
@@ -266,9 +278,11 @@ export default function SideChat({
                   onToggleHidden={onToggleHidden}
                   onDelete={onDelete}
                 />
-              ))}
-            </AnimatePresence>
-          </div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </>
         )}
 
         {/* Trigger do scroll infinito */}

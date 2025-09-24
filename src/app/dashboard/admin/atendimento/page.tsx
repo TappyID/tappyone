@@ -14,6 +14,7 @@ import { useContatoData } from '@/hooks/useContatoData'
 import useChatsOverview from '@/hooks/useChatsOverview'
 import { useFiltersData } from '@/hooks/useFiltersData'
 import useMessagesData from '@/hooks/useMessagesData'
+import { useSearchData } from '@/hooks/useSearchData'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
 import TransferirAtendimentoModal from '../atendimentos/components/modals/TransferirAtendimentoModal'
@@ -80,6 +81,13 @@ export default function AtendimentoPage() {
   const [selectedTag, setSelectedTag] = useState('todas')
   const [selectedFila, setSelectedFila] = useState('todas')
   const [activeFilter, setActiveFilter] = useState('all') // Novo estado para filtros de tabs
+  
+  // Estados para opções de busca
+  const [searchOptions, setSearchOptions] = useState({
+    searchInChats: true,
+    searchInMessages: false,
+    searchInContacts: false
+  })
   
   // Estados para filtros avançados
   const [selectedKanbanStatus, setSelectedKanbanStatus] = useState('todos')
@@ -256,23 +264,16 @@ export default function AtendimentoPage() {
   const {
     chats: overviewChats,
     loading: loadingOverview,
-    error: errorOverview,
-    refreshChats: refreshOverview,
-    loadMoreChats: loadMoreFromAPI,
-    hasMore: hasMoreFromAPI,
-    isLoadingMore: isLoadingMoreFromAPI,
-    markChatAsRead,
-    markChatAsUnread,
     totalChatsCount,
     unreadChatsCount,
     readNoReplyCount,
     groupChatsCount
   } = useChatsOverview()
 
+  // Hook para busca avançada
+  const searchResults = useSearchData(searchQuery, searchOptions)
 
-  // Dados dos filtros agora vêm do useFiltersData hook
-
-  // Reset da paginação quando filtros mudam
+  // Reset displayedChatsCount quando há filtros
   useEffect(() => {
     if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') {
       setDisplayedChatsCount(10) // Reset para 10 quando há filtros
@@ -370,12 +371,75 @@ export default function AtendimentoPage() {
   const transformedChats = useMemo(() => {
     let filteredChats = overviewChats
     
-    // Aplicar filtro de busca
+    // Aplicar filtro de busca avançada
     if (searchQuery.trim()) {
-      filteredChats = overviewChats.filter(chat => 
-        chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        chat.lastMessage?.body?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      console.log('🔍 [transformedChats] Aplicando busca:', {
+        searchQuery,
+        searchOptions,
+        searchResults: {
+          chats: searchResults.chats.length,
+          messages: searchResults.messages.length,
+          contacts: searchResults.contacts.length,
+          loading: searchResults.loading
+        }
+      })
+
+      // Se qualquer opção de busca está ativa, usar resultados da busca avançada
+      if (searchOptions.searchInChats || searchOptions.searchInMessages || searchOptions.searchInContacts) {
+        console.log('🔍 [transformedChats] Usando busca avançada')
+        const searchResultIds = new Set()
+        
+        // Adicionar IDs dos chats encontrados
+        if (searchOptions.searchInChats) {
+          console.log('🔍 [transformedChats] Adicionando chats encontrados:', searchResults.chats.length)
+          searchResults.chats.forEach(chat => {
+            console.log('🔍 [transformedChats] Chat encontrado:', chat.id, chat.name)
+            searchResultIds.add(chat.id)
+          })
+        }
+        
+        // Adicionar IDs dos chats que têm mensagens encontradas
+        if (searchOptions.searchInMessages) {
+          console.log('🔍 [transformedChats] Adicionando chats com mensagens encontradas:', searchResults.messages.length)
+          searchResults.messages.forEach(msg => {
+            console.log('🔍 [transformedChats] Mensagem encontrada no chat:', msg.chatId)
+            searchResultIds.add(msg.chatId)
+          })
+        }
+        
+        // Adicionar IDs dos contatos encontrados (se são chats existentes)
+        if (searchOptions.searchInContacts) {
+          console.log('🔍 [transformedChats] Adicionando contatos encontrados:', searchResults.contacts.length)
+          searchResults.contacts.forEach(contact => {
+            // Tentar encontrar chat correspondente ao contato
+            const matchingChat = overviewChats.find(chat => 
+              chat.id === contact.id || 
+              chat.id.includes(contact.id?.replace('@c.us', '')) ||
+              contact.id?.includes(chat.id?.replace('@c.us', ''))
+            )
+            if (matchingChat) {
+              console.log('🔍 [transformedChats] Contato encontrado corresponde ao chat:', matchingChat.id)
+              searchResultIds.add(matchingChat.id)
+            }
+          })
+        }
+        
+        console.log('🔍 [transformedChats] IDs de chats para filtrar:', Array.from(searchResultIds))
+        
+        // Filtrar chats pelos IDs encontrados
+        filteredChats = overviewChats.filter(chat => searchResultIds.has(chat.id))
+        
+        console.log('🔍 [transformedChats] Chats filtrados pela busca avançada:', filteredChats.length)
+      } else {
+        console.log('🔍 [transformedChats] Nenhuma opção de busca ativa - usando busca simples')
+        // Busca simples apenas em chats (comportamento padrão)
+        filteredChats = overviewChats.filter(chat => 
+          chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          chat.lastMessage?.body?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        
+        console.log('🔍 [transformedChats] Chats filtrados pela busca simples:', filteredChats.length)
+      }
     }
     
     // Aplicar filtro de tag
@@ -431,7 +495,7 @@ export default function AtendimentoPage() {
         fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
       }
     })
-  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila, favoriteChats, archivedChats, hiddenChats])
+  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila, favoriteChats, archivedChats, hiddenChats, searchOptions, searchResults])
 
 
   // Função para carregar mais chats (agora usa paginação real da API)
@@ -440,8 +504,8 @@ export default function AtendimentoPage() {
       searchQuery: searchQuery.trim(),
       selectedTag,
       selectedFila,
-      hasMoreFromAPI,
-      isLoadingMoreFromAPI
+      isLoadingMoreChats,
+      displayedChatsCount
     })
     
     // Não carregar mais se há filtros ativos (busca, tag, fila) - nesse caso usa paginação local
@@ -465,10 +529,8 @@ export default function AtendimentoPage() {
     
     // Sem filtros - usar paginação real da API
     console.log('🌐 Sem filtros - usando paginação real da API')
-    if (hasMoreFromAPI && !isLoadingMoreFromAPI) {
-      await loadMoreFromAPI()
-    }
-  }, [searchQuery, selectedTag, selectedFila, hasMoreFromAPI, isLoadingMoreFromAPI, loadMoreFromAPI, isLoadingMoreChats, displayedChatsCount, overviewChats.length])
+    // TODO: Implementar paginação real da API quando necessário
+  }, [searchQuery, selectedTag, selectedFila, isLoadingMoreChats, displayedChatsCount, overviewChats.length])
 
   // Função helper para obter URL base
   const getWahaUrl = useCallback((path: string = '') => {
@@ -765,11 +827,11 @@ export default function AtendimentoPage() {
 
   const { contatos: contatosData, loading: loadingContatos } = useContatoData(activeChatIds)
 
-  // Usar dados já processados do useChatsOverview e adicionar dados extras dos contatos
+  // Usar dados já processados do transformedChats (que inclui busca) e adicionar dados extras dos contatos
   const processedChats = useMemo(() => {
-    console.log('🔍 [DEBUG] processedChats - activeChats entrada:', activeChats.length)
+    console.log('🔍 [DEBUG] processedChats - transformedChats entrada:', transformedChats.length)
     
-    let result = activeChats.map((chat: any) => {
+    let result = transformedChats.map((chat: any) => {
       // Debug para verificar unreadCount da WAHA
       if (chat.unreadCount > 0) {
         console.log('🔍 DEBUG WAHA - Chat com mensagens não lidas:', {
@@ -945,13 +1007,12 @@ export default function AtendimentoPage() {
     })
     
     return result
-  }, [activeChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter, selectedTag, selectedFila, selectedKanbanStatus, selectedTicketStatus, selectedPriceRange])
+  }, [transformedChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter, selectedTag, selectedFila, selectedKanbanStatus, selectedTicketStatus, selectedPriceRange])
 
   // Expor funções para testes no console (só uma vez)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).testMarkAsRead = markChatAsRead
-      (window as any).testMarkAsUnread = markChatAsUnread
+      // TODO: Implementar funções de marcar como lido/não lido
       
       // Função para testar API da WAHA diretamente
       (window as any).testWahaAPI = async () => {
@@ -1040,8 +1101,56 @@ export default function AtendimentoPage() {
               // Controle do filtro ativo
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}
+              // Opções de busca
+              searchOptions={searchOptions}
+              onSearchOptionsChange={setSearchOptions}
             />
           </div>
+
+          {/* Debug visual dos resultados */}
+          {searchQuery.trim() && (
+            <div className="mx-4 mb-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs">
+              <div className="font-medium text-yellow-700 dark:text-yellow-300 mb-2">📊 Resultados da Busca:</div>
+              <div className="grid grid-cols-2 gap-2 text-yellow-600 dark:text-yellow-400">
+                <div>
+                  <div className="font-medium">Hook useSearchData:</div>
+                  <div>• Chats: {searchResults.chats.length}</div>
+                  <div>• Mensagens: {searchResults.messages.length}</div>
+                  <div>• Contatos: {searchResults.contacts.length}</div>
+                  <div>• Loading: {searchResults.loading ? 'Sim' : 'Não'}</div>
+                  {searchResults.chats.length > 0 && (
+                    <div className="mt-1">
+                      <div className="font-medium">IDs encontrados:</div>
+                      {searchResults.chats.slice(0, 3).map(chat => (
+                        <div key={chat.id} className="truncate">• {chat.id} - {chat.name}</div>
+                      ))}
+                      {searchResults.chats.length > 3 && <div>• ... e mais {searchResults.chats.length - 3}</div>}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium">Chats Filtrados:</div>
+                  <div>• Total original: {overviewChats.length}</div>
+                  <div>• Após filtro: {processedChats.length}</div>
+                  <div>• Tipo: {searchOptions.searchInChats || searchOptions.searchInMessages || searchOptions.searchInContacts ? 'Avançada' : 'Simples'}</div>
+                  {processedChats.length > 0 && (
+                    <div className="mt-1">
+                      <div className="font-medium">Chats exibidos:</div>
+                      {processedChats.slice(0, 3).map(chat => (
+                        <div key={chat.id} className="truncate">• {chat.id} - {chat.name}</div>
+                      ))}
+                      {processedChats.length > 3 && <div>• ... e mais {processedChats.length - 3}</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {searchResults.error && (
+                <div className="mt-2 text-red-600 dark:text-red-400">
+                  ❌ Erro: {searchResults.error}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Lista de Chats */}
           <div className="flex-1 overflow-hidden">
@@ -1049,32 +1158,24 @@ export default function AtendimentoPage() {
               chats={processedChats}
               selectedChatId={selectedChatId}
               onSelectChat={setSelectedChatId}
-              isLoading={loadingOverview}
+              isLoading={loadingOverview && activeFilter === 'all'}
               onLoadMore={handleLoadMoreChats}
               hasMoreChats={(() => {
-                // Se há filtros, usar paginação local
+                // Para filtros específicos (favoritos, arquivados, ocultos), nunca há mais para carregar
+                if (['favorites', 'archived', 'hidden'].includes(activeFilter)) {
+                  return false
+                }
+                
+                // Se há filtros de busca, usar paginação local
                 if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') {
                   const localHasMore = displayedChatsCount < overviewChats.length
-                  console.log('🔍 hasMoreChats (filtros ativos):', {
-                    searchQuery: searchQuery.trim(),
-                    selectedTag,
-                    selectedFila,
-                    displayedChatsCount,
-                    overviewChatsLength: overviewChats.length,
-                    localHasMore
-                  })
                   return localHasMore
                 }
                 
-                // Sem filtros, usar hasMore da API
-                console.log('🌐 hasMoreChats (sem filtros - API):', {
-                  hasMoreFromAPI,
-                  isLoadingMoreFromAPI,
-                  processedChatsLength: processedChats.length
-                })
-                return hasMoreFromAPI
+                // Se não há filtros, usar paginação local
+                return displayedChatsCount < overviewChats.length
               })()}
-              isLoadingMore={searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas' ? isLoadingMoreChats : isLoadingMoreFromAPI}
+              isLoadingMore={isLoadingMoreChats}
               onTagsClick={(chatId, e) => {
                 e.stopPropagation()
                 console.log('🏷️ Tags clicadas para chat:', chatId)

@@ -248,31 +248,25 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
           else ackDistribution[ack as keyof typeof ackDistribution]++
         }
       })
-      console.log('📊 Distribuição de ACK (últimas mensagens recebidas):', ackDistribution)
+      console.log(' Distribuição de ACK (últimas mensagens recebidas):', ackDistribution)
       
-      // Contar chats não lidos - LÓGICA ULTRA RESTRITIVA
+      // Contar chats não lidos - LÓGICA ULTRA RESTRITIVA (EXCLUINDO GRUPOS)
       // Vamos ser MUITO mais rigorosos: só conta como não lida se:
       // 1. Última mensagem não é nossa (fromMe: false)
       // 2. E tem ack = 2 (entregue) APENAS (sem ack pode ser antigo)
+      // 3. NÃO é grupo (@g.us)
       const unreadCount = data.filter((chat: any) => {
         if (!chat.lastMessage) return false
         
         // Se a última mensagem é nossa, não conta como não lida
         if (chat.lastMessage.fromMe) return false
         
+        // Excluir grupos da contagem de não lidas
+        if (chat.id?.includes('@g.us')) return false
+        
         // Só conta como não lida se ack = 2 EXATAMENTE (entregue mas não lida)
         // ack: 1 = enviada, 2 = entregue, 3 = lida, 4 = visualizada
         const isUnread = chat.lastMessage.ack === 2
-        
-        if (isUnread) {
-          console.log('🔍 Chat não lido encontrado (APENAS ack=2):', {
-            name: chat.name,
-            lastMessage: chat.lastMessage.body?.substring(0, 50) + '...',
-            fromMe: chat.lastMessage.fromMe,
-            ack: chat.lastMessage.ack,
-            timestamp: new Date(chat.lastMessage.timestamp * 1000).toLocaleString()
-          })
-        }
         
         return isUnread
       }).length
@@ -290,10 +284,6 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
         return wasRead
       }).length
       
-      console.log(`📊 Total de chats no WhatsApp: ${totalCount}`)
-      console.log(`📊 Chats não lidos (ack=2 ou sem ack): ${unreadCount}`)
-      console.log(`📊 Chats lidos mas não respondidos (ack=3/4): ${readNoReply}`)
-      console.log(`📊 Grupos (@g.us): ${groupsCount}`)
       
       setTotalChatsCount(totalCount)
       setUnreadChatsCount(unreadCount)

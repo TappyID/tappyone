@@ -239,54 +239,40 @@ export function ActiveConnectionsTable({
               messages: filasCount
             }
             
-            // Buscar nomes das filas da modulation (síncrono para garantir dados corretos)
+            // Buscar nomes das filas da modulation (assíncrono para não travar)
             if (Array.isArray(modulation.selectedFilas)) {
               const filaIds = modulation.selectedFilas
-              assignedQueues = await fetchFilasNames(filaIds)
+              // ⚡ OTIMIZAÇÃO: Buscar filas em background sem travar a UI
+              fetchFilasNames(filaIds).then(names => {
+                // Atualizar apenas esta conexão específica
+                setConnections(prev => prev.map(conn => 
+                  conn.sessionName === session.name 
+                    ? { ...conn, assignedQueues: names }
+                    : conn
+                ))
+              }).catch(err => {
+                console.warn('Erro ao buscar nomes das filas:', err)
+              })
+              
+              // Usar IDs temporariamente
+              assignedQueues = filaIds.map(id => `Fila ${id.slice(0,8)}`)
             }
           } catch (err) {
             console.warn('Erro ao parsear modulation:', err)
           }
         }
 
-        // Se não tem modulation (ou está vazia) e sessão está ativa, buscar dados do WAHA como fallback
+        // Se não tem modulation (ou está vazia) e sessão está ativa, usar dados básicos sem carregar tudo
         const hasValidModulation = stats && (stats.chats > 0 || stats.contacts > 0 || stats.groups > 0)
         
         if (!hasValidModulation && session.status === 'WORKING') {
-          try {
-            const [chatsRes, contactsRes, groupsRes] = await Promise.all([
-              fetch(`/api/whatsapp/chats`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              }).catch(() => null),
-              fetch(`/api/whatsapp/contacts`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              }).catch(() => null),
-              fetch(`/api/whatsapp/groups`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              }).catch(() => null)
-            ])
-
-            const chats = chatsRes?.ok ? await chatsRes.json() : []
-            const contacts = contactsRes?.ok ? await contactsRes.json() : []
-            const groups = groupsRes?.ok ? await groupsRes.json() : []
-
-            stats = {
-              chats: Array.isArray(chats) ? chats.length : 0,
-              contacts: Array.isArray(contacts) ? contacts.length : 0,
-              groups: Array.isArray(groups) ? groups.length : 0,
-              messages: 0
-            }
-          } catch (err) {
-            console.warn('Erro ao buscar estatísticas do WAHA:', err)
+          // ⚡ OTIMIZAÇÃO: Não carregar dados completos, usar estimativa básica
+          console.log('📊 [STATS] Usando estatísticas básicas sem carregar dados completos')
+          stats = {
+            chats: 0, // Será mostrado como "Sem dados" na tabela
+            contacts: 0,
+            groups: 0,
+            messages: 0
           }
         }
 

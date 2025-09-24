@@ -421,21 +421,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         
         {/* Ícone de mensagens removido - usando só o pin abaixo do horário */}
 
-        {/* Transferir - IGUAL AO ANTIGO */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (onTransfer) {
-              onTransfer(chat.id)
-            } else {
-              console.log('onTransfer não implementado para:', chat.id)
-            }
-          }}
-          className="p-1.5 text-slate-400 hover:text-blue-500 rounded-lg transition-colors"
-          title="Transferir conversa"
-        >
-          <UserPlus className="w-3 h-3" />
-        </button>
+     
         
         {/* Ocultar/Mostrar - IGUAL AO ANTIGO */}
         <button
