@@ -46,13 +46,14 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  arrayMove
 } from '@dnd-kit/sortable'
 
 // Configuração de paginação para performance
 const CARDS_PER_PAGE = 50 // Carregar 50 cards por vez
 const MAX_VISIBLE_CARDS = 100 // Máximo de cards visíveis por coluna
 
-export default function QuadroPage() {
+function QuadroPage() {
   const { theme } = useTheme()
   const { user } = useAuth()
   const params = useParams()
@@ -196,11 +197,13 @@ export default function QuadroPage() {
   // Dados vazios para manter compatibilidade com componentes
   const emptyData = {}
 
-  // DnD Sensors
+  // DnD Sensors - Configuração ultra sensível e fluida
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 1, // Mínimo possível - quase instantâneo
+        tolerance: 0, // Zero tolerância - máxima sensibilidade
+        delay: 0, // Zero delay
       },
     }),
     useSensor(KeyboardSensor)
@@ -406,17 +409,34 @@ export default function QuadroPage() {
     const activeId = active.id as string
     const overId = over.id as string
 
-    // Se está movendo para uma coluna
-    if (over.data.current?.type === 'column' || overId !== activeId) {
-      const newColumnId = over.data.current?.type === 'column' 
-        ? overId 
-        : cardColumnMapping[overId] || colunas[0].id
+    // 🔄 Verificar se está reordenando colunas
+    const isColumnDrag = colunas.some(col => col.id === activeId)
+    
+    if (isColumnDrag && activeId !== overId) {
+      // Reordenar colunas
+      const oldIndex = colunas.findIndex(col => col.id === activeId)
+      const newIndex = colunas.findIndex(col => col.id === overId)
+      
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const newColunas = arrayMove(colunas, oldIndex, newIndex)
+        setColunas(newColunas)
+        
+        // Opcional: Salvar nova ordem no backend
+        console.log('🔄 Nova ordem das colunas:', newColunas.map(c => c.nome))
+      }
+    } else if (!isColumnDrag) {
+      // Lógica original para mover cards
+      if (over.data.current?.type === 'column' || overId !== activeId) {
+        const newColumnId = over.data.current?.type === 'column' 
+          ? overId 
+          : cardColumnMapping[overId] || colunas[0].id
 
-      // Atualizar mapeamento
-      setCardColumnMapping(prev => ({
-        ...prev,
-        [activeId]: newColumnId
-      }))
+        // Atualizar mapeamento
+        setCardColumnMapping(prev => ({
+          ...prev,
+          [activeId]: newColumnId
+        }))
+      }
     }
   }
 
@@ -804,3 +824,5 @@ export default function QuadroPage() {
     </div>
   )
 }
+
+export default QuadroPage

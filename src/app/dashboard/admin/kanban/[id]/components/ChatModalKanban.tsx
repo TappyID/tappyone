@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import './styles.css' // Importar estilos customizados
-import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Ticket, UserCircle, StickyNote } from 'lucide-react'
+import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Ticket, UserCircle, StickyNote, Edit3 } from 'lucide-react'
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
@@ -18,6 +18,7 @@ import TagsBottomSheet from '../../../atendimento/components/FooterChatArea/Bott
 import AnotacoesBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 import TicketBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
 import AssinaturaBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AssinaturaBottomSheet'
+import LeadEditSidebar from './ProfileSidebar/LeadEditSidebar'
 import ExpandableDataSection from './ProfileSidebar/ExpandableDataSection'
 import ProfileAvatar from './ProfileSidebar/ProfileAvatar'
 // import ProfileSidebar from './ProfileSidebar/index'
@@ -38,7 +39,9 @@ const ProfileSidebar = ({
   onAgendamentoClick,
   onTicketsClick, 
   onAnotacoesClick, 
-  onAssinaturaClick 
+  onAssinaturaClick,
+  onEditLead, // ✏️ Nova prop para editar lead
+  hasLeadEditOpen // 🎨 Prop para ajustar bordas
 }) => {
   // Estados para controlar expansão de cada seção
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
@@ -137,7 +140,9 @@ const ProfileSidebar = ({
   return (
     <div className={`w-1/3 flex flex-col transition-all duration-300 ${
       theme === 'dark' ? 'bg-slate-800' : 'bg-gray-50'
-    } rounded-r-2xl border-l ${
+    } border-l ${
+      hasLeadEditOpen ? '' : 'rounded-r-2xl'
+    } ${
       theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
     }`}>
       {/* Header */}
@@ -205,6 +210,19 @@ const ProfileSidebar = ({
           }`}>
             {contactNumber}
           </p>
+          
+          {/* Botão Editar Lead */}
+          <button
+            onClick={onEditLead}
+            className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              theme === 'dark'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            <Edit3 className="w-4 h-4" />
+            <span className="text-sm font-medium">Editar Lead</span>
+          </button>
         </div>
 
         {/* Botões de Ação */}
@@ -223,6 +241,39 @@ const ProfileSidebar = ({
             <span>Gerenciar Tags</span>
           </button>
           
+          {/* Seção Expansível - Tags */}
+          {expandedSection === 'tags' && (
+            <div className={`mt-2 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h4 className="font-semibold text-blue-500 mb-3 flex items-center gap-2">
+                <Tag className="w-4 h-4" />
+                Tags ({tagsData.length})
+              </h4>
+              <div className="space-y-2">
+                {loadingData.tags ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : tagsData.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {tagsData.map((tag) => (
+                      <span 
+                        key={tag.id}
+                        className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full flex items-center gap-1"
+                        style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                      >
+                        {tag.nome}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Nenhuma tag encontrada
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
           <button onClick={() => toggleSection('orcamentos')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
@@ -236,6 +287,65 @@ const ProfileSidebar = ({
             </div>
             <span>Gerenciar Orçamentos</span>
           </button>
+          
+          {/* Seção Expansível - Orçamentos */}
+          {expandedSection === 'orcamentos' && (
+            <div className={`mt-2 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h4 className="font-semibold text-green-500 mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Orçamentos ({orcamentosData.length})
+              </h4>
+              <div className="space-y-3">
+                {loadingData.orcamentos ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                  </div>
+                ) : orcamentosData.length > 0 ? (
+                  orcamentosData.map((orcamento) => (
+                    <div key={orcamento.id} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-200'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h5 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            {orcamento.titulo || 'Orçamento sem título'}
+                          </h5>
+                          {orcamento.descricao && (
+                            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {orcamento.descricao}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-500">
+                            R$ {(orcamento.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                          {orcamento.status && (
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                              orcamento.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                              orcamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {orcamento.status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {orcamento.itens && orcamento.itens.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-500 mb-1">
+                            {orcamento.itens.length} item(ns)
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Nenhum orçamento encontrado
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
           
           <button onClick={() => toggleSection('agendamentos')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
@@ -251,6 +361,65 @@ const ProfileSidebar = ({
             <span>Gerenciar Agendamentos</span>
           </button>
           
+          {/* Seção Expansível - Agendamentos */}
+          {expandedSection === 'agendamentos' && (
+            <div className={`mt-2 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h4 className="font-semibold text-purple-500 mb-3 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Agendamentos ({agendamentosData.length})
+              </h4>
+              <div className="space-y-3">
+                {loadingData.agendamentos ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : agendamentosData.length > 0 ? (
+                  agendamentosData.map((agendamento) => (
+                    <div key={agendamento.id} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-200'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h5 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            {agendamento.titulo || 'Agendamento'}
+                          </h5>
+                          {agendamento.descricao && (
+                            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {agendamento.descricao}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-purple-500">
+                            {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleString('pt-BR') : 'Sem data'}
+                          </div>
+                          {agendamento.status && (
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                              agendamento.status === 'confirmado' ? 'bg-green-100 text-green-800' :
+                              agendamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {agendamento.status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {agendamento.local && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-500">
+                            📍 {agendamento.local}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Nenhum agendamento encontrado
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
           <button onClick={() => toggleSection('anotacoes')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
@@ -264,6 +433,63 @@ const ProfileSidebar = ({
             </div>
             <span>Gerenciar Anotações</span>
           </button>
+          
+          {/* Seção Expansível - Anotações */}
+          {expandedSection === 'anotacoes' && (
+            <div className={`mt-2 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h4 className="font-semibold text-yellow-500 mb-3 flex items-center gap-2">
+                <StickyNote className="w-4 h-4" />
+                Anotações ({anotacoesData.length})
+              </h4>
+              <div className="space-y-3">
+                {loadingData.anotacoes ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500"></div>
+                  </div>
+                ) : anotacoesData.length > 0 ? (
+                  anotacoesData.map((anotacao) => (
+                    <div key={anotacao.id} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-200'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h5 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            {anotacao.titulo || 'Anotação'}
+                          </h5>
+                          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {anotacao.conteudo || anotacao.descricao || 'Sem conteúdo'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500">
+                            {anotacao.criadoEm ? new Date(anotacao.criadoEm).toLocaleDateString('pt-BR') : 'Sem data'}
+                          </div>
+                          {anotacao.tipo && (
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                              anotacao.tipo === 'importante' ? 'bg-red-100 text-red-800' :
+                              anotacao.tipo === 'lembrete' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {anotacao.tipo}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {anotacao.categoria && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-500">
+                            🏷️ {anotacao.categoria}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Nenhuma anotação encontrada
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
           
           <button onClick={() => toggleSection('tickets')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
@@ -279,207 +505,75 @@ const ProfileSidebar = ({
             <span>Gerenciar Tickets</span>
           </button>
           
+          {/* Seção Expansível - Tickets */}
+          {expandedSection === 'tickets' && (
+            <div className={`mt-2 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h4 className="font-semibold text-red-500 mb-3 flex items-center gap-2">
+                <Ticket className="w-4 h-4" />
+                Tickets ({ticketsData.length})
+              </h4>
+              <div className="space-y-3">
+                {loadingData.tickets ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+                  </div>
+                ) : ticketsData.length > 0 ? (
+                  ticketsData.map((ticket) => (
+                    <div key={ticket.id} className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-200'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h5 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            #{ticket.numero || ticket.id} - {ticket.titulo || ticket.assunto || 'Ticket'}
+                          </h5>
+                          {ticket.descricao && (
+                            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {ticket.descricao}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className={`px-2 py-1 text-white text-xs rounded-full ${
+                            ticket.status === 'aberto' ? 'bg-red-500' :
+                            ticket.status === 'em_andamento' ? 'bg-yellow-500' :
+                            ticket.status === 'resolvido' ? 'bg-green-500' :
+                            'bg-gray-500'
+                          }`}>
+                            {ticket.status || 'Aberto'}
+                          </span>
+                          {ticket.prioridade && (
+                            <div className="mt-1">
+                              <span className={`inline-block px-2 py-1 text-xs rounded ${
+                                ticket.prioridade === 'alta' ? 'bg-red-100 text-red-800' :
+                                ticket.prioridade === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {ticket.prioridade}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {ticket.categoria && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-500">
+                            🏷️ {ticket.categoria}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Nenhum ticket encontrado
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
          
         </div>
 
         {/* Seções Expansíveis */}
-        {expandedSection === 'tags' && (
-          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h4 className="font-semibold text-blue-500 mb-3 flex items-center gap-2">
-              <Tag className="w-4 h-4" />
-              Tags ({tagsData.length})
-            </h4>
-            <div className="space-y-2">
-              {loadingData.tags ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                </div>
-              ) : tagsData.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {tagsData.map((tag) => (
-                    <span 
-                      key={tag.id}
-                      className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full flex items-center gap-1"
-                      style={{ backgroundColor: tag.cor || '#3B82F6' }}
-                    >
-                      {tag.nome}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Nenhuma tag encontrada
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {expandedSection === 'orcamentos' && (
-          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h4 className="font-semibold text-green-500 mb-3 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Orçamentos ({orcamentosData.length})
-            </h4>
-            <div className="space-y-3">
-              {loadingData.orcamentos ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
-                </div>
-              ) : orcamentosData.length > 0 ? (
-                orcamentosData.map((orcamento) => (
-                  <div key={orcamento.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">#{orcamento.numero || orcamento.id}</span>
-                      <span className="text-green-600 font-semibold">
-                        R$ {(orcamento.valorTotal || orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">{orcamento.titulo || orcamento.descricao || 'Orçamento'}</p>
-                    {orcamento.status && (
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full mt-2 ${
-                        orcamento.status === 'aprovado' ? 'bg-green-100 text-green-800' :
-                        orcamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {orcamento.status}
-                      </span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Nenhum orçamento encontrado
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {expandedSection === 'agendamentos' && (
-          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h4 className="font-semibold text-purple-500 mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Agendamentos ({agendamentosData.length})
-            </h4>
-            <div className="space-y-3">
-              {loadingData.agendamentos ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
-                </div>
-              ) : agendamentosData.length > 0 ? (
-                agendamentosData.map((agendamento) => (
-                  <div key={agendamento.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{agendamento.titulo || agendamento.assunto || 'Agendamento'}</span>
-                      <span className="text-sm text-gray-500">
-                        {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleDateString('pt-BR') : 
-                         agendamento.data ? new Date(agendamento.data).toLocaleDateString('pt-BR') : 'Data não definida'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">{agendamento.descricao || agendamento.observacoes || ''}</p>
-                    {agendamento.status && (
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full mt-2 ${
-                        agendamento.status === 'confirmado' ? 'bg-green-100 text-green-800' :
-                        agendamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {agendamento.status}
-                      </span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Nenhum agendamento encontrado
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {expandedSection === 'anotacoes' && (
-          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h4 className="font-semibold text-yellow-500 mb-3 flex items-center gap-2">
-              <StickyNote className="w-4 h-4" />
-              Anotações ({anotacoesData.length})
-            </h4>
-            <div className="space-y-3">
-              {loadingData.anotacoes ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500"></div>
-                </div>
-              ) : anotacoesData.length > 0 ? (
-                anotacoesData.map((anotacao) => (
-                  <div key={anotacao.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
-                    <p className="text-sm">{anotacao.conteudo || anotacao.texto || anotacao.descricao}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-gray-500">
-                        {anotacao.criadoEm ? new Date(anotacao.criadoEm).toLocaleString('pt-BR') :
-                         anotacao.dataHora ? new Date(anotacao.dataHora).toLocaleString('pt-BR') :
-                         anotacao.data ? new Date(anotacao.data).toLocaleString('pt-BR') : ''}
-                      </span>
-                      {anotacao.autor && (
-                        <span className="text-xs text-gray-400">por {anotacao.autor}</span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Nenhuma anotação encontrada
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {expandedSection === 'tickets' && (
-          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h4 className="font-semibold text-red-500 mb-3 flex items-center gap-2">
-              <Ticket className="w-4 h-4" />
-              Tickets ({ticketsData.length})
-            </h4>
-            <div className="space-y-3">
-              {loadingData.tickets ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
-                </div>
-              ) : ticketsData.length > 0 ? (
-                ticketsData.map((ticket) => (
-                  <div key={ticket.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">#{ticket.numero || ticket.id}</span>
-                      <span className={`px-2 py-1 text-white text-xs rounded-full ${
-                        ticket.status === 'aberto' ? 'bg-red-500' :
-                        ticket.status === 'em_andamento' ? 'bg-yellow-500' :
-                        ticket.status === 'resolvido' ? 'bg-green-500' :
-                        'bg-gray-500'
-                      }`}>
-                        {ticket.status || 'Aberto'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">{ticket.titulo || ticket.assunto || ticket.descricao}</p>
-                    {ticket.prioridade && (
-                      <span className={`inline-block px-2 py-1 text-xs rounded mt-2 ${
-                        ticket.prioridade === 'alta' ? 'bg-red-100 text-red-800' :
-                        ticket.prioridade === 'media' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        Prioridade {ticket.prioridade}
-                      </span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Nenhum ticket encontrado
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {expandedSection === 'assinaturas' && (
           <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
             <h4 className="font-semibold text-indigo-500 mb-3 flex items-center gap-2">
@@ -557,6 +651,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   const [showQuickActionsSidebar, setShowQuickActionsSidebar] = useState(false)
   const [showEmojisModal, setShowEmojisModal] = useState(false)
   const [showProfileSidebar, setShowProfileSidebar] = useState(false)
+  const [showLeadEditSidebar, setShowLeadEditSidebar] = useState(false)
   
   // Estados dos Bottom Sheets
   const [showAgendamentoSheet, setShowAgendamentoSheet] = useState(false)
@@ -740,7 +835,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
         <div className={`flex flex-col overflow-hidden transition-all duration-300 ${
           showProfileSidebar ? 'w-2/3' : 'w-full'
         } ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'} ${
-          showProfileSidebar ? 'rounded-l-2xl' : 'rounded-2xl'
+          showProfileSidebar ? 'rounded-l-2xl rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
         }`}>
         
         {/* Header do Modal */}
@@ -1277,6 +1372,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
           columnColor={columnColor} // 🎨 Passando a cor da coluna para scroll
           profileImage={profileImage} // 📸 Passando a foto de perfil
           counts={counts} // 📊 Passando os indicadores
+          hasLeadEditOpen={showLeadEditSidebar} // 🎨 Para ajustar bordas
           onTagsClick={() => {
             setShowProfileSidebar(false)
             setShowTagsSheet(true)
@@ -1301,7 +1397,18 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             setShowProfileSidebar(false)
             setShowAssinaturaSheet(true)
           }}
+          onEditLead={() => setShowLeadEditSidebar(true)}
         />
+        
+        {/* LeadEditSidebar como extensão lateral */}
+        {showLeadEditSidebar && (
+          <LeadEditSidebar
+            isOpen={showLeadEditSidebar}
+            onClose={() => setShowLeadEditSidebar(false)}
+            theme={theme}
+            chatId={chatId}
+          />
+        )}
       </div>
       
       {/* Bottom Sheets */}
@@ -1352,6 +1459,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
           chatId={chatId}
         />
       )}
+
     </div>
   )
 }

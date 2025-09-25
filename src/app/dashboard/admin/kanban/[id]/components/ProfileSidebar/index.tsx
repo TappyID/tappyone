@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Tag, DollarSign, Calendar, StickyNote, Ticket, FileText, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, Tag, DollarSign, Calendar, StickyNote, Ticket, FileText, ChevronDown, ChevronUp, Edit3 } from 'lucide-react'
 
 // Componente de Seção Expansível
 const ExpandableSection = ({ 
@@ -59,7 +59,8 @@ const ProfileSidebar = ({
   theme, 
   contactName, 
   contactNumber, 
-  counts
+  counts,
+  onEditLead
 }) => {
   if (!isOpen) return null
   
@@ -155,6 +156,19 @@ const ProfileSidebar = ({
           }`}>
             {contactNumber || 'Sem número'}
           </p>
+          
+          {/* Botão Editar Lead */}
+          <button
+            onClick={onEditLead}
+            className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              theme === 'dark'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            <Edit3 className="w-4 h-4" />
+            <span className="text-sm font-medium">Editar Lead</span>
+          </button>
         </div>
 
         {/* Seções Expansíveis */}

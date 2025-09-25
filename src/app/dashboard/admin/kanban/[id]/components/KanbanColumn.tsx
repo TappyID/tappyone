@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useDroppable } from '@dnd-kit/core'
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { 
   Plus, 
   Trash2, 
-  MoreVertical, 
+  MoreVertical,
+  MoreHorizontal,
   Calendar, 
   DollarSign, 
   StickyNote, 
@@ -166,6 +167,21 @@ export default function KanbanColumn({
   // 🗑️ Estados para modal de confirmação de exclusão
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedTargetColumn, setSelectedTargetColumn] = useState('')
+  
+  // ⚙️ Estado para mini modal dos 3 pontinhos
+  const [showActionsModal, setShowActionsModal] = useState(false)
+  
+  // 🎯 Fechar modal ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showActionsModal && !(event.target as Element).closest('.actions-modal-container')) {
+        setShowActionsModal(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showActionsModal])
 
   // 🗑️ Função para abrir modal de confirmação
   const handleDeleteClick = () => {
@@ -248,7 +264,7 @@ export default function KanbanColumn({
     <motion.div
       ref={combinedRef}
       {...sortableAttributes}
-      className={`w-80 min-h-[845px] rounded-2xl border transition-all duration-500 ${
+      className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out ${
         isOver 
           ? theme === 'dark'
             ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 via-blue-500/5 to-transparent shadow-2xl shadow-blue-500/30'
@@ -257,24 +273,33 @@ export default function KanbanColumn({
             ? 'border-slate-700/30 bg-gradient-to-b from-slate-800/40 via-slate-800/20 to-slate-800/10 hover:from-slate-800/60 hover:via-slate-800/30 hover:to-slate-800/20'
             : 'border-gray-200/40 bg-gradient-to-b from-white via-gray-50/30 to-white/80 hover:from-white hover:via-gray-50/50 hover:to-white'
       } backdrop-blur-sm overflow-hidden group ${
-        isColumnDragging ? 'opacity-50 transform rotate-1' : ''
+        isColumnDragging 
+          ? 'opacity-70 z-50' 
+          : 'hover:shadow-lg'
       }`}
       style={{
         ...sortableStyle,
-        boxShadow: isOver 
-          ? `0 20px 60px ${coluna.cor}30, 0 0 0 1px ${coluna.cor}20` 
-          : theme === 'dark' 
-            ? '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)' 
-            : '0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05)'
+        boxShadow: isColumnDragging
+          ? `0 25px 50px rgba(0,0,0,0.25), 0 10px 30px rgba(0,0,0,0.15), 0 0 0 1px ${coluna.cor}40`
+          : isOver 
+            ? `0 20px 60px ${coluna.cor}30, 0 0 0 1px ${coluna.cor}20` 
+            : theme === 'dark' 
+              ? '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)' 
+              : '0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05)'
       }}
       animate={{
         scale: isOver ? 1.02 : 1,
-        y: isOver ? -2 : 0
+        y: isOver ? -2 : 0,
+        rotateZ: isColumnDragging ? 2 : 0
       }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      transition={{ 
+        duration: 0.15, 
+        ease: [0.25, 0.46, 0.45, 0.94], // Curva de animação mais suave
+        type: "tween"
+      }}
     >
       {/* Header da Coluna Ultra Sofisticado */}
-      <div className={`relative p-3 border-b backdrop-blur-sm ${
+      <div className={`relative px-3 pt-2 pb-0 border-b backdrop-blur-sm ${
         theme === 'dark' ? 'border-slate-700/30 bg-slate-800/20' : 'border-gray-200/30 bg-white/40'
       }`}>
         {/* Glow Effect no Header */}
@@ -290,16 +315,17 @@ export default function KanbanColumn({
           <div className="flex items-center gap-4 flex-1">
             
             {/* Handle para arrastar coluna */}
-            <motion.div
+            <div
               {...sortableListeners}
-              className={`p-1 rounded cursor-grab active:cursor-grabbing ${
-                theme === 'dark' ? 'hover:bg-slate-700/50' : 'hover:bg-gray-200/50'
-              }`}
-              whileHover={{ scale: 1.1 }}
+              className={`p-2 rounded-lg cursor-grab active:cursor-grabbing select-none user-select-none transition-all duration-100 ease-out ${
+                theme === 'dark' 
+                  ? 'hover:bg-slate-700/70 text-gray-400 hover:text-gray-200 hover:scale-110' 
+                  : 'hover:bg-gray-200/70 text-gray-500 hover:text-gray-800 hover:scale-110'
+              } ${isColumnDragging ? 'bg-blue-500/20 text-blue-400 scale-110' : ''}`}
               title="Arrastar coluna"
             >
-              <GripVertical className="w-4 h-4 text-gray-400" />
-            </motion.div>
+              <GripVertical className="w-4 h-4 transition-transform duration-100" />
+            </div>
             
             {/* Nome da Coluna */}
             <div className="flex-1">
@@ -365,95 +391,98 @@ export default function KanbanColumn({
               {coluna.cards?.length || 0}
             </motion.div>
             
-            {/* Botões de Ação Sofisticados */}
-            <div className="flex items-center gap-1">
-              {/* Botão Engine/Configurações */}
+            {/* Botão de 3 Pontinhos */}
+            <div className="relative actions-modal-container">
               <motion.button
-                onClick={() => {
-                  console.log('⚙️ Abrindo configurações da coluna!', coluna)
-                  onOpenConfig?.(coluna)
-                }}
+                onClick={() => setShowActionsModal(!showActionsModal)}
                 className={`p-1.5 rounded-lg transition-all duration-300 ${
                   theme === 'dark'
-                    ? 'hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-transparent hover:border-blue-500/30'
-                    : 'hover:bg-blue-50 text-blue-600 hover:text-blue-700 border border-transparent hover:border-blue-300/50'
+                    ? 'hover:bg-gray-500/20 text-gray-400 hover:text-gray-300 border border-transparent hover:border-gray-500/30'
+                    : 'hover:bg-gray-50 text-gray-600 hover:text-gray-700 border border-transparent hover:border-gray-300/50'
                 } backdrop-blur-sm shadow-sm hover:shadow-md`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                title="Configurar regras da coluna"
+                title="Opções da coluna"
               >
-                <Settings className="w-3.5 h-3.5" />
+                <MoreHorizontal className="w-3.5 h-3.5" />
               </motion.button>
 
-              
-              {/* Botão Trocar Cor */}
-              <motion.button
-                onClick={() => {
-                  console.log('🎨 Botão de cor clicado!', coluna)
-                  onOpenColorModal(coluna)
-                }}
-                className={`p-1.5 rounded-lg transition-all duration-300 ${
-                  theme === 'dark'
-                    ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-transparent hover:border-purple-500/30'
-                    : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700 border border-transparent hover:border-purple-300/50'
-                } backdrop-blur-sm shadow-sm hover:shadow-md`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title="Trocar cor da coluna"
-                style={{
-                  backgroundColor: `${coluna.cor}15`,
-                  borderColor: `${coluna.cor}30`
-                }}
-              >
-                <div 
-                  className="w-3.5 h-3.5 rounded-full border border-white/50"
-                  style={{ backgroundColor: coluna.cor }}
-                />
-              </motion.button>
-              
-              {/* Botão Deletar */}
-              <motion.button
-                onClick={handleDeleteClick}
-                className={`p-1.5 rounded-lg transition-all duration-300 ${
-                  theme === 'dark'
-                    ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-transparent hover:border-red-500/30'
-                    : 'hover:bg-red-50 text-red-500 hover:text-red-600 border border-transparent hover:border-red-300/50'
-                } backdrop-blur-sm shadow-sm hover:shadow-md`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title="Deletar coluna"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </motion.button>
+              {/* Mini Modal dos 3 Pontinhos */}
+              <AnimatePresence>
+                {showActionsModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                    className={`absolute right-0 top-full mt-2 z-50 rounded-lg shadow-xl border ${
+                      theme === 'dark' 
+                        ? 'bg-slate-800 border-slate-600' 
+                        : 'bg-white border-gray-200'
+                    } backdrop-blur-sm min-w-[160px]`}
+                  >
+                    {/* Botão Configurações */}
+                    <motion.button
+                      onClick={() => {
+                        setShowActionsModal(false)
+                        onOpenConfig?.(coluna)
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        theme === 'dark'
+                          ? 'hover:bg-blue-500/20 text-blue-400 hover:text-blue-300'
+                          : 'hover:bg-blue-50 text-blue-600 hover:text-blue-700'
+                      }`}
+                      whileHover={{ x: 4 }}
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span className="text-sm font-medium">Configurações</span>
+                    </motion.button>
+
+                    {/* Botão Trocar Cor */}
+                    <motion.button
+                      onClick={() => {
+                        setShowActionsModal(false)
+                        onOpenColorModal(coluna)
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        theme === 'dark'
+                          ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300'
+                          : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700'
+                      }`}
+                      whileHover={{ x: 4 }}
+                    >
+                      <div 
+                        className="w-4 h-4 rounded-full border border-white/50"
+                        style={{ backgroundColor: coluna.cor }}
+                      />
+                      <span className="text-sm font-medium">Trocar Cor</span>
+                    </motion.button>
+
+                    {/* Divisor */}
+                    <div className={`h-px mx-2 ${
+                      theme === 'dark' ? 'bg-slate-600' : 'bg-gray-200'
+                    }`} />
+
+                    {/* Botão Deletar */}
+                    <motion.button
+                      onClick={() => {
+                        setShowActionsModal(false)
+                        handleDeleteClick()
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        theme === 'dark'
+                          ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300'
+                          : 'hover:bg-red-50 text-red-500 hover:text-red-600'
+                      }`}
+                      whileHover={{ x: 4 }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Deletar</span>
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-        </div>
-        
-        {/* Barra de Progresso Enhanced */}
-        <div className={`relative h-2 rounded-full overflow-hidden ${
-          theme === 'dark' ? 'bg-slate-800/50' : 'bg-gray-100/60'
-        } backdrop-blur-sm`}>
-          {/* Background Pattern */}
-          <div 
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `repeating-linear-gradient(45deg, ${coluna.cor}20 0, ${coluna.cor}20 2px, transparent 2px, transparent 8px)`
-            }}
-          />
-          
-          {/* Main Progress Bar */}
-          <motion.div
-            className="h-full rounded-full relative overflow-hidden"
-            style={{
-              background: `linear-gradient(90deg, ${coluna.cor}E6, ${coluna.cor}, ${coluna.cor}CC)`
-            }}
-            initial={{ width: 0, x: '-100%' }}
-            animate={{ 
-              width: `${Math.min((coluna.cards?.length || 0) * 12, 100)}%`,
-              x: '0%'
-            }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-          />
         </div>
       </div>
 
@@ -602,10 +631,7 @@ export default function KanbanColumn({
 
       {/* Cards Container com Scroll */}
       <div 
-        className="p-4 flex-1 overflow-y-auto max-h-[650px] custom-column-scroll"
-        style={{
-          '--column-color': coluna.cor
-        } as React.CSSProperties}
+        className="p-4 flex-1 overflow-y-auto custom-gray-scroll min-h-0"
       >
         {/* Resumo de Totais da Coluna */}
         {(totalOrcamentos > 0 || totalAgendamentos > 0 || totalAssinaturas > 0) && (
@@ -725,58 +751,8 @@ export default function KanbanColumn({
           </div>
         )}
       </div>
-      {/* Estilos CSS customizados para o scroll */}
-      <style jsx>{`
-        .custom-column-scroll::-webkit-scrollbar {
-          width: 8px;
-        }
-        
-        .custom-column-scroll::-webkit-scrollbar-track {
-          background: ${theme === 'dark' ? 'rgba(30, 41, 59, 0.3)' : 'rgba(241, 245, 249, 0.5)'};
-          border-radius: 8px;
-          margin: 4px;
-        }
-        
-        .custom-column-scroll::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, 
-            ${coluna.cor}80 0%, 
-            ${coluna.cor} 50%, 
-            ${coluna.cor}CC 100%
-          );
-          border-radius: 8px;
-          border: 2px solid ${theme === 'dark' ? 'rgba(30, 41, 59, 0.2)' : 'rgba(255, 255, 255, 0.3)'};
-          transition: all 0.3s ease;
-        }
-        
-        .custom-column-scroll::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, 
-            ${coluna.cor} 0%, 
-            ${coluna.cor}E6 50%, 
-            ${coluna.cor}B3 100%
-          );
-          border-color: ${theme === 'dark' ? 'rgba(30, 41, 59, 0.4)' : 'rgba(255, 255, 255, 0.5)'};
-          transform: scale(1.1);
-        }
-        
-        .custom-column-scroll::-webkit-scrollbar-thumb:active {
-          background: ${coluna.cor};
-          transform: scale(0.95);
-        }
-        
-        .custom-column-scroll::-webkit-scrollbar-thumb {
-          box-shadow: 
-            0 0 8px ${coluna.cor}40,
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-        
-        .custom-column-scroll::-webkit-scrollbar-thumb:hover {
-          box-shadow: 
-            0 0 12px ${coluna.cor}60,
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-      `}</style>
 
-      {/* 🗑️ Modal de Confirmação de Exclusão */}
+      {/* Modal de Confirmação de Exclusão */}
       <AnimatePresence>
         {showDeleteModal && (
           <motion.div
@@ -878,6 +854,32 @@ export default function KanbanColumn({
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Estilos CSS para scroll cinza */}
+      <style jsx>{`
+        .custom-gray-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .custom-gray-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .custom-gray-scroll::-webkit-scrollbar-thumb {
+          background: ${theme === 'dark' ? '#6b7280' : '#d1d5db'};
+          border-radius: 3px;
+        }
+        
+        .custom-gray-scroll::-webkit-scrollbar-thumb:hover {
+          background: ${theme === 'dark' ? '#9ca3af' : '#9ca3af'};
+        }
+        
+        /* Firefox */
+        .custom-gray-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: ${theme === 'dark' ? '#6b7280' : '#d1d5db'} transparent;
+        }
+      `}</style>
     </motion.div>
   )
 }

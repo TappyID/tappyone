@@ -179,7 +179,7 @@ export default function KanbanCardItem({
       style={style}
       {...attributes}
       {...listeners}
-      className={`relative group cursor-grab active:cursor-grabbing ${
+      className={`relative group cursor-grab active:cursor-grabbing select-none ${
         isDragging ? 'z-50' : ''
       }`}
       onMouseEnter={() => setIsHovered(true)}
@@ -188,18 +188,36 @@ export default function KanbanCardItem({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      {/* 👻 Rastro fantasma que fica no lugar original */}
+      {isDragging && (
+        <div
+          className={`absolute inset-0 rounded-xl transition-opacity duration-500 opacity-30 ${
+            theme === 'dark'
+              ? 'bg-slate-800/40 border border-slate-700/30'
+              : 'bg-gray-100/60 border border-gray-300/40'
+          }`}
+          style={{
+            backdropFilter: 'blur(8px)',
+            background: `linear-gradient(135deg, ${columnColor}10, ${columnColor}05)`,
+            boxShadow: `inset 0 0 20px ${columnColor}20, 0 8px 32px rgba(0,0,0,0.1)`
+          }}
+        />
+      )}
+      
       <div
         className={`relative p-3 rounded-xl transition-all duration-300 ${
           theme === 'dark'
             ? 'bg-slate-800/60 hover:bg-slate-800/80 border border-slate-700/50'
             : 'bg-white hover:bg-gray-50 border border-gray-200'
-        } ${isDragging ? 'rotate-2 scale-95' : 'hover:scale-[1.02]'}`}
+        } ${isDragging ? 'rotate-2 scale-95 opacity-60' : 'hover:scale-[1.02]'}`}
         style={{
-          boxShadow: isHovered
-            ? theme === 'dark'
-              ? '0 10px 30px rgba(0,0,0,0.5)'
-              : '0 10px 30px rgba(0,0,0,0.1)'
-            : '',
+          boxShadow: isDragging
+            ? `0 25px 50px rgba(0,0,0,0.3), 0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px ${columnColor}40`
+            : isHovered
+              ? theme === 'dark'
+                ? '0 10px 30px rgba(0,0,0,0.5)'
+                : '0 10px 30px rgba(0,0,0,0.1)'
+              : '',
         }}
       >
         {/* 🎨 Barra de Gradiente Lateral Esquerda */}
