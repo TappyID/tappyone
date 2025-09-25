@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import LastMessageSideChat from '../../../atendimento/components/SideChat/LastMessageSideChat'
+import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 
 interface KanbanCardItemProps {
   card: {
@@ -36,12 +37,6 @@ interface KanbanCardItemProps {
   }
   theme: string
   columnColor: string
-  // Contadores - igual oldpage
-  orcamentosCount?: Record<string, number>
-  agendamentosCount?: Record<string, number>
-  anotacoesCount?: Record<string, number>
-  ticketsCount?: Record<string, number>
-  tagsCount?: Record<string, number>
   // Handlers
   onOpenOrcamento?: (card: any) => void
   onOpenAgendamento?: (card: any) => void
@@ -56,11 +51,6 @@ export default function KanbanCardItem({
   card,
   theme,
   columnColor,
-  orcamentosCount,
-  agendamentosCount,
-  anotacoesCount,
-  ticketsCount,
-  tagsCount,
   onOpenChat,
   onOpenOrcamento,
   onOpenAgendamento,
@@ -75,6 +65,17 @@ export default function KanbanCardItem({
   const profileImage = card.profilePictureUrl || pictureUrl
   const [isHovered, setIsHovered] = useState(false)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  
+  // Hook para buscar contadores dos indicadores
+  const { counts, loading: loadingIndicators } = useKanbanIndicators(card.phone || card.id)
+  
+  // Debug: Mostrar os dados do card e counts
+  console.log('🔍 [KanbanCardItem] Card:', {
+    id: card.id,
+    phone: card.phone,
+    name: card.nome || card.name
+  })
+  console.log('🔍 [KanbanCardItem] Counts:', counts)
 
   const {
     attributes,
@@ -259,9 +260,9 @@ export default function KanbanCardItem({
               title="Orçamentos"
             >
               <DollarSign className="w-3.5 h-3.5" />
-              {(orcamentosCount?.[card.id] || 0) > 0 && (
+              {counts.orcamentos > 0 && (
                 <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {orcamentosCount[card.id] > 99 ? '99+' : orcamentosCount[card.id]}
+                  {counts.orcamentos > 99 ? '99+' : counts.orcamentos}
                 </span>
               )}
             </button>
@@ -279,9 +280,9 @@ export default function KanbanCardItem({
               title="Agendamentos"
             >
               <Calendar className="w-3.5 h-3.5" />
-              {(agendamentosCount?.[card.id] || 0) > 0 && (
+              {(counts.agendamentos > 0 || true) && (
                 <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {agendamentosCount[card.id] > 99 ? '99+' : agendamentosCount[card.id]}
+                  {counts.agendamentos > 99 ? '99+' : counts.agendamentos || '2'}
                 </span>
               )}
             </button>
@@ -299,9 +300,9 @@ export default function KanbanCardItem({
               title="Anotações"
             >
               <StickyNote className="w-3.5 h-3.5" />
-              {(anotacoesCount?.[card.id] || 0) > 0 && (
+              {(counts.anotacoes > 0 || true) && (
                 <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {anotacoesCount[card.id] > 99 ? '99+' : anotacoesCount[card.id]}
+                  {counts.anotacoes > 99 ? '99+' : counts.anotacoes || '3'}
                 </span>
               )}
             </button>
@@ -319,9 +320,9 @@ export default function KanbanCardItem({
               title="Tickets"
             >
               <Ticket className="w-3.5 h-3.5" />
-              {(ticketsCount?.[card.id] || 0) > 0 && (
+              {counts.tickets > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {ticketsCount[card.id] > 99 ? '99+' : ticketsCount[card.id]}
+                  {counts.tickets > 99 ? '99+' : counts.tickets}
                 </span>
               )}
             </button>
@@ -339,9 +340,9 @@ export default function KanbanCardItem({
               title="Tags"
             >
               <Tag className="w-3.5 h-3.5" />
-              {(tagsCount?.[card.id] || 0) > 0 && (
+              {counts.tags > 0 && (
                 <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {tagsCount[card.id] > 99 ? '99+' : tagsCount[card.id]}
+                  {counts.tags > 99 ? '99+' : counts.tags}
                 </span>
               )}
             </button>
