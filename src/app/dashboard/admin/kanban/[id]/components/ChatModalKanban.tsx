@@ -15,7 +15,114 @@ import TagsBottomSheet from '../../../atendimento/components/FooterChatArea/Bott
 import AnotacoesBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 import TicketBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
 import AssinaturaBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AssinaturaBottomSheet'
-import ProfileSidebar from './ProfileSidebar'
+// import ProfileSidebar from './ProfileSidebar/index'
+
+// Componente ProfileSidebar temporário inline
+const ProfileSidebar = ({ 
+  isOpen, 
+  onClose, 
+  theme, 
+  contactName, 
+  contactNumber, 
+  onTagsClick, 
+  onOrcamentoClick, 
+  onAgendamentoClick,
+  onTicketsClick,
+  onAnotacoesClick,
+  onAssinaturaClick 
+}: any) => {
+  if (!isOpen) return null
+  
+  return (
+    <div className={`w-1/3 flex flex-col transition-all duration-300 ${
+      theme === 'dark' ? 'bg-slate-800' : 'bg-gray-50'
+    } rounded-r-2xl border-l ${
+      theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
+    }`}>
+      {/* Header */}
+      <div className={`p-4 border-b ${
+        theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between">
+          <h3 className={`text-lg font-semibold ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
+            Informações do Contato
+          </h3>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg transition-colors ${
+              theme === 'dark'
+                ? 'hover:bg-slate-700 text-gray-400 hover:text-white'
+                : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        {/* Avatar */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl mb-3">
+            {contactName.charAt(0).toUpperCase()}
+          </div>
+          <h4 className={`text-xl font-semibold ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
+            {contactName}
+          </h4>
+          <p className={`text-sm ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            {contactNumber}
+          </p>
+        </div>
+
+        {/* Botões de Ação */}
+        <div className="space-y-2 pt-4">
+          <button onClick={onTagsClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
+          }`}>
+            🏷️ Gerenciar Tags
+          </button>
+          
+          <button onClick={onOrcamentoClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
+          }`}>
+            💰 Gerenciar Orçamentos
+          </button>
+          
+          <button onClick={onAgendamentoClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
+          }`}>
+            📅 Gerenciar Agendamentos
+          </button>
+          
+          <button onClick={onAnotacoesClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
+          }`}>
+            📝 Gerenciar Anotações
+          </button>
+          
+          <button onClick={onTicketsClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
+          }`}>
+            🎫 Gerenciar Tickets
+          </button>
+          
+          <button onClick={onAssinaturaClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
+          }`}>
+            ✍️ Gerenciar Assinaturas
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface ChatModalKanbanProps {
   isOpen: boolean
@@ -704,6 +811,18 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
           onAgendamentoClick={() => {
             setShowProfileSidebar(false)
             setShowAgendamentoSheet(true)
+          }}
+          onTicketsClick={() => {
+            setShowProfileSidebar(false)
+            setShowTicketsSheet(true)
+          }}
+          onAnotacoesClick={() => {
+            setShowProfileSidebar(false)
+            setShowAnotacoesSheet(true)
+          }}
+          onAssinaturaClick={() => {
+            setShowProfileSidebar(false)
+            setShowAssinaturaSheet(true)
           }}
         />
       </div>

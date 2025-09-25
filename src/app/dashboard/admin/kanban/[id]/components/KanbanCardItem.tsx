@@ -251,7 +251,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenOrcamento?.(card)
               }}
-              className={`p-1 rounded transition-all ${
+              className={`p-1 rounded transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-green-500/20 text-green-400'
                   : 'hover:bg-green-50 text-green-600'
@@ -259,6 +259,11 @@ export default function KanbanCardItem({
               title="Orçamentos"
             >
               <DollarSign className="w-3.5 h-3.5" />
+              {(orcamentosCount?.[card.id] || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                  {orcamentosCount[card.id] > 99 ? '99+' : orcamentosCount[card.id]}
+                </span>
+              )}
             </button>
 
             <button
@@ -266,7 +271,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenAgendamento?.(card)
               }}
-              className={`p-1 rounded transition-all ${
+              className={`p-1 rounded transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-blue-500/20 text-blue-400'
                   : 'hover:bg-blue-50 text-blue-600'
@@ -274,6 +279,11 @@ export default function KanbanCardItem({
               title="Agendamentos"
             >
               <Calendar className="w-3.5 h-3.5" />
+              {(agendamentosCount?.[card.id] || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                  {agendamentosCount[card.id] > 99 ? '99+' : agendamentosCount[card.id]}
+                </span>
+              )}
             </button>
 
             <button
@@ -281,7 +291,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenAnotacoes?.(card)
               }}
-              className={`p-1 rounded transition-all ${
+              className={`p-1 rounded transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-yellow-500/20 text-yellow-400'
                   : 'hover:bg-yellow-50 text-yellow-600'
@@ -289,6 +299,11 @@ export default function KanbanCardItem({
               title="Anotações"
             >
               <StickyNote className="w-3.5 h-3.5" />
+              {(anotacoesCount?.[card.id] || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                  {anotacoesCount[card.id] > 99 ? '99+' : anotacoesCount[card.id]}
+                </span>
+              )}
             </button>
 
             <button
@@ -296,7 +311,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenTickets?.(card)
               }}
-              className={`p-1 rounded transition-all ${
+              className={`p-1 rounded transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-red-500/20 text-red-400'
                   : 'hover:bg-red-50 text-red-600'
@@ -304,6 +319,11 @@ export default function KanbanCardItem({
               title="Tickets"
             >
               <Ticket className="w-3.5 h-3.5" />
+              {(ticketsCount?.[card.id] || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                  {ticketsCount[card.id] > 99 ? '99+' : ticketsCount[card.id]}
+                </span>
+              )}
             </button>
 
             <button
@@ -311,7 +331,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenTags?.(card)
               }}
-              className={`p-1 rounded transition-all ${
+              className={`p-1 rounded transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-purple-500/20 text-purple-400'
                   : 'hover:bg-purple-50 text-purple-600'
@@ -319,6 +339,11 @@ export default function KanbanCardItem({
               title="Tags"
             >
               <Tag className="w-3.5 h-3.5" />
+              {(tagsCount?.[card.id] || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                  {tagsCount[card.id] > 99 ? '99+' : tagsCount[card.id]}
+                </span>
+              )}
             </button>
 
             <button

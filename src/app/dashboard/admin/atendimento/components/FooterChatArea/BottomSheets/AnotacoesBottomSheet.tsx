@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { X, FileText, Plus, Trash2, Edit2, Save, Calendar } from 'lucide-react'
+import { fetchApi } from '@/utils/api'
 
 interface AnotacoesBottomSheetProps {
   isOpen: boolean
@@ -26,75 +27,34 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
   
   console.log('📝 [AnotacoesBottomSheet] Renderizado com chatId:', chatId)
 
-  // Buscar anotações do contato
+  // 🚀 BUSCAR ANOTAÇÕES ESPECÍFICAS DO CHAT
   const fetchAnotacoes = useCallback(async () => {
     if (!chatId) return
     
     try {
       setLoading(true)
-      const telefone = chatId.replace('@c.us', '')
+      console.log('📝 [AnotacoesBottomSheet] Buscando anotações para chatId:', chatId)
       
-      console.log('📝 [AnotacoesBottomSheet] Buscando anotações para telefone:', telefone)
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId)}/anotacoes`
+      console.log('🌐 [AnotacoesBottomSheet] Path backend:', path)
       
-      // 1. Buscar UUID do contato - USAR BACKEND CORRETO
-      const token = localStorage.getItem('token')
-      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetchApi('backend', path)
       
-      if (!contactResponse.ok) {
-        console.log('📝 [AnotacoesBottomSheet] Erro ao buscar contato:', contactResponse.status)
-        return
-      }
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('📝 [AnotacoesBottomSheet] UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('📝 [AnotacoesBottomSheet] UUID do contato encontrado:', contatoUUID)
-        }
-      }
-      
-      if (!contatoUUID) {
-        console.log('📝 [AnotacoesBottomSheet] UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. Buscar anotações usando UUID - USAR BACKEND CORRETO
-      const response = await fetch(`http://159.65.34.199:8081/api/anotacoes?contato_id=${contatoUUID}`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('📝 [AnotacoesBottomSheet] Resposta completa da API:', data)
-        console.log('📝 [AnotacoesBottomSheet] Status da resposta:', response.status)
-        console.log('📝 [AnotacoesBottomSheet] URL consultada:', `http://159.65.34.199:8081/api/anotacoes?contato_id=${contatoUUID}`)
-        
-        const anotacoesData = data.data || data || []
-        console.log('📝 [AnotacoesBottomSheet] Anotações processadas:', anotacoesData)
-        console.log('📝 [AnotacoesBottomSheet] Tipo dos dados:', typeof anotacoesData, Array.isArray(anotacoesData))
-        
-        setAnotacoes(Array.isArray(anotacoesData) ? anotacoesData : [])
-      } else {
-        console.log('📝 [AnotacoesBottomSheet] Erro na resposta:', response.status, response.statusText)
-        const errorData = await response.text()
-        console.log('📝 [AnotacoesBottomSheet] Detalhes do erro:', errorData)
+      if (!response.ok) {
+        console.log('📝 [AnotacoesBottomSheet] Erro ao buscar anotações:', response.status)
         setAnotacoes([])
+        return
       }
+      
+      const data = await response.json()
+      const anotacoesData = Array.isArray(data) ? data : (data.data || [])
+      
+      console.log('📝 [AnotacoesBottomSheet] Resposta completa da API:', data)
+      console.log('📝 [AnotacoesBottomSheet] Total de anotações retornadas:', anotacoesData.length)
+      
+      setAnotacoes(anotacoesData)
+      
     } catch (error) {
       console.error('❌ [AnotacoesBottomSheet] Erro ao buscar anotações:', error)
       setAnotacoes([])
@@ -116,46 +76,18 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
     
     try {
       setLoading(true)
-      const telefone = chatId.replace('@c.us', '')
+      console.log('📝 [AnotacoesBottomSheet] Criando anotação para chatId:', chatId)
       
-      // Buscar UUID do contato primeiro - USAR BACKEND CORRETO
-      const token = localStorage.getItem('token')
-      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (!contactResponse.ok) return
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-        }
-      }
-      
-      if (!contatoUUID) return
-      
-      // Criar anotação
-      const response = await fetch('http://159.65.34.199:8081/api/anotacoes', {
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId)}/anotacoes`
+      const response = await fetchApi('backend', path, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({
-          titulo: novaAnotacao.titulo,
-          conteudo: novaAnotacao.conteudo,
-          contato_id: contatoUUID
+          titulo: novaAnotacao.titulo.trim(),
+          conteudo: novaAnotacao.conteudo.trim(),
+          categoria: 'geral',
+          prioridade: 'media',
+          status: 'ativa'
         })
       })
       
@@ -171,7 +103,7 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
         
         // Disparar evento para atualizar indicadores
         window.dispatchEvent(new CustomEvent('anotacaoCreated', { 
-          detail: { contatoId: telefone, contatoUUID } 
+          detail: { chatId } 
         }))
       } else {
         console.error('❌ [AnotacoesBottomSheet] Erro ao criar anotação')
@@ -190,12 +122,10 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
     if (!confirm('Deseja realmente deletar esta anotação?')) return
     
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/anotacoes/${anotacaoId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId || '')}/anotacoes/${anotacaoId}`
+      const response = await fetchApi('backend', path, {
+        method: 'DELETE'
       })
       
       if (response.ok) {

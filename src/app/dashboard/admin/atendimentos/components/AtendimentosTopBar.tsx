@@ -138,11 +138,32 @@ export default function AtendimentosTopBar({
   }
 
   return (
-    <motion.div 
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="h-20 bg-gradient-to-r from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-b border-white/10 shadow-2xl relative z-[10000]"
-    >
+    <>
+      {/* Botão flutuante quando TopBar está oculto */}
+      {isCollapsed && (
+        <motion.button
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -50, opacity: 0 }}
+          onClick={() => onToggleCollapse && onToggleCollapse(false)}
+          className="fixed top-4 right-4 z-[10001] w-12 h-12 bg-gradient-to-r from-[#273155] to-[#2a3660] rounded-full flex items-center justify-center shadow-2xl border border-white/20 backdrop-blur-sm"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          title="Mostrar TopBar"
+        >
+          <Expand className="w-5 h-5 text-white" />
+        </motion.button>
+      )}
+
+      <AnimatePresence>
+        {!isCollapsed && (
+        <motion.div 
+          initial={{ y: -80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -80, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="h-16 bg-gradient-to-r from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-b border-white/10 shadow-2xl relative z-[10000]"
+        >
       {/* Glass Effect Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 backdrop-blur-sm" />
       
@@ -170,9 +191,9 @@ export default function AtendimentosTopBar({
         ))}
       </div>
 
-      <div className="relative z-10 h-full px-8 flex items-center justify-between">
+      <div className="relative z-10 h-full px-6 flex items-center justify-between">
         {/* Left Section - Logo & Title */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <motion.div 
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
@@ -217,12 +238,17 @@ export default function AtendimentosTopBar({
             <motion.div 
               className="flex items-center gap-2 px-2.5 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 cursor-pointer"
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
-              onClick={toggleFullscreen}
-              title={isFullscreen ? "Sair do Fullscreen" : "Expandir tela"}
+              onClick={() => {
+                toggleFullscreen()
+                if (onToggleCollapse) {
+                  onToggleCollapse(!isCollapsed)
+                }
+              }}
+              title={isCollapsed ? "Mostrar TopBar" : "Ocultar TopBar"}
             >
               <Expand className="w-3.5 h-3.5 text-white/80" />
               <span className="text-sm text-white font-medium">
-                Expandir
+                {isCollapsed ? "Mostrar" : "Ocultar"}
               </span>
             </motion.div>
             
@@ -253,7 +279,7 @@ export default function AtendimentosTopBar({
         </div>
 
         {/* Right Section - Actions & Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Quick Actions */}
           <div className="hidden md:flex items-center gap-2">
           
@@ -953,8 +979,11 @@ export default function AtendimentosTopBar({
         </div>
       </div>
 
-      {/* Bottom Glow Effect */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-    </motion.div>
+        {/* Bottom Glow Effect */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

@@ -502,8 +502,15 @@ export default function KanbanHeader({
         </div>
       </div>
       
-      {/* Segunda linha - Filtros igual SideChat */}
-      <div className="px-6 py-3 border-t border-gray-200/20">
+      {/* Segunda linha - Filtros igual SideChat - Só aparece se showFiltersSection for true */}
+      {showFiltersSection && (
+        <motion.div 
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="px-6 py-3 border-t border-gray-200/20 overflow-hidden"
+        >
         <div className="flex items-center gap-4">
           {/* Input de busca com ícones DENTRO */}
           <div className={`flex-1 flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
@@ -631,7 +638,8 @@ export default function KanbanHeader({
             ))}
           </div>
         </div>
-      </div>
+        </motion.div>
+      )}
 
       {/* Sidebar de Filtros Avançados - FORA do container */}
       {showAdvancedFilters && (

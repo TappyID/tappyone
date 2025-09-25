@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { X, DollarSign, Plus, Trash2, FileText } from 'lucide-react'
+import { fetchApi } from '@/utils/api'
 
 interface OrcamentoBottomSheetProps {
   isOpen: boolean
@@ -21,75 +22,34 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
 
   console.log('💰 [OrcamentoBottomSheet] Renderizado com chatId:', chatId)
 
-  // Buscar orçamentos do contato - IGUAL AO AnotacoesBottomSheet
+  // 🚀 BUSCAR ORÇAMENTOS ESPECÍFICOS DO CHAT
   const fetchOrcamentos = useCallback(async () => {
     if (!chatId) return
     
     try {
       setLoading(true)
-      const telefone = chatId.replace('@c.us', '')
+      console.log('💰 [OrcamentoBottomSheet] Buscando orçamentos para chatId:', chatId)
       
-      console.log('💰 [OrcamentoBottomSheet] Buscando orçamentos para telefone:', telefone)
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId)}/orcamentos`
+      console.log('🌐 [OrcamentoBottomSheet] Path backend:', path)
       
-      // 1. Buscar UUID do contato - USAR BACKEND CORRETO
-      const token = localStorage.getItem('token')
-      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetchApi('backend', path)
       
-      if (!contactResponse.ok) {
-        console.log('💰 [OrcamentoBottomSheet] Erro ao buscar contato:', contactResponse.status)
-        return
-      }
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('💰 [OrcamentoBottomSheet] UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('💰 [OrcamentoBottomSheet] UUID do contato encontrado:', contatoUUID)
-        }
-      }
-      
-      if (!contatoUUID) {
-        console.log('💰 [OrcamentoBottomSheet] UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. Buscar orçamentos usando UUID - USAR BACKEND CORRETO
-      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('💰 [OrcamentoBottomSheet] Resposta completa da API:', data)
-        console.log('💰 [OrcamentoBottomSheet] Status da resposta:', response.status)
-        console.log('💰 [OrcamentoBottomSheet] URL consultada:', `http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`)
-        
-        const orcamentosData = data.data || data || []
-        console.log('💰 [OrcamentoBottomSheet] Orçamentos processados:', orcamentosData)
-        console.log('💰 [OrcamentoBottomSheet] Tipo dos dados:', typeof orcamentosData, Array.isArray(orcamentosData))
-        
-        setOrcamentosExistentes(Array.isArray(orcamentosData) ? orcamentosData : [])
-      } else {
-        console.log('💰 [OrcamentoBottomSheet] Erro na resposta:', response.status, response.statusText)
-        const errorData = await response.text()
-        console.log('💰 [OrcamentoBottomSheet] Detalhes do erro:', errorData)
+      if (!response.ok) {
+        console.log('💰 [OrcamentoBottomSheet] Erro ao buscar orçamentos:', response.status)
         setOrcamentosExistentes([])
+        return
       }
+      
+      const data = await response.json()
+      const orcamentosData = Array.isArray(data) ? data : (data.data || [])
+      
+      console.log('💰 [OrcamentoBottomSheet] Resposta completa da API:', data)
+      console.log('💰 [OrcamentoBottomSheet] Total de orçamentos retornados:', orcamentosData.length)
+      
+      setOrcamentosExistentes(orcamentosData)
+      
     } catch (error) {
       console.error('❌ [OrcamentoBottomSheet] Erro ao buscar orçamentos:', error)
       setOrcamentosExistentes([])
@@ -125,75 +85,35 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
   const total = subtotal - desconto
 
   const handleSave = async () => {
+    if (!titulo.trim()) {
+      alert('❌ Título é obrigatório!')
+      return
+    }
+
     try {
-      // Extrair telefone do chatId
-      const telefone = chatId ? chatId.replace('@c.us', '') : null
-      if (!telefone) {
-        console.error('❌ Telefone não encontrado')
-        return
-      }
+      console.log('💰 [OrcamentoBottomSheet] Criando orçamento para chatId:', chatId)
       
-      console.log('💰 [OrcamentoBottomSheet] Buscando UUID do contato pelo telefone:', telefone)
-      
-      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone (igual ao TagsBottomSheet)
-      const contactResponse = await fetch(`/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        }
-      })
-      
-      if (!contactResponse.ok) {
-        console.error('❌ Erro ao buscar contato:', contactResponse.status)
-        return
-      }
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('✅ UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('✅ UUID do contato encontrado:', contatoUUID)
-        }
-      }
-      
-      if (!contatoUUID) {
-        console.error('❌ UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. SEGUNDO: Criar orçamento com UUID correto e formato do backend (igual ao agendamento)
       const orcamentoData = {
-        titulo: titulo,
-        descricao: descricao,
-        data: new Date().toISOString(), // Campo obrigatório (minúsculo)
-        tipo: 'orcamento', // Campo obrigatório (minúsculo)
-        valorTotal: total,
-        status: 'PENDENTE',
-        contato_id: contatoUUID, // Campo obrigatório - mesmo formato do agendamento
-        observacao: observacoes || null,
-        itens,
-        subtotal,
-        desconto,
-        chatId
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        valor_total: total,
+        status: 'rascunho',
+        observacoes: observacoes.trim(),
+        itens: itens.map(item => ({
+          descricao: item.descricao.trim(),
+          quantidade: item.quantidade,
+          valor_unitario: item.valor,
+          valor_total: item.quantidade * item.valor
+        }))
       }
       
-      console.log('💰 [OrcamentoBottomSheet] Criando orçamento:', orcamentoData)
+      console.log('💰 [OrcamentoBottomSheet] Dados do orçamento:', orcamentoData)
       
-      const response = await fetch('/api/orcamentos', {
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId || '')}/orcamentos`
+      const response = await fetchApi('backend', path, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        },
-        body: JSON.stringify(orcamentoData),
+        body: JSON.stringify(orcamentoData)
       })
       
       if (response.ok) {
@@ -213,23 +133,11 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
         
         // Disparar evento personalizado para atualizar indicadores
         window.dispatchEvent(new CustomEvent('orcamentoCreated', { 
-          detail: { contatoId: telefone, contatoUUID, orcamento: result } 
+          detail: { chatId, orcamento: result } 
         }))
         
-        // Opcional: Enviar notificação via WhatsApp
-        const whatsappData = {
-          chatId,
-          text: `💰 *Orçamento Criado*\n\n*${titulo}*\n${descricao}\n\nTotal: *R$ ${total.toFixed(2)}*\n\nOrçamento válido por 30 dias.`,
-        }
-        
-        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
-        const wahaUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
-        
-        await fetch(`${wahaUrl}/api/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(whatsappData),
-        })
+        // Recarregar orçamentos
+        fetchOrcamentos()
         
       } else {
         // Capturar erro detalhado
@@ -255,12 +163,10 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
     if (!confirm('Deseja realmente deletar este orçamento?')) return
     
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos/${orcamentoId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId || '')}/orcamentos/${orcamentoId}`
+      const response = await fetchApi('backend', path, {
+        method: 'DELETE'
       })
       
       if (response.ok) {

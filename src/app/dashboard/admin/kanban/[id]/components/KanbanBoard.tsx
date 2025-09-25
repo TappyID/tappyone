@@ -41,7 +41,7 @@ export default function KanbanBoard({ theme, children, boardId = 'kanban-scroll-
           }}
         >
           {/* Container das Colunas */}
-          <div className="flex gap-6 min-w-max">
+          <div className="flex gap-5 min-w-max">
             {children}
           </div>
         </div>

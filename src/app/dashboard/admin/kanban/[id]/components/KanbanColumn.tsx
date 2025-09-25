@@ -51,8 +51,17 @@ interface KanbanColumnProps {
   handleAddCard: (colunaId: string) => void
   onOpenAgendamento?: (card: any) => void
   onOpenOrcamento?: (card: any) => void
+  onOpenAssinatura?: (card: any) => void
+  onOpenAnotacoes?: (card: any) => void
+  onOpenTickets?: (card: any) => void
+  onOpenTicket?: (card: any) => void
+  onOpenAgente?: (card: any) => void
   onOpenTags?: (card: any) => void
   onOpenChat?: (card: any) => void
+  onOpenTransferencia?: (card: any) => void
+  onOpenEditContato?: (card: any) => void
+  onOpenDeleteCard?: (card: any) => void
+  onOpenVideoChamada?: (card: any) => void
   onOpenLigacao?: () => void
   onOpenCompartilharTela?: () => void
   onOpenConexaoFila?: (card: any) => void
@@ -90,7 +99,7 @@ export default function KanbanColumn({
   onOpenOrcamento,
   onOpenAssinatura,
   onOpenAnotacoes,
-  onOpenTicket,
+  onOpenTickets,
   onOpenAgente,
   onOpenTags,
   onOpenChat,
@@ -183,7 +192,7 @@ export default function KanbanColumn({
     <motion.div
       ref={combinedRef}
       {...sortableAttributes}
-      className={`w-80 min-h-[650px] rounded-2xl border transition-all duration-500 ${
+      className={`w-80 min-h-[845px] rounded-2xl border transition-all duration-500 ${
         isOver 
           ? theme === 'dark'
             ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 via-blue-500/5 to-transparent shadow-2xl shadow-blue-500/30'
@@ -223,26 +232,6 @@ export default function KanbanColumn({
         <div className="relative flex items-center justify-between mb-4">
           {/* Lado Esquerdo - Indicador e Nome */}
           <div className="flex items-center gap-4 flex-1">
-            {/* Indicador de Cor Sofisticado com Color Picker */}
-            <div className="relative">
-              <motion.div
-                onClick={() => onOpenColorModal(coluna)}
-                className={`relative cursor-pointer transition-all duration-300 ${
-                  theme === 'dark' ? 'hover:scale-110' : 'hover:scale-110'
-                }`}
-                whileHover={{ scale: 1.2, rotate: 15 }}
-                whileTap={{ scale: 0.9 }}
-                title="Clique para trocar a cor"
-              >
-                <div 
-                  className="w-4 h-4 rounded-full shadow-lg border-2 border-white/20"
-                  style={{ 
-                    backgroundColor: coluna.cor,
-                    boxShadow: `0 0 20px ${coluna.cor}40, inset 0 1px 0 rgba(255,255,255,0.3)`
-                  }}
-                />
-              </motion.div>
-            </div>
             
             {/* Handle para arrastar coluna */}
             <motion.div
@@ -269,7 +258,7 @@ export default function KanbanColumn({
                       onSaveColumnName(coluna.id)
                     }
                   }}
-                  className={`w-full px-3 py-2 text-sm font-semibold rounded-xl border-2 transition-all duration-300 ${
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-xl border-2 transition-all duration-300 ${
                     theme === 'dark'
                       ? 'bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400 focus:bg-slate-700 focus:border-blue-500'
                       : 'bg-white/80 border-gray-300/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-500'
@@ -281,7 +270,7 @@ export default function KanbanColumn({
                 />
               ) : (
                 <motion.h3 
-                  className={`text-sm font-bold cursor-pointer transition-all duration-300 ${
+                  className={`text-xs font-bold cursor-pointer transition-all duration-300 ${
                     theme === 'dark' 
                       ? 'text-white hover:text-blue-300' 
                       : 'text-gray-900 hover:text-blue-600'
@@ -384,7 +373,12 @@ export default function KanbanColumn({
       </div>
 
       {/* Cards Container com Scroll */}
-      <div className="p-4 flex-1 overflow-y-auto max-h-[500px]">
+      <div 
+        className="p-4 flex-1 overflow-y-auto max-h-[650px] custom-column-scroll"
+        style={{
+          '--column-color': coluna.cor
+        } as React.CSSProperties}
+      >
         {/* Resumo de Totais da Coluna */}
         {(totalOrcamentos > 0 || totalAgendamentos > 0 || totalAssinaturas > 0) && (
           <div className="mb-4 space-y-2">
@@ -441,34 +435,27 @@ export default function KanbanColumn({
           items={coluna.cards?.map((card: any) => card.id) || []}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-3">
+          <div className="space-y-2">
             {coluna.cards?.map((card: any) => (
               <KanbanCardItem
                 key={card.id}
-                card={{
-                  ...card,
-                  agendamentosCount: agendamentosCount[card.id],
-                  orcamentosCount: typeof orcamentosCount === 'object' ? orcamentosCount[card.id] : 0,
-                  assinaturasCount: assinaturasCount[card.id],
-                  anotacoesCount: anotacoesCount[card.id],
-                  tagsCount: tagsCount[card.id],
-                  ticketsCount: ticketsCount[card.id],
-                  agentesCount: agentesCount[card.id]
-                }}
+                card={card}
                 theme={theme}
                 columnColor={coluna.cor}
+                // Passar os contadores como props separadas
+                orcamentosCount={orcamentosCount}
+                agendamentosCount={agendamentosCount}
+                anotacoesCount={anotacoesCount}
+                ticketsCount={ticketsCount}
+                tagsCount={tagsCount}
+                // Handlers
                 onOpenAgendamento={onOpenAgendamento}
                 onOpenOrcamento={onOpenOrcamento}
                 onOpenAssinatura={onOpenAssinatura}
                 onOpenAnotacoes={onOpenAnotacoes}
-                onOpenTicket={onOpenTicket}
-                onOpenAgente={onOpenAgente}
+                onOpenTickets={onOpenTickets}
                 onOpenTags={onOpenTags}
                 onOpenChat={onOpenChat}
-                onOpenTransferencia={onOpenTransferencia}
-                onOpenEditContato={onOpenEditContato}
-                onOpenDeleteCard={onOpenDeleteCard}
-                onOpenConexaoFila={onOpenConexaoFila}
               />
             ))}
           </div>
@@ -510,6 +497,56 @@ export default function KanbanColumn({
           </div>
         )}
       </div>
+      {/* Estilos CSS customizados para o scroll */}
+      <style jsx>{`
+        .custom-column-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .custom-column-scroll::-webkit-scrollbar-track {
+          background: ${theme === 'dark' ? 'rgba(30, 41, 59, 0.3)' : 'rgba(241, 245, 249, 0.5)'};
+          border-radius: 8px;
+          margin: 4px;
+        }
+        
+        .custom-column-scroll::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, 
+            ${coluna.cor}80 0%, 
+            ${coluna.cor} 50%, 
+            ${coluna.cor}CC 100%
+          );
+          border-radius: 8px;
+          border: 2px solid ${theme === 'dark' ? 'rgba(30, 41, 59, 0.2)' : 'rgba(255, 255, 255, 0.3)'};
+          transition: all 0.3s ease;
+        }
+        
+        .custom-column-scroll::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, 
+            ${coluna.cor} 0%, 
+            ${coluna.cor}E6 50%, 
+            ${coluna.cor}B3 100%
+          );
+          border-color: ${theme === 'dark' ? 'rgba(30, 41, 59, 0.4)' : 'rgba(255, 255, 255, 0.5)'};
+          transform: scale(1.1);
+        }
+        
+        .custom-column-scroll::-webkit-scrollbar-thumb:active {
+          background: ${coluna.cor};
+          transform: scale(0.95);
+        }
+        
+        .custom-column-scroll::-webkit-scrollbar-thumb {
+          box-shadow: 
+            0 0 8px ${coluna.cor}40,
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .custom-column-scroll::-webkit-scrollbar-thumb:hover {
+          box-shadow: 
+            0 0 12px ${coluna.cor}60,
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
     </motion.div>
   )
 }

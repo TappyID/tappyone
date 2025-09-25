@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { X, Ticket, AlertCircle, Clock, CheckCircle, Trash2, FileText } from 'lucide-react'
+import { fetchApi } from '@/utils/api'
 
 interface TicketBottomSheetProps {
   isOpen: boolean
@@ -21,75 +22,33 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
 
   console.log('🎫 [TicketBottomSheet] Renderizado com chatId:', chatId)
 
-  // Buscar tickets do contato - IGUAL AO AnotacoesBottomSheet
+  // 🚀 BUSCAR TICKETS ESPECÍFICOS DO CHAT
   const fetchTickets = useCallback(async () => {
     if (!chatId) return
     
     try {
       setLoading(true)
-      const telefone = chatId.replace('@c.us', '')
+      console.log('🎫 [TicketBottomSheet] Buscando tickets para chatId:', chatId)
       
-      console.log('🎫 [TicketBottomSheet] Buscando tickets para telefone:', telefone)
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId)}/tickets`
+      console.log('🌐 [TicketBottomSheet] Path backend:', path)
       
-      // 1. Buscar UUID do contato - USAR BACKEND CORRETO
-      const token = localStorage.getItem('token')
-      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetchApi('backend', path)
       
-      if (!contactResponse.ok) {
-        console.log('🎫 [TicketBottomSheet] Erro ao buscar contato:', contactResponse.status)
-        return
-      }
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('🎫 [TicketBottomSheet] UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('🎫 [TicketBottomSheet] UUID do contato encontrado:', contatoUUID)
-        }
-      }
-      
-      if (!contatoUUID) {
-        console.log('🎫 [TicketBottomSheet] UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. Buscar tickets usando UUID - USAR BACKEND CORRETO
-      const response = await fetch(`http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('🎫 [TicketBottomSheet] Resposta completa da API:', data)
-        console.log('🎫 [TicketBottomSheet] Status da resposta:', response.status)
-        console.log('🎫 [TicketBottomSheet] URL consultada:', `http://159.65.34.199:8081/api/tickets?contato_id=${contatoUUID}`)
-        
-        const ticketsData = data.data || data || []
-        console.log('🎫 [TicketBottomSheet] Tickets processados:', ticketsData)
-        console.log('🎫 [TicketBottomSheet] Tipo dos dados:', typeof ticketsData, Array.isArray(ticketsData))
-        
-        setTicketsExistentes(Array.isArray(ticketsData) ? ticketsData : [])
-      } else {
-        console.log('🎫 [TicketBottomSheet] Erro na resposta:', response.status, response.statusText)
-        const errorData = await response.text()
-        console.log('🎫 [TicketBottomSheet] Detalhes do erro:', errorData)
+      if (!response.ok) {
+        console.log('🎫 [TicketBottomSheet] Erro ao buscar tickets:', response.status)
         setTicketsExistentes([])
+        return
       }
+      
+      const data = await response.json()
+      const ticketsData = Array.isArray(data) ? data : (data.data || [])
+      
+      console.log('🎫 [TicketBottomSheet] Resposta completa da API:', data)
+      console.log('🎫 [TicketBottomSheet] Total de tickets retornados:', ticketsData.length)
+      
+      setTicketsExistentes(ticketsData)
     } catch (error) {
       console.error('❌ [TicketBottomSheet] Erro ao buscar tickets:', error)
       setTicketsExistentes([])
@@ -130,84 +89,36 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
   ]
 
   const handleSave = async () => {
+    if (!titulo.trim() || !descricao.trim()) {
+      alert('❌ Preencha todos os campos obrigatórios!')
+      return
+    }
+
     try {
-      // Extrair telefone do chatId
-      const telefone = chatId ? chatId.replace('@c.us', '') : null
-      if (!telefone) {
-        console.error('❌ Telefone não encontrado')
-        return
-      }
+      console.log('🎫 [TicketBottomSheet] Criando ticket para chatId:', chatId)
       
-      console.log('🎫 [TicketBottomSheet] Buscando UUID do contato pelo telefone:', telefone)
-      
-      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone (igual aos outros)
-      const contactResponse = await fetch(`/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        }
-      })
-      
-      if (!contactResponse.ok) {
-        console.error('❌ Erro ao buscar contato:', contactResponse.status)
-        return
-      }
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('✅ UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('✅ UUID do contato encontrado:', contatoUUID)
-        }
-      }
-      
-      if (!contatoUUID) {
-        console.error('❌ UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. SEGUNDO: Criar ticket usando MESMO FORMATO do TicketModal que funciona
-      // Converter prioridade string para número
-      const prioridadeMap = {
-        'baixa': 1,
-        'media': 2,
-        'alta': 3
-      }
-      
-      // Converter status para formato do TicketModal (maiúsculo)
-      const statusMap = {
-        'aberto': 'ABERTO',
-        'em_andamento': 'ANDAMENTO',
-        'resolvido': 'ENCERRADO',
-        'fechado': 'ENCERRADO'
-      }
+      // Gerar número único do ticket
+      const ticketNumber = `TKT-${Date.now()}`
       
       const ticketData = {
-        titulo,
-        descricao,
-        status: statusMap[status as keyof typeof statusMap] || 'ABERTO', // Formato maiúsculo
-        prioridade: prioridadeMap[prioridade as keyof typeof prioridadeMap] || 2,
-        contato_id: telefone // Usar telefone como TicketModal, não UUID!
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        prioridade: prioridade,
+        categoria: categoria
       }
       
-      console.log('🎫 [TicketBottomSheet] Criando ticket:', ticketData)
+      console.log('🎫 [TicketBottomSheet] Dados do ticket:', ticketData)
+      console.log('🎫 [TicketBottomSheet] ChatId original:', chatId)
+      console.log('🎫 [TicketBottomSheet] ChatId codificado:', encodeURIComponent(chatId || ''))
+      console.log('🎫 [TicketBottomSheet] Token:', localStorage.getItem('token'))
       
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://159.65.34.199:8081/api/tickets', {
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId || '')}/tickets`
+      console.log('🎫 [TicketBottomSheet] Path completo:', path)
+      
+      const response = await fetchApi('backend', path, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(ticketData),
+        body: JSON.stringify(ticketData)
       })
       
       if (response.ok) {
@@ -227,23 +138,10 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
         
         // Disparar evento personalizado para atualizar indicadores
         window.dispatchEvent(new CustomEvent('ticketCreated', { 
-          detail: { contatoId: telefone, contatoUUID, ticket: result } 
+          detail: { chatId, ticket: result } 
         }))
-        
-        // Enviar notificação via WhatsApp
-        const whatsappData = {
-          chatId,
-          text: `🎫 *Ticket Criado*\n\n*${titulo}*\n📋 ${categoria}\n⚠️ Prioridade: ${prioridade.toUpperCase()}\n📊 Status: ${status.replace('_', ' ')}\n\n${descricao}\n\n*Número do Ticket:* #${result?.id || Date.now()}`,
-        }
-        
-        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
-        const wahaUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
-        
-        await fetch(`${wahaUrl}/api/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(whatsappData),
-        })
+        // Recarregar tickets
+        fetchTickets()
         
       } else {
         const errorData = await response.json().catch(() => null)

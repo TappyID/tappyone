@@ -155,6 +155,15 @@ export default function QuadroPage() {
   const [selectedColumnForColor, setSelectedColumnForColor] = useState<any>(null)
   const [conexaoFilaModal, setConexaoFilaModal] = useState({ isOpen: false, card: null })
   
+  // Estados dos BottomSheets
+  const [showAgendamentoSheet, setShowAgendamentoSheet] = useState(false)
+  const [showOrcamentoSheet, setShowOrcamentoSheet] = useState(false)
+  const [showTagsSheet, setShowTagsSheet] = useState(false)
+  const [showAnotacoesSheet, setShowAnotacoesSheet] = useState(false)
+  const [showTicketsSheet, setShowTicketsSheet] = useState(false)
+  const [showChatModal, setShowChatModal] = useState(false)
+  const [selectedChat, setSelectedChat] = useState<any>(null)
+  
   // Estado para mapeamento de cards nas colunas (armazenamento local)
   const [cardColumnMapping, setCardColumnMapping] = useState<Record<string, string>>({})
   
@@ -376,14 +385,7 @@ export default function QuadroPage() {
     setShowColorModal(true)
   }
 
-  // Handlers  // Estados dos modais/sheets
-  const [selectedChat, setSelectedChat] = useState(null)
-  const [showChatModal, setShowChatModal] = useState(false)
-  const [showOrcamentoSheet, setShowOrcamentoSheet] = useState(false)
-  const [showAgendamentoSheet, setShowAgendamentoSheet] = useState(false)
-  const [showTagsSheet, setShowTagsSheet] = useState(false)
-  const [showAnotacoesSheet, setShowAnotacoesSheet] = useState(false)
-  const [showTicketsSheet, setShowTicketsSheet] = useState(false)
+  // Handlers dos BottomSheets
   
   // Funções de abertura dos modais
   const onOpenChat = (card: any) => {

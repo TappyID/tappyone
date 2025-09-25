@@ -39,7 +39,10 @@ export default function ProfileSidebar({
   card,
   onTagsClick,
   onOrcamentoClick,
-  onAgendamentoClick
+  onAgendamentoClick,
+  onTicketsClick,
+  onAnotacoesClick,
+  onAssinaturaClick
 }: ProfileSidebarProps) {
   if (!isOpen) return null
 
@@ -110,15 +113,36 @@ export default function ProfileSidebar({
           <ProfileActionButton
             theme={theme}
             icon="💰"
-            text="Criar Orçamento"
+            text="Gerenciar Orçamentos"
             onClick={onOrcamentoClick}
           />
           
           <ProfileActionButton
             theme={theme}
             icon="📅"
-            text="Criar Agendamento"
+            text="Gerenciar Agendamentos"
             onClick={onAgendamentoClick}
+          />
+          
+          <ProfileActionButton
+            theme={theme}
+            icon="📝"
+            text="Gerenciar Anotações"
+            onClick={onAnotacoesClick}
+          />
+          
+          <ProfileActionButton
+            theme={theme}
+            icon="🎫"
+            text="Gerenciar Tickets"
+            onClick={onTicketsClick}
+          />
+          
+          <ProfileActionButton
+            theme={theme}
+            icon="✍️"
+            text="Gerenciar Assinaturas"
+            onClick={onAssinaturaClick}
           />
         </div>
       </div>

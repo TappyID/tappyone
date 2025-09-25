@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Calendar, Clock, Users, Phone, Video, MapPin, Coffee } from 'lucide-react'
+import { fetchApi } from '@/utils/api'
 
 interface AgendamentoBottomSheetProps {
   isOpen: boolean
@@ -21,74 +22,30 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
   if (!isOpen) return null
 
   const handleSave = async () => {
+    if (!titulo.trim() || !data || !horaInicio) {
+      alert('❌ Preencha todos os campos obrigatórios!')
+      return
+    }
+
     try {
-      // Extrair telefone do chatId
-      const telefone = chatId ? chatId.replace('@c.us', '') : null
-      if (!telefone) {
-        console.error('❌ Telefone não encontrado')
-        return
-      }
-      
-      console.log('📅 [AgendamentoBottomSheet] Buscando UUID do contato pelo telefone:', telefone)
-      
-      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone (igual ao TagsBottomSheet)
-      const contactResponse = await fetch(`/api/contatos?telefone=${telefone}`, {
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        }
-      })
-      
-      if (!contactResponse.ok) {
-        console.error('❌ Erro ao buscar contato:', contactResponse.status)
-        return
-      }
-      
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
-      
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('✅ UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === telefone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('✅ UUID do contato encontrado:', contatoUUID)
-        }
-      }
-      
-      if (!contatoUUID) {
-        console.error('❌ UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. SEGUNDO: Criar agendamento com UUID correto
-      const inicioEm = new Date(`${data}T${horaInicio}:00.000Z`).toISOString()
-      const fimEm = new Date(`${data}T${horaFim}:00.000Z`).toISOString()
+      console.log('📅 [AgendamentoBottomSheet] Criando agendamento para chatId:', chatId)
       
       const agendamentoData = {
-        titulo: titulo,
-        descricao: descricao || null,
-        inicio_em: inicioEm,
-        fim_em: fimEm,
-        link_meeting: null,
-        contato_id: contatoUUID, // Usar UUID correto
-        tipo,
-        chatId
+        titulo: titulo.trim(),
+        descricao: descricao.trim() || null,
+        dataInicio: `${data}T${horaInicio}:00.000Z`,
+        dataFim: horaFim ? `${data}T${horaFim}:00.000Z` : null,
+        tipo: tipo,
+        observacoes: descricao.trim() || null
       }
       
-      console.log('📅 [AgendamentoBottomSheet] Criando agendamento:', agendamentoData)
+      console.log('📅 [AgendamentoBottomSheet] Dados do agendamento:', agendamentoData)
       
-      const response = await fetch('/api/agendamentos', {
+      // 🚀 NOVA URL ESPECÍFICA POR CHAT
+      const path = `/api/chats/${encodeURIComponent(chatId || '')}/agendamentos`
+      const response = await fetchApi('backend', path, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw',
-        },
-        body: JSON.stringify(agendamentoData),
+        body: JSON.stringify(agendamentoData)
       })
       
       if (response.ok) {
@@ -109,23 +66,8 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
         
         // Disparar evento personalizado para atualizar indicadores
         window.dispatchEvent(new CustomEvent('agendamentoCreated', { 
-          detail: { contatoId: telefone, contatoUUID, agendamento: result } 
+          detail: { chatId, agendamento: result } 
         }))
-        
-        // Enviar notificação via WhatsApp
-        const whatsappData = {
-          chatId,
-          text: `📅 *Agendamento Confirmado*\n\n*${titulo}*\n📅 ${new Date(data).toLocaleDateString('pt-BR')}\n🕐 ${horaInicio} às ${horaFim}\n📋 ${tipo}\n\n${descricao || 'Aguardamos você!'}`,
-        }
-        
-        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
-        const wahaUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
-        
-        await fetch(`${wahaUrl}/api/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(whatsappData),
-        })
         
       } else {
         // Capturar erro detalhado
