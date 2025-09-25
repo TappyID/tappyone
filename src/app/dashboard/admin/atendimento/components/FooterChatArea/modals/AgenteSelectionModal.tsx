@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Bot, Sparkles, Check, AlertCircle } from 'lucide-react'
+import { fetchApi } from '@/utils/api'
 
 interface Agente {
   id: string
@@ -42,22 +43,8 @@ export default function AgenteSelectionModal({
         setLoading(true)
         console.log('🤖 [AgenteSelectionModal] Buscando agentes...')
         
-        // Obter token do localStorage
-        const token = localStorage.getItem('token')
-        if (!token) {
-          console.error('🤖 [AgenteSelectionModal] Token não encontrado')
-          return
-        }
-        
-        // Usar backend correto - sempre usar o servidor remoto pois localhost pode não estar rodando
-        const backendUrl = 'http://159.65.34.199:8081'
-        
-        const response = await fetch(`${backendUrl}/api/agentes`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
+        // Usar fetchApi que automaticamente adiciona token
+        const response = await fetchApi('backend', '/api/agentes')
         
         console.log('🤖 [AgenteSelectionModal] Response status:', response.status)
         

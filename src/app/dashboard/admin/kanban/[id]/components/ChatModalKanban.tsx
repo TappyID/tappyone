@@ -279,19 +279,7 @@ const ProfileSidebar = ({
             <span>Gerenciar Tickets</span>
           </button>
           
-          <button onClick={() => toggleSection('assinaturas')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
-            theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
-          }`}>
-            <div className="relative">
-              <FileText className="w-5 h-5" />
-              {counts?.assinaturas > 0 && (
-                <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {counts.assinaturas > 99 ? '99+' : counts.assinaturas}
-                </span>
-              )}
-            </div>
-            <span>Gerenciar Assinaturas</span>
-          </button>
+         
         </div>
 
         {/* Seções Expansíveis */}

@@ -14,11 +14,14 @@ import {
   User,
   Clock,
   Phone,
-  FileText
+  FileText,
+  Bot
 } from 'lucide-react'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import LastMessageSideChat from '../../../atendimento/components/SideChat/LastMessageSideChat'
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
+import { useChatAgente } from '@/hooks/useChatAgente'
+import AgenteSelectionModal from '../../../atendimento/components/FooterChatArea/modals/AgenteSelectionModal'
 
 interface KanbanCardItemProps {
   card: {
@@ -81,6 +84,18 @@ export default function KanbanCardItem({
     name: card.nome || card.name
   })
   console.log('🔍 [KanbanCardItem] Counts:', counts)
+
+  // Hook para status do agente IA
+  const { 
+    ativo: agenteAtivo, 
+    agente: agenteAtual,
+    activateAgent,
+    deactivateAgent,
+    refetch: refetchAgente 
+  } = useChatAgente(chatIdForIndicators)
+
+  // Estado para modal de seleção de agente
+  const [showAgenteModal, setShowAgenteModal] = useState(false)
 
   const {
     attributes,
@@ -358,7 +373,27 @@ export default function KanbanCardItem({
               )}
             </button>
 
-     
+            {/* Botão Agente IA */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowAgenteModal(true)
+              }}
+              className={`p-1 rounded transition-all relative ${
+                theme === 'dark'
+                  ? 'hover:bg-blue-500/20 text-blue-400'
+                  : 'hover:bg-blue-50 text-blue-600'
+              }`}
+              title="Agente IA"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              {/* Pin Badge - Verde se ativo, Vermelho se inativo */}
+              <span className={`absolute -top-1 -right-1 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[12px] h-[12px] flex items-center justify-center shadow-sm ${
+                agenteAtivo ? 'bg-green-500' : 'bg-red-500'
+              }`}>
+                ●
+              </span>
+            </button>
 
             <button
               onClick={(e) => {
@@ -384,6 +419,36 @@ export default function KanbanCardItem({
           </span>
         </div>
       </div>
+
+      {/* Modal de Seleção de Agente */}
+      <AgenteSelectionModal
+        isOpen={showAgenteModal}
+        onClose={() => setShowAgenteModal(false)}
+        onSelect={async (agente) => {
+          console.log('🤖 Agente selecionado no Kanban:', agente)
+          try {
+            if (agente) {
+              // Ativar agente
+              await activateAgent(agente.id)
+              console.log('✅ Agente ativado com sucesso no Kanban!')
+            } else {
+              // Desativar agente
+              await deactivateAgent()
+              console.log('✅ Agente desativado com sucesso no Kanban!')
+            }
+            // Recarregar dados do agente após seleção
+            refetchAgente()
+          } catch (error) {
+            console.error('❌ Erro ao ativar/desativar agente no Kanban:', error)
+          }
+        }}
+        agenteAtual={agenteAtual ? { 
+          ...agenteAtual, 
+          cor: '#3b82f6',
+          descricao: agenteAtual.descricao || 'Agente IA'
+        } : null}
+        chatId={chatIdForIndicators}
+      />
     </motion.div>
   )
 }

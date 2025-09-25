@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
+import { fetchApi } from '@/utils/api';
 
 const API_BASE_URL = '';
 
@@ -37,12 +37,10 @@ export function useAgentes(options: UseAgentesOptions = {}) {
   const [data, setData] = useState<AgentesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
 
   const { page = 1, limit = 10, search, categoria } = options;
 
   const fetchAgentes = async () => {
-    if (!token) return;
     
     try {
       setLoading(true);
@@ -56,11 +54,7 @@ export function useAgentes(options: UseAgentesOptions = {}) {
       if (search) params.append('search', search);
       if (categoria) params.append('categoria', categoria);
 
-      const response = await fetch(`${API_BASE_URL}/api/agentes?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetchApi('backend', `/api/agentes?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error('Erro ao buscar agentes');
@@ -77,16 +71,12 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   useEffect(() => {
     fetchAgentes();
-  }, [token, page, limit, search, categoria]);
+  }, [page, limit, search, categoria]);
 
   const createAgente = async (agente: Omit<AgenteIa, 'id' | 'usuarioId' | 'tokensUsados' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/agentes`, {
+      const response = await fetchApi('backend', '/api/agentes', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify(agente),
       });
 
@@ -104,12 +94,8 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const updateAgente = async (id: string, updates: Partial<AgenteIa>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/agentes/${id}`, {
+      const response = await fetchApi('backend', `/api/agentes/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify(updates),
       });
 
@@ -127,11 +113,8 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const deleteAgente = async (id: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/agentes/${id}`, {
+      const response = await fetchApi('backend', `/api/agentes/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {
@@ -146,11 +129,8 @@ export function useAgentes(options: UseAgentesOptions = {}) {
 
   const toggleAgente = async (id: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/agentes/${id}/toggle`, {
+      const response = await fetchApi('backend', `/api/agentes/${id}/toggle`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {

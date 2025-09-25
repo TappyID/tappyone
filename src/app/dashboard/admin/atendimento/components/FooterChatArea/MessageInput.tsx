@@ -412,7 +412,13 @@ export default function MessageInput({
   const [isGenerating, setIsGenerating] = useState(false)
   
   // Hook para buscar agente ativo do chat
-  const { ativo: agenteAtivo, agente: agenteAtual, refetch: refetchAgente } = useChatAgente(chatId)
+  const { 
+    ativo: agenteAtivo, 
+    agente: agenteAtual, 
+    refetch: refetchAgente,
+    activateAgent,
+    deactivateAgent 
+  } = useChatAgente(chatId)
   
   // Ref para textarea expansivo
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -1202,10 +1208,23 @@ export default function MessageInput({
       <AgenteSelectionModal
         isOpen={showAgenteModal}
         onClose={() => setShowAgenteModal(false)}
-        onSelect={(agente) => {
+        onSelect={async (agente) => {
           console.log('🤖 Agente selecionado:', agente)
-          // Recarregar dados do agente após seleção
-          refetchAgente()
+          try {
+            if (agente) {
+              // Ativar agente
+              await activateAgent(agente.id)
+              console.log('✅ Agente ativado com sucesso!')
+            } else {
+              // Desativar agente
+              await deactivateAgent()
+              console.log('✅ Agente desativado com sucesso!')
+            }
+            // Recarregar dados do agente após seleção
+            refetchAgente()
+          } catch (error) {
+            console.error('❌ Erro ao ativar/desativar agente:', error)
+          }
         }}
         agenteAtual={agenteAtual ? { 
           ...agenteAtual, 

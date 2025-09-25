@@ -20,16 +20,16 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const contatoId = searchParams.get('contato_id')
+    const chatId = searchParams.get('chat_id')
 
-    if (!contatoId) {
-      return NextResponse.json({ error: 'contato_id é obrigatório' }, { status: 400 })
+    if (!chatId) {
+      return NextResponse.json({ error: 'chat_id é obrigatório' }, { status: 400 })
     }
 
-    console.log('🤖 [API] Buscando agente ativo para contato:', contatoId)
+    console.log('🤖 [API] Buscando agente ativo para chat:', chatId)
 
     // Buscar agente ativo para este chat específico (para useChatAgente)
-    const response = await fetch(`${BACKEND_URL}/api/chat-agentes/${contatoId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/chat-agentes/${chatId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

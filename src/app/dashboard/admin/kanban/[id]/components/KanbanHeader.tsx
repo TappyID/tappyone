@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { 
   ChevronDown, 
+  ChevronUp,
   Grid,
   List,
   LayoutGrid,
@@ -47,6 +48,8 @@ interface KanbanHeaderProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   loading: boolean
+  showMetrics: boolean
+  onToggleMetrics: () => void
   hasManualChanges: boolean
   showShortcuts: boolean
   editingQuadroTitle: boolean
@@ -75,6 +78,8 @@ export default function KanbanHeader({
   searchQuery,
   onSearchChange,
   loading,
+  showMetrics,
+  onToggleMetrics,
   hasManualChanges,
   showShortcuts,
   editingQuadroTitle,
@@ -307,6 +312,36 @@ export default function KanbanHeader({
                 transition={{ duration: 0.2 }}
               >
                 <ChevronDown className="w-4 h-4" />
+              </motion.div>
+            </motion.button>
+
+            {/* Botão Métricas */}
+            <motion.button
+              onClick={onToggleMetrics}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                showMetrics
+                  ? theme === 'dark'
+                    ? 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30'
+                    : 'bg-purple-100 hover:bg-purple-200 text-purple-700 border border-purple-300'
+                  : theme === 'dark'
+                    ? 'bg-white/5 hover:bg-white/10 text-white/80'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              title={showMetrics ? "Ocultar métricas" : "Mostrar métricas"}
+            >
+              <BarChart className="w-4 h-4" />
+              <span className="text-sm">Métricas</span>
+              <motion.div
+                animate={{ rotate: showMetrics ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {showMetrics ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
               </motion.div>
             </motion.button>
 

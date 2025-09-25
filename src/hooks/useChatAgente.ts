@@ -32,7 +32,7 @@ export function useChatAgente(chatId: string | null) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/agentes-chat?contato_id=${chatId}`, {
+      const response = await fetch(`/api/agentes-chat?chat_id=${chatId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

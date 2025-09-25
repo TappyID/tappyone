@@ -68,6 +68,7 @@ interface KanbanColumnProps {
   onOpenAgente?: (card: any) => void
   onOpenTags?: (card: any) => void
   onOpenChat?: (card: any) => void
+  showMetrics: boolean
   onOpenTransferencia?: (card: any) => void
   onOpenEditContato?: (card: any) => void
   onOpenDeleteCard?: (card: any) => void
@@ -117,6 +118,7 @@ export default function KanbanColumn({
   onOpenAgente,
   onOpenTags,
   onOpenChat,
+  showMetrics,
   onOpenTransferencia,
   onOpenEditContato,
   onOpenDeleteCard,
@@ -161,9 +163,8 @@ export default function KanbanColumn({
     setSortableNodeRef(node)
   }
 
-  // 🗑️ Estados para modal de confirmação de exclusão e para mostrar métricas
+  // 🗑️ Estados para modal de confirmação de exclusão
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showMetrics, setShowMetrics] = useState(true)
   const [selectedTargetColumn, setSelectedTargetColumn] = useState('')
 
   // 🗑️ Função para abrir modal de confirmação
@@ -384,33 +385,6 @@ export default function KanbanColumn({
                 <Settings className="w-3.5 h-3.5" />
               </motion.button>
 
-              {/* Botão Filtro/Métricas */}
-              <motion.button
-                onClick={() => {
-                  setShowMetrics(!showMetrics)
-                  console.log('📊 Toggle métricas:', !showMetrics)
-                }}
-                className={`p-1.5 rounded-lg transition-all duration-300 ${
-                  theme === 'dark'
-                    ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-transparent hover:border-purple-500/30'
-                    : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700 border border-transparent hover:border-purple-300/50'
-                } backdrop-blur-sm shadow-sm hover:shadow-md ${
-                  showMetrics 
-                    ? theme === 'dark' 
-                      ? 'bg-purple-500/20 border-purple-500/30' 
-                      : 'bg-purple-50 border-purple-300/50'
-                    : ''
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title={showMetrics ? "Ocultar métricas" : "Mostrar métricas"}
-              >
-                {showMetrics ? (
-                  <ChevronUp className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-              </motion.button>
               
               {/* Botão Trocar Cor */}
               <motion.button
