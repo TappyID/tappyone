@@ -176,12 +176,18 @@ export default function KanbanCardItem({
   return (
     <motion.div
       ref={setNodeRef}
-      style={style}
       {...attributes}
       {...listeners}
       className={`relative group cursor-grab active:cursor-grabbing select-none ${
         isDragging ? 'z-50' : ''
       }`}
+      style={{
+        ...style, // Estilo do sortable
+        touchAction: 'none', // Otimização para touch devices
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+        WebkitTouchCallout: 'none'
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       initial={{ opacity: 0, y: 20 }}
@@ -205,7 +211,7 @@ export default function KanbanCardItem({
       )}
       
       <div
-        className={`relative p-3 rounded-xl transition-all duration-300 ${
+        className={`relative p-3 rounded-xl transition-all duration-150 ease-out ${
           theme === 'dark'
             ? 'bg-slate-800/60 hover:bg-slate-800/80 border border-slate-700/50'
             : 'bg-white hover:bg-gray-50 border border-gray-200'

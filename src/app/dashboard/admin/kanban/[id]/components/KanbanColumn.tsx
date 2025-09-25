@@ -135,6 +135,10 @@ export default function KanbanColumn({
   
   const { setNodeRef, isOver } = useDroppable({
     id: coluna.id,
+    data: {
+      type: 'column',
+      columnId: coluna.id
+    }
   })
   
   // Tornar a coluna sortable para poder mover
@@ -299,7 +303,7 @@ export default function KanbanColumn({
       }}
     >
       {/* Header da Coluna Ultra Sofisticado */}
-      <div className={`relative px-3 pt-2 pb-0 border-b backdrop-blur-sm ${
+      <div className={`relative px-3 pt-2 -pb-1 border-b backdrop-blur-sm ${
         theme === 'dark' ? 'border-slate-700/30 bg-slate-800/20' : 'border-gray-200/30 bg-white/40'
       }`}>
         {/* Glow Effect no Header */}
@@ -317,14 +321,21 @@ export default function KanbanColumn({
             {/* Handle para arrastar coluna */}
             <div
               {...sortableListeners}
-              className={`p-2 rounded-lg cursor-grab active:cursor-grabbing select-none user-select-none transition-all duration-100 ease-out ${
+              className={`p-2 rounded-lg cursor-grab active:cursor-grabbing select-none transition-all duration-75 ease-out ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-700/70 text-gray-400 hover:text-gray-200 hover:scale-110' 
                   : 'hover:bg-gray-200/70 text-gray-500 hover:text-gray-800 hover:scale-110'
               } ${isColumnDragging ? 'bg-blue-500/20 text-blue-400 scale-110' : ''}`}
               title="Arrastar coluna"
+              style={{
+                touchAction: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                transform: 'translateZ(0)', // Force GPU acceleration
+                willChange: 'transform'
+              }}
             >
-              <GripVertical className="w-4 h-4 transition-transform duration-100" />
+              <GripVertical className="w-4 h-4 transition-transform duration-75" />
             </div>
             
             {/* Nome da Coluna */}
@@ -629,9 +640,19 @@ export default function KanbanColumn({
       </motion.div>
       )}
 
-      {/* Cards Container com Scroll */}
+      {/* Cards Container com Scroll - TODA ÁREA É DROPPABLE */}
       <div 
-        className="p-4 flex-1 overflow-y-auto custom-gray-scroll min-h-0"
+        ref={setNodeRef}
+        className={`p-4 flex-1 overflow-y-auto custom-gray-scroll min-h-0 transition-all duration-200 ${
+          isOver ? 
+            theme === 'dark' 
+              ? 'bg-blue-500/10 border-2 border-dashed border-blue-400/50' 
+              : 'bg-blue-50/50 border-2 border-dashed border-blue-400/50'
+            : ''
+        }`}
+        style={{
+          minHeight: '200px' // Garante área mínima para drop mesmo sem cards
+        }}
       >
         {/* Resumo de Totais da Coluna */}
         {(totalOrcamentos > 0 || totalAgendamentos > 0 || totalAssinaturas > 0) && (

@@ -197,16 +197,21 @@ function QuadroPage() {
   // Dados vazios para manter compatibilidade com componentes
   const emptyData = {}
 
-  // DnD Sensors - Configuração ultra sensível e fluida
+  // DnD Sensors - Configuração IDÊNTICA ao Trello
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 1, // Mínimo possível - quase instantâneo
-        tolerance: 0, // Zero tolerância - máxima sensibilidade
-        delay: 0, // Zero delay
+        distance: 0, // ZERO pixels - ativação instantânea 
+        delay: 0, // ZERO delay
       },
     }),
-    useSensor(KeyboardSensor)
+    // Sensor para touch devices (mobile)
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 0,
+        delay: 150, // Pequeno delay no mobile para distinguir de scroll
+      },
+    })
   )
 
   // Carregar mapeamento do localStorage
@@ -425,17 +430,30 @@ function QuadroPage() {
         console.log('🔄 Nova ordem das colunas:', newColunas.map(c => c.nome))
       }
     } else if (!isColumnDrag) {
-      // Lógica original para mover cards
-      if (over.data.current?.type === 'column' || overId !== activeId) {
-        const newColumnId = over.data.current?.type === 'column' 
-          ? overId 
-          : cardColumnMapping[overId] || colunas[0].id
+      // Lógica para mover cards
+      let newColumnId = null
+      
+      // Se soltou diretamente sobre uma coluna
+      if (over.data.current?.type === 'column') {
+        newColumnId = overId
+      }
+      // Se soltou sobre outro card, usar a coluna desse card
+      else if (overId !== activeId && cardColumnMapping[overId]) {
+        newColumnId = cardColumnMapping[overId]
+      }
+      // Se não encontrou coluna específica, usar a primeira coluna disponível
+      else if (colunas.length > 0) {
+        newColumnId = colunas[0].id
+      }
 
-        // Atualizar mapeamento
+      // Atualizar mapeamento se temos uma coluna válida
+      if (newColumnId) {
         setCardColumnMapping(prev => ({
           ...prev,
           [activeId]: newColumnId
         }))
+        
+        console.log(`🔄 Card ${activeId} movido para coluna ${newColumnId}`)
       }
     }
   }
