@@ -346,20 +346,7 @@ export default function KanbanCardItem({
               )}
             </button>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpenAssinatura?.(card)
-              }}
-              className={`p-1 rounded transition-all ${
-                theme === 'dark'
-                  ? 'hover:bg-cyan-500/20 text-cyan-400'
-                  : 'hover:bg-cyan-50 text-cyan-600'
-              }`}
-              title="Assinaturas"
-            >
-              <FileText className="w-3.5 h-3.5" />
-            </button>
+     
 
             <button
               onClick={(e) => {

@@ -131,7 +131,7 @@ export default function KanbanHeader({
             
             <div className="flex items-center justify-between">
               {/* Lado Esquerdo - Ícone e Título */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 <motion.div
                   className={`p-2.5 rounded-xl ${
                     theme === 'dark'
@@ -175,35 +175,6 @@ export default function KanbanHeader({
                       {quadro.nome}
                     </h1>
                   )}
-                  
-                  {editingQuadroDescription ? (
-                    <input
-                      type="text"
-                      value={editingQuadroDescricao}
-                      onChange={(e) => setEditingQuadroDescricao(e.target.value)}
-                      onBlur={() => handleSaveQuadroDescription()}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveQuadroDescription()
-                        }
-                      }}
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 bg-transparent border border-blue-500 outline-none ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}
-                      autoFocus
-                    />
-                  ) : (
-                    <div 
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 cursor-pointer hover:bg-blue-100 transition-colors ${
-                        theme === 'dark'
-                          ? 'bg-white/5 text-white/60 border border-white/10 hover:bg-blue-900/20'
-                          : 'bg-gray-100/80 text-gray-600 border border-gray-200/50'
-                      }`}
-                      onDoubleClick={() => handleDoubleClickQuadroDescription()}
-                    >
-                      {quadro.descricao}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -227,7 +198,7 @@ export default function KanbanHeader({
                   }`}>
                     Conversas
                   </span>
-                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  <div className={`absolute -top-2 -right-2 px-1.5 py-0.5 rounded-md flex items-center justify-center text-[10px] font-bold ${
                     theme === 'dark'
                       ? 'bg-blue-500 text-white'
                       : 'bg-blue-600 text-white'
@@ -254,7 +225,7 @@ export default function KanbanHeader({
                   }`}>
                     Cards
                   </span>
-                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  <div className={`absolute -top-2 -right-2 px-1.5 py-0.5 rounded-md flex items-center justify-center text-[10px] font-bold ${
                     theme === 'dark'
                       ? 'bg-green-500 text-white'
                       : 'bg-green-600 text-white'
@@ -281,7 +252,7 @@ export default function KanbanHeader({
                   }`}>
                     Colunas
                   </span>
-                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  <div className={`absolute -top-2 -right-2 px-1.5 py-0.5 rounded-md flex items-center justify-center text-[10px] font-bold ${
                     theme === 'dark'
                       ? 'bg-purple-500 text-white'
                       : 'bg-purple-600 text-white'
@@ -290,82 +261,7 @@ export default function KanbanHeader({
                   </div>
                 </motion.div>
 
-                {/* Status do Filtro */}
-                {searchQuery && (
-                  <motion.div 
-                    className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-sm border transition-all ${
-                      theme === 'dark'
-                        ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
-                        : 'bg-orange-100/80 border-orange-200/40 hover:bg-orange-200/60'
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <Filter className={`w-4 h-4 ${
-                      theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
-                    }`} />
-                    <span className={`text-xs font-medium ${
-                      theme === 'dark' ? 'text-orange-300' : 'text-orange-700'
-                    }`}>
-                      Filtrado
-                    </span>
-                    <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
-                      theme === 'dark'
-                        ? 'bg-orange-400'
-                        : 'bg-orange-500'
-                    }`}></div>
-                  </motion.div>
-                )}
-                
-                {/* Botão de Atalhos */}
-                <motion.button
-                  onClick={() => setShowShortcuts(!showShortcuts)}
-                  className={`relative p-2 rounded-lg transition-colors ${
-                    theme === 'dark'
-                      ? 'hover:bg-white/10 text-white/60 hover:text-white'
-                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Keyboard className="w-[15px] h-[15px]" />
-                  
-                  {/* Tooltip com atalhos */}
-                  {showShortcuts && (
-                    <motion.div
-                      className={`absolute top-full right-0 mt-2 p-3 rounded-lg shadow-lg border z-50 ${
-                        theme === 'dark'
-                          ? 'bg-slate-800 border-slate-700 text-white'
-                          : 'bg-white border-gray-200 text-gray-900'
-                      }`}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                    >
-                      <div className="text-sm font-medium mb-2">Atalhos:</div>
-                      <div className="space-y-1 text-xs whitespace-nowrap">
-                        <div>Ctrl+N - Nova coluna</div>
-                        <div>Ctrl+R - Atualizar conversas</div>
-                        <div>Esc - Fechar modais</div>
-                        <div>Arrastar - Mover cards</div>
-                      </div>
-                    </motion.div>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === 'dark'
-                      ? 'hover:bg-white/10 text-white/60 hover:text-white'
-                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <MoreVertical className="w-[19px] h-[19px]" />
-                </motion.button>
+          
               </div>
             </div>
           </div>
