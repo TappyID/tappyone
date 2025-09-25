@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
 import { 
   ChevronDown, 
   Grid,
@@ -28,7 +29,10 @@ import {
   CreditCard,
   Package,
   BarChart,
-  Columns
+  AlertTriangle,
+  Columns,
+  TrendingUp,
+  Activity
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -59,6 +63,8 @@ interface KanbanHeaderProps {
   handleSaveQuadroDescription: () => void
   setEditingQuadroName: (name: string) => void
   setEditingQuadroDescricao: (desc: string) => void
+  activeView?: 'kanban' | 'funnel' | 'ncs'
+  onViewChange?: (view: 'kanban' | 'funnel' | 'ncs') => void
 }
 
 export default function KanbanHeader({
@@ -84,7 +90,9 @@ export default function KanbanHeader({
   handleSaveQuadroTitle,
   handleSaveQuadroDescription,
   setEditingQuadroName,
-  setEditingQuadroDescricao
+  setEditingQuadroDescricao,
+  activeView = 'kanban',
+  onViewChange
 }: KanbanHeaderProps) {
   const router = useRouter()
   
@@ -97,6 +105,8 @@ export default function KanbanHeader({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [showFiltersSection, setShowFiltersSection] = useState(false)
+  // 🔄 Estado para modal de confirmação de remapeamento
+  const [showRemapModal, setShowRemapModal] = useState(false)
   
   // Função para toggle de opções de busca
   const toggleSearchOption = (option: keyof typeof searchOptions) => {
@@ -104,6 +114,12 @@ export default function KanbanHeader({
       ...prev,
       [option]: !prev[option]
     }))
+  }
+
+  // 🔄 Função para confirmar remapeamento
+  const handleConfirmRemap = () => {
+    setShowRemapModal(false)
+    resetAndRemap()
   }
 
   return (
@@ -330,7 +346,7 @@ export default function KanbanHeader({
             {/* Botão de Reset (só aparece se houve mudanças manuais) */}
             {hasManualChanges && (
               <motion.button
-                onClick={resetAndRemap}
+                onClick={() => setShowRemapModal(true)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                   theme === 'dark'
                     ? 'hover:bg-yellow-500/20 text-yellow-400 hover:text-yellow-300 border border-yellow-500/30'
@@ -346,6 +362,44 @@ export default function KanbanHeader({
                 </span>
               </motion.button>
             )}
+
+            {/* Botão Funil */}
+            <motion.button
+              onClick={() => onViewChange?.(activeView === 'funnel' ? 'kanban' : 'funnel')}
+              className={`p-2 rounded-lg transition-colors ${
+                activeView === 'funnel'
+                  ? theme === 'dark'
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                    : 'bg-purple-100 text-purple-700 border border-purple-300'
+                  : theme === 'dark'
+                    ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={activeView === 'funnel' ? 'Voltar ao Kanban' : 'Ver Funil de Conversão'}
+            >
+              <TrendingUp className="w-[15px] h-[15px]" />
+            </motion.button>
+
+            {/* Botão NCS */}
+            <motion.button
+              onClick={() => onViewChange?.(activeView === 'ncs' ? 'kanban' : 'ncs')}
+              className={`p-2 rounded-lg transition-colors ${
+                activeView === 'ncs'
+                  ? theme === 'dark'
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-green-100 text-green-700 border border-green-300'
+                  : theme === 'dark'
+                    ? 'hover:bg-white/10 text-white/60 hover:text-white'
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={activeView === 'ncs' ? 'Voltar ao Kanban' : 'Ver NCS Score'}
+            >
+              <Activity className="w-[15px] h-[15px]" />
+            </motion.button>
             
             {/* Botão de Atalhos */}
             <motion.button
@@ -661,6 +715,108 @@ export default function KanbanHeader({
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* 🔄 Modal de Confirmação de Remapeamento - RENDERIZADO NO BODY */}
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showRemapModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-[99999] flex items-center justify-center p-4"
+              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+              onClick={() => setShowRemapModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0, y: 50 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.8, opacity: 0, y: 50 }}
+                className={`relative max-w-md w-full rounded-2xl p-6 shadow-2xl backdrop-blur-sm ${
+                  theme === 'dark' ? 'bg-slate-800/95 border border-slate-700' : 'bg-white/95 border border-gray-200'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      Confirmar Remapeamento
+                    </h3>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Esta ação irá resetar todas as mudanças
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowRemapModal(false)}
+                    className={`ml-auto p-2 rounded-lg transition-colors ${
+                      theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Conteúdo */}
+                <div className="mb-6">
+                  <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                    O remapeamento irá:
+                  </p>
+                  
+                  <ul className={`space-y-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <li className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                      Resetar todas as mudanças manuais nas colunas
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                      Remapear conversas automaticamente
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                      Recarregar dados do WhatsApp
+                    </li>
+                  </ul>
+
+                  <div className={`mt-4 p-3 rounded-lg ${
+                    theme === 'dark' ? 'bg-yellow-900/20 border border-yellow-700/30' : 'bg-yellow-50 border border-yellow-200'
+                  }`}>
+                    <p className={`text-sm font-medium ${
+                      theme === 'dark' ? 'text-yellow-400' : 'text-yellow-800'
+                    }`}>
+                      ⚠️ Esta ação não pode ser desfeita
+                    </p>
+                  </div>
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowRemapModal(false)}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmRemap}
+                    className="flex-1 px-4 py-2 rounded-lg font-medium bg-yellow-600 text-white hover:bg-yellow-700 transition-colors"
+                  >
+                    Confirmar Remapeamento
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   )

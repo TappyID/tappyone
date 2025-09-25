@@ -1,12 +1,15 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import './styles.css' // Importar estilos customizados
 import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Ticket, UserCircle, StickyNote } from 'lucide-react'
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
 import EditTextModal from '../../../atendimentos/components/EditTextModal'
 import QuickActionsSidebar from '../../../atendimentos/components/QuickActionsSidebar'
+import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
+import { useChatPicture } from '@/hooks/useChatPicture'
 
 // Bottom Sheets
 import AgendamentoBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AgendamentoBottomSheet'
@@ -15,6 +18,8 @@ import TagsBottomSheet from '../../../atendimento/components/FooterChatArea/Bott
 import AnotacoesBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 import TicketBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
 import AssinaturaBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AssinaturaBottomSheet'
+import ExpandableDataSection from './ProfileSidebar/ExpandableDataSection'
+import ProfileAvatar from './ProfileSidebar/ProfileAvatar'
 // import ProfileSidebar from './ProfileSidebar/index'
 
 // Componente ProfileSidebar temporário inline
@@ -23,14 +28,110 @@ const ProfileSidebar = ({
   onClose, 
   theme, 
   contactName, 
-  contactNumber, 
+  contactNumber,
+  chatId, // 🔑 Recebendo o chatId COMPLETO
+  columnColor, // 🎨 Recebendo a cor da coluna para scroll
+  profileImage, // 📸 Recebendo a foto de perfil
+  counts, // 📊 Recebendo os indicadores
   onTagsClick, 
   onOrcamentoClick, 
   onAgendamentoClick,
-  onTicketsClick,
-  onAnotacoesClick,
+  onTicketsClick, 
+  onAnotacoesClick, 
   onAssinaturaClick 
-}: any) => {
+}) => {
+  // Estados para controlar expansão de cada seção
+  const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  
+  // Estados dos dados reais
+  const [tagsData, setTagsData] = useState<any[]>([])
+  const [orcamentosData, setOrcamentosData] = useState<any[]>([])
+  const [agendamentosData, setAgendamentosData] = useState<any[]>([])
+  const [anotacoesData, setAnotacoesData] = useState<any[]>([])
+  const [ticketsData, setTicketsData] = useState<any[]>([])
+  const [assinaturasData, setAssinaturasData] = useState<any[]>([])
+  
+  // Estados de loading
+  const [loadingData, setLoadingData] = useState<Record<string, boolean>>({})
+  
+  const toggleSection = (section: string) => {
+    if (expandedSection === section) {
+      setExpandedSection(null)
+    } else {
+      setExpandedSection(section)
+      // Buscar dados quando expande pela primeira vez
+      fetchSectionData(section)
+    }
+  }
+  
+  // Função para buscar dados de cada seção
+  const fetchSectionData = async (section: string) => {
+    if (loadingData[section]) return // Evita requisições duplicadas
+    
+    setLoadingData(prev => ({ ...prev, [section]: true }))
+    
+    try {
+      // 🚨 USAR MESMO PADRÃO DOS INDICADORES - Backend GO
+      let token = localStorage.getItem('token')
+      if (!token) {
+        // Token fixo temporário igual aos indicadores
+        token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+      }
+      
+      // Garantir chatId completo com @c.us (igual aos indicadores e bottom sheets!)
+      const chatIdFormatado = chatId.includes('@c.us') ? chatId : `${chatId}@c.us`
+      const baseUrl = 'http://159.65.34.199:8081'
+      const url = `${baseUrl}/api/chats/${encodeURIComponent(chatIdFormatado)}/${section}`
+      
+      console.log('🔍 [ProfileSidebar] Buscando dados:', { 
+        section, 
+        url, 
+        chatId, 
+        chatIdFormatado
+      })
+      
+      const response = await fetch(url, {
+        headers: { 
+          'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` 
+        }
+      })
+      
+      if (!response.ok) throw new Error(`Erro ao buscar ${section}`)
+      
+      const response_data = await response.json()
+      console.log(`📊 [ProfileSidebar] Dados recebidos ${section}:`, response_data)
+      
+      // 🚨 CORREÇÃO: API retorna {data: [...], success: true}
+      const data = response_data.data || response_data
+      console.log(`📊 [ProfileSidebar] Array extraído ${section}:`, data)
+      
+      switch (section) {
+        case 'tags':
+          setTagsData(Array.isArray(data) ? data : [])
+          break
+        case 'orcamentos':
+          setOrcamentosData(Array.isArray(data) ? data : [])
+          break
+        case 'agendamentos':
+          setAgendamentosData(Array.isArray(data) ? data : [])
+          break
+        case 'anotacoes':
+          setAnotacoesData(Array.isArray(data) ? data : [])
+          break
+        case 'tickets':
+          setTicketsData(Array.isArray(data) ? data : [])
+          break
+        case 'assinaturas':
+          setAssinaturasData(Array.isArray(data) ? data : [])
+          break
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao buscar ${section}:`, error)
+    } finally {
+      setLoadingData(prev => ({ ...prev, [section]: false }))
+    }
+  }
+
   if (!isOpen) return null
   
   return (
@@ -61,13 +162,38 @@ const ProfileSidebar = ({
           </button>
         </div>
       </div>
-
-      {/* Conteúdo */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        {/* Avatar */}
+      
+      {/* Conteúdo do Sidebar */}
+      <div 
+        className="p-6 overflow-y-auto flex-1 custom-dynamic-scroll"
+        style={{
+          '--dynamic-color': columnColor
+        } as React.CSSProperties}
+      >
+        {/* Avatar e Nome */}
         <div className="flex flex-col items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl mb-3">
-            {contactName.charAt(0).toUpperCase()}
+          <div className="w-20 h-20 rounded-full mb-3 overflow-hidden border-2 border-blue-500 shadow-lg">
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt={contactName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback para avatar com inicial se a imagem falhar
+                  const target = e.target as HTMLImageElement
+                  target.style.display = 'none'
+                  target.parentElement!.innerHTML = `
+                    <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+                      ${contactName.charAt(0).toUpperCase()}
+                    </div>
+                  `
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+                {contactName.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
           <h4 className={`text-xl font-semibold ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -83,42 +209,335 @@ const ProfileSidebar = ({
 
         {/* Botões de Ação */}
         <div className="space-y-2 pt-4">
-          <button onClick={onTagsClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+          <button onClick={() => toggleSection('tags')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
-            🏷️ Gerenciar Tags
+            <div className="relative">
+              <Tag className="w-5 h-5" />
+              {counts?.tags > 0 && (
+                <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {counts.tags > 99 ? '99+' : counts.tags}
+                </span>
+              )}
+            </div>
+            <span>Gerenciar Tags</span>
           </button>
           
-          <button onClick={onOrcamentoClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+          <button onClick={() => toggleSection('orcamentos')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
-            💰 Gerenciar Orçamentos
+            <div className="relative">
+              <DollarSign className="w-5 h-5" />
+              {counts?.orcamentos > 0 && (
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {counts.orcamentos > 99 ? '99+' : counts.orcamentos}
+                </span>
+              )}
+            </div>
+            <span>Gerenciar Orçamentos</span>
           </button>
           
-          <button onClick={onAgendamentoClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+          <button onClick={() => toggleSection('agendamentos')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
-            📅 Gerenciar Agendamentos
+            <div className="relative">
+              <Calendar className="w-5 h-5" />
+              {counts?.agendamentos > 0 && (
+                <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {counts.agendamentos > 99 ? '99+' : counts.agendamentos}
+                </span>
+              )}
+            </div>
+            <span>Gerenciar Agendamentos</span>
           </button>
           
-          <button onClick={onAnotacoesClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+          <button onClick={() => toggleSection('anotacoes')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
-            📝 Gerenciar Anotações
+            <div className="relative">
+              <StickyNote className="w-5 h-5" />
+              {counts?.anotacoes > 0 && (
+                <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {counts.anotacoes > 99 ? '99+' : counts.anotacoes}
+                </span>
+              )}
+            </div>
+            <span>Gerenciar Anotações</span>
           </button>
           
-          <button onClick={onTicketsClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+          <button onClick={() => toggleSection('tickets')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
-            🎫 Gerenciar Tickets
+            <div className="relative">
+              <Ticket className="w-5 h-5" />
+              {counts?.tickets > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {counts.tickets > 99 ? '99+' : counts.tickets}
+                </span>
+              )}
+            </div>
+            <span>Gerenciar Tickets</span>
           </button>
           
-          <button onClick={onAssinaturaClick} className={`w-full p-3 rounded-lg text-left transition-colors ${
+          <button onClick={() => toggleSection('assinaturas')} className={`w-full p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
             theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border'
           }`}>
-            ✍️ Gerenciar Assinaturas
+            <div className="relative">
+              <FileText className="w-5 h-5" />
+              {counts?.assinaturas > 0 && (
+                <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {counts.assinaturas > 99 ? '99+' : counts.assinaturas}
+                </span>
+              )}
+            </div>
+            <span>Gerenciar Assinaturas</span>
           </button>
         </div>
+
+        {/* Seções Expansíveis */}
+        {expandedSection === 'tags' && (
+          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h4 className="font-semibold text-blue-500 mb-3 flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Tags ({tagsData.length})
+            </h4>
+            <div className="space-y-2">
+              {loadingData.tags ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                </div>
+              ) : tagsData.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {tagsData.map((tag) => (
+                    <span 
+                      key={tag.id}
+                      className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full flex items-center gap-1"
+                      style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                    >
+                      {tag.nome}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhuma tag encontrada
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {expandedSection === 'orcamentos' && (
+          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h4 className="font-semibold text-green-500 mb-3 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Orçamentos ({orcamentosData.length})
+            </h4>
+            <div className="space-y-3">
+              {loadingData.orcamentos ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                </div>
+              ) : orcamentosData.length > 0 ? (
+                orcamentosData.map((orcamento) => (
+                  <div key={orcamento.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">#{orcamento.numero || orcamento.id}</span>
+                      <span className="text-green-600 font-semibold">
+                        R$ {(orcamento.valorTotal || orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">{orcamento.titulo || orcamento.descricao || 'Orçamento'}</p>
+                    {orcamento.status && (
+                      <span className={`inline-block px-2 py-1 text-xs rounded-full mt-2 ${
+                        orcamento.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                        orcamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {orcamento.status}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhum orçamento encontrado
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {expandedSection === 'agendamentos' && (
+          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h4 className="font-semibold text-purple-500 mb-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Agendamentos ({agendamentosData.length})
+            </h4>
+            <div className="space-y-3">
+              {loadingData.agendamentos ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                </div>
+              ) : agendamentosData.length > 0 ? (
+                agendamentosData.map((agendamento) => (
+                  <div key={agendamento.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{agendamento.titulo || agendamento.assunto || 'Agendamento'}</span>
+                      <span className="text-sm text-gray-500">
+                        {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleDateString('pt-BR') : 
+                         agendamento.data ? new Date(agendamento.data).toLocaleDateString('pt-BR') : 'Data não definida'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">{agendamento.descricao || agendamento.observacoes || ''}</p>
+                    {agendamento.status && (
+                      <span className={`inline-block px-2 py-1 text-xs rounded-full mt-2 ${
+                        agendamento.status === 'confirmado' ? 'bg-green-100 text-green-800' :
+                        agendamento.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {agendamento.status}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhum agendamento encontrado
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {expandedSection === 'anotacoes' && (
+          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h4 className="font-semibold text-yellow-500 mb-3 flex items-center gap-2">
+              <StickyNote className="w-4 h-4" />
+              Anotações ({anotacoesData.length})
+            </h4>
+            <div className="space-y-3">
+              {loadingData.anotacoes ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500"></div>
+                </div>
+              ) : anotacoesData.length > 0 ? (
+                anotacoesData.map((anotacao) => (
+                  <div key={anotacao.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
+                    <p className="text-sm">{anotacao.conteudo || anotacao.texto || anotacao.descricao}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-500">
+                        {anotacao.criadoEm ? new Date(anotacao.criadoEm).toLocaleString('pt-BR') :
+                         anotacao.dataHora ? new Date(anotacao.dataHora).toLocaleString('pt-BR') :
+                         anotacao.data ? new Date(anotacao.data).toLocaleString('pt-BR') : ''}
+                      </span>
+                      {anotacao.autor && (
+                        <span className="text-xs text-gray-400">por {anotacao.autor}</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhuma anotação encontrada
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {expandedSection === 'tickets' && (
+          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h4 className="font-semibold text-red-500 mb-3 flex items-center gap-2">
+              <Ticket className="w-4 h-4" />
+              Tickets ({ticketsData.length})
+            </h4>
+            <div className="space-y-3">
+              {loadingData.tickets ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+                </div>
+              ) : ticketsData.length > 0 ? (
+                ticketsData.map((ticket) => (
+                  <div key={ticket.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">#{ticket.numero || ticket.id}</span>
+                      <span className={`px-2 py-1 text-white text-xs rounded-full ${
+                        ticket.status === 'aberto' ? 'bg-red-500' :
+                        ticket.status === 'em_andamento' ? 'bg-yellow-500' :
+                        ticket.status === 'resolvido' ? 'bg-green-500' :
+                        'bg-gray-500'
+                      }`}>
+                        {ticket.status || 'Aberto'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">{ticket.titulo || ticket.assunto || ticket.descricao}</p>
+                    {ticket.prioridade && (
+                      <span className={`inline-block px-2 py-1 text-xs rounded mt-2 ${
+                        ticket.prioridade === 'alta' ? 'bg-red-100 text-red-800' :
+                        ticket.prioridade === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        Prioridade {ticket.prioridade}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhum ticket encontrado
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {expandedSection === 'assinaturas' && (
+          <div className={`mt-4 p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h4 className="font-semibold text-indigo-500 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Assinaturas ({assinaturasData.length})
+            </h4>
+            <div className="space-y-3">
+              {loadingData.assinaturas ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+                </div>
+              ) : assinaturasData.length > 0 ? (
+                assinaturasData.map((assinatura) => (
+                  <div key={assinatura.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-600' : 'bg-white'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{assinatura.titulo || assinatura.nome || 'Contrato'}</span>
+                      <span className={`px-2 py-1 text-white text-xs rounded-full ${
+                        assinatura.status === 'ativo' ? 'bg-green-500' :
+                        assinatura.status === 'pendente' ? 'bg-yellow-500' :
+                        assinatura.status === 'cancelado' ? 'bg-red-500' :
+                        'bg-gray-500'
+                      }`}>
+                        {assinatura.status || 'Ativo'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {assinatura.descricao || 
+                       (assinatura.dataVencimento ? `Renovação em ${new Date(assinatura.dataVencimento).toLocaleDateString('pt-BR')}` : 
+                        assinatura.observacoes || '')}
+                    </p>
+                    {assinatura.valor && (
+                      <div className="text-sm font-medium text-indigo-600 mt-1">
+                        R$ {assinatura.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {assinatura.periodicidade && ` / ${assinatura.periodicidade}`}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhuma assinatura encontrada
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -129,6 +548,7 @@ interface ChatModalKanbanProps {
   onClose: () => void
   card: any
   theme: string
+  columnColor?: string // 🎨 Cor da coluna para scroll customizada
 }
 
 // Função para obter URL da WAHA - IGUAL DO ATENDIMENTO!
@@ -138,10 +558,11 @@ const getWahaUrl = (path: string = '') => {
   return `${baseUrl}${path}`
 }
 
-export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatModalKanbanProps) {
+export default function ChatModalKanban({ isOpen, onClose, card, theme, columnColor = '#3B82F6' }: ChatModalKanbanProps) {
   const [messages, setMessages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedChat, setSelectedChat] = useState<any>(null)
+  const [profilePhoto, setProfilePhoto] = useState<string>('')
   
   // Estados para os modais - IGUAL AO ATENDIMENTO
   const [showEditTextModal, setShowEditTextModal] = useState(false)
@@ -161,6 +582,13 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
   const chatId = card?.id || ''
   const contactName = card?.name || card?.nome || card?.contato?.nome || 'Contato'
   const contactNumber = chatId.replace('@c.us', '').replace('@s.whatsapp.net', '')
+  
+  // 📸 Hook da foto de perfil - IGUAL AO CARD
+  const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chatId)
+  const profileImage = card?.profilePictureUrl || pictureUrl
+  
+  // 📊 Hook dos indicadores
+  const { counts, loading: loadingIndicators } = useKanbanIndicators(contactNumber)
   
   // Buscar mensagens quando abrir o modal
   useEffect(() => {
@@ -332,8 +760,20 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
           theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
         }`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
-              {contactName.charAt(0).toUpperCase()}
+            <div className="relative flex-shrink-0">
+              {/* Foto do WAHA ou avatar fornecido - IGUAL KANBANCARD */}
+              {profileImage ? (
+                <img 
+                  src={profileImage} 
+                  alt={contactName}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-blue-500" 
+                /> 
+              ) : null}
+              
+              {/* Fallback avatar com inicial */}
+              <div className={`${profileImage ? 'hidden' : ''} w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold`}>
+                {contactName.charAt(0).toUpperCase()}
+              </div>
             </div>
             <div>
               <h3 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -367,53 +807,73 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
             {/* Tags */}
             <button
               onClick={() => setShowTagsSheet(true)}
-              title="Gerenciar Tags"
-              className={`p-2 rounded-lg transition-colors ${
+              title={`Gerenciar Tags${counts?.tags ? ` (${counts.tags})` : ''}`}
+              className={`p-2 rounded-lg transition-colors relative ${
                 theme === 'dark' 
                   ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
               <Tag className="w-4 h-4" />
+              {counts?.tags > 0 && (
+                <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {counts.tags > 99 ? '99+' : counts.tags}
+                </span>
+              )}
             </button>
             
             {/* Orçamento */}
             <button
               onClick={() => setShowOrcamentoSheet(true)}
-              title="Criar Orçamento"
-              className={`p-2 rounded-lg transition-colors ${
+              title={`Criar Orçamento${counts?.orcamentos ? ` (${counts.orcamentos})` : ''}`}
+              className={`p-2 rounded-lg transition-colors relative ${
                 theme === 'dark' 
                   ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
               <DollarSign className="w-4 h-4" />
+              {counts?.orcamentos > 0 && (
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {counts.orcamentos > 99 ? '99+' : counts.orcamentos}
+                </span>
+              )}
             </button>
             
             {/* Agendamento */}
             <button
               onClick={() => setShowAgendamentoSheet(true)}
-              title="Criar Agendamento"
-              className={`p-2 rounded-lg transition-colors ${
+              title={`Criar Agendamento${counts?.agendamentos ? ` (${counts.agendamentos})` : ''}`}
+              className={`p-2 rounded-lg transition-colors relative ${
                 theme === 'dark' 
                   ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
               <Calendar className="w-4 h-4" />
+              {counts?.agendamentos > 0 && (
+                <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {counts.agendamentos > 99 ? '99+' : counts.agendamentos}
+                </span>
+              )}
             </button>
 
             {/* Anotações */}
             <button
               onClick={() => setShowAnotacoesSheet(true)}
-              title="Gerenciar Anotações"
-              className={`p-2 rounded-lg transition-colors ${
+              title={`Gerenciar Anotações${counts?.anotacoes ? ` (${counts.anotacoes})` : ''}`}
+              className={`p-2 rounded-lg transition-colors relative ${
                 theme === 'dark' 
                   ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
               <StickyNote className="w-4 h-4" />
+              {counts?.anotacoes > 0 && (
+                <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {counts.anotacoes > 99 ? '99+' : counts.anotacoes}
+                </span>
+              )}
             </button>
 
             {/* Assinatura */}
@@ -432,14 +892,19 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
             {/* Tickets */}
             <button
               onClick={() => setShowTicketsSheet(true)}
-              title="Gerenciar Tickets"
-              className={`p-2 rounded-lg transition-colors ${
+              title={`Gerenciar Tickets${counts?.tickets ? ` (${counts.tickets})` : ''}`}
+              className={`p-2 rounded-lg transition-colors relative ${
                 theme === 'dark' 
                   ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
               <Ticket className="w-4 h-4" />
+              {counts?.tickets > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {counts.tickets > 99 ? '99+' : counts.tickets}
+                </span>
+              )}
             </button>
 
             
@@ -471,22 +936,37 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
         </div>
         
         {/* Área de Mensagens com scroll customizado */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <style jsx>{`
             .custom-scrollbar::-webkit-scrollbar {
               width: 8px;
             }
             .custom-scrollbar::-webkit-scrollbar-track {
-              background: rgba(59, 130, 246, 0.1);
+              background: ${columnColor}20;
               border-radius: 4px;
             }
             .custom-scrollbar::-webkit-scrollbar-thumb {
-              background: linear-gradient(45deg, #3B82F6, #1D4ED8);
+              background: ${columnColor};
               border-radius: 4px;
               transition: background 0.3s ease;
             }
             .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-              background: linear-gradient(45deg, #1D4ED8, #1E40AF);
+              background: ${columnColor}dd;
+            }
+            .custom-scrollbar-colored::-webkit-scrollbar {
+              width: 8px;
+            }
+            .custom-scrollbar-colored::-webkit-scrollbar-track {
+              background: var(--scrollbar-track);
+              border-radius: 4px;
+            }
+            .custom-scrollbar-colored::-webkit-scrollbar-thumb {
+              background: var(--scrollbar-thumb);
+              border-radius: 4px;
+              transition: background 0.3s ease;
+            }
+            .custom-scrollbar-colored::-webkit-scrollbar-thumb:hover {
+              background: var(--scrollbar-thumb)dd;
             }
           `}</style>
           {loading ? (
@@ -494,16 +974,23 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
           ) : messages.length > 0 ? (
-            <ChatArea 
-              messages={messages}
-              selectedChat={selectedChat}
-              currentUserId="user"
-              onLoadMore={() => {
-                // Implementar carregamento de mais mensagens
-                console.log('📜 Carregar mais mensagens...')
-              }}
-              hasMore={messages.length >= 50}
-            />
+            <div 
+              className="flex-1 overflow-y-auto custom-dynamic-scroll"
+              style={{
+                '--dynamic-color': columnColor
+              } as React.CSSProperties}
+            >
+              <ChatArea 
+                messages={messages}
+                selectedChat={selectedChat}
+                currentUserId="user"
+                onLoadMore={() => {
+                  // Implementar carregamento de mais mensagens
+                  console.log('📜 Carregar mais mensagens...')
+                }}
+                hasMore={messages.length >= 50}
+              />
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full">
               <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -798,8 +1285,10 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme }: ChatMo
           theme={theme}
           contactName={contactName}
           contactNumber={contactNumber}
-          chatId={chatId}
-          card={card}
+          chatId={chatId} // 🔑 Passando o chatId COMPLETO para buscar dados
+          columnColor={columnColor} // 🎨 Passando a cor da coluna para scroll
+          profileImage={profileImage} // 📸 Passando a foto de perfil
+          counts={counts} // 📊 Passando os indicadores
           onTagsClick={() => {
             setShowProfileSidebar(false)
             setShowTagsSheet(true)

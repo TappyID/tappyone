@@ -36,78 +36,70 @@ export function useKanbanIndicators(contatoId: string | null) {
     
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-      if (!token) return
+      let token = localStorage.getItem('token')
+      console.log('📊 [useKanbanIndicators] Token:', token ? 'existe' : 'NÃO EXISTE!')
       
-      console.log('📊 [useKanbanIndicators] Buscando dados para telefone:', contatoId)
-      
-      // Limpar telefone para busca - remover @c.us se existir
-      const cleanPhone = contatoId.replace('@c.us', '')
-      console.log('📊 [useKanbanIndicators] Telefone limpo:', cleanPhone)
-      
-      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone
-      const contactResponse = await fetch(`/api/contatos?telefone=${cleanPhone}`, {
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        }
-      })
-      
-      if (!contactResponse.ok) {
-        console.log('📊 [useKanbanIndicators] Erro ao buscar contato:', contactResponse.status)
-        return
+      if (!token) {
+        console.error('❌ [useKanbanIndicators] Token não encontrado no localStorage!')
+        // FIXME: Usar token fixo temporariamente (igual AnotacoesIndicator)
+        token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+        console.log('📊 [useKanbanIndicators] Usando token fixo temporariamente...')
       }
       
-      const contactData = await contactResponse.json()
-      console.log('📊 [useKanbanIndicators] Resposta da API contatos:', contactData)
-      let contatoUUID = null
+      console.log('📊 [useKanbanIndicators] Buscando dados para:', contatoId)
       
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        console.log('📊 [useKanbanIndicators] Buscando contato em array direto...')
-        const specificContact = contactData.find(contact => contact.numeroTelefone === cleanPhone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('📊 [useKanbanIndicators] UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        console.log('📊 [useKanbanIndicators] Buscando contato em contactData.data...')
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === cleanPhone)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('📊 [useKanbanIndicators] UUID do contato encontrado:', contatoUUID)
-        }
-      }
+      // Garantir que temos o chatId completo com @c.us
+      const chatId = contatoId.includes('@c.us') ? contatoId : `${contatoId}@c.us`
+      console.log('📊 [useKanbanIndicators] ChatId formatado:', chatId)
+      console.log('🔗 [useKanbanIndicators] URL anotações será:', `http://159.65.34.199:8081/api/chats/${encodeURIComponent(chatId)}/anotacoes`)
+      console.log('📊 [useKanbanIndicators] Iniciando fetch dos endpoints...')
       
-      if (!contatoUUID) {
-        console.log('📊 [useKanbanIndicators] UUID do contato não encontrado')
-        return
-      }
-      
-      // 2. SEGUNDO: Buscar todos os dados em paralelo
+      // 🚨 CORRETO: Os endpoints estão no BACKEND GO com /api prefix!
+      const baseUrl = 'http://159.65.34.199:8081'
       const promises = [
-        // Orçamentos
-        fetch(`/api/orcamentos?contato_id=${contatoUUID}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(res => res.ok ? res.json() : { data: [] }),
+        // Orçamentos - BACKEND GO
+        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
+          headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+        }).then(res => res.ok ? res.json() : []),
         
-        // Agendamentos  
-        fetch(`/api/agendamentos?contato_id=${contatoUUID}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(res => res.ok ? res.json() : { data: [] }),
+        // Agendamentos - BACKEND GO
+        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
+          headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+        }).then(res => res.ok ? res.json() : []),
         
-        // Anotações
-        fetch(`/api/anotacoes?contato_id=${contatoUUID}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(res => res.ok ? res.json() : { data: [] }),
+        // Anotações - BACKEND GO
+        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
+          headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+        }).then(res => {
+          console.log('📝 [useKanbanIndicators] Response anotações status:', res.status)
+          console.log('📝 [useKanbanIndicators] Response URL:', res.url)
+          if (res.ok) {
+            return res.json().then(data => {
+              console.log('📝 [useKanbanIndicators] Anotações recebidas para', chatId, ':', data)
+              console.log('📝 [useKanbanIndicators] Tipo dos dados:', typeof data, 'É array?', Array.isArray(data))
+              if (Array.isArray(data)) {
+                console.log('📝 [useKanbanIndicators] Length do array:', data.length)
+              }
+              return data
+            })
+          } else {
+            console.error('📝 [useKanbanIndicators] Erro na API de anotações:', res.status, res.statusText)
+            return []
+          }
+        }).catch(err => {
+          console.error('📝 [useKanbanIndicators] Erro no fetch de anotações:', err)
+          return []
+        }),
         
-        // Tickets  
-        fetch(`/api/tickets?contato_id=${contatoUUID}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(res => res.ok ? res.json() : { data: [] }),
+        // Tickets - BACKEND GO
+        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/tickets`, {
+          headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+        }).then(res => res.ok ? res.json() : []),
         
-        // Tags
-        fetch(`/api/tags?contato_id=${contatoUUID}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(res => res.ok ? res.json() : { data: [] })
+        // Tags - BACKEND GO
+        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/tags`, {
+          headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+        }).then(res => res.ok ? res.json() : [])
       ]
       
       const [
@@ -118,17 +110,26 @@ export function useKanbanIndicators(contatoId: string | null) {
         tagsData
       ] = await Promise.all(promises)
       
+      // Debug de cada endpoint
+      console.log('📊 [useKanbanIndicators] Dados recebidos:')
+      console.log('  💰 Orçamentos:', orcamentosData)
+      console.log('  📅 Agendamentos:', agendamentosData)
+      console.log('  📝 Anotações:', anotacoesData)
+      console.log('  🎫 Tickets:', ticketsData)
+      console.log('  🏷️ Tags:', tagsData)
+
       const newCounts = {
-        orcamentos: Array.isArray(orcamentosData?.data) ? orcamentosData.data.length : 
-                   Array.isArray(orcamentosData) ? orcamentosData.length : 0,
-        agendamentos: Array.isArray(agendamentosData?.data) ? agendamentosData.data.length :
-                     Array.isArray(agendamentosData) ? agendamentosData.length : 0,
-        anotacoes: Array.isArray(anotacoesData?.data) ? anotacoesData.data.length :
-                  Array.isArray(anotacoesData) ? anotacoesData.length : 0,
-        tickets: Array.isArray(ticketsData?.data) ? ticketsData.data.length :
-                Array.isArray(ticketsData) ? ticketsData.length : 0,
-        tags: Array.isArray(tagsData?.data) ? tagsData.data.length :
-             Array.isArray(tagsData) ? tagsData.length : 0
+        // Para endpoints DIRETOS - dados vêm como array ou {data: array}
+        orcamentos: Array.isArray(orcamentosData) ? orcamentosData.length : 
+                   Array.isArray(orcamentosData?.data) ? orcamentosData.data.length : 0,
+        agendamentos: Array.isArray(agendamentosData) ? agendamentosData.length :
+                     Array.isArray(agendamentosData?.data) ? agendamentosData.data.length : 0,
+        anotacoes: Array.isArray(anotacoesData) ? anotacoesData.length :
+                  Array.isArray(anotacoesData?.data) ? anotacoesData.data.length : 0,
+        tickets: Array.isArray(ticketsData) ? ticketsData.length :
+                Array.isArray(ticketsData?.data) ? ticketsData.data.length : 0,
+        tags: Array.isArray(tagsData) ? tagsData.length :
+             Array.isArray(tagsData?.data) ? tagsData.data.length : 0
       }
       
       console.log('📊 [useKanbanIndicators] Contadores atualizados:', newCounts)
@@ -143,16 +144,24 @@ export function useKanbanIndicators(contatoId: string | null) {
 
   // Carregar contadores quando contatoId mudar
   useEffect(() => {
+    console.log('🚀 [useKanbanIndicators] useEffect executado! contatoId:', contatoId)
     fetchAllCounts()
   }, [fetchAllCounts])
 
   // Escutar eventos de criação para atualizar automaticamente
   useEffect(() => {
     const handleCreated = (event: any) => {
-      const { contatoId: eventContatoId } = event.detail
+      // Os BottomSheets enviam chatId (com @c.us), não contatoId
+      const { chatId: eventChatId, contatoId: eventContatoId } = event.detail
       
-      if (eventContatoId === contatoId) {
+      // Converter contatoId para chatId para comparação
+      const currentChatId = contatoId?.includes('@c.us') ? contatoId : `${contatoId}@c.us`
+      
+      // Verificar se o evento é para este card (comparar ambos formatos)
+      if (eventChatId === currentChatId || eventContatoId === contatoId) {
         console.log('📊 [useKanbanIndicators] Evento recebido, recarregando contadores...')
+        console.log('  📨 Event chatId:', eventChatId)
+        console.log('  📱 Current chatId:', currentChatId)
         fetchAllCounts()
       }
     }

@@ -12,6 +12,8 @@ import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import KanbanHeader from './components/KanbanHeader'
 import KanbanBoard from './components/KanbanBoard'
 import KanbanColumn from './components/KanbanColumn'
+import ColumnConfigModal from './components/ColumnConfigModal'
+import FunnelView from './components/FunnelView'
 
 // TopBar
 import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
@@ -154,6 +156,11 @@ export default function QuadroPage() {
   const [showColorModal, setShowColorModal] = useState(false)
   const [selectedColumnForColor, setSelectedColumnForColor] = useState<any>(null)
   const [conexaoFilaModal, setConexaoFilaModal] = useState({ isOpen: false, card: null })
+  const [showConfigModal, setShowConfigModal] = useState(false)
+  const [selectedColumnForConfig, setSelectedColumnForConfig] = useState<any>(null)
+  
+  // Estado para controlar a visualização ativa (kanban, funil, ncs)
+  const [activeView, setActiveView] = useState<'kanban' | 'funnel' | 'ncs'>('kanban')
   
   // Estados dos BottomSheets
   const [showAgendamentoSheet, setShowAgendamentoSheet] = useState(false)
@@ -313,6 +320,36 @@ export default function QuadroPage() {
   const handleDeleteColumn = async (columnId: string) => {
     if (confirm('Tem certeza que deseja excluir esta coluna?')) {
       await deleteColuna(columnId)
+    }
+  }
+
+  // 🗑️ Função para deletar coluna com realocação de contatos
+  const handleDeleteWithReallocation = async (columnId: string, targetColumnId: string) => {
+    try {
+      console.log('🗑️ Realocando contatos da coluna', columnId, 'para', targetColumnId)
+      
+      // 1. Encontrar a coluna que será deletada
+      const sourceColumn = colunasComCards.find(col => col.id === columnId)
+      if (!sourceColumn || !sourceColumn.cards) {
+        console.error('❌ Coluna de origem não encontrada')
+        return
+      }
+
+      // 2. Mover todos os cards para a coluna de destino
+      // TODO: Implementar API para mover cards em lote
+      // Por enquanto, vamos simular movendo um por um
+      for (const card of sourceColumn.cards) {
+        console.log('📦 Movendo card', card.id, 'para coluna', targetColumnId)
+        // await moveCardToColumn(card.id, targetColumnId)
+      }
+
+      // 3. Deletar a coluna vazia
+      await deleteColuna(columnId)
+      
+      console.log('✅ Coluna deletada e contatos realocados com sucesso!')
+    } catch (error) {
+      console.error('❌ Erro ao realocar contatos:', error)
+      alert('Erro ao realocar contatos. Tente novamente.')
     }
   }
 
@@ -538,12 +575,30 @@ export default function QuadroPage() {
         handleSaveQuadroDescription={handleSaveQuadroDescription}
         setEditingQuadroName={setEditingQuadroName}
         setEditingQuadroDescricao={setEditingQuadroDescricao}
+        activeView={activeView}
+        onViewChange={setActiveView}
       />
 
       {/* Seção de Filtros - Controlada pelo botão no header */}
       {/* Esta seção será implementada futuramente com SideFilter do atendimento */}
 
-      {/* Board Kanban com DnD */}
+      {/* Renderização condicional baseada na view ativa */}
+      {activeView === 'funnel' && (
+        <FunnelView 
+          theme={theme}
+          colunas={colunas}
+          chats={whatsappChats}
+        />
+      )}
+
+      {activeView === 'ncs' && (
+        <div className="p-6">
+          <h2 className="text-2xl font-bold">NCS Analytics - Em breve</h2>
+        </div>
+      )}
+
+      {/* Board Kanban com DnD - Só mostra quando activeView === 'kanban' */}
+      {activeView === 'kanban' && (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -590,8 +645,15 @@ export default function QuadroPage() {
                 onOpenOrcamento={onOpenOrcamento}
                 onOpenTags={onOpenTags}
                 onOpenChat={onOpenChat}
+                onOpenConfig={(coluna) => {
+                  setSelectedColumnForConfig(coluna)
+                  setShowConfigModal(true)
+                }}
                 onOpenAnotacoes={onOpenAnotacoes}
                 onOpenTickets={onOpenTickets}
+                // 🗑️ Props para modal de confirmação de exclusão
+                allColumns={colunasComCards}
+                onDeleteWithReallocation={handleDeleteWithReallocation}
               />
             ))}
 
@@ -616,6 +678,7 @@ export default function QuadroPage() {
           </SortableContext>
         </KanbanBoard>
       </DndContext>
+      )}
 
       {/* Info sobre performance */}
       {whatsappChats.length > 100 && (
@@ -686,6 +749,34 @@ export default function QuadroPage() {
           isOpen={showTicketsSheet}
           onClose={() => setShowTicketsSheet(false)}
           chatId={selectedChat.id}
+        />
+      )}
+
+      {/* 🎨 Color Picker Modal */}
+      <ColorPickerModal
+        isOpen={showColorModal}
+        onClose={() => setShowColorModal(false)}
+        currentColor={selectedColumnForColor?.cor || '#3B82F6'}
+        onColorSelect={async (color: string) => {
+          if (selectedColumnForColor) {
+            await updateColuna(selectedColumnForColor.id, { cor: color })
+            setShowColorModal(false)
+            setSelectedColumnForColor(null)
+          }
+        }}
+        columnName={selectedColumnForColor?.nome || ''}
+      />
+
+      {/* ⚙️ Column Config Modal */}
+      {selectedColumnForConfig && (
+        <ColumnConfigModal
+          isOpen={showConfigModal}
+          onClose={() => {
+            setShowConfigModal(false)
+            setSelectedColumnForConfig(null)
+          }}
+          coluna={selectedColumnForConfig}
+          theme={theme}
         />
       )}
     </div>

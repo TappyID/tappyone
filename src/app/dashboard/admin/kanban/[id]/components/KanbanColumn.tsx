@@ -1,20 +1,30 @@
 'use client'
 
-import React from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useDroppable } from '@dnd-kit/core'
-import { useSortable } from '@dnd-kit/sortable'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import {
-  Plus,
-  Trash2,
+import { 
+  Plus, 
+  Trash2, 
+  MoreVertical, 
+  Calendar, 
+  DollarSign, 
+  StickyNote, 
   GripVertical,
-  DollarSign,
-  Calendar,
-  FileSignature
+  FileSignature,
+  Settings,
+  Ticket,
+  Target,
+  AlertTriangle,
+  X,
+  Filter,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import KanbanCardItem from './KanbanCardItem'
+import MetricCard from './MetricCard'
 
 interface KanbanColumnProps {
   coluna: {
@@ -65,7 +75,11 @@ interface KanbanColumnProps {
   onOpenLigacao?: () => void
   onOpenCompartilharTela?: () => void
   onOpenConexaoFila?: (card: any) => void
+  onOpenConfig?: (coluna: any) => void
   getColumnStats?: (columnId: string) => any
+  // 🗑️ Props para modal de confirmação de exclusão
+  allColumns?: any[] // Lista de todas as colunas para realocação
+  onDeleteWithReallocation?: (columnId: string, targetColumnId: string) => void
 }
 
 export default function KanbanColumn({
@@ -110,7 +124,10 @@ export default function KanbanColumn({
   onOpenLigacao,
   onOpenCompartilharTela,
   onOpenConexaoFila,
-  getColumnStats
+  onOpenConfig,
+  getColumnStats,
+  allColumns = [],
+  onDeleteWithReallocation
 }: KanbanColumnProps) {
   
   const { setNodeRef, isOver } = useDroppable({
@@ -139,10 +156,48 @@ export default function KanbanColumn({
     opacity: isColumnDragging ? 0.5 : 1,
   }
   
-  // Combinar refs
   const combinedRef = (node: HTMLElement | null) => {
     setNodeRef(node)
     setSortableNodeRef(node)
+  }
+
+  // 🗑️ Estados para modal de confirmação de exclusão e para mostrar métricas
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showMetrics, setShowMetrics] = useState(true)
+  const [selectedTargetColumn, setSelectedTargetColumn] = useState('')
+
+  // 🗑️ Função para abrir modal de confirmação
+  const handleDeleteClick = () => {
+    console.log('🗑️ [DEBUG] handleDeleteClick chamado')
+    console.log('🗑️ [DEBUG] allColumns:', allColumns)
+    console.log('🗑️ [DEBUG] coluna.cards:', coluna.cards)
+    
+    if (coluna.cards && coluna.cards.length > 0) {
+      // Se tem cards, abrir modal para escolher coluna de destino
+      setShowDeleteModal(true)
+      // Selecionar primeira coluna disponível como padrão
+      const availableColumns = allColumns.filter(col => col.id !== coluna.id)
+      console.log('🗑️ [DEBUG] availableColumns:', availableColumns)
+      
+      if (availableColumns.length > 0) {
+        setSelectedTargetColumn(availableColumns[0].id)
+        console.log('🗑️ [DEBUG] selectedTargetColumn definido como:', availableColumns[0].id)
+      }
+    } else {
+      // Se não tem cards, deletar direto
+      onDelete(coluna.id)
+    }
+  }
+
+  // 🗑️ Função para confirmar exclusão com realocação
+  const handleConfirmDelete = () => {
+    if (onDeleteWithReallocation && selectedTargetColumn) {
+      onDeleteWithReallocation(coluna.id, selectedTargetColumn)
+    } else {
+      onDelete(coluna.id)
+    }
+    setShowDeleteModal(false)
+    setSelectedTargetColumn('')
   }
 
   // Calcular totais da coluna
@@ -218,7 +273,7 @@ export default function KanbanColumn({
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       {/* Header da Coluna Ultra Sofisticado */}
-      <div className={`relative p-5 border-b backdrop-blur-sm ${
+      <div className={`relative p-3 border-b backdrop-blur-sm ${
         theme === 'dark' ? 'border-slate-700/30 bg-slate-800/20' : 'border-gray-200/30 bg-white/40'
       }`}>
         {/* Glow Effect no Header */}
@@ -311,34 +366,90 @@ export default function KanbanColumn({
             
             {/* Botões de Ação Sofisticados */}
             <div className="flex items-center gap-1">
-              {/* Botão Adicionar */}
+              {/* Botão Engine/Configurações */}
               <motion.button
-                onClick={() => handleAddCard(coluna.id)}
-                className={`p-2 rounded-xl transition-all duration-300 ${
+                onClick={() => {
+                  console.log('⚙️ Abrindo configurações da coluna!', coluna)
+                  onOpenConfig?.(coluna)
+                }}
+                className={`p-1.5 rounded-lg transition-all duration-300 ${
                   theme === 'dark'
-                    ? 'hover:bg-green-500/20 text-green-400 hover:text-green-300 border border-transparent hover:border-green-500/30'
-                    : 'hover:bg-green-50 text-green-600 hover:text-green-700 border border-transparent hover:border-green-300/50'
-                } backdrop-blur-sm shadow-lg hover:shadow-xl`}
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                title="Adicionar card"
+                    ? 'hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-transparent hover:border-blue-500/30'
+                    : 'hover:bg-blue-50 text-blue-600 hover:text-blue-700 border border-transparent hover:border-blue-300/50'
+                } backdrop-blur-sm shadow-sm hover:shadow-md`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Configurar regras da coluna"
               >
-                <Plus className="w-[15px] h-[15px]" />
+                <Settings className="w-3.5 h-3.5" />
+              </motion.button>
+
+              {/* Botão Filtro/Métricas */}
+              <motion.button
+                onClick={() => {
+                  setShowMetrics(!showMetrics)
+                  console.log('📊 Toggle métricas:', !showMetrics)
+                }}
+                className={`p-1.5 rounded-lg transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-transparent hover:border-purple-500/30'
+                    : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700 border border-transparent hover:border-purple-300/50'
+                } backdrop-blur-sm shadow-sm hover:shadow-md ${
+                  showMetrics 
+                    ? theme === 'dark' 
+                      ? 'bg-purple-500/20 border-purple-500/30' 
+                      : 'bg-purple-50 border-purple-300/50'
+                    : ''
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title={showMetrics ? "Ocultar métricas" : "Mostrar métricas"}
+              >
+                {showMetrics ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </motion.button>
+              
+              {/* Botão Trocar Cor */}
+              <motion.button
+                onClick={() => {
+                  console.log('🎨 Botão de cor clicado!', coluna)
+                  onOpenColorModal(coluna)
+                }}
+                className={`p-1.5 rounded-lg transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-transparent hover:border-purple-500/30'
+                    : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700 border border-transparent hover:border-purple-300/50'
+                } backdrop-blur-sm shadow-sm hover:shadow-md`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Trocar cor da coluna"
+                style={{
+                  backgroundColor: `${coluna.cor}15`,
+                  borderColor: `${coluna.cor}30`
+                }}
+              >
+                <div 
+                  className="w-3.5 h-3.5 rounded-full border border-white/50"
+                  style={{ backgroundColor: coluna.cor }}
+                />
               </motion.button>
               
               {/* Botão Deletar */}
               <motion.button
-                onClick={() => onDelete(coluna.id)}
-                className={`p-2 rounded-xl transition-all duration-300 ${
+                onClick={handleDeleteClick}
+                className={`p-1.5 rounded-lg transition-all duration-300 ${
                   theme === 'dark'
                     ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-transparent hover:border-red-500/30'
                     : 'hover:bg-red-50 text-red-500 hover:text-red-600 border border-transparent hover:border-red-300/50'
-                } backdrop-blur-sm shadow-lg hover:shadow-xl`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                } backdrop-blur-sm shadow-sm hover:shadow-md`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 title="Deletar coluna"
               >
-                <Trash2 className="w-[15px] h-[15px]" />
+                <Trash2 className="w-3.5 h-3.5" />
               </motion.button>
             </div>
           </div>
@@ -371,6 +482,149 @@ export default function KanbanColumn({
           />
         </div>
       </div>
+
+      {/* 📊 Métricas da Coluna */}
+      {showMetrics && (
+      <motion.div 
+        className="p-3 space-y-1"
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
+        {/* Orçamentos */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3`} style={{ borderLeftColor: coluna.cor }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-3 h-3" style={{ color: coluna.cor }} />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Orçamentos</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {Object.keys(orcamentosData || {}).reduce((total, cardId) => {
+                return total + (orcamentosData[cardId]?.length || 0)
+              }, 0)} / 20
+            </span>
+          </div>
+          <div className={`h-1.5 rounded-full ${
+            theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
+          }`}>
+            <div 
+              className="h-full rounded-full transition-all duration-500"
+              style={{ 
+                backgroundColor: coluna.cor,
+                width: `${Math.min((Object.keys(orcamentosData || {}).reduce((total, cardId) => {
+                  return total + (orcamentosData[cardId]?.length || 0)
+                }, 0) / 20) * 100, 100)}%`
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Agendamentos */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3`} style={{ borderLeftColor: coluna.cor }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-3 h-3" style={{ color: coluna.cor }} />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Agendamentos</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {Object.keys(agendamentosData || {}).reduce((total, cardId) => {
+                return total + (agendamentosData[cardId]?.length || 0)
+              }, 0)} / 15
+            </span>
+          </div>
+          <div className={`h-1.5 rounded-full ${
+            theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
+          }`}>
+            <div 
+              className="h-full rounded-full transition-all duration-500"
+              style={{ 
+                backgroundColor: coluna.cor,
+                width: `${Math.min((Object.keys(agendamentosData || {}).reduce((total, cardId) => {
+                  return total + (agendamentosData[cardId]?.length || 0)
+                }, 0) / 15) * 100, 100)}%`
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Tickets */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3`} style={{ borderLeftColor: coluna.cor }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Ticket className="w-3 h-3" style={{ color: coluna.cor }} />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Tickets</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {Object.keys(ticketsData || {}).reduce((total, cardId) => {
+                return total + (ticketsData[cardId]?.length || 0)
+              }, 0)} / 10
+            </span>
+          </div>
+          <div className={`h-1.5 rounded-full ${
+            theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
+          }`}>
+            <div 
+              className="h-full rounded-full transition-all duration-500"
+              style={{ 
+                backgroundColor: coluna.cor,
+                width: `${Math.min((Object.keys(ticketsData || {}).reduce((total, cardId) => {
+                  return total + (ticketsData[cardId]?.length || 0)
+                }, 0) / 10) * 100, 100)}%`
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Meta de Vendas */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3`} style={{ borderLeftColor: coluna.cor }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Target className="w-3 h-3" style={{ color: coluna.cor }} />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Meta Vendas</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              R$ 45.000 / R$ 100.000
+            </span>
+          </div>
+          <div className={`h-1.5 rounded-full ${
+            theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
+          }`}>
+            <div 
+              className="h-full rounded-full transition-all duration-500"
+              style={{ 
+                backgroundColor: coluna.cor,
+                width: '45%'
+              }}
+            />
+          </div>
+        </div>
+      </motion.div>
+      )}
 
       {/* Cards Container com Scroll */}
       <div 
@@ -547,6 +801,109 @@ export default function KanbanColumn({
             inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
       `}</style>
+
+      {/* 🗑️ Modal de Confirmação de Exclusão */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`relative max-w-md w-full rounded-2xl p-6 shadow-2xl ${
+                theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    Excluir Coluna
+                  </h3>
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Esta ação não pode ser desfeita
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className={`ml-auto p-2 rounded-lg transition-colors ${
+                    theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Conteúdo */}
+              <div className="mb-6">
+                <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  A coluna <strong>"{coluna.nome}"</strong> possui <strong>{coluna.cards?.length || 0} contatos</strong>.
+                </p>
+                
+                {coluna.cards && coluna.cards.length > 0 && (
+                  <div className="space-y-3">
+                    <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      Para onde deseja realocar os contatos?
+                    </p>
+                    
+                    <select
+                      value={selectedTargetColumn}
+                      onChange={(e) => setSelectedTargetColumn(e.target.value)}
+                      className={`w-full p-3 rounded-lg border transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-slate-700 border-slate-600 text-white focus:border-blue-500'
+                          : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                    >
+                      <option value="">Selecione uma coluna...</option>
+                      {(() => {
+                        const filteredColumns = allColumns.filter(col => col.id !== coluna.id)
+                        console.log('🗑️ [DEBUG] Renderizando select com colunas:', filteredColumns)
+                        return filteredColumns.map(col => (
+                          <option key={col.id} value={col.id}>
+                            {col.nome} ({col.cards?.length || 0} contatos)
+                          </option>
+                        ))
+                      })()}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={coluna.cards && coluna.cards.length > 0 && !selectedTargetColumn}
+                  className="flex-1 px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {coluna.cards && coluna.cards.length > 0 ? 'Realocar e Excluir' : 'Excluir'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

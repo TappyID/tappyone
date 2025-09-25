@@ -394,3 +394,111 @@
     scrollbar-color: rgba(59, 130, 246, 0.8) rgba(59, 130, 246, 0.1);
   }
 }
+
+/* 🎨 SCROLLBAR PERSONALIZADA PARA COLUNAS DO KANBAN */
+.custom-column-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--column-color) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.custom-column-scroll::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+
+.custom-column-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.custom-column-scroll::-webkit-scrollbar-thumb {
+  background: var(--column-color);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  opacity: 0.7;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-column-scroll::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: var(--column-color);
+  background-clip: content-box;
+  transform: scaleX(1.2);
+  box-shadow: 0 0 8px var(--column-color);
+}
+
+.custom-column-scroll::-webkit-scrollbar-thumb:active {
+  opacity: 1;
+  transform: scaleX(1.4);
+  box-shadow: 0 0 12px var(--column-color);
+}
+
+/* Dark mode adjustments */
+.dark .custom-column-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .custom-column-scroll::-webkit-scrollbar-thumb {
+  opacity: 0.8;
+}
+
+.dark .custom-column-scroll::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+}
+
+/* 🎨 SCROLLBAR DINÂMICA PARA CHAT MODAL E PROFILE SIDEBAR */
+.custom-dynamic-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dynamic-color) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.custom-dynamic-scroll::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+
+.custom-dynamic-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.custom-dynamic-scroll::-webkit-scrollbar-thumb {
+  background: var(--dynamic-color);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  opacity: 0.7;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-dynamic-scroll::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: var(--dynamic-color);
+  background-clip: content-box;
+  transform: scaleX(1.2);
+  box-shadow: 0 0 8px var(--dynamic-color);
+}
+
+.custom-dynamic-scroll::-webkit-scrollbar-thumb:active {
+  opacity: 1;
+  transform: scaleX(1.4);
+  box-shadow: 0 0 12px var(--dynamic-color);
+}
+
+/* Dark mode adjustments */
+.dark .custom-dynamic-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .custom-dynamic-scroll::-webkit-scrollbar-thumb {
+  opacity: 0.8;
+}
+
+.dark .custom-dynamic-scroll::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+}

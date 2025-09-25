@@ -254,7 +254,11 @@ export const AgenteButton = ({
   isGenerating?: boolean,
   agenteAtivo?: boolean,
   agenteNome?: string
-}) => (
+}) => {
+  // Debug para verificar o estado do agente
+  console.log('🤖 AgenteButton Debug:', { agenteAtivo, agenteNome, isGenerating })
+  
+  return (
   <motion.button
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
@@ -282,7 +286,8 @@ export const AgenteButton = ({
       <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 animate-ping"></div>
     )}
   </motion.button>
-)
+  )
+}
 
 // Micro componente Ações Rápidas
 export const AcoesRapidasButton = ({ onClick }: { onClick?: () => void }) => (

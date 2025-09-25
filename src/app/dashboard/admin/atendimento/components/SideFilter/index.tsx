@@ -25,7 +25,9 @@ import {
   FileText,
   Ticket,
   DollarSign,
-  Tag
+  Tag,
+  Clock,
+  UserX
 } from 'lucide-react'
 
 // import SearchInput from './SearchInput' // Não usado mais
@@ -355,6 +357,81 @@ export default function SideFilter({
             <span>Contatos</span>
           </motion.button>
         </div>
+
+        {/* Linha Divisória Superior */}
+        <div className="border-t border-gray-200 dark:border-gray-700 mt-4 mb-3"></div>
+
+        {/* 📊 Filtros de Status - Com Background e Badges */}
+        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3 mx-1">
+          <div className="grid grid-cols-4 gap-2">
+            {/* Atendimento */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
+              title="Em Atendimento"
+            >
+              <div className="relative">
+                <MessageCircle className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  12
+                </span>
+              </div>
+              <span>Atendimento</span>
+            </motion.button>
+            
+            {/* Aguardando */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
+              title="Aguardando"
+            >
+              <div className="relative">
+                <Clock className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  5
+                </span>
+              </div>
+              <span>Aguardando</span>
+            </motion.button>
+            
+            {/* No Agente */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
+              title="Sem Agente"
+            >
+              <div className="relative">
+                <UserX className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  3
+                </span>
+              </div>
+              <span>No Agente</span>
+            </motion.button>
+            
+            {/* Grupos */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
+              title="Grupos"
+            >
+              <div className="relative">
+                <Users className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  8
+                </span>
+              </div>
+              <span>Grupos</span>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Linha Divisória Inferior */}
+        <div className="border-t border-gray-200 dark:border-gray-700 mt-3 mb-4"></div>
       </div>
 
       {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}

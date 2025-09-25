@@ -16,11 +16,13 @@ import {
   Users,
   Tag,
   Ticket,
-  UserCheck
+  UserCheck,
+  StickyNote
 } from 'lucide-react'
 
 import LastMessageSideChat from './LastMessageSideChat'
 import { useChatPicture } from '@/hooks/useChatPicture'
+import { useKanbanIndicators } from '../../../kanban/[id]/hooks/useKanbanIndicators'
 
 // Helper para formatar tempo relativo
 function formatTimeRelative(timestamp: number): string {
@@ -55,34 +57,10 @@ interface ItemSideChatProps {
       sender: 'user' | 'agent'
       isRead?: boolean
     }
-    // Dados dos indicadores
-    tags?: Array<{
-      id: string
-      nome: string
-      cor?: string
-    }>
-    agendamentos?: Array<{
-      id: string
-      titulo: string
-      status: string
-    }>
-    orcamentos?: Array<{
-      id: string
-      titulo: string
-      status: string
-    }>
-    tickets?: Array<{
-      id: string
-      titulo: string
-      status: string
-    }>
+    // Dados básicos do chat (outros vêm do hook)
     rating?: number
     isOnline?: boolean
     connectionStatus?: 'connected' | 'disconnected' | 'connecting'
-    kanbanStatus?: {
-      id: string
-      nome: string
-    }
     fila?: string | {
       id: string
       nome: string
@@ -135,6 +113,9 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   // Buscar foto de perfil do WAHA - usar profilePictureUrl se já vier no chat
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat.id)
   const profileImage = chat.profilePictureUrl || pictureUrl || chat.avatar
+  
+  // Buscar dados reais do chat no Kanban - igual ao KanbanCardItem
+  const { counts, loading: loadingKanbanData } = useKanbanIndicators(chat.id)
   
   // Função para lidar com a transferência
   const handleTransfer = (targetId: string, type: 'atendente' | 'fila', notes?: string) => {
@@ -279,50 +260,51 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                 <UserCheck className="w-2 h-2 text-purple-500" />
               </div>
             )}
+
+            {/* Loading Indicator para dados do Kanban */}
+            {loadingKanbanData && (
+              <div className="flex items-center px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+              </div>
+            )}
             
-            {/* Tags */}
-            {!!(chat.tags && chat.tags.length > 0) && (
+            {/* Tags - Dados Reais */}
+            {!!(counts.tags && counts.tags > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
                 <Tag className="w-2 h-2 text-gray-500" />
-                <span className="text-[9px] font-medium text-gray-600">{chat.tags.length}</span>
+                <span className="text-[9px] font-medium text-gray-600">{counts.tags}</span>
               </div>
             )}
             
-            {/* Agendamentos */}
-            {!!(chat.agendamentos && chat.agendamentos.length > 0) && (
+            {/* Agendamentos - Dados Reais */}
+            {!!(counts.agendamentos && counts.agendamentos > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full">
                 <Calendar className="w-2 h-2 text-blue-500" />
-                <span className="text-[9px] font-medium text-blue-600">{chat.agendamentos.length}</span>
+                <span className="text-[9px] font-medium text-blue-600">{counts.agendamentos}</span>
               </div>
             )}
             
-            {/* Orçamentos */}
-            {!!(chat.orcamentos && chat.orcamentos.length > 0) && (
+            {/* Orçamentos - Dados Reais */}
+            {!!(counts.orcamentos && counts.orcamentos > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded-full">
                 <DollarSign className="w-2 h-2 text-green-500" />
-                <span className="text-[9px] font-medium text-green-600">{chat.orcamentos.length}</span>
+                <span className="text-[9px] font-medium text-green-600">{counts.orcamentos}</span>
               </div>
             )}
             
-            {/* Tickets */}
-            {!!(chat.tickets && chat.tickets.length > 0) && (
+            {/* Tickets - Dados Reais */}
+            {!!(counts.tickets && counts.tickets > 0) && (
               <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded-full">
                 <Ticket className="w-2 h-2 text-orange-500" />
-                <span className="text-[9px] font-medium text-orange-600">{chat.tickets.length}</span>
+                <span className="text-[9px] font-medium text-orange-600">{counts.tickets}</span>
               </div>
             )}
             
-            {/* Kanban */}
-            {chat.kanbanStatus && (
-              <div 
-                className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
-                style={{ 
-                  backgroundColor: `${chat.kanbanStatus.cor || '#6b7280'}20`,
-                  color: chat.kanbanStatus.cor || '#6b7280'
-                }}
-              >
-                <Layers className="w-2 h-2" />
-                <span className="text-[9px] font-medium truncate max-w-[40px]">{chat.kanbanStatus.nome}</span>
+            {/* Anotações - Dados Reais */}
+            {!!(counts.anotacoes && counts.anotacoes > 0) && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded-full">
+                <StickyNote className="w-2 h-2 text-purple-500" />
+                <span className="text-[9px] font-medium text-purple-600">{counts.anotacoes}</span>
               </div>
             )}
             

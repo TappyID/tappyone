@@ -5,12 +5,13 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface ExpandableDataSectionProps {
   theme: string
-  icon: string
+  icon: React.ReactNode
   title: string
   count: number
   items: any[]
-  onAddClick: () => void
+  onAddClick?: () => void // Agora é opcional
   renderItem: (item: any) => React.ReactNode
+  columnColor?: string // 🎨 Cor da coluna para scrollbar
 }
 
 export default function ExpandableDataSection({
@@ -20,7 +21,8 @@ export default function ExpandableDataSection({
   count,
   items,
   onAddClick,
-  renderItem
+  renderItem,
+  columnColor
 }: ExpandableDataSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -68,7 +70,12 @@ export default function ExpandableDataSection({
           theme === 'dark' ? 'border-slate-600' : 'border-gray-200'
         }`}>
           {items.length > 0 ? (
-            <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
+            <div 
+              className="p-3 space-y-2 max-h-60 overflow-y-auto custom-dynamic-scroll"
+              style={{
+                '--dynamic-color': columnColor || '#3B82F6'
+              } as React.CSSProperties}
+            >
               {items.map((item, index) => (
                 <div key={index}>
                   {renderItem(item)}
@@ -83,17 +90,22 @@ export default function ExpandableDataSection({
             </div>
           )}
 
-          {/* Botão Adicionar */}
-          <button
-            onClick={onAddClick}
-            className={`w-full p-2 text-sm font-medium transition-colors ${
-              theme === 'dark'
-                ? 'bg-slate-700 hover:bg-slate-600 text-blue-400'
-                : 'bg-gray-50 hover:bg-gray-100 text-blue-600'
-            }`}
-          >
-            + Adicionar {title}
-          </button>
+          {/* Botão Adicionar - Opcional */}
+          {onAddClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onAddClick()
+              }}
+              className={`w-full p-2 text-sm font-medium transition-colors ${
+                theme === 'dark'
+                  ? 'bg-slate-700 hover:bg-slate-600 text-blue-400'
+                  : 'bg-gray-50 hover:bg-gray-100 text-blue-600'
+              }`}
+            >
+              + Adicionar {title}
+            </button>
+          )}
         </div>
       )}
     </div>

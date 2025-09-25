@@ -67,7 +67,12 @@ export default function KanbanCardItem({
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   
   // Hook para buscar contadores dos indicadores
-  const { counts, loading: loadingIndicators } = useKanbanIndicators(card.phone || card.id)
+  // IMPORTANTE: Passar o ID completo com @c.us para o hook
+  const chatIdForIndicators = card.id?.includes('@c.us') ? card.id : 
+                              card.phone ? `${card.phone}@c.us` : 
+                              card.id
+  console.log('🎯 [KanbanCardItem] ChatId para indicadores:', chatIdForIndicators)
+  const { counts, loading: loadingIndicators } = useKanbanIndicators(chatIdForIndicators)
   
   // Debug: Mostrar os dados do card e counts
   console.log('🔍 [KanbanCardItem] Card:', {
@@ -175,7 +180,6 @@ export default function KanbanCardItem({
             : 'bg-white hover:bg-gray-50 border border-gray-200'
         } ${isDragging ? 'rotate-2 scale-95' : 'hover:scale-[1.02]'}`}
         style={{
-          borderLeft: `3px solid ${columnColor}`,
           boxShadow: isHovered
             ? theme === 'dark'
               ? '0 10px 30px rgba(0,0,0,0.5)'
@@ -183,7 +187,14 @@ export default function KanbanCardItem({
             : '',
         }}
       >
-        {/* Header - Avatar, Nome e Info */}
+        {/* 🎨 Barra de Gradiente Lateral Esquerda */}
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+          style={{
+            background: `linear-gradient(180deg, ${columnColor}00 0%, ${columnColor} 20%, ${columnColor} 80%, ${columnColor}00 100%)`
+          }}
+        />
+        
         <div className="flex items-start gap-2.5 mb-2">
           {/* Profile Picture - IGUAL ItemSideChat */}
           <div className="relative flex-shrink-0">
@@ -191,7 +202,7 @@ export default function KanbanCardItem({
             {profileImage ? (
               <img 
                 src={profileImage} 
-                alt={card.nome || card.name || 'Contact'}
+                alt={(card.nome || card.name || 'Contact')}
                 className="w-10 h-10 rounded-full object-cover" 
               /> 
             ) : null}
@@ -280,9 +291,9 @@ export default function KanbanCardItem({
               title="Agendamentos"
             >
               <Calendar className="w-3.5 h-3.5" />
-              {(counts.agendamentos > 0 || true) && (
+              {counts.agendamentos > 0 && (
                 <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {counts.agendamentos > 99 ? '99+' : counts.agendamentos || '2'}
+                  {counts.agendamentos > 99 ? '99+' : counts.agendamentos}
                 </span>
               )}
             </button>
@@ -300,9 +311,9 @@ export default function KanbanCardItem({
               title="Anotações"
             >
               <StickyNote className="w-3.5 h-3.5" />
-              {(counts.anotacoes > 0 || true) && (
+              {counts.anotacoes > 0 && (
                 <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                  {counts.anotacoes > 99 ? '99+' : counts.anotacoes || '3'}
+                  {counts.anotacoes > 99 ? '99+' : counts.anotacoes}
                 </span>
               )}
             </button>

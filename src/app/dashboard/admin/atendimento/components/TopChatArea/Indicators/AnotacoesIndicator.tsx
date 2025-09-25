@@ -14,7 +14,7 @@ export default function AnotacoesIndicator({ contatoId, onClick }: AnotacoesIndi
 
   console.log('📝 [AnotacoesIndicator] Renderizado com contatoId:', contatoId)
 
-  // Função para buscar anotações (usando UUID como outros indicadores)
+  // NOVA FUNÇÃO: Buscar anotações direto por chatId (igual aos BottomSheets)
   const fetchAnotacoes = useCallback(async () => {
     if (!contatoId) return
     
@@ -23,64 +23,33 @@ export default function AnotacoesIndicator({ contatoId, onClick }: AnotacoesIndi
       const token = localStorage.getItem('token')
       if (!token) return
       
-      console.log('📝 [AnotacoesIndicator] Buscando anotações para telefone:', contatoId)
+      console.log('📝 [AnotacoesIndicator] Buscando anotações para chatId:', contatoId)
       
-      // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone
-      const contactResponse = await fetch(`/api/contatos?telefone=${contatoId}`, {
+      // Garantir que o chatId tem @c.us
+      const chatId = contatoId.includes('@c.us') ? contatoId : `${contatoId}@c.us`
+      
+      // Buscar diretamente via endpoint de chat (igual BottomSheet)
+      const response = await fetch(`/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+          'Authorization': `Bearer ${token}`
         }
       })
       
-      if (!contactResponse.ok) {
-        console.log('📝 [AnotacoesIndicator] Erro ao buscar contato:', contactResponse.status)
+      if (!response.ok) {
+        console.log('📝 [AnotacoesIndicator] Erro ao buscar anotações:', response.status)
         setAnotacoes([])
         return
       }
       
-      const contactData = await contactResponse.json()
-      let contatoUUID = null
+      const anotacoesData = await response.json()
+      console.log('📝 [AnotacoesIndicator] Dados recebidos:', anotacoesData)
       
-      if (Array.isArray(contactData) && contactData.length > 0) {
-        const specificContact = contactData.find(contact => contact.numeroTelefone === contatoId)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('📝 [AnotacoesIndicator] UUID do contato encontrado:', contatoUUID)
-        }
-      } else if (contactData && contactData.data && Array.isArray(contactData.data)) {
-        const specificContact = contactData.data.find(contact => contact.numeroTelefone === contatoId)
-        if (specificContact) {
-          contatoUUID = specificContact.id
-          console.log('📝 [AnotacoesIndicator] UUID do contato encontrado:', contatoUUID)
-        }
-      }
+      // Processar dados do endpoint direto (igual BottomSheet)
+      const anotacoesArray = Array.isArray(anotacoesData) ? anotacoesData : 
+                           Array.isArray(anotacoesData?.data) ? anotacoesData.data : []
       
-      if (!contatoUUID) {
-        console.log('📝 [AnotacoesIndicator] UUID do contato não encontrado')
-        setAnotacoes([])
-        return
-      }
-      
-      // 2. SEGUNDO: Buscar anotações usando o UUID do contato
-      console.log('📝 [AnotacoesIndicator] Buscando anotações com UUID:', contatoUUID)
-      
-      const response = await fetch(`/api/anotacoes?contato_id=${contatoUUID}`, {
-        headers: { 
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        }
-      })
-      
-      console.log('📝 [AnotacoesIndicator] Status da resposta:', response.status)
-      
-      if (response.ok) {
-        const data = await response.json()
-        const anotacoesData = data.data || data || []
-        console.log('📝 [AnotacoesIndicator] Anotações encontradas:', anotacoesData)
-        setAnotacoes(Array.isArray(anotacoesData) ? anotacoesData : [])
-      } else {
-        console.log('📝 [AnotacoesIndicator] Nenhuma anotação encontrada para UUID:', contatoUUID)
-        setAnotacoes([])
-      }
+      console.log('📝 [AnotacoesIndicator] Total anotações encontradas:', anotacoesArray.length)
+      setAnotacoes(anotacoesArray)
     } catch (error) {
       console.error('❌ [AnotacoesIndicator] Erro ao buscar anotações:', error)
       setAnotacoes([])
@@ -97,10 +66,11 @@ export default function AnotacoesIndicator({ contatoId, onClick }: AnotacoesIndi
   // Escutar evento de anotação criada para atualizar automaticamente
   useEffect(() => {
     const handleAnotacaoCreated = (event: any) => {
-      const { contatoId: eventContatoId } = event.detail
+      const { chatId: eventChatId } = event.detail
+      const currentChatId = contatoId?.includes('@c.us') ? contatoId : `${contatoId}@c.us`
       console.log('📝 [AnotacoesIndicator] Evento anotacaoCreated recebido:', event.detail)
       
-      if (eventContatoId === contatoId) {
+      if (eventChatId === currentChatId) {
         console.log('📝 [AnotacoesIndicator] Recarregando anotações após criação...')
         fetchAnotacoes()
       }
