@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import '../SideChat/ScrollbarStyles.css'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -27,7 +28,8 @@ import {
   DollarSign,
   Tag,
   Clock,
-  UserX
+  UserX,
+  Layers
 } from 'lucide-react'
 
 // import SearchInput from './SearchInput' // Não usado mais
@@ -37,6 +39,11 @@ import FilterKanban from './FilterKanban'
 import FilterTickets from './FilterTickets'
 // import FilterAgendamentos from './FilterAgendamentos' // REMOVIDO
 import FilterPrecos from './FilterPrecos'
+import { useKanban } from '@/hooks/useKanban'
+import { useAtendentes } from '@/hooks/useAtendentes'
+import { useTickets } from '@/hooks/useTickets'
+import { useTheme } from '@/contexts/ThemeContext'
+import Select2 from './Select2'
 
 interface SearchOptions {
   searchInChats: boolean
@@ -145,6 +152,67 @@ export default function SideFilter({
   
   // Estado para filtro sem fila
   const [showOnlyWithoutQueue, setShowOnlyWithoutQueue] = useState(false)
+  
+  // Estado para controlar visibilidade das opções de busca
+  const [showSearchOptions, setShowSearchOptions] = useState(false)
+  
+  // Hooks para buscar dados reais - SEM MOCKS PORRA!
+  const { quadros: kanbanQuadros } = useKanban()
+  const { atendentes: atendentesReais } = useAtendentes()
+  const { tickets: ticketsReais } = useTickets()
+  
+  // Estado para armazenar colunas do quadro selecionado
+  const [kanbanColunas, setKanbanColunas] = useState<any[]>([])
+  const [selectedKanbanColuna, setSelectedKanbanColuna] = useState<string[]>([])
+  const [selectedAtendente, setSelectedAtendente] = useState<string[]>([])
+  const [selectedFiltrosEspeciais, setSelectedFiltrosEspeciais] = useState<string[]>([])
+  const [selectedTagsMulti, setSelectedTagsMulti] = useState<string[]>([])
+  const [selectedFilasMulti, setSelectedFilasMulti] = useState<string[]>([])
+  const [selectedQuadrosMulti, setSelectedQuadrosMulti] = useState<string[]>([])
+  const [selectedTicketsMulti, setSelectedTicketsMulti] = useState<string[]>([])
+  
+  // Buscar colunas quando selecionar quadros (múltiplos)
+  useEffect(() => {
+    const fetchKanbanColunas = async () => {
+      if (selectedQuadrosMulti.length > 0) {
+        try {
+          const token = localStorage.getItem('token')
+          const allColunas: any[] = []
+          
+          // Buscar colunas de todos os quadros selecionados
+          for (const quadroId of selectedQuadrosMulti) {
+            const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              if (data.colunas) {
+                // Adicionar colunas com referência ao quadro
+                data.colunas.forEach((col: any) => {
+                  allColunas.push({
+                    ...col,
+                    quadroNome: data.nome || 'Quadro'
+                  })
+                })
+              }
+            }
+          }
+          
+          setKanbanColunas(allColunas)
+        } catch (error) {
+          console.error('Erro ao buscar colunas:', error)
+        }
+      } else {
+        setKanbanColunas([])
+      }
+    }
+    
+    fetchKanbanColunas()
+  }, [selectedQuadrosMulti])
   
   // Opções de ordenação
   const sortOptions = [
@@ -276,25 +344,25 @@ export default function SideFilter({
               </button>
             </div>
             
-            {/* Ícone de Filtro Sem Fila */}
+            {/* Ícone de Filtro Sem Fila - AGORA CONTROLA OPÇÕES DE BUSCA */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowOnlyWithoutQueue(!showOnlyWithoutQueue)}
+              onClick={() => setShowSearchOptions(!showSearchOptions)}
               className={`p-1.5 rounded-md transition-all duration-200 ${
-                showOnlyWithoutQueue 
+                showSearchOptions 
                   ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' 
                   : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-              title={showOnlyWithoutQueue ? "Mostrando apenas chats sem fila" : "Filtrar chats sem fila"}
+              title={showSearchOptions ? "Ocultar opções de busca" : "Mostrar opções de busca"}
             >
               <motion.div
                 animate={{ 
-                  scale: showOnlyWithoutQueue ? [1, 1.2, 1] : 1,
-                  rotate: showOnlyWithoutQueue ? [0, 5, -5, 0] : 0
+                  scale: showSearchOptions ? [1, 1.2, 1] : 1,
+                  rotate: showSearchOptions ? [0, 5, -5, 0] : 0
                 }}
                 transition={{ 
-                  duration: showOnlyWithoutQueue ? 0.6 : 0.2,
+                  duration: showSearchOptions ? 0.6 : 0.2,
                   ease: "easeInOut"
                 }}
               >
@@ -305,7 +373,8 @@ export default function SideFilter({
         </div>
         
 
-        {/* Ícones de opções de busca - FORA do input */}
+        {/* Ícones de opções de busca - FORA do input - CONDICIONAL */}
+        {showSearchOptions && (
         <div className="flex items-center gap-2 mt-3 px-1">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Buscar em:</span>
           
@@ -357,12 +426,13 @@ export default function SideFilter({
             <span>Contatos</span>
           </motion.button>
         </div>
+        )}
 
         {/* Linha Divisória Superior */}
         <div className="border-t border-gray-200 dark:border-gray-700 mt-4 mb-3"></div>
 
         {/* 📊 Filtros de Status - Com Background e Badges */}
-        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3 mx-1">
+        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-0">
           <div className="grid grid-cols-4 gap-2">
             {/* Atendimento */}
             <motion.button
@@ -431,14 +501,14 @@ export default function SideFilter({
         </div>
 
         {/* Linha Divisória Inferior */}
-        <div className="border-t border-gray-200 dark:border-gray-700 mt-3 mb-4"></div>
+        <div className="border-t border-gray-200 dark:border-gray-700 mt-2 mb-0"></div>
       </div>
 
       {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}
      
 
       {/* 🎯 TABS DE FILTROS PRINCIPAIS */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-2">
         <div className="bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
           <div 
             className="flex gap-1 overflow-x-auto pb-1 cursor-grab active:cursor-grabbing"
@@ -511,7 +581,7 @@ export default function SideFilter({
             initial={{ opacity: 0, x: -300 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -300 }}
-            className="fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-900 shadow-xl border-r border-gray-200 dark:border-gray-700"
+            className="fixed inset-y-0 left-0 z-50 w-[500px] bg-white dark:bg-gray-900 shadow-xl border-r border-gray-200 dark:border-gray-700"
           >
             {/* Header da sidebar */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -529,145 +599,124 @@ export default function SideFilter({
             </div>
 
             {/* Conteúdo da sidebar com scroll */}
-            <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-73px)]">
-              {/* Filtro de Tags */}
-              <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <Tag className="w-4 h-4 text-blue-500" />
-                  Tags
-                </h4>
-                <FilterTags
-                  selectedTag={selectedTag}
-                  onTagChange={onTagChange}
-                  tags={tags}
-                  isLoading={isLoadingTags}
-                />
-              </div>
+            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100vh-73px)] custom-scrollbar">
+              {/* Filtro de Tags - React Select MULTI */}
+              <Select2
+                label="Tags (Múltipla Seleção)"
+                value={selectedTagsMulti}
+                onChange={(val) => setSelectedTagsMulti(val as string[])}
+                options={tags}
+                placeholder="Selecione múltiplas tags"
+                icon={Tag}
+                iconColor="blue"
+                isMulti={true}
+                isClearable
+                isSearchable
+              />
 
-              {/* Filtro de Filas */}
-              <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <Users className="w-4 h-4 text-purple-500" />
-                  Filas de Atendimento
-                </h4>
-                <FilterFilas
-                  selectedFila={selectedFila}
-                  onFilaChange={onFilaChange}
-                  filas={filas}
-                  isLoading={isLoadingFilas}
-                />
-              </div>
+              {/* Filtro de Filas - React Select MULTI */}
+              <Select2
+                label="Filas de Atendimento (Múltipla Seleção)"
+                value={selectedFilasMulti}
+                onChange={(val) => setSelectedFilasMulti(val as string[])}
+                options={filas}
+                placeholder="Selecione múltiplas filas"
+                icon={Users}
+                iconColor="purple"
+                isMulti={true}
+                isClearable
+                isSearchable
+              />
 
-              {/* Filtro de Kanban */}
-              <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <Settings className="w-4 h-4 text-green-500" />
-                  Status Kanban
-                </h4>
-                <FilterKanban 
-                  selectedQuadro={selectedKanbanStatus}
-                  onQuadroChange={onKanbanStatusChange}
-                  quadros={kanbanStatuses}
-                  isLoading={isLoadingKanban}
-                />
-              </div>
+              {/* Filtro de Atendentes - React Select MULTI com DADOS REAIS */}
+              <Select2
+                label="Atendentes (Múltipla Seleção)"
+                value={selectedAtendente}
+                onChange={(val) => setSelectedAtendente(val as string[])}
+                options={atendentesReais.map(at => ({ 
+                  id: at.id, 
+                  nome: at.nome || 'Sem nome' 
+                }))}
+                placeholder="Selecione múltiplos atendentes"
+                icon={User}
+                iconColor="indigo"
+                isMulti={true}
+                isClearable
+                isSearchable
+              />
 
-              {/* Filtro de Tickets */}
-              <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <Ticket className="w-4 h-4 text-orange-500" />
-                  Tickets
-                </h4>
-                <FilterTickets 
-                  selectedStatus={selectedTicketStatus}
-                  onStatusChange={onTicketStatusChange}
-                  ticketStatuses={ticketStatuses}
-                  isLoading={isLoadingTickets}
-                />
-              </div>
+              {/* Filtro de Kanban - React Select MULTI com DADOS REAIS */}
+              <Select2
+                label="Quadros Kanban (Múltipla Seleção)"
+                value={selectedQuadrosMulti}
+                onChange={(val) => {
+                  setSelectedQuadrosMulti(val as string[])
+                  setSelectedKanbanColuna([]) // Reset colunas quando mudar quadro
+                }}
+                options={kanbanQuadros}
+                placeholder="Selecione múltiplos quadros"
+                icon={Settings}
+                iconColor="green"
+                isMulti={true}
+                isClearable
+                isSearchable
+              />
 
-              {/* Filtro de Preços de Orçamentos */}
-              <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <DollarSign className="w-4 h-4 text-green-500" />
-                  Faixa de Preços
-                </h4>
-                <FilterPrecos 
-                  selectedRange={selectedPriceRange}
-                  onRangeChange={onPriceRangeChange}
-                  priceRanges={priceRanges}
-                  isLoading={isLoadingPrices}
-                />
-              </div>
+              {/* Filtro de Colunas do Kanban - React Select MULTI com DADOS REAIS */}
+              <Select2
+                label="Colunas do Kanban (Múltipla Seleção)"
+                value={selectedKanbanColuna}
+                onChange={(val) => setSelectedKanbanColuna(val as string[])}
+                options={kanbanColunas.map(col => ({ 
+                  id: col.id, 
+                  nome: col.nome,
+                  icon: col.icone || '',
+                  cor: col.cor
+                }))}
+                placeholder="Selecione múltiplas colunas"
+                icon={Layers}
+                iconColor="teal"
+                isMulti={true}
+                isClearable
+                isSearchable
+                isLoading={kanbanColunas.length === 0 && selectedQuadrosMulti.length > 0}
+              />
 
-              {/* Filtros Especiais */}
-              <div>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  Filtros Especiais
-                </h4>
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500"
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <Star className="w-4 h-4 text-yellow-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Favoritos</span>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">12</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 text-purple-500 rounded border-gray-300 focus:ring-purple-500"
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <Eye className="w-4 h-4 text-purple-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Ocultos</span>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">3</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 text-green-500 rounded border-gray-300 focus:ring-green-500"
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <FileText className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Com Orçamentos</span>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">28</span>
-                  </label>
+              {/* Filtro de PRIORIDADE de Tickets - React Select MULTI */}
+              <Select2
+                label="Prioridade de Tickets (Múltipla Seleção)"
+                value={selectedTicketsMulti}
+                onChange={(val) => setSelectedTicketsMulti(val as string[])}
+                options={[
+                  { id: 'urgente', nome: 'Urgente', icon: '🔴' },
+                  { id: 'alta', nome: 'Alta', icon: '🟠' },
+                  { id: 'media', nome: 'Média', icon: '🟡' },
+                  { id: 'baixa', nome: 'Baixa', icon: '🟢' },
+                  { id: 'sem_prioridade', nome: 'Sem Prioridade', icon: '⚪' }
+                ]}
+                placeholder="Selecione prioridades"
+                icon={Ticket}
+                iconColor="orange"
+                isMulti={true}
+                isClearable
+                isSearchable={false}
+              />
 
-                  <label className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 text-blue-500 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <Calendar className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Com Agendamentos</span>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">15</span>
-                  </label>
 
-                  <label className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <Archive className="w-4 h-4 text-orange-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Arquivados</span>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">45</span>
-                  </label>
-                </div>
-              </div>
+              {/* Filtro de Faixa de Preços - React Select COM DADOS REAIS */}
+              <Select2
+                label="Faixas de Preço"
+                value={selectedPriceRange}
+                onChange={(val) => onPriceRangeChange(val as string)}
+                options={priceRanges}
+                placeholder="Todas as Faixas"
+                icon={DollarSign}
+                iconColor="green"
+                isClearable
+                isSearchable
+              />
+              
+            
 
               {/* Botão de Limpar Filtros */}
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">

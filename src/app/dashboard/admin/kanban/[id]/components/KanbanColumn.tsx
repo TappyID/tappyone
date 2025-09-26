@@ -277,7 +277,7 @@ export default function KanbanColumn({
           : theme === 'dark'
             ? 'border-slate-700/30 bg-gradient-to-b from-slate-800/40 via-slate-800/20 to-slate-800/10 hover:from-slate-800/60 hover:via-slate-800/30 hover:to-slate-800/20'
             : 'border-gray-200/40 bg-gradient-to-b from-white via-gray-50/30 to-white/80 hover:from-white hover:via-gray-50/50 hover:to-white'
-      } backdrop-blur-sm overflow-hidden group ${
+      } backdrop-blur-sm overflow-visible group ${
         isColumnDragging 
           ? 'opacity-70 z-50' 
           : 'hover:shadow-lg'
@@ -405,7 +405,12 @@ export default function KanbanColumn({
             {/* Botão de 3 Pontinhos */}
             <div className="relative actions-modal-container">
               <motion.button
-                onClick={() => setShowActionsModal(!showActionsModal)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  console.log('🔘 Clicou nos 3 pontinhos! Estado atual:', showActionsModal)
+                  setShowActionsModal(!showActionsModal)
+                }}
                 className={`p-1.5 rounded-lg transition-all duration-300 ${
                   theme === 'dark'
                     ? 'hover:bg-gray-500/20 text-gray-400 hover:text-gray-300 border border-transparent hover:border-gray-500/30'
@@ -425,7 +430,7 @@ export default function KanbanColumn({
                     initial={{ opacity: 0, scale: 0.9, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    className={`absolute right-0 top-full mt-2 z-50 rounded-lg shadow-xl border ${
+                    className={`absolute right-0 top-full mt-2 z-[100] rounded-lg shadow-xl border ${
                       theme === 'dark' 
                         ? 'bg-slate-800 border-slate-600' 
                         : 'bg-white border-gray-200'
