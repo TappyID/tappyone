@@ -200,12 +200,13 @@ function QuadroPage() {
   // Dados vazios para manter compatibilidade com componentes
   const emptyData = {}
 
-  // DnD Sensors - Configuração CORRIGIDA (distance não pode ser 0)
+  // DnD Sensors - CONFIGURAÇÃO MELHORADA para colunas e cards
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Mínimo 3px para evitar erro no @dnd-kit
-        delay: 0
+        distance: 5, // 5px para evitar drags acidentais
+        delay: 0,
+        tolerance: 5
       },
     })
   )
@@ -455,13 +456,25 @@ function QuadroPage() {
     })
     
     if (isColumnDrag) {
-      // Verificar se estamos soltando sobre outra coluna
-      const isOverColumn = colunas.some(col => col.id === overId) || over.data.current?.type === 'column'
+      // NOVA LÓGICA: Aceitar qualquer coluna como destino
+      let targetColumnId = overId
       
-      if (isOverColumn && activeId !== overId) {
+      // Se o overId é de um card, pegar a coluna do card
+      if (!colunas.some(col => col.id === overId)) {
+        // Procurar em qual coluna está o elemento
+        for (const coluna of colunasComCards) {
+          if (coluna.cards?.some((card: any) => card.id === overId)) {
+            targetColumnId = coluna.id
+            break
+          }
+        }
+      }
+      
+      // Se encontrou uma coluna válida e é diferente da origem
+      if (colunas.some(col => col.id === targetColumnId) && activeId !== targetColumnId) {
         // Reordenar colunas
         const oldIndex = colunas.findIndex(col => col.id === activeId)
-        const newIndex = colunas.findIndex(col => col.id === overId)
+        const newIndex = colunas.findIndex(col => col.id === targetColumnId)
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const newColunas = arrayMove(colunas, oldIndex, newIndex)
@@ -705,6 +718,7 @@ function QuadroPage() {
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        autoScroll={{ threshold: { x: 0.2, y: 0.2 } }}
       >
         <KanbanBoard theme={theme}>
           <SortableContext

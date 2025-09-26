@@ -164,8 +164,8 @@ export default function KanbanColumn({
   }
   
   const combinedRef = (node: HTMLElement | null) => {
-    setNodeRef(node)        // Para aceitar cards
-    setSortableNodeRef(node) // Para arrastar coluna
+    setNodeRef(node)         // TODA COLUNA é droppable
+    setSortableNodeRef(node) // TODA COLUNA é draggable
   }
 
   // 🗑️ Estados para modal de confirmação de exclusão
@@ -268,7 +268,8 @@ export default function KanbanColumn({
     <motion.div
       ref={combinedRef}
       {...sortableAttributes}
-      className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out ${
+      {...sortableListeners}
+      className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out cursor-grab active:cursor-grabbing ${
         isOver 
           ? theme === 'dark'
             ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 via-blue-500/5 to-transparent shadow-2xl shadow-blue-500/30'
@@ -318,10 +319,9 @@ export default function KanbanColumn({
           {/* Lado Esquerdo - Indicador e Nome */}
           <div className="flex items-center gap-4 flex-1">
             
-            {/* Handle para arrastar coluna - DRAG AREA */}
+            {/* Handle para arrastar coluna - VISUAL APENAS */}
             <div
-              {...sortableListeners}
-              className={`p-2 rounded-lg cursor-grab active:cursor-grabbing select-none transition-all duration-75 ease-out ${
+              className={`p-2 rounded-lg select-none transition-all duration-75 ease-out ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-700/70 text-gray-400 hover:text-gray-200 hover:scale-110' 
                   : 'hover:bg-gray-200/70 text-gray-500 hover:text-gray-800 hover:scale-110'
@@ -640,9 +640,8 @@ export default function KanbanColumn({
       </motion.div>
       )}
 
-      {/* Cards Container com Scroll - TODA ÁREA É DROPPABLE */}
+      {/* Cards Container com Scroll */}
       <div 
-        ref={setNodeRef}
         className={`px-3 flex-1 overflow-y-auto custom-gray-scroll min-h-0 transition-all duration-200 ${
           isOver ? 
             theme === 'dark' 
