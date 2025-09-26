@@ -12,6 +12,7 @@ import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import KanbanHeader from './components/KanbanHeader'
 import KanbanBoard from './components/KanbanBoard'
 import KanbanColumn from './components/KanbanColumn'
+import KanbanCardItem from './components/KanbanCardItem'
 import ColumnConfigModal from './components/ColumnConfigModal'
 import FunnelView from './components/FunnelView'
 
@@ -30,15 +31,13 @@ import TagsBottomSheet from '../../atendimento/components/FooterChatArea/BottomS
 import AnotacoesBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 import TicketBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
 import ChatModalKanban from './components/ChatModalKanban'
-
 // DnD Kit
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
+  DragOverlay,
   PointerSensor,
-  KeyboardSensor,
   useSensor,
   useSensors,
   closestCenter
@@ -160,7 +159,7 @@ function QuadroPage() {
   const [loading, setLoading] = useState(false)
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
-  const [showMetrics, setShowMetrics] = useState(true)
+  const [showMetrics, setShowMetrics] = useState(false)
   
   // Estados de edição
   const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
@@ -194,22 +193,19 @@ function QuadroPage() {
   // Estado para mapeamento de cards nas colunas (armazenamento local)
   const [cardColumnMapping, setCardColumnMapping] = useState<Record<string, string>>({})
   
+  // Estados para DragOverlay (rastro visual)
+  const [activeCard, setActiveCard] = useState<any>(null)
+  const [activeColumn, setActiveColumn] = useState<any>(null)
+  
   // Dados vazios para manter compatibilidade com componentes
   const emptyData = {}
 
-  // DnD Sensors - Configuração IDÊNTICA ao Trello
+  // DnD Sensors - Configuração CORRIGIDA (distance não pode ser 0)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 0, // ZERO pixels - ativação instantânea 
-        delay: 0, // ZERO delay
-      },
-    }),
-    // Sensor para touch devices (mobile)
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 0,
-        delay: 150, // Pequeno delay no mobile para distinguir de scroll
+        distance: 3, // Mínimo 3px para evitar erro no @dnd-kit
+        delay: 0
       },
     })
   )
@@ -290,10 +286,24 @@ function QuadroPage() {
       // Limitar quantidade de cards visíveis para performance
       const cardsVisiveis = cardsNaColuna.slice(0, MAX_VISIBLE_CARDS)
 
+      // Debug para ver estrutura dos dados
+      if (cardsVisiveis.length > 0) {
+        console.log('📋 Estrutura do primeiro chat:', {
+          id: cardsVisiveis[0].id,
+          name: cardsVisiveis[0].name,
+          pushName: cardsVisiveis[0].pushName,
+          allProps: Object.keys(cardsVisiveis[0])
+        })
+      }
+
       // Adicionar os dados corretos do chat (nome, telefone, etc)
       const cardsFormatados = cardsVisiveis.map(chat => ({
         ...chat,
+        // Priorizar nome do pushName, depois name, depois extrair do ID
+        nome: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
+        name: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
         phone: chat.id?.replace('@c.us', '').replace('@g.us', ''), // Extrair número do ID
+        chatId: chat.id, // Manter o ID original do chat
       }))
 
       return {
@@ -397,17 +407,36 @@ function QuadroPage() {
     }
   }
 
-  // Handlers de DnD
+  // Handler para início do drag - RASTRO VISUAL
   const handleDragStart = (event: DragStartEvent) => {
-    // Pode adicionar lógica de início de drag aqui
-  }
+    const { active } = event
+    
+    // Verificar se é um card sendo arrastado
+    const colunasComCards = mapearConversasParaColunas()
+    const cardArrastado = colunasComCards
+      .flatMap(col => col.cards)
+      .find(card => card.id === active.id)
+    
+    if (cardArrastado) {
+      setActiveCard(cardArrastado)
+      console.log('🎯 Iniciando drag do card:', cardArrastado.name)
+      return
+    }
 
-  const handleDragOver = (event: DragOverEvent) => {
-    // Pode adicionar preview de onde o card vai cair
+    // Verificar se é uma coluna sendo arrastada
+    const colunaArrastada = colunas.find(col => col.id === active.id)
+    if (colunaArrastada) {
+      setActiveColumn(colunaArrastada)
+      console.log('🎯 Iniciando drag da coluna:', colunaArrastada.nome)
+    }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
+    
+    // Limpar estados ativos do rastro visual
+    setActiveCard(null)
+    setActiveColumn(null)
     
     if (!over) return
 
@@ -417,10 +446,22 @@ function QuadroPage() {
     // 🔄 Verificar se está reordenando colunas
     const isColumnDrag = colunas.some(col => col.id === activeId)
     
-    if (isColumnDrag && activeId !== overId) {
-      // Reordenar colunas
-      const oldIndex = colunas.findIndex(col => col.id === activeId)
-      const newIndex = colunas.findIndex(col => col.id === overId)
+    console.log('🔄 Debug DragEnd:', {
+      activeId,
+      overId,
+      isColumnDrag,
+      activeType: active.data.current?.type,
+      overType: over.data.current?.type
+    })
+    
+    if (isColumnDrag) {
+      // Verificar se estamos soltando sobre outra coluna
+      const isOverColumn = colunas.some(col => col.id === overId) || over.data.current?.type === 'column'
+      
+      if (isOverColumn && activeId !== overId) {
+        // Reordenar colunas
+        const oldIndex = colunas.findIndex(col => col.id === activeId)
+        const newIndex = colunas.findIndex(col => col.id === overId)
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const newColunas = arrayMove(colunas, oldIndex, newIndex)
@@ -428,6 +469,7 @@ function QuadroPage() {
         
         // Opcional: Salvar nova ordem no backend
         console.log('🔄 Nova ordem das colunas:', newColunas.map(c => c.nome))
+      }
       }
     } else if (!isColumnDrag) {
       // Lógica para mover cards
@@ -662,7 +704,6 @@ function QuadroPage() {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <KanbanBoard theme={theme}>
@@ -737,6 +778,66 @@ function QuadroPage() {
             </motion.button>
           </SortableContext>
         </KanbanBoard>
+
+        {/* 🎯 RASTRO VISUAL SLICK - DragOverlay */}
+        <DragOverlay>
+          {activeCard && (
+            <motion.div 
+              className="drag-ghost-card"
+              initial={{ scale: 1, rotate: 0 }}
+              animate={{ 
+                scale: 1.05, 
+                rotate: 3,
+                y: -10
+              }}
+              style={{
+                opacity: 0.95,
+                filter: 'drop-shadow(0 25px 50px rgba(0,0,0,0.4)) drop-shadow(0 10px 20px rgba(59,130,246,0.3))',
+                pointerEvents: 'none',
+                zIndex: 1000
+              }}
+            >
+              <KanbanCardItem 
+                card={activeCard}
+                columnColor="#3b82f6"
+                theme={theme}
+              />
+            </motion.div>
+          )}
+          {activeColumn && (
+            <motion.div 
+              className="drag-ghost-column"
+              initial={{ scale: 1, rotate: 0 }}
+              animate={{ 
+                scale: 0.95, 
+                rotate: 1,
+                y: -5
+              }}
+              style={{
+                opacity: 0.85,
+                filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.3))',
+                pointerEvents: 'none',
+                zIndex: 1000
+              }}
+            >
+              <div className={`w-80 p-4 rounded-xl border-2 border-dashed border-blue-400/60 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800/95 backdrop-blur-lg' 
+                  : 'bg-white/95 backdrop-blur-lg'
+              }`}>
+                <h3 className="font-bold text-blue-500 text-center flex items-center justify-center gap-2">
+                  <motion.span
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                  >
+                    📦
+                  </motion.span>
+                  {activeColumn.nome}
+                </h3>
+              </div>
+            </motion.div>
+          )}
+        </DragOverlay>
       </DndContext>
       )}
 

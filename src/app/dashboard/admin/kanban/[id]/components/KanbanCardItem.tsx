@@ -197,7 +197,7 @@ export default function KanbanCardItem({
       {/* 👻 Rastro fantasma que fica no lugar original */}
       {isDragging && (
         <div
-          className={`absolute inset-0 rounded-xl transition-opacity duration-500 opacity-30 ${
+          className={`absolute inset-0 rounded-2xl transition-opacity duration-500 opacity-30 ${
             theme === 'dark'
               ? 'bg-slate-800/40 border border-slate-700/30'
               : 'bg-gray-100/60 border border-gray-300/40'
@@ -211,7 +211,7 @@ export default function KanbanCardItem({
       )}
       
       <div
-        className={`relative p-3 rounded-xl transition-all duration-150 ease-out ${
+        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out ${
           theme === 'dark'
             ? 'bg-slate-800/60 hover:bg-slate-800/80 border border-slate-700/50'
             : 'bg-white hover:bg-gray-50 border border-gray-200'
@@ -228,9 +228,9 @@ export default function KanbanCardItem({
       >
         {/* 🎨 Barra de Gradiente Lateral Esquerda */}
         <div 
-          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
           style={{
-            background: `linear-gradient(180deg, ${columnColor}00 0%, ${columnColor} 20%, ${columnColor} 80%, ${columnColor}00 100%)`
+            background: `linear-gradient(180deg, ${columnColor}00 0%, ${columnColor}00 10%, ${columnColor} 25%, ${columnColor} 75%, ${columnColor}00 90%, ${columnColor}00 100%)`
           }}
         />
         
@@ -275,20 +275,19 @@ export default function KanbanCardItem({
                   : (card.nome || card.name || 'Sem nome')
                 }
               </h3>
-              <span className={`text-[10px] ${
-                theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+            </div>
+            
+            {/* Telefone/Chat ID */}
+            <div className="mb-2">
+              <span className={`text-xs ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
-                {formatTime(card.lastMessage?.timestamp)}
+                {(card as any).chatId || card.phone || (card as any).telefone || card.id || 'Sem telefone'}
               </span>
             </div>
             
             {/* Última Mensagem - usando componente do atendimento */}
-            <div className="text-xs">
-              <LastMessageSideChat 
-                message={card.lastMessage} 
-                maxLength={60}
-              />
-            </div>
+           
           </div>
         </div>
 

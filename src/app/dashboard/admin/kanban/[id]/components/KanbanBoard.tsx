@@ -31,13 +31,15 @@ export default function KanbanBoard({ theme, children, boardId = 'kanban-scroll-
           <ChevronLeft className="w-6 h-6" />
         </button>
 
-        {/* Container Scroll Horizontal */}
+        {/* Container Scroll Horizontal - DRAG FRIENDLY */}
         <div 
           id={boardId}
           className="overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar"
           style={{ 
             scrollbarWidth: 'thin',
-            scrollBehavior: 'smooth'
+            scrollBehavior: 'smooth',
+            touchAction: 'pan-x', // Permite apenas scroll horizontal, não interfere com drag
+            overscrollBehavior: 'contain' // Previne conflitos de scroll
           }}
         >
           {/* Container das Colunas */}

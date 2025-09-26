@@ -164,8 +164,8 @@ export default function KanbanColumn({
   }
   
   const combinedRef = (node: HTMLElement | null) => {
-    setNodeRef(node)
-    setSortableNodeRef(node)
+    setNodeRef(node)        // Para aceitar cards
+    setSortableNodeRef(node) // Para arrastar coluna
   }
 
   // 🗑️ Estados para modal de confirmação de exclusão
@@ -268,6 +268,7 @@ export default function KanbanColumn({
     <motion.div
       ref={combinedRef}
       {...sortableAttributes}
+      {...sortableListeners}
       className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out ${
         isOver 
           ? theme === 'dark'
@@ -318,9 +319,8 @@ export default function KanbanColumn({
           {/* Lado Esquerdo - Indicador e Nome */}
           <div className="flex items-center gap-4 flex-1">
             
-            {/* Handle para arrastar coluna */}
+            {/* Handle para arrastar coluna - Visual apenas */}
             <div
-              {...sortableListeners}
               className={`p-2 rounded-lg cursor-grab active:cursor-grabbing select-none transition-all duration-75 ease-out ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-700/70 text-gray-400 hover:text-gray-200 hover:scale-110' 
