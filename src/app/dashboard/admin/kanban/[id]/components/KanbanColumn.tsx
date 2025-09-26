@@ -268,7 +268,6 @@ export default function KanbanColumn({
     <motion.div
       ref={combinedRef}
       {...sortableAttributes}
-      {...sortableListeners}
       className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out ${
         isOver 
           ? theme === 'dark'
@@ -304,8 +303,8 @@ export default function KanbanColumn({
       }}
     >
       {/* Header da Coluna Ultra Sofisticado */}
-      <div className={`relative px-3 pt-2 -pb-1 border-b backdrop-blur-sm ${
-        theme === 'dark' ? 'border-slate-700/30 bg-slate-800/20' : 'border-gray-200/30 bg-white/40'
+      <div className={`relative px-3 pt-2 -pb-1 backdrop-blur-sm ${
+        theme === 'dark' ? 'bg-slate-800/20' : 'bg-white/40'
       }`}>
         {/* Glow Effect no Header */}
         <div 
@@ -319,8 +318,9 @@ export default function KanbanColumn({
           {/* Lado Esquerdo - Indicador e Nome */}
           <div className="flex items-center gap-4 flex-1">
             
-            {/* Handle para arrastar coluna - Visual apenas */}
+            {/* Handle para arrastar coluna - DRAG AREA */}
             <div
+              {...sortableListeners}
               className={`p-2 rounded-lg cursor-grab active:cursor-grabbing select-none transition-all duration-75 ease-out ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-700/70 text-gray-400 hover:text-gray-200 hover:scale-110' 
@@ -643,7 +643,7 @@ export default function KanbanColumn({
       {/* Cards Container com Scroll - TODA ÁREA É DROPPABLE */}
       <div 
         ref={setNodeRef}
-        className={`p-4 flex-1 overflow-y-auto custom-gray-scroll min-h-0 transition-all duration-200 ${
+        className={`px-3 flex-1 overflow-y-auto custom-gray-scroll min-h-0 transition-all duration-200 ${
           isOver ? 
             theme === 'dark' 
               ? 'bg-blue-500/10 border-2 border-dashed border-blue-400/50' 

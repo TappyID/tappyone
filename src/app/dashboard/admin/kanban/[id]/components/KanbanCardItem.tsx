@@ -196,54 +196,76 @@ export default function KanbanCardItem({
       }`}
       style={{
         ...style, // Estilo do sortable
-        touchAction: 'none', // Otimização para touch devices
+        touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
         WebkitTouchCallout: 'none'
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      // 🎭 ANIMAÇÕES FLUIDAS AVANÇADAS
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ 
+        opacity: isDragging ? 0.15 : 1, // Opacity super fraco quando dragging
+        y: 0, 
+        scale: isDragging ? 0.98 : (isHovered ? 1.02 : 1),
+        rotateZ: isDragging ? 3 : 0
+      }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 400, 
+        damping: 30,
+        mass: 0.8
+      }}
+      // 🌊 EFEITOS VISUAIS DURANTE DRAG
+      whileDrag={{
+        scale: 1.05,
+        rotateZ: 5,
+        opacity: 0.9,
+        zIndex: 1000
+      }}
     >
-      {/* 👻 Rastro fantasma que fica no lugar original */}
+      {/* 👻 FANTASMA AVANÇADO - Fica no lugar original */}
       {isDragging && (
-        <div
-          className={`absolute inset-0 rounded-2xl transition-opacity duration-500 opacity-30 ${
+        <motion.div
+          className={`absolute inset-0 rounded-2xl pointer-events-none ${
             theme === 'dark'
-              ? 'bg-slate-800/40 border border-slate-700/30'
-              : 'bg-gray-100/60 border border-gray-300/40'
+              ? 'bg-slate-800/15'
+              : 'bg-white/30'
           }`}
           style={{
-            backdropFilter: 'blur(8px)',
-            background: `linear-gradient(135deg, ${columnColor}10, ${columnColor}05)`,
-            boxShadow: `inset 0 0 20px ${columnColor}20, 0 8px 32px rgba(0,0,0,0.1)`
+            backdropFilter: 'blur(12px)',
+            background: `linear-gradient(135deg, ${columnColor}08, ${columnColor}03)`,
           }}
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ 
+            opacity: 0.3,
+            scale: 0.98,
+            boxShadow: `0 0 40px ${columnColor}10`
+          }}
+          transition={{ duration: 0.2 }}
         />
       )}
       
       <div
-        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out ${
+        {...listeners}
+        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out cursor-grab active:cursor-grabbing ${
           theme === 'dark'
-            ? 'bg-slate-800/60 hover:bg-slate-800/80 border border-slate-700/50'
-            : 'bg-white hover:bg-gray-50 border border-gray-200'
+            ? 'bg-slate-800/60 hover:bg-slate-800/80'
+            : 'bg-white hover:bg-white'
         } ${isDragging ? 'rotate-2 scale-95 opacity-60' : 'hover:scale-[1.02]'}`}
         style={{
-          boxShadow: isDragging
-            ? `0 25px 50px rgba(0,0,0,0.3), 0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px ${columnColor}40`
-            : isHovered
-              ? theme === 'dark'
-                ? '0 10px 30px rgba(0,0,0,0.5)'
-                : '0 10px 30px rgba(0,0,0,0.1)'
-              : '',
+         
+          borderRadius: '20px',
+          filter: !isDragging && !isHovered ? `drop-shadow(0 4px 15px rgba(0,0,0,0.05))` : 'none'
         }}
       >
-        {/* 🎨 Barra de Gradiente Lateral Esquerda */}
+        {/* 🎨 Barra de Gradiente Lateral Esquerda - TOTALMENTE ARREDONDADA */}
         <div 
-          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
+          className="absolute left-0 top-0 bottom-0 w-1 rounded-full"
           style={{
-            background: `linear-gradient(180deg, ${columnColor}00 0%, ${columnColor}00 10%, ${columnColor} 25%, ${columnColor} 75%, ${columnColor}00 90%, ${columnColor}00 100%)`
+            background: `linear-gradient(180deg, ${columnColor}20 0%, ${columnColor}60 20%, ${columnColor} 40%, ${columnColor} 60%, ${columnColor}60 80%, ${columnColor}20 100%)`,
+            borderRadius: '8px 0 0 8px'
           }}
         />
         
@@ -255,12 +277,12 @@ export default function KanbanCardItem({
               <img 
                 src={profileImage} 
                 alt={(card.nome || card.name || 'Contact')}
-                className="w-10 h-10 rounded-full object-cover" 
+                className="w-10 h-10 rounded-full object-cover shadow-lg" 
               /> 
             ) : null}
             
             {/* Fallback avatar com inicial */}
-            <div className={`${profileImage ? 'hidden' : ''} w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold`}>
+            <div className={`${profileImage ? 'hidden' : ''} w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg`}>
               <span className="text-sm font-bold text-white">
                 {(card.nome || card.name || 'C').charAt(0).toUpperCase()}
               </span>
@@ -268,7 +290,7 @@ export default function KanbanCardItem({
 
             {/* Badge de mensagens não lidas */}
             {card.unreadCount && card.unreadCount > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-xl">
                 <span className="text-[10px] text-white font-bold">
                   {card.unreadCount > 99 ? '99+' : card.unreadCount}
                 </span>
@@ -281,10 +303,12 @@ export default function KanbanCardItem({
             <div className="flex items-start justify-between mb-1">
               {/* Nome do contato - ÁREA DRAG - limitado a 14 caracteres */}
               <h3 
-                {...listeners}
-                className={`font-semibold text-[10px] leading-tight cursor-grab active:cursor-grabbing ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                className={`font-semibold text-[10px] leading-tight select-none transition-all duration-200 hover:scale-105 ${
+                  theme === 'dark' ? 'text-white hover:text-blue-300' : 'text-gray-900 hover:text-blue-600'
                 }`} 
+                style={{
+                  textShadow: isDragging ? `0 0 8px ${columnColor}60` : 'none'
+                }}
                 title={card.nome || card.name || 'Sem nome'}>
                 {(card.nome || card.name || 'Sem nome').length > 14 
                   ? `${(card.nome || card.name || 'Sem nome').substring(0, 14)}...`
@@ -296,8 +320,8 @@ export default function KanbanCardItem({
               {(counts.tags > 0 || Math.random() > 0.7) && (
                 <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
                   theme === 'dark' 
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
-                    : 'bg-purple-100 text-purple-700 border border-purple-200'
+                    ? 'bg-purple-500/20 text-purple-300' 
+                    : 'bg-purple-100 text-purple-700'
                 }`}>
                   {(counts as any).tagNames?.[0] || ['VIP', 'Cliente', 'Suporte'][Math.floor(Math.random() * 3)]}
                 </span>
@@ -320,15 +344,15 @@ export default function KanbanCardItem({
 
 
         {/* Footer com ícones à esquerda e horário à direita */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200/10">
+        <div className="flex items-center justify-between mt-2 pt-2">
           {/* Ícones de Ação - à esquerda */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 onOpenOrcamento?.(card)
               }}
-              className={`p-1 rounded transition-all relative ${
+              className={`p-1 rounded-lg transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-green-500/20 text-green-400'
                   : 'hover:bg-green-50 text-green-600'
@@ -348,7 +372,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenAgendamento?.(card)
               }}
-              className={`p-1 rounded transition-all relative ${
+              className={`p-1 rounded-lg transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-blue-500/20 text-blue-400'
                   : 'hover:bg-blue-50 text-blue-600'
@@ -368,7 +392,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenAnotacoes?.(card)
               }}
-              className={`p-1 rounded transition-all relative ${
+              className={`p-1 rounded-lg transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-yellow-500/20 text-yellow-400'
                   : 'hover:bg-yellow-50 text-yellow-600'
@@ -388,7 +412,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenTickets?.(card)
               }}
-              className={`p-1 rounded transition-all relative ${
+              className={`p-1 rounded-lg transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-red-500/20 text-red-400'
                   : 'hover:bg-red-50 text-red-600'
@@ -408,7 +432,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenTags?.(card)
               }}
-              className={`p-1 rounded transition-all relative ${
+              className={`p-1 rounded-lg transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-purple-500/20 text-purple-400'
                   : 'hover:bg-purple-50 text-purple-600'
@@ -429,7 +453,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 setShowAgenteModal(true)
               }}
-              className={`p-1 rounded transition-all relative ${
+              className={`p-1 rounded-lg transition-all relative ${
                 theme === 'dark'
                   ? 'hover:bg-blue-500/20 text-blue-400'
                   : 'hover:bg-blue-50 text-blue-600'
@@ -450,7 +474,7 @@ export default function KanbanCardItem({
                 e.stopPropagation()
                 onOpenChat?.(card)
               }}
-              className={`p-1 rounded transition-all ${
+              className={`p-1 rounded-lg transition-all ${
                 theme === 'dark'
                   ? 'hover:bg-orange-500/20 text-orange-400'
                   : 'hover:bg-orange-50 text-orange-600'
