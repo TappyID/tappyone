@@ -6,11 +6,11 @@ import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import { useTheme } from '@/contexts/ThemeContext'
 
-interface AdminLayoutProps {
+interface AtendenteLayoutProps {
   children: React.ReactNode
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function AtendenteLayout({ children }: AtendenteLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { actualTheme } = useTheme()
 
@@ -65,4 +65,4 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   )
 }
 
-export default AdminLayout
+export default AtendenteLayout

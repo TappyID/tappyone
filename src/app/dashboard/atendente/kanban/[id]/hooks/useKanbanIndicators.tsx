@@ -8,6 +8,7 @@ interface IndicatorCounts {
   anotacoes: number
   tickets: number
   tags: number
+  tagNames?: string[]
 }
 
 export function useKanbanIndicators(contatoId: string | null) {
@@ -118,6 +119,11 @@ export function useKanbanIndicators(contatoId: string | null) {
       console.log('  🎫 Tickets:', ticketsData)
       console.log('  🏷️ Tags:', tagsData)
 
+      // Extrair nomes das tags
+      const tagsList = Array.isArray(tagsData) ? tagsData : 
+                      Array.isArray(tagsData?.data) ? tagsData.data : []
+      const tagNames = tagsList.map((tag: any) => tag.nome || tag.name || 'Tag')
+      
       const newCounts = {
         // Para endpoints DIRETOS - dados vêm como array ou {data: array}
         orcamentos: Array.isArray(orcamentosData) ? orcamentosData.length : 
@@ -129,7 +135,8 @@ export function useKanbanIndicators(contatoId: string | null) {
         tickets: Array.isArray(ticketsData) ? ticketsData.length :
                 Array.isArray(ticketsData?.data) ? ticketsData.data.length : 0,
         tags: Array.isArray(tagsData) ? tagsData.length :
-             Array.isArray(tagsData?.data) ? tagsData.data.length : 0
+             Array.isArray(tagsData?.data) ? tagsData.data.length : 0,
+        tagNames: tagNames
       }
       
       console.log('📊 [useKanbanIndicators] Contadores atualizados:', newCounts)

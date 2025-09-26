@@ -12,11 +12,11 @@ import {
 } from 'lucide-react'
 
 import CreateContactModal from './CreateContactModal'
-import KanbanModal from './KanbanModal'
-import TagsSidebar from './TagsSidebar'
-import AgendamentosSidebar from './AgendamentosSidebar'
-import OrcamentosSidebar from './OrcamentosSidebar'
-import TicketsSidebar from './TicketsSidebar'
+import AgendamentoBottomSheet from '../FooterChatArea/BottomSheets/AgendamentoBottomSheet'
+import OrcamentoBottomSheet from '../FooterChatArea/BottomSheets/OrcamentoBottomSheet'
+import TicketBottomSheet from '../FooterChatArea/BottomSheets/TicketBottomSheet'
+import TagsBottomSheet from '../FooterChatArea/BottomSheets/TagsBottomSheet'
+import AnotacoesBottomSheet from '../FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 // import AtendenteSidebar from './AtendenteSidebar'
 // import FilaSidebar from './FilaSidebar'
 // import KanbanSidebar from './KanbanSidebar'
@@ -25,10 +25,12 @@ import OrcamentosIndicator from './Indicators/OrcamentosIndicator'
 import SimpleTagsIndicator from './Indicators/SimpleTagsIndicator'
 import ContactIndicator from './Indicators/ContactIndicator'
 import TicketsIndicator from './Indicators/TicketsIndicator'
-import KanbanIndicator from './Indicators/KanbanIndicator'
+import AnotacoesIndicator from './Indicators/AnotacoesIndicator'
 // import FilaIndicator from './Indicators/FilaIndicator'
 // import AgenteIndicator from './Indicators/AgenteIndicator'
+import { useAtendenteData } from '@/hooks/useAtendenteData'
 import { useChatPicture } from '@/hooks/useChatPicture'
+import { FilaIndicator } from './StatusIndicators'
 
 interface ChatHeaderProps {
   chat?: {
@@ -56,14 +58,12 @@ export default function ChatHeader({
   
   // Estados SEMPRE devem ser declarados antes de qualquer early return
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [agendamentosSidebarOpen, setAgendamentosSidebarOpen] = useState(false)
-  const [orcamentosSidebarOpen, setOrcamentosSidebarOpen] = useState(false)
-  const [ticketsSidebarOpen, setTicketsSidebarOpen] = useState(false)
-  const [kanbanModalOpen, setKanbanModalOpen] = useState(false)
-  const [tagsSidebarOpen, setTagsSidebarOpen] = useState(false)
-  const [atendenteSidebarOpen, setAtendenteSidebarOpen] = useState(false)
+  const [agendamentoBottomSheetOpen, setAgendamentoBottomSheetOpen] = useState(false)
+  const [orcamentoBottomSheetOpen, setOrcamentoBottomSheetOpen] = useState(false)
+  const [ticketBottomSheetOpen, setTicketBottomSheetOpen] = useState(false)
+  const [tagsBottomSheetOpen, setTagsBottomSheetOpen] = useState(false)
+  const [anotacoesBottomSheetOpen, setAnotacoesBottomSheetOpen] = useState(false)
   const [filaSidebarOpen, setFilaSidebarOpen] = useState(false)
-  const [kanbanSidebarOpen, setKanbanSidebarOpen] = useState(false)
   const [createContactModalOpen, setCreateContactModalOpen] = useState(false)
   
   // Extrair contato_id do chatId (remover @c.us)
@@ -73,6 +73,9 @@ export default function ChatHeader({
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat?.id || '', { 
     enabled: !!chat?.id 
   })
+  
+  // Buscar atendente responsável pelo chat
+  const { atendenteData } = useAtendenteData(chat?.id || null)
   
   if (!chat) {
     return null
@@ -141,6 +144,27 @@ export default function ChatHeader({
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
             {chat.name}
           </h3>
+          
+          {/* Informações do Atendente - SEMPRE MOSTRA */}
+          <div className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 mb-1">
+            <User className="w-3 h-3" />
+            <span>Atendido por: {atendenteData?.atendente || 'Sem atendente'}</span>
+            <span className="text-gray-400">•</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+              atendenteData?.status === 'em_atendimento' 
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                : atendenteData?.status === 'aguardando'
+                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400'
+            }`}>
+              {atendenteData?.status === 'em_atendimento' ? 'Em Atendimento' : 
+               atendenteData?.status === 'aguardando' ? 'Aguardando' : 
+               atendenteData?.status ? 'Finalizado' : 'Aguardando'}
+            </span>
+          </div>
+          
+       
+          
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <Clock className="w-3 h-3" />
@@ -170,61 +194,49 @@ export default function ChatHeader({
         <ContactIndicator 
           chatId={selectedChatId}
           onClick={() => {
-            // Se já é contato, mostrar mensagem. Se não, abrir modal
-            const numero = selectedChatId ? selectedChatId.replace('@c.us', '') : ''
             console.log('👤 [ChatHeader] Clique no ContactIndicator - chatId:', selectedChatId)
-            
-            // Por enquanto sempre abre modal - o ContactIndicator vai determinar se deve ou não
             setCreateContactModalOpen(true)
           }} 
         />
-        <KanbanIndicator 
-          contatoId={contatoId}
-          onClick={() => {
-            console.log('📋 [ChatHeader] Abrindo KanbanModal - contatoId:', contatoId)
-            setKanbanModalOpen(true)
-          }} 
-        />
         <SimpleTagsIndicator 
-          contatoId={contatoId}
-          onClick={() => setTagsSidebarOpen(true)} 
+          contatoId={selectedChatId}
+          onClick={() => setTagsBottomSheetOpen(true)} 
         />
         <AgendamentosIndicator 
-          contatoId={contatoId}
+          contatoId={selectedChatId}
           onClick={() => {
-            console.log('📅 [ChatHeader] Abrindo sidebar de agendamentos - contatoId:', contatoId)
-            setAgendamentosSidebarOpen(true)
+            console.log('📅 [ChatHeader] Abrindo BottomSheet de agendamentos - chatId:', selectedChatId)
+            setAgendamentoBottomSheetOpen(true)
           }} 
         />
         <OrcamentosIndicator 
-          contatoId={contatoId}
+          contatoId={selectedChatId}
           onClick={() => {
-            console.log('💰 [ChatHeader] Abrindo sidebar de orçamentos - contatoId:', contatoId)
-            setOrcamentosSidebarOpen(true)
+            console.log('💰 [ChatHeader] Abrindo BottomSheet de orçamentos - chatId:', selectedChatId)
+            setOrcamentoBottomSheetOpen(true)
           }} 
         />
         <TicketsIndicator 
-          contatoId={contatoId}
+          contatoId={selectedChatId}
           onClick={() => {
-            console.log('🎫 [ChatHeader] Abrindo sidebar de tickets - contatoId:', contatoId)
-            setTicketsSidebarOpen(true)
+            console.log('🎫 [ChatHeader] Abrindo BottomSheet de tickets - chatId:', selectedChatId)
+            setTicketBottomSheetOpen(true)
           }} 
         />
-        {/* TEMPORARIAMENTE COMENTADO - OUTROS INDICADORES */}
-        {/*
+        <AnotacoesIndicator 
+          contatoId={selectedChatId}
+          onClick={() => {
+            console.log('📝 [ChatHeader] Abrindo BottomSheet de anotações - chatId:', selectedChatId)
+            setAnotacoesBottomSheetOpen(true)
+          }} 
+        />
         <FilaIndicator 
-          contatoId={contatoId}
+          chatId={selectedChatId}
           onClick={() => setFilaSidebarOpen(true)} 
         />
-        <AgenteIndicator 
-          contatoId={contatoId}
-          onClick={() => setAtendenteSidebarOpen(true)} 
-        />
-        */}
       </div>
       
-      {/* Modal */}
-      {/* Contact Modal */}
+      {/* Modals */}
       <CreateContactModal 
         isOpen={createContactModalOpen}
         onClose={() => setCreateContactModalOpen(false)}
@@ -232,37 +244,36 @@ export default function ChatHeader({
         chatName={chat?.name}
       />
       
-      {/* Kanban Modal */}
-      <KanbanModal
-        isOpen={kanbanModalOpen}
-        onClose={() => setKanbanModalOpen(false)}
-        contatoId={contatoId || ''}
-        chatName={chat?.name}
-      />
 
-      {/* Sidebars */}
-      <TagsSidebar
-        isOpen={tagsSidebarOpen}
-        onClose={() => setTagsSidebarOpen(false)}
-        contatoId={contatoId}
+      {/* BottomSheets */}
+      <TagsBottomSheet
+        isOpen={tagsBottomSheetOpen}
+        onClose={() => setTagsBottomSheetOpen(false)}
+        chatId={selectedChatId}
       />
       
-      <AgendamentosSidebar
-        isOpen={agendamentosSidebarOpen}
-        onClose={() => setAgendamentosSidebarOpen(false)}
-        contatoId={contatoId}
+      <AgendamentoBottomSheet
+        isOpen={agendamentoBottomSheetOpen}
+        onClose={() => setAgendamentoBottomSheetOpen(false)}
+        chatId={selectedChatId}
       />
       
-      <OrcamentosSidebar
-        isOpen={orcamentosSidebarOpen}
-        onClose={() => setOrcamentosSidebarOpen(false)}
-        contatoId={contatoId}
+      <OrcamentoBottomSheet
+        isOpen={orcamentoBottomSheetOpen}
+        onClose={() => setOrcamentoBottomSheetOpen(false)}
+        chatId={selectedChatId}
       />
       
-      <TicketsSidebar
-        isOpen={ticketsSidebarOpen}
-        onClose={() => setTicketsSidebarOpen(false)}
-        contatoId={contatoId}
+      <TicketBottomSheet
+        isOpen={ticketBottomSheetOpen}
+        onClose={() => setTicketBottomSheetOpen(false)}
+        chatId={selectedChatId}
+      />
+      
+      <AnotacoesBottomSheet
+        isOpen={anotacoesBottomSheetOpen}
+        onClose={() => setAnotacoesBottomSheetOpen(false)}
+        chatId={selectedChatId}
       />
     </motion.div>
   )

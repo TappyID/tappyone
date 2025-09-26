@@ -277,7 +277,7 @@ export default function KanbanColumn({
           : theme === 'dark'
             ? 'border-slate-700/30 bg-gradient-to-b from-slate-800/40 via-slate-800/20 to-slate-800/10 hover:from-slate-800/60 hover:via-slate-800/30 hover:to-slate-800/20'
             : 'border-gray-200/40 bg-gradient-to-b from-white via-gray-50/30 to-white/80 hover:from-white hover:via-gray-50/50 hover:to-white'
-      } backdrop-blur-sm overflow-hidden group ${
+      } backdrop-blur-sm overflow-visible group ${
         isColumnDragging 
           ? 'opacity-70 z-50' 
           : 'hover:shadow-lg'

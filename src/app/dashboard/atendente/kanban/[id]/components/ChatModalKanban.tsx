@@ -6,8 +6,8 @@ import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Tic
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
-import EditTextModal from '../../../atendimentos/components/EditTextModal'
-import QuickActionsSidebar from '../../../atendimentos/components/QuickActionsSidebar'
+import EditTextModal from '../../../../admin/atendimentos/components/EditTextModal'
+import QuickActionsSidebar from '../../../../admin/atendimentos/components/QuickActionsSidebar'
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatPicture } from '@/hooks/useChatPicture'
 

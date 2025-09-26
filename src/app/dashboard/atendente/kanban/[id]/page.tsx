@@ -17,7 +17,7 @@ import ColumnConfigModal from './components/ColumnConfigModal'
 import FunnelView from './components/FunnelView'
 
 // TopBar
-import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
+import AtendimentosTopBar from '../../components/AtendimentosTopBar'
 
 // Modais
 import CriarCardModal from '../components/CriarCardModal'
@@ -113,11 +113,14 @@ function QuadroPage() {
       
       const data = await response.json()
       console.log('🔍 Dados recebidos da API:', data)
+      console.log('🔍 Tipo dos dados:', typeof data)
+      console.log('🔍 É array?', Array.isArray(data))
       
       // A API pode retornar diferentes estruturas
       const chatsArray = data.data || data.chats || data || []
       
       console.log('🔍 Chats extraídos:', chatsArray.length)
+      console.log('🔍 Primeiro chat (se existir):', chatsArray[0])
       setWhatsappChats(chatsArray)
       setChatsError(null)
       
@@ -258,8 +261,18 @@ function QuadroPage() {
 
   // Mapear chats do WhatsApp para as colunas
   const mapearConversasParaColunas = useCallback(() => {
-    if (!colunas || colunas.length === 0) return []
-    if (!whatsappChats || whatsappChats.length === 0) return colunas.map(col => ({ ...col, cards: [], totalCards: 0 }))
+    console.log('🔄 mapearConversasParaColunas chamado')
+    console.log('🔄 colunas:', colunas?.length || 0)
+    console.log('🔄 whatsappChats:', whatsappChats?.length || 0)
+    
+    if (!colunas || colunas.length === 0) {
+      console.log('❌ Sem colunas disponíveis')
+      return []
+    }
+    if (!whatsappChats || whatsappChats.length === 0) {
+      console.log('❌ Sem chats disponíveis')
+      return colunas.map(col => ({ ...col, cards: [], totalCards: 0 }))
+    }
     
     // Filtrar chats baseado na busca
     let filteredChats = whatsappChats

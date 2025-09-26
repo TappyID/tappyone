@@ -84,8 +84,8 @@ export default function AtendimentosTopBar({
 
   const handleMenuClick = (action: string) => {
     setShowProfile(false)
-    // Todos os links direcionam para configurações
-    router.push('/dashboard/admin/configuracoes')
+    // Todos os links direcionam para configurações do atendente
+    router.push('/dashboard/atendente/configuracoes')
   }
   
   // Mapeamento de idiomas para bandeiras
@@ -290,9 +290,9 @@ export default function AtendimentosTopBar({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (isKanbanPage) {
-                    router.push('/dashboard/admin/atendimento')
+                    router.push('/dashboard/atendente/atendimento')
                   } else {
-                    router.push('/dashboard/admin/kanban')
+                    router.push('/dashboard/atendente/kanban')
                   }
                 }}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
@@ -323,28 +323,12 @@ export default function AtendimentosTopBar({
               )}
             </motion.div>
             
+          
             <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/fluxograma')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Fluxograma"
-              >
-                <GitBranch className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge Fluxograma - Roxo */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
-                <GitBranch className="w-3 h-3 text-white drop-shadow-sm" />
-              </div>
-            </motion.div>
-
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/respostas-rapidas')}
+                onClick={() => router.push('/dashboard/atendente/configuracoes')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
                 title="Respostas Rápidas"
               >
@@ -357,28 +341,13 @@ export default function AtendimentosTopBar({
               </div>
             </motion.div>
             
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/agentes')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Agentes de IA"
-              >
-                <Bot className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge IA - Ciano */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-cyan-300/30">
-                <span className="text-[10px] font-bold text-white drop-shadow-sm">🤖</span>
-              </div>
-            </motion.div>
+        
             
             <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/tags')}
+                onClick={() => router.push('/dashboard/atendente/configuracoes')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
                 title="Tags"
               >
@@ -395,7 +364,7 @@ export default function AtendimentosTopBar({
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/tickets')}
+                onClick={() => router.push('/dashboard/atendente/configuracoes')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
                 title="Tickets"
               >
@@ -412,7 +381,7 @@ export default function AtendimentosTopBar({
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/agendamentos')}
+                onClick={() => router.push('/dashboard/atendente/configuracoes')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
                 title="Agendamentos"
               >
@@ -429,7 +398,7 @@ export default function AtendimentosTopBar({
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/orcamentos')}
+                onClick={() => router.push('/dashboard/atendente/configuracoes')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
                 title="Orçamentos"
               >
@@ -442,22 +411,7 @@ export default function AtendimentosTopBar({
               </div>
             </motion.div>
             
-            <motion.div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/filas')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                title="Filas"
-              >
-                <List className="w-4 h-4 text-white" />
-              </motion.button>
-              
-              {/* Badge Filas - Laranja */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-orange-300/30">
-                <List className="w-3 h-3 text-white drop-shadow-sm" />
-              </div>
-            </motion.div>
+         
             
             <motion.div className="relative">
               <motion.button
@@ -840,8 +794,8 @@ export default function AtendimentosTopBar({
                 <User className="w-3.5 h-3.5 text-white" />
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-white">{user?.nome || 'Admin'}</p>
-                <p className="text-xs text-white/70">Online</p>
+                <p className="text-sm font-medium text-white">{user?.nome || 'Atendente'}</p>
+                <p className="text-xs text-white/70">Atendente</p>
               </div>
               <MoreHorizontal className="w-3.5 h-3.5 text-white/60" />
             </motion.button>
@@ -874,8 +828,8 @@ export default function AtendimentosTopBar({
                           <User className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-white">{user?.nome || 'Admin'}</h3>
-                          <p className="text-sm text-white/70">{user?.email || 'admin@tappyone.com'}</p>
+                          <h3 className="text-lg font-semibold text-white">{user?.nome || 'Atendente'}</h3>
+                          <p className="text-sm text-white/70">{user?.email || 'atendente@tappyone.com'}</p>
                         </div>
                       </div>
                       <motion.button
@@ -891,7 +845,7 @@ export default function AtendimentosTopBar({
                     {/* Status */}
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                      <span className="text-sm text-white/80">Online agora</span>
+                      <span className="text-sm text-white/80">Atendente ativo</span>
                     </div>
                   </div>
                   

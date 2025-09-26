@@ -30,8 +30,8 @@ export function ProfileDropdown({ sidebarCollapsed = true }: ProfileDropdownProp
 
   const handleMenuClick = (action: string) => {
     setShowProfile(false)
-    // Todos os links direcionam para configurações
-    router.push('/dashboard/admin/configuracoes')
+    // Todos os links direcionam para configurações do atendente
+    router.push('/dashboard/atendente/configuracoes')
   }
 
   return (
@@ -61,14 +61,14 @@ export function ProfileDropdown({ sidebarCollapsed = true }: ProfileDropdownProp
           }`}>{user?.nome || 'Admin'}</p>
           <p className={`text-xs ${
             sidebarCollapsed ? 'text-gray-600' : 'text-white/70'
-          }`}>Online</p>
+          }`}>Atendente</p>
         </div>
         <MoreHorizontal className={`w-3.5 h-3.5 ${
           sidebarCollapsed ? 'text-gray-600' : 'text-white/60'
         }`} />
       </motion.button>
       
-      {/* Badge Online - Verde */}
+      {/* Badge Atendente - Verde */}
       <motion.div 
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -135,7 +135,7 @@ export function ProfileDropdown({ sidebarCollapsed = true }: ProfileDropdownProp
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 <span className={`text-sm ${
                   sidebarCollapsed ? 'text-gray-600' : 'text-white/80'
-                }`}>Online agora</span>
+                }`}>Atendente ativo</span>
               </div>
             </div>
             

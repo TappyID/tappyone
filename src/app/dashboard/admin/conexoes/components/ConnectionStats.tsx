@@ -6,38 +6,49 @@ import { Zap, Link as LinkIcon, Activity, Clock } from 'lucide-react'
 interface ConnectionStatsProps {
   activeConnections: number
   totalConnections: number
+  totalChats: number
+  totalGroups: number
+  totalFilas: number
+  loading?: boolean
 }
 
-export function ConnectionStats({ activeConnections, totalConnections }: ConnectionStatsProps) {
+export function ConnectionStats({ 
+  activeConnections, 
+  totalConnections, 
+  totalChats, 
+  totalGroups, 
+  totalFilas,
+  loading = false 
+}: ConnectionStatsProps) {
   const stats = [
     {
       icon: LinkIcon,
-      label: 'Total de Conexões',
-      value: totalConnections,
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-      iconColor: 'text-blue-600 dark:text-blue-400'
-    },
-    {
-      icon: Zap,
       label: 'Conexões Ativas',
-      value: activeConnections,
+      value: loading ? '...' : activeConnections,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       iconColor: 'text-green-600 dark:text-green-400'
     },
     {
+      icon: Zap,
+      label: 'Total de Filas',
+      value: loading ? '...' : totalFilas,
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      iconColor: 'text-blue-600 dark:text-blue-400'
+    },
+    {
       icon: Activity,
-      label: 'Taxa de Sucesso',
-      value: '98.5%',
+      label: 'Chats WhatsApp',
+      value: loading ? '...' : totalChats,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       iconColor: 'text-purple-600 dark:text-purple-400'
     },
     {
       icon: Clock,
-      label: 'Última Sincronização',
-      value: 'Agora',
+      label: 'Grupos WhatsApp',
+      value: loading ? '...' : totalGroups,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50 dark:bg-orange-900/20',
       iconColor: 'text-orange-600 dark:text-orange-400'

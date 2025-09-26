@@ -152,6 +152,20 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       const hasMoreMessages = data.length === limit
       setHasMore(hasMoreMessages)
       
+      // Calcular total estimado baseado no que temos
+      if (!append && data.length > 0) {
+        // No primeiro carregamento, estimar total
+        const estimatedTotal = hasMoreMessages ? data.length * 3 : data.length
+        setTotalMessages(estimatedTotal)
+        console.log(`📊 Total estimado: ${estimatedTotal} mensagens`)
+      } else if (append) {
+        // Ao carregar mais, atualizar estimativa
+        const currentTotal = messages.length + data.length
+        const newEstimate = hasMoreMessages ? currentTotal * 2 : currentTotal
+        setTotalMessages(newEstimate)
+        console.log(`📊 Total atualizado: ${newEstimate} mensagens`)
+      }
+      
       if (hasMoreMessages) {
         console.log(`🔄 Há mais mensagens: carregadas ${data.length}/${limit} (completo)`)
       } else {

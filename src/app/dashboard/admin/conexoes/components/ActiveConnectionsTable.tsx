@@ -74,6 +74,8 @@ export function ActiveConnectionsTable({
   const { user, loading: authLoading } = useAuth()
   const [connections, setConnections] = useState<ActiveConnection[]>([])
   const [loading, setLoading] = useState(false)
+  const [editingConnectionName, setEditingConnectionName] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
 
   // Função para buscar nomes das filas pelos IDs
   const fetchFilasNames = async (filaIds: string[]): Promise<string[]> => {
@@ -108,6 +110,52 @@ export function ActiveConnectionsTable({
   }
   
   const [error, setError] = useState<string | null>(null)
+
+  // Função para iniciar edição do nome
+  const handleStartEditName = (connection: ActiveConnection) => {
+    setEditingConnectionName(connection.sessionName)
+    setEditingName(connection.wahaSession?.me?.pushName || connection.sessionName)
+  }
+
+  // Função para salvar o nome editado
+  const handleSaveConnectionName = async (sessionName: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch(`/api/connections/whatsapp/${sessionName}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          displayName: editingName
+        })
+      })
+
+      if (response.ok) {
+        console.log('✅ Nome da conexão atualizado com sucesso')
+        // Atualizar a conexão local
+        setConnections(prev => prev.map(conn => 
+          conn.sessionName === sessionName 
+            ? { ...conn, wahaSession: { ...conn.wahaSession, me: { ...conn.wahaSession?.me, pushName: editingName } } }
+            : conn
+        ))
+        setEditingConnectionName(null)
+        setEditingName('')
+      } else {
+        console.error('❌ Erro ao atualizar nome da conexão:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar nome da conexão:', error)
+    }
+  }
+
+  // Função para cancelar edição
+  const handleCancelEditName = () => {
+    setEditingConnectionName(null)
+    setEditingName('')
+  }
   
   // Estados para QR Code
   const [showQRModal, setShowQRModal] = useState(false)
@@ -234,9 +282,10 @@ export function ActiveConnectionsTable({
             const filasCount = Array.isArray(modulation.selectedFilas) ? modulation.selectedFilas.length : 0
             
             stats = {
-              chats: Array.isArray(modulation.selectedChats) ? modulation.selectedChats.length : 0,
-              groups: Array.isArray(modulation.selectedGroups) ? modulation.selectedGroups.length : 0,
-              messages: filasCount
+              chats: 0, // Não usamos mais chats individuais
+              groups: 0, // Não usamos mais grupos individuais  
+              messages: filasCount, // Agora messages representa o número de filas
+              contacts: filasCount // Para compatibilidade
             }
             
             // Buscar nomes das filas da modulation (assíncrono para não travar)
@@ -276,9 +325,26 @@ export function ActiveConnectionsTable({
           }
         }
 
+        // Extrair nome personalizado da modulation se existir
+        let displayName = session.me?.pushName || session.name
+        if (backendConnection?.modulation) {
+          try {
+            const modulation = typeof backendConnection.modulation === 'string' 
+              ? JSON.parse(backendConnection.modulation) 
+              : backendConnection.modulation
+            
+            if (modulation.connectionName) {
+              displayName = modulation.connectionName
+            }
+          } catch (err) {
+            console.warn('Erro ao extrair nome da conexão:', err)
+          }
+        }
+
         const connectionData = {
           id: session.name,
           sessionName: session.name,
+          displayName: displayName, // Nome personalizado
           status: (
             session.status === 'WORKING' ? 'connected' : 
             session.status === 'SCAN_QR_CODE' ? 'connecting' : 
@@ -745,7 +811,7 @@ export function ActiveConnectionsTable({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={`hover:bg-opacity-50 transition-colors ${
+                    className={`group hover:bg-opacity-50 transition-colors ${
                       theme === 'dark' ? 'hover:bg-slate-700/30' : 'hover:bg-gray-50/50'
                     }`}
                   >
@@ -761,11 +827,56 @@ export function ActiveConnectionsTable({
                           }`}>
                             WhatsApp Business
                           </p>
-                          <p className={`text-sm ${
-                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {connection.wahaSession?.me?.pushName || connection.sessionName}
-                          </p>
+                          {editingConnectionName === connection.sessionName ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleSaveConnectionName(connection.sessionName)
+                                  } else if (e.key === 'Escape') {
+                                    handleCancelEditName()
+                                  }
+                                }}
+                                className={`text-sm px-2 py-1 border rounded ${
+                                  theme === 'dark' 
+                                    ? 'bg-slate-700 border-slate-600 text-white' 
+                                    : 'bg-white border-gray-300 text-gray-900'
+                                }`}
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveConnectionName(connection.sessionName)}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={handleCancelEditName}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                              }`}>
+                                {connection.wahaSession?.me?.pushName || connection.sessionName}
+                              </p>
+                              <button
+                                onClick={() => handleStartEditName(connection)}
+                                className={`opacity-0 group-hover:opacity-100 transition-opacity ${
+                                  theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

@@ -105,14 +105,15 @@ export default function ChatArea({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
 
-  // Auto-scroll para última mensagem apenas no carregamento inicial
-  useEffect(() => {
-    if (messages.length <= 5) { // Só nas primeiras 5 mensagens
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
-    }
-  }, [messages.length])
+  // Auto-scroll DESABILITADO para permitir scroll manual
+  // useEffect(() => {
+  //   if (messages.length > 0 && messages.length <= 10) {
+  //     const timer = setTimeout(() => {
+  //       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+  //     }, 200)
+  //     return () => clearTimeout(timer)
+  //   }
+  // }, [messages.length])
 
   // Detectar scroll para mostrar badge e load more
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -180,27 +181,49 @@ export default function ChatArea({
   return (
     <>
       <style jsx>{`
+        /* Scrollbar Styles - Igual do ChatModalKanban */
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(59, 130, 246, 0.1);
+          background: #3B82F620;
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(45deg, #3B82F6, #1D4ED8);
+          background: #3B82F6;
           border-radius: 4px;
           transition: background 0.3s ease;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(45deg, #1D4ED8, #1E40AF);
+          background: #3B82F6dd;
+        }
+        
+        /* Pattern de pontinhos para light mode */
+        .chat-dots-pattern {
+          background-image: 
+            radial-gradient(circle at 2px 2px, rgba(0,0,0,0.06) 1px, transparent 0),
+            radial-gradient(circle at 12px 12px, rgba(0,0,0,0.03) 1px, transparent 0),
+            radial-gradient(circle at 6px 18px, rgba(0,0,0,0.04) 1px, transparent 0);
+          background-size: 24px 24px;
+        }
+        
+        /* Pattern de pontinhos para dark mode */
+        .dark .chat-dots-pattern {
+          background-image: 
+            radial-gradient(circle at 2px 2px, rgba(255,255,255,0.12) 1px, transparent 0),
+            radial-gradient(circle at 12px 12px, rgba(255,255,255,0.06) 1px, transparent 0),
+            radial-gradient(circle at 6px 18px, rgba(255,255,255,0.09) 1px, transparent 0);
+          background-size: 24px 24px;
         }
       `}</style>
       
-    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
+    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden relative h-full">
       
       {/* Badge de mensagens não carregadas - estilo WhatsApp Web */}
-      {totalMessages > messages.length && (
+      {(() => {
+        console.log('🎯 Badge Check:', { totalMessages, messagesLength: messages.length, shouldShow: totalMessages > messages.length })
+        return totalMessages > messages.length
+      })() && (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
           <motion.button
             initial={{ opacity: 0, y: -20 }}
@@ -214,14 +237,15 @@ export default function ChatArea({
         </div>
       )}
 
-      {/* Área de mensagens */}
+      {/* Área de mensagens com pattern WhatsApp */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar"
+        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 chat-dots-pattern"
         onScroll={handleScroll}
         style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#3B82F6 rgba(59, 130, 246, 0.1)'
+          height: 'calc(100vh - 180px)',
+          minHeight: '500px',
+          maxHeight: 'calc(100vh - 180px)'
         }}
       >
         {/* Loading mais mensagens no topo */}
@@ -239,6 +263,7 @@ export default function ChatArea({
             <span className="ml-2 text-sm text-gray-500">Carregando mensagens...</span>
           </div>
         )}
+
 
         {/* Lista de mensagenss */}
         <AnimatePresence mode="popLayout">
@@ -296,6 +321,17 @@ export default function ChatArea({
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Inicie a conversa com {selectedChat.name} enviando uma mensagem
             </p>
+          </div>
+        )}
+
+        {/* Conteúdo de teste para forçar scroll */}
+        {messages.length < 5 && (
+          <div className="space-y-4 p-4">
+            {Array.from({ length: 20 }, (_, i) => (
+              <div key={`test-${i}`} className="p-4 bg-blue-100 dark:bg-blue-900/20 rounded">
+                Mensagem de teste {i + 1} para forçar scroll
+              </div>
+            ))}
           </div>
         )}
 

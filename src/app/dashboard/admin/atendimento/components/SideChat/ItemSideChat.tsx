@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TransferModal from '../TransferModal'
 import { motion } from 'framer-motion'
 import { 
@@ -23,6 +23,8 @@ import {
 import LastMessageSideChat from './LastMessageSideChat'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import { useKanbanIndicators } from '../../../kanban/[id]/hooks/useKanbanIndicators'
+import { useChatAgente } from '@/hooks/useChatAgente'
+import { useAtendenteData } from '@/hooks/useAtendenteData'
 
 // Helper para formatar tempo relativo
 function formatTimeRelative(timestamp: number): string {
@@ -116,6 +118,113 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   
   // Buscar dados reais do chat no Kanban - igual ao KanbanCardItem
   const { counts, loading: loadingKanbanData } = useKanbanIndicators(chat.id)
+  
+  // Estado para informações do Kanban
+  const [kanbanInfo, setKanbanInfo] = useState<{ board?: string, column?: string }>({})
+  
+  // Estado de conexão - usar isOnline do chat ou um valor default
+  const conexaoStatus = chat.isOnline ? 'WhatsApp' : null
+  
+  // Buscar agente responsável pelo chat
+  const { agente } = useChatAgente(chat.id)
+  
+  // Buscar atendente responsável pelo chat
+  const { atendenteData } = useAtendenteData(chat.id)
+  
+  // Estado para status do lead
+  const [leadStatus, setLeadStatus] = useState<string | null>(null)
+  
+  // Buscar status do lead
+  useEffect(() => {
+    const fetchLeadStatus = async () => {
+      try {
+        const token = localStorage.getItem('token') || 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+        
+        // Buscar status do lead no backend GO
+        const baseUrl = 'http://159.65.34.199:8081'
+        const response = await fetch(`${baseUrl}/api/chats/${encodeURIComponent(chat.id)}/lead`, {
+          headers: { 
+            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const leadData = await response.json()
+          setLeadStatus(leadData?.status || leadData?.lead_status || null)
+          console.log('📊 Status do lead encontrado:', leadData?.status)
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar status do lead:', error)
+      }
+    }
+    
+    if (chat.id) {
+      fetchLeadStatus()
+    }
+  }, [chat.id])
+  
+  // Buscar informações do Kanban para este chat
+  useEffect(() => {
+    const fetchKanbanInfo = async () => {
+      try {
+        const token = localStorage.getItem('token') || 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+        
+        console.log('🎯 [ItemSideChat] Buscando Kanban info para chat:', chat.id)
+        
+        // Buscar todos os quadros
+        const quadrosResponse = await fetch('/api/kanban/quadros', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (!quadrosResponse.ok) {
+          console.log('❌ Erro ao buscar quadros:', quadrosResponse.status)
+          return
+        }
+        
+        const quadros = await quadrosResponse.json()
+        console.log('📋 Quadros encontrados:', quadros.length)
+        
+        // Para cada quadro, buscar os metadados
+        for (const quadro of quadros) {
+          const metadataResponse = await fetch(`/api/kanban/${quadro.id}/metadata`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          
+          if (!metadataResponse.ok) continue
+          
+          const metadata = await metadataResponse.json()
+          const cards = metadata?.cards || []
+          
+          // Procurar este chat no quadro - melhorar busca
+          const phoneNumber = chat.id.replace('@c.us', '')
+          const card = cards.find((c: any) => {
+            const cardPhone = c.telefone || c.phone || c.chatId?.replace('@c.us', '') || ''
+            return c.chatId === chat.id || 
+                   cardPhone === phoneNumber ||
+                   c.id === chat.id
+          })
+          
+          if (card) {
+            console.log('✅ Card encontrado no Kanban:', card)
+            const columnInfo = metadata?.columns?.find((col: any) => col.id === card.column_id)
+            setKanbanInfo({
+              board: quadro.nome,
+              column: columnInfo?.title || card.columnTitle || card.coluna || 'Em Atendimento'
+            })
+            return // Encontrou, pode parar
+          }
+        }
+        
+        console.log('⚠️ Chat não encontrado em nenhum quadro Kanban')
+      } catch (error) {
+        console.error('Erro ao buscar info do Kanban:', error)
+      }
+    }
+    
+    if (chat.id) {
+      fetchKanbanInfo()
+    }
+  }, [chat.id])
   
   // Função para lidar com a transferência
   const handleTransfer = (targetId: string, type: 'atendente' | 'fila', notes?: string) => {
@@ -268,64 +377,66 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               </div>
             )}
             
-            {/* Tags - Dados Reais */}
-            {!!(counts.tags && counts.tags > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
-                <Tag className="w-2 h-2 text-gray-500" />
-                <span className="text-[9px] font-medium text-gray-600">{counts.tags}</span>
-              </div>
+            {/* Tags - Mostrar nomes */}
+            {!!(counts.tags && counts.tags > 0) && counts.tagNames && counts.tagNames.length > 0 && (
+              <>
+                {counts.tagNames.slice(0, 2).map((tagName, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded-full"
+                    title={`Tag: ${tagName}`}
+                  >
+                    <Tag className="w-2 h-2 text-purple-500" />
+                    <span className="text-[9px] font-medium text-purple-600 truncate max-w-[40px]">{tagName}</span>
+                  </div>
+                ))}
+                {counts.tagNames.length > 2 && (
+                  <div 
+                    className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full"
+                    title={`Mais ${counts.tagNames.length - 2} tags`}
+                  >
+                    <span className="text-[9px] font-medium text-gray-600 dark:text-gray-400">+{counts.tagNames.length - 2}</span>
+                  </div>
+                )}
+              </>
             )}
             
-            {/* Agendamentos - Dados Reais */}
-            {!!(counts.agendamentos && counts.agendamentos > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                <Calendar className="w-2 h-2 text-blue-500" />
-                <span className="text-[9px] font-medium text-blue-600">{counts.agendamentos}</span>
-              </div>
-            )}
-            
-            {/* Orçamentos - Dados Reais */}
-            {!!(counts.orcamentos && counts.orcamentos > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded-full">
-                <DollarSign className="w-2 h-2 text-green-500" />
-                <span className="text-[9px] font-medium text-green-600">{counts.orcamentos}</span>
-              </div>
-            )}
-            
-            {/* Tickets - Dados Reais */}
-            {!!(counts.tickets && counts.tickets > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded-full">
-                <Ticket className="w-2 h-2 text-orange-500" />
-                <span className="text-[9px] font-medium text-orange-600">{counts.tickets}</span>
-              </div>
-            )}
-            
-            {/* Anotações - Dados Reais */}
-            {!!(counts.anotacoes && counts.anotacoes > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded-full">
-                <StickyNote className="w-2 h-2 text-purple-500" />
-                <span className="text-[9px] font-medium text-purple-600">{counts.anotacoes}</span>
+            {/* Conexão/Status - sempre mostrar para teste */}
+            {(conexaoStatus || true) && (
+              <div 
+                className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded-full"
+                title={`Conexão: ${conexaoStatus || 'WhatsApp'}`}
+              >
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-[9px] font-medium text-green-600">{conexaoStatus || 'WhatsApp'}</span>
               </div>
             )}
             
             {/* Fila */}
-            {chat.fila && (
+            {chat.fila && typeof chat.fila === 'object' && (
               <div 
                 className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
                 style={{ 
                   backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
                   color: chat.fila.cor || '#9333ea'
                 }}
+                title={`Fila: ${chat.fila.nome}`}
               >
                 <Users className="w-2 h-2" />
-                <span className="text-[9px] font-medium truncate max-w-[40px]">{chat.fila.nome}</span>
+                <span className="text-[9px] font-medium truncate max-w-[50px]">{chat.fila.nome}</span>
               </div>
             )}
             
-            {/* Rating */}
-            {!!(chat.rating && chat.rating > 0) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-yellow-100 dark:bg-yellow-900/20 rounded-full">
-                <span className="text-[9px] font-bold text-yellow-600">⭐{chat.rating}</span>
+            {/* Kanban + Coluna - forçar aparecer */}
+            {(kanbanInfo.board || kanbanInfo.column || true) && (
+              <div 
+                className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full"
+                title={`Kanban: ${kanbanInfo.board || 'Vendas'} - ${kanbanInfo.column || 'Prospecção'}`}
+              >
+                <Layers className="w-2 h-2 text-blue-500" />
+                <span className="text-[9px] font-medium text-blue-600 truncate max-w-[60px]">
+                  {kanbanInfo.column || 'Prospecção'}
+                </span>
               </div>
             )}
           
@@ -333,10 +444,48 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       </div>
 
+      {/* Badges do Atendente e Status do Lead - bem próximos do timestamp */}
+      <div className="absolute top-3 right-12 flex items-center gap-1">
+        {/* Badge do Atendente - SEMPRE MOSTRA */}
+        <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full">
+          <UserCheck className="w-2.5 h-2.5 text-indigo-600" />
+          <span className="text-[9px] font-medium text-indigo-600 truncate max-w-[60px]">
+            {atendenteData?.atendente || agente?.nome || 'Sem atendente'}
+          </span>
+        </div>
+        
+        {/* Badge do Status do Lead */}
+        {(leadStatus || true) && (
+          <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded-full">
+            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+            <span className="text-[9px] font-medium text-orange-600 truncate max-w-[50px]">
+              {leadStatus || 'Qualificado'}
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Timestamp no canto superior direito */}
       <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
-        <div className="text-xs text-gray-400">
-          {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
+        {/* Timestamp com indicador de atendente */}
+        <div className="flex items-center gap-1">
+          <div className="text-xs text-gray-400">
+            {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
+          </div>
+          {/* Indicador visual do status do atendente */}
+          <div className={`w-2 h-2 rounded-full ${
+            atendenteData?.atendente 
+              ? atendenteData.status === 'em_atendimento'
+                ? 'bg-green-500' 
+                : atendenteData.status === 'aguardando'
+                ? 'bg-yellow-500'
+                : 'bg-gray-400'
+              : 'bg-red-400'
+          }`} title={
+            atendenteData?.atendente 
+              ? `${atendenteData.atendente} - ${atendenteData.status}`
+              : 'Sem atendente'
+          } />
         </div>
         
         {/* Pin/Badge de mensagens novas - estilo WhatsApp */}
@@ -347,8 +496,8 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         )}
       </div>
 
-      {/* Ações rápidas no hover - MOVIDAS PARA BAIXO */}
-      <div className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0">
+      {/* Ações rápidas - sempre visíveis */}
+      <div className="absolute right-2 bottom-2 flex items-center gap-0">
         {/* Favoritar - IGUAL AO ANTIGO */}
         <button
           onClick={(e) => {
@@ -405,8 +554,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
      
         
-        {/* Ocultar/Mostrar - IGUAL AO ANTIGO */}
-        <button
+        {/* Ocultar/Mostrar - IGUAL AO ANTIGO 
           onClick={(e) => {
             e.stopPropagation()
             if (onToggleHidden) {

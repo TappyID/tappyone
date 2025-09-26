@@ -13,6 +13,7 @@ import { ColorThemeSelector } from './ColorThemeSelector'
 import { ChatToggle } from './ChatToggle'
 import { ProfileDropdown } from './ProfileDropdown'
 import { GlassClock } from './GlassClock'
+import { AtendenteBadge } from './AtendenteBadge'
 
 interface TopBarProps {
   sidebarCollapsed: boolean
@@ -117,6 +118,14 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               transition={{ delay: 0.55 }}
             >
               <ThemeToggle sidebarCollapsed={sidebarCollapsed} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.58 }}
+            >
+              <AtendenteBadge sidebarCollapsed={sidebarCollapsed} />
             </motion.div>
 
             <motion.div

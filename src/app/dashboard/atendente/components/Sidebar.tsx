@@ -52,147 +52,47 @@ const menuItems = [
   {
     title: 'Dashboard',
     icon: LayoutDashboard,
-    href: '/dashboard/admin',
+    href: '/dashboard/atendente',
     color: 'text-blue-600'
   },
   {
     title: 'Atendimentos',
     icon: MessageSquare,
-    href: '/dashboard/admin/atendimento',
+    href: '/dashboard/atendente/atendimento',
     color: 'text-green-600'
   },
   {
     title: 'Respostas Rápidas',
     icon: Zap,
-    href: '/dashboard/admin/respostas-rapidas',
+    href: '/dashboard/atendente/respostas-rapidas',
     color: 'text-yellow-600'
   },
   {
     title: 'Kanban',
     icon: Kanban,
-    href: '/dashboard/admin/kanban',
+    href: '/dashboard/atendente/kanban',
     color: 'text-purple-600'
   },
-  {
-    title: 'Atendentes',
-    icon: Users,
-    href: '/dashboard/admin/atendentes',
-    color: 'text-teal-600'
-   
-  },
+  
   {
     title: 'Contatos',
     icon: Users,
-    href: '/dashboard/admin/contatos',
+    href: '/dashboard/atendente/contatos',
     color: 'text-indigo-600'
   },
   {
     title: 'Agendamentos',
     icon: Calendar,
-    href: '/dashboard/admin/agendamentos',
+    href: '/dashboard/atendente/agendamentos',
     color: 'text-pink-600'
   },
   {
     title: 'Orçamentos',
     icon: FileText,
-    href: '/dashboard/admin/orcamentos',
+    href: '/dashboard/atendente/orcamentos',
     color: 'text-orange-600'
   },
-  {
-    title: 'Assinaturas',
-    icon: CreditCard,
-    href: '/dashboard/admin/assinaturas',
-    color: 'text-emerald-600'
-  },
-  {
-    title: 'Tags',
-    icon: Tag,
-    href: '/dashboard/admin/tags',
-    color: 'text-red-600'
-  },
-  {
-    title: 'Alertas',
-    icon: Bell,
-    href: '/dashboard/admin/alertas',
-    color: 'text-amber-600'
-  },
-  {
-    title: 'Filas',
-    icon: List,
-    href: '/dashboard/admin/filas',
-    color: 'text-slate-600'
-  },
-  {
-    title: 'Tickets',
-    icon: Ticket,
-    href: '/dashboard/admin/tickets',
-    color: 'text-blue-600'
-  },
-  {
-    title: 'Chat Interno',
-    icon: MessageCircle,
-    href: '/dashboard/admin/chat-interno',
-    color: 'text-cyan-600'
-  },
-  {
-    title: 'Fluxos',
-    icon: Workflow,
-    color: 'text-teal-600',
-    isSubmenu: true,
-    children: [
-      {
-        title: 'Fluxo de Bot',
-        icon: Bot,
-        href: '/dashboard/admin/fluxograma',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Fluxo de I.A',
-        icon: Brain,
-        href: '/dashboard/admin/fluxograma',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Fluxo do Kanban',
-        icon: GitBranch,
-        href: '/dashboard/admin/fluxograma',
-        color: 'text-teal-600'
-      }
-    ]
-  },
-  {
-    title: 'Usuários',
-    icon: UsersIcon,
-    color: 'text-teal-600',
-    isSubmenu: true,
-    children: [
-      {
-        title: 'Administradores',
-        icon: UsersIcon,
-        href: '/dashboard/admin/usuarios/',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Atendentes',
-        icon: Users,
-        href: '/dashboard/admin/usuarios/',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Afiliados',
-        icon: Users,
-        href: '/dashboard/admin/usuarios/',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Assinantes',
-        icon: CreditCard,
-        href: '/dashboard/admin/usuarios/',
-        color: 'text-teal-600'
-      },
-     
-    ]
-  },
+
   {
     title: 'Relatórios',
     icon: BarChart3,
@@ -202,39 +102,34 @@ const menuItems = [
       {
         title: 'Performances',
         icon: TrendingUp,
-        href: '/dashboard/admin/relatorios/performances',
+        href: '/dashboard/atendente/relatorios/performances',
         color: 'text-teal-600'
       },
       {
         title: 'NPS',
         icon: Heart,
-        href: '/dashboard/admin/relatorios/nps',
+        href: '/dashboard/atendente/relatorios/nps',
         color: 'text-teal-600'
       },
       {
-        title: 'Atendentes',
+        title: 'Meus Atendimentos',
         icon: Users,
-        href: '/dashboard/admin/relatorios/atendentes',
+        href: '/dashboard/atendente/relatorios/meus-atendimentos',
         color: 'text-teal-600'
       },
       {
         title: 'Vendas',
         icon: DollarSign,
-        href: '/dashboard/admin/relatorios/vendas',
+        href: '/dashboard/atendente/relatorios/vendas',
         color: 'text-teal-600'
       }
     ]
   },
-  {
-    title: 'Conexões',
-    icon: LinkIcon,
-    href: '/dashboard/admin/conexoes',
-    color: 'text-blue-500'
-  },
+  
   {
     title: 'Configurações',
     icon: Settings,
-    href: '/dashboard/admin/configuracoes',
+    href: '/dashboard/atendente/configuracoes',
     color: 'text-slate-600'
   }
 ]
