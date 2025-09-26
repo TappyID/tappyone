@@ -248,7 +248,8 @@ export default function KanbanCardItem({
       )}
       
       <div
-        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out ${
+        {...listeners}
+        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out cursor-grab active:cursor-grabbing ${
           theme === 'dark'
             ? 'bg-slate-800/60 hover:bg-slate-800/80'
             : 'bg-white hover:bg-white'
@@ -259,7 +260,7 @@ export default function KanbanCardItem({
           filter: !isDragging && !isHovered ? `drop-shadow(0 4px 15px rgba(0,0,0,0.05))` : 'none'
         }}
       >
-        {/* 🎨 Barra de Gradiente Lateral Esquerda - TOTALMENTE ARREDONDADA */}
+        {/* 🎨 Barra de Gradiente Lateral Esquerda - SÓ VISUAL */}
         <div 
           className="absolute left-0 top-0 bottom-0 w-1 rounded-full"
           style={{
@@ -300,10 +301,9 @@ export default function KanbanCardItem({
           {/* Nome, Telefone e Última Mensagem */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-1">
-              {/* Nome do contato - ÁREA DRAG - limitado a 14 caracteres */}
+              {/* Nome do contato - SEM DRAG - só visual */}
               <h3 
-                {...listeners}
-                className={`font-semibold text-[10px] leading-tight select-none transition-all duration-200 hover:scale-105 cursor-grab active:cursor-grabbing ${
+                className={`font-semibold text-[10px] leading-tight select-none transition-all duration-200 hover:scale-105 ${
                   theme === 'dark' ? 'text-white hover:text-blue-300' : 'text-gray-900 hover:text-blue-600'
                 }`} 
                 style={{
@@ -346,7 +346,12 @@ export default function KanbanCardItem({
         {/* Footer com ícones à esquerda e horário à direita */}
         <div className="flex items-center justify-between mt-2 pt-2">
           {/* Ícones de Ação - à esquerda */}
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="flex items-center gap-1" 
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation()
