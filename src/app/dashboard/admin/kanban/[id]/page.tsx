@@ -297,7 +297,7 @@ function QuadroPage() {
       }
 
       // Adicionar os dados corretos do chat (nome, telefone, etc)
-      const cardsFormatados = cardsVisiveis.map(chat => ({
+      const cardsFormatados = cardsVisiveis.map((chat, index) => ({
         ...chat,
         // Priorizar nome do pushName, depois name, depois extrair do ID
         nome: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',

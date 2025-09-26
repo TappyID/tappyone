@@ -15,7 +15,8 @@ import {
   Clock,
   Phone,
   FileText,
-  Bot
+  Bot,
+  Settings
 } from 'lucide-react'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import LastMessageSideChat from '../../../atendimento/components/SideChat/LastMessageSideChat'
@@ -40,6 +41,12 @@ interface KanbanCardItemProps {
   }
   theme: string
   columnColor: string
+  // Contadores opcionais
+  orcamentosCount?: any
+  agendamentosCount?: any
+  anotacoesCount?: any
+  ticketsCount?: any
+  tagsCount?: any
   // Handlers
   onOpenOrcamento?: (card: any) => void
   onOpenAgendamento?: (card: any) => void
@@ -54,18 +61,25 @@ export default function KanbanCardItem({
   card,
   theme,
   columnColor,
-  onOpenChat,
   onOpenOrcamento,
   onOpenAgendamento,
   onOpenAnotacoes,
   onOpenTickets,
   onOpenTags,
-  onOpenAssinatura
+  onOpenAssinatura,
+  onOpenChat,
+  orcamentosCount,
+  agendamentosCount,
+  anotacoesCount,
+  ticketsCount,
+  tagsCount
 }: KanbanCardItemProps) {
   
   // Buscar foto de perfil do WAHA - igual ItemSideChat
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(card.id)
   const profileImage = card.profilePictureUrl || pictureUrl
+  
+  // Estados locais
   const [isHovered, setIsHovered] = useState(false)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   
@@ -177,8 +191,7 @@ export default function KanbanCardItem({
     <motion.div
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
-      className={`relative group cursor-grab active:cursor-grabbing select-none ${
+      className={`relative group select-none ${
         isDragging ? 'z-50' : ''
       }`}
       style={{
@@ -266,20 +279,34 @@ export default function KanbanCardItem({
           {/* Nome, Telefone e Última Mensagem */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-1">
-              {/* Nome do contato - limitado a 14 caracteres */}
-              <h3 className={`font-semibold text-sm leading-tight ${
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`} title={card.nome || card.name || 'Sem nome'}>
+              {/* Nome do contato - ÁREA DRAG - limitado a 14 caracteres */}
+              <h3 
+                {...listeners}
+                className={`font-semibold text-[10px] leading-tight cursor-grab active:cursor-grabbing ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`} 
+                title={card.nome || card.name || 'Sem nome'}>
                 {(card.nome || card.name || 'Sem nome').length > 14 
                   ? `${(card.nome || card.name || 'Sem nome').substring(0, 14)}...`
                   : (card.nome || card.name || 'Sem nome')
                 }
               </h3>
+              
+              {/* Badge de Tag no lado direito - TESTE + REAL */}
+              {(counts.tags > 0 || Math.random() > 0.7) && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
+                  theme === 'dark' 
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                    : 'bg-purple-100 text-purple-700 border border-purple-200'
+                }`}>
+                  {(counts as any).tagNames?.[0] || ['VIP', 'Cliente', 'Suporte'][Math.floor(Math.random() * 3)]}
+                </span>
+              )}
             </div>
             
             {/* Telefone/Chat ID */}
-            <div className="mb-2">
-              <span className={`text-xs ${
+            <div className="-mt-2">
+              <span className={`text-[9px] ${
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
                 {(card as any).chatId || card.phone || (card as any).telefone || card.id || 'Sem telefone'}
@@ -435,11 +462,9 @@ export default function KanbanCardItem({
           </div>
 
           {/* Horário da última mensagem - à direita */}
-          <span className={`text-xs ${
+          <Settings className={`w-3 h-3 ${
             theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-          }`}>
-            {formatTime(card.lastMessage?.timestamp) || '12:15'}
-          </span>
+          }`} />
         </div>
       </div>
 
