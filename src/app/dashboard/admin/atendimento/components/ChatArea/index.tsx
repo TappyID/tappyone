@@ -240,7 +240,7 @@ export default function ChatArea({
           </div>
         )}
 
-        {/* Lista de mensagens */}
+        {/* Lista de mensagenss */}
         <AnimatePresence mode="popLayout">
           {messages.map((message, index) => {
             const isLastMessage = index === messages.length - 1
