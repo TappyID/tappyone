@@ -248,8 +248,7 @@ export default function KanbanCardItem({
       )}
       
       <div
-        {...listeners}
-        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out cursor-grab active:cursor-grabbing ${
+        className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out ${
           theme === 'dark'
             ? 'bg-slate-800/60 hover:bg-slate-800/80'
             : 'bg-white hover:bg-white'
@@ -303,7 +302,8 @@ export default function KanbanCardItem({
             <div className="flex items-start justify-between mb-1">
               {/* Nome do contato - ÁREA DRAG - limitado a 14 caracteres */}
               <h3 
-                className={`font-semibold text-[10px] leading-tight select-none transition-all duration-200 hover:scale-105 ${
+                {...listeners}
+                className={`font-semibold text-[10px] leading-tight select-none transition-all duration-200 hover:scale-105 cursor-grab active:cursor-grabbing ${
                   theme === 'dark' ? 'text-white hover:text-blue-300' : 'text-gray-900 hover:text-blue-600'
                 }`} 
                 style={{

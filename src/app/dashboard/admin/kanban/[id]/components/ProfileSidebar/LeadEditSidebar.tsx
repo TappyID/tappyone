@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Save, MapPin, User, Building, Phone, Mail, FileText } from 'lucide-react'
+import { X, Save, MapPin, User, Building, Phone, Mail, FileText, Users } from 'lucide-react'
 
 interface LeadEditSidebarProps {
   isOpen: boolean
@@ -9,6 +9,9 @@ interface LeadEditSidebarProps {
   theme: string
   chatId: string
   initialData?: {
+    nome_empresa?: string
+    razao_social?: string
+    cnpj_cpf?: string
     cep?: string
     endereco?: string
     rua?: string
@@ -34,6 +37,9 @@ export default function LeadEditSidebar({
 
   // Estados para os campos do formulário
   const [formData, setFormData] = useState({
+    nome_empresa: initialData.nome_empresa || '',
+    razao_social: initialData.razao_social || '',
+    cnpj_cpf: initialData.cnpj_cpf || '',
     cep: initialData.cep || '',
     endereco: initialData.endereco || '',
     rua: initialData.rua || '',
@@ -53,7 +59,24 @@ export default function LeadEditSidebar({
   // Função para aplicar máscara no CEP
   const applyCepMask = (value: string) => {
     const numericValue = value.replace(/\D/g, '')
-    return numericValue.replace(/(\d{5})(\d{3})/, '$1-$2')
+    if (numericValue.length <= 8) {
+      return numericValue.replace(/(\d{5})(\d{3})/, '$1-$2')
+    }
+    return numericValue.substring(0, 8).replace(/(\d{5})(\d{3})/, '$1-$2')
+  }
+
+  // Função para aplicar máscara no CPF/CNPJ
+  const applyCnpjCpfMask = (value: string) => {
+    const numericValue = value.replace(/\D/g, '')
+    
+    if (numericValue.length <= 11) {
+      // CPF: 000.000.000-00
+      return numericValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    } else {
+      // CNPJ: 00.000.000/0000-00
+      const cnpj = numericValue.substring(0, 14)
+      return cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+    }
   }
 
   // Função para buscar endereço pelo CEP
@@ -93,9 +116,12 @@ export default function LeadEditSidebar({
       setFormData(prev => ({ ...prev, [field]: maskedValue }))
       
       // Buscar endereço automaticamente quando CEP estiver completo
-      if (maskedValue.length === 9) {
+      if (maskedValue.replace(/\D/g, '').length === 8) {
         fetchAddressByCep(maskedValue)
       }
+    } else if (field === 'cnpj_cpf') {
+      const maskedValue = applyCnpjCpfMask(value)
+      setFormData(prev => ({ ...prev, [field]: maskedValue }))
     } else {
       setFormData(prev => ({ ...prev, [field]: value }))
     }
@@ -107,8 +133,8 @@ export default function LeadEditSidebar({
     try {
       console.log('💾 Salvando dados do lead:', formData)
       
-      // TODO: Implementar salvamento no backend
-      const response = await fetch(`/api/lead-chat/${chatId}`, {
+      // Salvar no backend via chat_leads
+      const response = await fetch(`/api/chats/${chatId}/leads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -177,6 +203,80 @@ export default function LeadEditSidebar({
       <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
         <div className="space-y-6">
           
+          {/* Seção: Dados da Empresa */}
+          <div className={`p-4 rounded-lg ${
+            theme === 'dark' ? 'bg-slate-700' : 'bg-white border'
+          }`}>
+            <div className="flex items-center gap-2 mb-4">
+              <Building className="w-5 h-5 text-purple-500" />
+              <h4 className={`font-semibold ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Dados da Empresa
+              </h4>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Nome da Empresa
+                </label>
+                <input
+                  type="text"
+                  value={formData.nome_empresa}
+                  onChange={(e) => handleInputChange('nome_empresa', e.target.value)}
+                  placeholder="Ex: TappyOne Tecnologia"
+                  className={`w-full px-3 py-2 rounded-lg border transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Razão Social
+                </label>
+                <input
+                  type="text"
+                  value={formData.razao_social}
+                  onChange={(e) => handleInputChange('razao_social', e.target.value)}
+                  placeholder="Ex: TappyOne Tecnologia LTDA"
+                  className={`w-full px-3 py-2 rounded-lg border transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  CNPJ / CPF
+                </label>
+                <input
+                  type="text"
+                  value={formData.cnpj_cpf}
+                  onChange={(e) => handleInputChange('cnpj_cpf', e.target.value)}
+                  placeholder="00.000.000/0000-00 ou 000.000.000-00"
+                  maxLength={18}
+                  className={`w-full px-3 py-2 rounded-lg border transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-slate-600 border-slate-500 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Seção: Endereço */}
           <div className={`p-4 rounded-lg ${
             theme === 'dark' ? 'bg-slate-700' : 'bg-white border'

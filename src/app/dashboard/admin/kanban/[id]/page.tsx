@@ -855,21 +855,6 @@ function QuadroPage() {
       </DndContext>
       )}
 
-      {/* Info sobre performance */}
-      {whatsappChats.length > 100 && (
-        <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${
-          theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'
-        }`}>
-          <p className="text-xs font-medium mb-1">Performance Mode</p>
-          <p className="text-xs opacity-60">
-            {whatsappChats.length} chats carregados
-          </p>
-          <p className="text-xs opacity-60">
-            {MAX_VISIBLE_CARDS} cards visíveis por coluna
-          </p>
-        </div>
-      )}
-
       {/* MODAIS REAIS DA OLDPAGE */}
       
       {/* Agendamento Bottom Sheet */}
