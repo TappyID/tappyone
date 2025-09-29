@@ -1,11 +1,24 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './ScrollbarStyles.css'
 import { ArrowUp, Loader2, MessageCircle } from 'lucide-react'
 
 import ItemSideChat from './ItemSideChat'
+
+type SideChatAtendente = {
+  id: string
+  nome: string
+  email?: string
+  status?: 'online' | 'offline' | 'busy' | 'away'
+  avatar?: string
+  atendimentosAtivos?: number
+  filas?: string[]
+  rating?: number
+}
+
+const FALLBACK_AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
 
 interface SideChatProps {
   // Dados dos chats
@@ -82,6 +95,134 @@ export default function SideChat({
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
   const [preserveScroll, setPreserveScroll] = useState<number | null>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [conexoes, setConexoes] = useState<any[]>([])
+  const [filas, setFilas] = useState<any[]>([])
+  const [atendentes, setAtendentes] = useState<SideChatAtendente[]>([])
+  const [loadingConexoes, setLoadingConexoes] = useState(false)
+  const [loadingFilas, setLoadingFilas] = useState(false)
+  const [loadingAtendentes, setLoadingAtendentes] = useState(false)
+
+  // Carregar dados compartilhados (conexões, filas e atendentes) apenas uma vez
+  useEffect(() => {
+    let isMounted = true
+
+    const resolveAuthToken = () => {
+      if (typeof window === 'undefined') return null
+
+      let token = localStorage.getItem('token')
+
+      if (!token) {
+        const tokenCookie = document.cookie
+          .split(';')
+          .map(cookie => cookie.trim())
+          .find(cookie => cookie.startsWith('token='))
+
+        if (tokenCookie) {
+          token = tokenCookie.split('=')[1]
+        }
+      }
+
+      if (!token) {
+        token = FALLBACK_AUTH_TOKEN
+      }
+
+      if (!token) return null
+
+      return token.startsWith('Bearer ') ? token : `Bearer ${token}`
+    }
+
+    const fetchSharedData = async () => {
+      const authToken = resolveAuthToken()
+      if (!authToken) return
+
+      setLoadingConexoes(true)
+      setLoadingFilas(true)
+      setLoadingAtendentes(true)
+
+      try {
+        const headers = {
+          Authorization: authToken,
+          'Content-Type': 'application/json'
+        }
+
+        const [conexoesResponse, filasResponse, atendentesResponse, adminsResponse] = await Promise.all([
+          fetch('/api/connections', { headers }),
+          fetch('/api/filas', { headers }),
+          fetch('/api/users?tipo=atendente', { headers }),
+          fetch('/api/users?tipo=admin', { headers })
+        ])
+
+        let conexoesData: any[] = []
+        if (conexoesResponse.ok) {
+          const conexoesJson = await conexoesResponse.json()
+          conexoesData = conexoesJson.connections || conexoesJson.data || []
+        }
+
+        let filasData: any[] = []
+        if (filasResponse.ok) {
+          const filasJson = await filasResponse.json()
+          filasData = filasJson.data || filasJson.filas || filasJson || []
+        }
+
+        const combinedAtendentes: SideChatAtendente[] = []
+
+        if (atendentesResponse.ok) {
+          const atendentesJson = await atendentesResponse.json()
+          const atendentesList = (atendentesJson.data || atendentesJson.users || atendentesJson || []).map((user: any) => ({
+            id: user.id,
+            nome: user.nome || user.name || 'Sem nome',
+            email: user.email,
+            status: user.status || 'offline',
+            avatar: user.avatar,
+            atendimentosAtivos: user.atendimentosAtivos || 0,
+            filas: user.filas?.map((fila: any) => fila.filaId || fila.id) || [],
+            rating: user.rating
+          }))
+          combinedAtendentes.push(...atendentesList)
+        }
+
+        if (adminsResponse.ok) {
+          const adminsJson = await adminsResponse.json()
+          const adminsList = (adminsJson.data || adminsJson.users || adminsJson || []).map((user: any) => ({
+            id: user.id,
+            nome: user.nome || user.name || 'Sem nome',
+            email: user.email,
+            status: user.status || 'online',
+            avatar: user.avatar,
+            atendimentosAtivos: 0,
+            filas: [],
+            rating: user.rating || 5
+          }))
+          combinedAtendentes.push(...adminsList)
+        }
+
+        if (!isMounted) return
+
+        setConexoes(conexoesData)
+        setFilas(filasData)
+        setAtendentes(combinedAtendentes)
+      } catch (error) {
+        console.error('Erro ao carregar dados compartilhados do SideChat:', error)
+        if (isMounted) {
+          setConexoes([])
+          setFilas([])
+          setAtendentes([])
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingConexoes(false)
+          setLoadingFilas(false)
+          setLoadingAtendentes(false)
+        }
+      }
+    }
+
+    fetchSharedData()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // IntersectionObserver para scroll infinito
   useEffect(() => {
@@ -292,6 +433,10 @@ export default function SideChat({
                   onToggleArchive={onToggleArchive}
                   onToggleHidden={onToggleHidden}
                   onDelete={onDelete}
+                  conexoes={conexoes}
+                  filas={filas}
+                  loadingConexoes={loadingConexoes || loadingFilas}
+                  atendentes={atendentes}
                 />
                   ))}
                 </AnimatePresence>

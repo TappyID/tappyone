@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Tag, Plus, Trash2 } from 'lucide-react'
 import { fetchApi } from '@/utils/api'
+import { normalizeTags, NormalizedTag } from '@/utils/tags'
 
 interface TagsBottomSheetProps {
   isOpen: boolean
@@ -12,7 +13,7 @@ interface TagsBottomSheetProps {
 }
 
 export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomSheetProps) {
-  const [tags, setTags] = useState<any[]>([])
+  const [tags, setTags] = useState<NormalizedTag[]>([])
   const [novaTag, setNovaTag] = useState('')
   const [corSelecionada, setCorSelecionada] = useState('#3b82f6')
   const [loading, setLoading] = useState(false)
@@ -77,7 +78,7 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
       console.log('🔍 [FRONTEND] Tags filtradas do chat:', tagsDoChat.length)
       console.log('🔍 [FRONTEND] Tags do chat:', tagsDoChat)
       
-      setTags(tagsDoChat)
+      setTags(normalizeTags(tagsDoChat))
       
     } catch (error) {
       console.error('❌ Erro ao buscar tags:', error)

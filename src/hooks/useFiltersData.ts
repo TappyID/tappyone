@@ -128,7 +128,9 @@ export function useFiltersData() {
       if (response.ok) {
         const data = await response.json()
         // Usar mesma estrutura da página de filas
-        const filasFormatted = (data.data || data.filas || data || []).map((fila: any) => ({
+        const filasFormatted = (data.data || data.filas || data || [])
+          .filter((fila: any) => fila && fila.status !== 'inactive' && fila.status !== 'deleted' && fila.ativo !== false && !fila.deletedAt)
+          .map((fila: any) => ({
           id: fila.id,
           nome: fila.nome,
           cor: fila.cor || '#3B82F6',
@@ -141,49 +143,8 @@ export function useFiltersData() {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para filas:', error)
-      setFilas([
-        { 
-          id: '1', 
-          nome: 'Atendimento Geral', 
-          cor: '#3B82F6', 
-          descricao: 'Fila principal de atendimento',
-          atendentes: ['1', '2', '3'],
-          count: 45 
-        },
-        { 
-          id: '2', 
-          nome: 'Vendas', 
-          cor: '#10B981',
-          descricao: 'Atendimento comercial',
-          atendentes: ['2', '4'],
-          count: 32 
-        },
-        { 
-          id: '3', 
-          nome: 'Suporte Técnico', 
-          cor: '#F59E0B',
-          descricao: 'Suporte e resolução de problemas',
-          atendentes: ['1', '3'],
-          count: 28 
-        },
-        { 
-          id: '4', 
-          nome: 'Financeiro', 
-          cor: '#8B5CF6',
-          descricao: 'Questões financeiras e cobranças',
-          atendentes: ['4'],
-          count: 15 
-        },
-        { 
-          id: '5', 
-          nome: 'Pós-Venda', 
-          cor: '#06B6D4',
-          descricao: 'Acompanhamento pós-venda',
-          atendentes: ['2', '3'],
-          count: 22 
-        }
-      ])
+      console.error('Erro ao buscar filas:', error)
+      setFilas([])
     } finally {
       setIsLoadingFilas(false)
     }
@@ -287,69 +248,61 @@ export function useFiltersData() {
       const token = localStorage.getItem('token')
       if (!token) throw new Error('Token não encontrado')
 
-      const response = await fetch('/api/users?tipo=atendente', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      // Buscar atendentes E admins (para quando admin assumir atendimento)
+      const [atendentesResponse, adminsResponse] = await Promise.all([
+        fetch('/api/users?tipo=atendente', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('/api/users?tipo=admin', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ])
       
-      if (response.ok) {
-        const data = await response.json()
-        // Usar mesma estrutura da página de atendentes
-        const atendentesFormatted = (data.data || data.users || data || []).map((atendente: any) => ({
+      const allUsers = []
+      
+      // Processar atendentes
+      if (atendentesResponse.ok) {
+        const atendentesData = await atendentesResponse.json()
+        const atendentesFormatted = (atendentesData.data || atendentesData.users || atendentesData || []).map((atendente: any) => ({
           id: atendente.id,
           nome: atendente.nome,
           email: atendente.email,
           status: atendente.status || 'offline',
           atendimentosAtivos: atendente.atendimentosAtivos || 0,
           filas: atendente.filas?.map((f: any) => f.filaId || f.id) || [],
-          rating: atendente.rating || 0
+          rating: atendente.rating || 0,
+          tipo: 'atendente'
         }))
-        setAtendentes(atendentesFormatted)
-      } else {
-        throw new Error('API não disponível')
+        allUsers.push(...atendentesFormatted)
       }
-    } catch (error) {
-      console.log('Usando dados mock para atendentes:', error)
-      setAtendentes([
-        {
-          id: '1',
-          nome: 'João Silva',
-          email: 'joao@example.com',
-          status: 'online',
-          atendimentosAtivos: 3,
-          filas: ['1', '3'],
-          rating: 4.8
-        },
-        {
-          id: '2',
-          nome: 'Maria Santos',
-          email: 'maria@example.com',
-          status: 'busy',
-          atendimentosAtivos: 5,
-          filas: ['1', '2', '5'],
-          rating: 4.9
-        },
-        {
-          id: '3',
-          nome: 'Pedro Oliveira',
-          email: 'pedro@example.com',
-          status: 'online',
-          atendimentosAtivos: 2,
-          filas: ['3', '5'],
-          rating: 4.7
-        },
-        {
-          id: '4',
-          nome: 'Ana Costa',
-          email: 'ana@example.com',
-          status: 'away',
+      
+      // Processar admins
+      if (adminsResponse.ok) {
+        const adminsData = await adminsResponse.json()
+        const adminsFormatted = (adminsData.data || adminsData.users || adminsData || []).map((admin: any) => ({
+          id: admin.id,
+          nome: admin.nome,
+          email: admin.email,
+          status: admin.status || 'online',
           atendimentosAtivos: 0,
-          filas: ['2', '4'],
-          rating: 4.6
-        }
-      ])
+          filas: [], // Admins têm acesso a todas as filas
+          rating: 5,
+          tipo: 'admin'
+        }))
+        allUsers.push(...adminsFormatted)
+      }
+      
+      console.log('👥 [useFiltersData] Atendentes + Admins carregados:', allUsers.length)
+      setAtendentes(allUsers)
+    } catch (error) {
+      console.error('Erro ao buscar atendentes:', error)
+      setAtendentes([])
     } finally {
       setIsLoadingAtendentes(false)
     }

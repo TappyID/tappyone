@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   X, 
   MessageSquare, 
+  MessageCircle,
   Users, 
   UserPlus, 
   Search,
@@ -39,90 +40,95 @@ export function EditConnectionModal({
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // State para seleções (apenas filas)
+  // State para seleções
   const [selectedFilas, setSelectedFilas] = useState<Set<string>>(new Set())
+  const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set())
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
+  
+  // State para tab ativa
+  const [activeTab, setActiveTab] = useState<TabType>('filas')
   
   // State para nome da conexão
   const [connectionName, setConnectionName] = useState('')
 
-  // State para dados (apenas filas)
+  // State para dados (filas, chats e groups)
   const [filas, setFilas] = useState<any[]>([])
+  const [chats, setChats] = useState<any[]>([])
+  const [groups, setGroups] = useState<any[]>([])
   const [loadingData, setLoadingData] = useState(false)
 
-  // Buscar dados quando o modal abrir
+  // Limpar estado quando modal abrir ou fechar
   useEffect(() => {
     if (isOpen && connection) {
-      console.log('🔍 [MODAL] Modal aberto para conexão:', connection)
-      console.log('🔍 [MODAL] Connection sessionName:', connection.sessionName)
-      console.log('🔍 [MODAL] Carregando filas...')
+      // Limpar estado anterior primeiro
+      setSelectedFilas(new Set())
+      setSelectedChats(new Set())
+      setSelectedGroups(new Set())
+      setConnectionName('')
+      setFilas([])
+      setChats([])
+      setGroups([])
+      setSearchTerm('')
+      
       
       // Primeiro carregar dados salvos, depois buscar dados frescos
       loadSavedConfiguration().then(() => {
-        fetchFilas()
+        Promise.all([
+          fetchFilas(),
+          fetchChatsAndGroups()
+        ])
       })
-    } else {
-      console.log('🔍 [MODAL] Modal não aberto. isOpen:', isOpen, 'connection:', !!connection)
+    } else if (!isOpen) {
+      // Limpar estado quando modal fechar
+      setSelectedFilas(new Set())
+      setSelectedChats(new Set())
+      setSelectedGroups(new Set())
+      setConnectionName('')
+      setFilas([])
+      setChats([])
+      setGroups([])
+      setSearchTerm('')
+      setLoadingData(false)
+      setLoading(false)
     }
   }, [isOpen, connection])
 
-  // Carregar configuração salva do backend
+  // Carregar configuração salva dos dados da conexão
   const loadSavedConfiguration = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8081'
       
-      console.log('🔄 [LOAD CONFIG] Carregando configuração salva...')
-      
-      const response = await fetch(`${backendUrl}/api/connections/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const connections = data.connections || []
-        
-        // Encontrar a conexão atual
-        const currentConnection = Array.isArray(connections) ? connections.find((conn: any) => 
-          conn.platform === 'whatsapp' && conn.user_id
-        ) : null
-        
-        if (currentConnection?.modulation) {
-          const modulation = typeof currentConnection.modulation === 'string' 
-            ? JSON.parse(currentConnection.modulation) 
-            : currentConnection.modulation
-            
-          console.log('✅ [LOAD CONFIG] Modulation encontrada:', modulation)
+      // Usar dados que já estão na conexão
+      if ((connection as any).modulation) {
+        const modulation = typeof (connection as any).modulation === 'string' 
+          ? JSON.parse((connection as any).modulation) 
+          : (connection as any).modulation
           
-          // Pré-popular as seleções com os dados salvos (apenas filas)
-          if (Array.isArray(modulation.selectedFilas)) {
-            setSelectedFilas(new Set(modulation.selectedFilas))
-            console.log('✅ [LOAD CONFIG] Filas pré-selecionadas:', modulation.selectedFilas)
-          }
-          
-          // Carregar nome da conexão se existir
-          if (modulation.connectionName) {
-            setConnectionName(modulation.connectionName)
-            console.log('✅ [LOAD CONFIG] Nome da conexão:', modulation.connectionName)
-          } else {
-            // Nome padrão baseado no sessionName
-            setConnectionName(connection.sessionName || 'Nova Conexão')
-          }
+        
+        // Pré-popular as seleções com os dados salvos (apenas filas)
+        if (Array.isArray(modulation.selectedFilas)) {
+          setSelectedFilas(new Set(modulation.selectedFilas))
         } else {
-          console.log('ℹ️ [LOAD CONFIG] Nenhuma modulation salva encontrada')
+          setSelectedFilas(new Set())
+        }
+        
+        // Carregar nome da conexão se existir
+        if (modulation.connectionName) {
+          setConnectionName(modulation.connectionName)
+        } else {
+          // Nome padrão baseado no push_name da WAHA ou sessionName
+          setConnectionName((connection as any).sessionData?.push_name || (connection as any).displayName || connection.sessionName || 'Nova Conexão')
         }
       } else {
-        console.log('❌ [LOAD CONFIG] Erro ao carregar configuração:', response.status)
+        setSelectedFilas(new Set())
+        // Nome padrão baseado no push_name da WAHA ou sessionName
+        setConnectionName((connection as any).sessionData?.push_name || (connection as any).displayName || connection.sessionName || 'Nova Conexão')
       }
     } catch (error) {
-      console.error('❌ [LOAD CONFIG] Erro:', error)
+      console.error('❌ [LOAD CONFIG] Erro interno:', error)
+      // Nome padrão em caso de erro
+      setConnectionName((connection as any).displayName || connection.sessionName || 'Nova Conexão')
     }
   }
-
-  // Função removida - agora só carregamos filas diretamente
-
   // Função removida - não precisamos mais buscar chats
 
 
@@ -140,36 +146,69 @@ export function EditConnectionModal({
       })
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ [FILAS] Dados recebidos:', data)
         // A API retorna {data: [...], success: true}
         const filasData = data.data || data
         
         // Os atendentes já vêm na resposta da API /api/filas
-        console.log('🔍 [FILAS] Primeira fila completa:', filasData[0])
-        console.log('🔍 [FILAS] Atendentes da primeira fila:', filasData[0]?.atendentes)
-        if (filasData[0]?.atendentes?.length > 0) {
-          console.log('🔍 [FILAS] Primeiro atendente estrutura:', filasData[0].atendentes[0])
-          console.log('🔍 [FILAS] Keys do primeiro atendente:', Object.keys(filasData[0].atendentes[0]))
-        }
         
-        const filasComAtendentes = filasData.map((fila: any) => {
-          console.log(`🔍 [FILA ${fila.nome}] Array atendentes:`, fila.atendentes)
-          console.log(`🔍 [FILA ${fila.nome}] Quantidade:`, fila.atendentes?.length)
-          if (fila.atendentes?.length > 0) {
-            console.log(`🔍 [FILA ${fila.nome}] Primeiro atendente:`, fila.atendentes[0])
-          }
-          return {
-            ...fila,
-            atendentes: Array.isArray(fila.atendentes) ? fila.atendentes : []
-          }
-        })
+        const filasComAtendentes = filasData
+          .filter((fila: any) => fila.nome && fila.nome.trim() !== '' && fila.ativa) // Filtrar filas vazias e inativas
+          .map((fila: any) => {
+            return {
+              ...fila,
+              atendentes: Array.isArray(fila.atendentes) ? fila.atendentes : []
+            }
+          })
         
         setFilas(Array.isArray(filasComAtendentes) ? filasComAtendentes : [])
-        console.log('✅ [FILAS] Filas com atendentes processadas:', filasComAtendentes.length)
       }
     } catch (error) {
       console.error('Erro ao buscar filas:', error)
       setFilas([])
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  // Buscar chats e groups da WAHA
+  const fetchChatsAndGroups = async () => {
+    if (!connection?.sessionName) return
+
+    try {
+      const sessionName = connection.sessionName
+      
+      // Buscar chats da WAHA - endpoint correto
+      const chatsResponse = await fetch(`/api/whatsapp/chats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (chatsResponse.ok) {
+        const chatsData = await chatsResponse.json()
+        console.log('🔍 [WAHA] Dados recebidos:', chatsData)
+        
+        const chatsList = Array.isArray(chatsData) ? chatsData : chatsData.data || []
+        
+        // Separar chats individuais e grupos
+        const individualChats = chatsList.filter((chat: any) => !chat.id?.includes('@g.us'))
+        const groupChats = chatsList.filter((chat: any) => chat.id?.includes('@g.us'))
+        
+        console.log('📱 [WAHA] Chats individuais:', individualChats.length)
+        console.log('👥 [WAHA] Grupos:', groupChats.length)
+        
+        setChats(individualChats)
+        setGroups(groupChats)
+      } else {
+        console.error('❌ [WAHA] Erro na resposta:', chatsResponse.status)
+        setChats([])
+        setGroups([])
+      }
+    } catch (error) {
+      console.error('❌ [WAHA] Erro ao buscar chats e grupos:', error)
+      setChats([])
+      setGroups([])
     }
   }
 
@@ -178,8 +217,21 @@ export function EditConnectionModal({
   const handleSave = () => {
     const modulation = {
       selectedFilas: Array.from(selectedFilas),
-      connectionName: connectionName.trim() || connection?.sessionName || 'Nova Conexão'
+      selectedChats: Array.from(selectedChats),
+      selectedGroups: Array.from(selectedGroups),
+      connectionName: connectionName.trim() || connection?.sessionName || 'Nova Conexão',
+      // Dados dos chats e grupos para referência
+      chatsData: chats.filter(chat => selectedChats.has(chat.id)),
+      groupsData: groups.filter(group => selectedGroups.has(group.id))
     }
+    
+    console.log('💾 [SAVE] Salvando configuração:', {
+      filas: modulation.selectedFilas.length,
+      chats: modulation.selectedChats.length,
+      groups: modulation.selectedGroups.length,
+      connectionName: modulation.connectionName
+    })
+    
     onSave(modulation)
   }
 
@@ -200,11 +252,11 @@ export function EditConnectionModal({
            id.toLowerCase().includes(searchLower)
   })
 
-  const isSelected = (tabType: TabType, id: string) => {
+  const isSelected = (id: string) => {
     return selectedFilas.has(id)
   }
 
-  const toggleSelection = (tabType: TabType, id: string) => {
+  const toggleSelection = (id: string) => {
     const newFilas = new Set(selectedFilas)
     if (newFilas.has(id)) {
       newFilas.delete(id)
@@ -275,24 +327,37 @@ export function EditConnectionModal({
           </div>
         </div>
 
-        {/* Header das Filas */}
+        {/* Tabs */}
         <div className={`px-6 py-3 border-b ${
           theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
         }`}>
-          <div className="flex items-center gap-3">
-            <Settings className="w-5 h-5 text-blue-500" />
-            <div>
-              <h3 className={`font-medium ${
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}>
-                Filas Disponíveis
-              </h3>
-              <p className={`text-sm ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {filas.length} filas encontradas
-              </p>
-            </div>
+          <div className="flex gap-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{tab.label}</span>
+                  <span className={`px-1.5 py-0.5 text-xs rounded-full ${
+                    isActive
+                      ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
+                      : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -304,7 +369,7 @@ export function EditConnectionModal({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar filas..."
+              placeholder={`Buscar ${activeTab === 'filas' ? 'filas' : activeTab === 'chats' ? 'chats' : 'grupos'}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full pl-10 pr-4 py-2 border rounded-lg ${
@@ -322,13 +387,13 @@ export function EditConnectionModal({
             <div className="flex items-center justify-center h-32">
               <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
               <span className={`ml-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Carregando filas...
+                Carregando {activeTab === 'filas' ? 'filas' : activeTab === 'chats' ? 'chats' : 'grupos'}...
               </span>
             </div>
           ) : filteredItems.length > 0 ? (
             <div className="p-4 space-y-2">
               {filteredItems.map((item) => {
-                const itemSelected = isSelected('filas', item.id)
+                const itemSelected = isSelected(item.id)
 
                 return (
                   <div
@@ -342,7 +407,7 @@ export function EditConnectionModal({
                           ? 'border-slate-600 hover:border-slate-500 bg-slate-700/50'
                           : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
-                    onClick={() => toggleSelection('filas', item.id || item.chatId || item.numero)}
+                    onClick={() => toggleSelection(item.id || item.chatId || item.numero)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">

@@ -41,7 +41,7 @@ export default function LastMessageSideChat({
   
   // Função para obter ícone baseado no tipo
   const getMessageIcon = (type?: string) => {
-    const iconProps = { className: "w-3 h-3 text-gray-500" }
+    const iconProps = { className: "w-2.5 h-2.5 text-gray-500" }
     
     switch (type) {
       case 'image': return <Image {...iconProps} />
@@ -81,7 +81,7 @@ export default function LastMessageSideChat({
   const truncatedText = truncateMessage(messageText, maxLength)
 
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-1.5 min-w-0">
       {/* Ícone do tipo de mensagem */}
       {message.type !== 'text' && (
         <div className="flex-shrink-0">
@@ -90,14 +90,14 @@ export default function LastMessageSideChat({
       )}
 
       {/* Indicador de quem enviou */}
-      <div className={`flex-shrink-0 w-2 h-2 rounded-full ${
+      <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
         message.sender === 'agent' 
           ? 'bg-blue-500' 
           : 'bg-gray-400'
       }`} />
 
       {/* Conteúdo da mensagem */}
-      <p className={`text-xs truncate min-w-0 ${
+      <p className={`text-[10px] truncate min-w-0 ${
         message.isRead === false 
           ? 'font-semibold text-gray-900 dark:text-gray-100' 
           : 'text-gray-600 dark:text-gray-400'
@@ -107,7 +107,7 @@ export default function LastMessageSideChat({
 
       {/* Indicador de não lida */}
       {message.isRead === false && (
-        <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full" />
+        <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 rounded-full" />
       )}
     </div>
   )

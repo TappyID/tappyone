@@ -6,7 +6,7 @@ import SideChat from './components/SideChat'
 import ChatHeader from './components/TopChatArea/ChatHeader'
 import ChatArea from './components/ChatArea'
 import FooterChatArea from './components/FooterChatArea'
-import EditTextModal from './components/EditTextModal'
+import EditTextModal from '../../admin/atendimentos/components/EditTextModal'
 import AgenteSelectionModal from './components/FooterChatArea/modals/AgenteSelectionModal'
 import ForwardMessageModal from '@/components/ForwardMessageModal'
 import AudioRecorderModal from './components/FooterChatArea/modals/AudioRecorderModal'
@@ -15,9 +15,9 @@ import useChatsOverview from '@/hooks/useChatsOverview'
 import { useFiltersData } from '@/hooks/useFiltersData'
 import useMessagesData from '@/hooks/useMessagesData'
 import { useSearchData } from '@/hooks/useSearchData'
-import AtendimentosTopBar from '../components/AtendimentosTopBar'
-import QuickActionsSidebar from './components/QuickActionsSidebar'
-import TransferirAtendimentoModal from './components/modals/TransferirAtendimentoModal'
+import AtendimentosTopBar from '../../admin/atendimentos/components/AtendimentosTopBar'
+import QuickActionsSidebar from '../../admin/atendimentos/components/QuickActionsSidebar'
+import TransferModal from '../../admin/atendimento/components/TransferModal'
 
 // Mock data para demonstração
 const mockTags = [
@@ -96,6 +96,8 @@ function AtendimentoPage() {
   
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>()
+  const [needsAttendanceDecision, setNeedsAttendanceDecision] = useState(false)
+  const [pendingChatId, setPendingChatId] = useState<string | null>(null)
 
   // Hook para filtros avançados com dados reais
   const {
@@ -205,6 +207,51 @@ function AtendimentoPage() {
     if (confirm('Deseja realmente ocultar esta conversa?')) {
       toggleHiddenChat(chatId)
     }
+  }
+
+  // Funções do modal de atendimento
+  const handleAcceptAttendance = async () => {
+    if (!pendingChatId) return
+    
+    try {
+      console.log('✅ Aceitando atendimento para:', pendingChatId)
+      
+      // TODO: Chamar API para assumir atendimento
+      // await assumirAtendimento(pendingChatId)
+      
+      // Atualizar estados
+      setSelectedChatId(pendingChatId)
+      setNeedsAttendanceDecision(false)
+      setPendingChatId(null)
+      
+      console.log('✅ Atendimento aceito com sucesso!')
+    } catch (error) {
+      console.error('❌ Erro ao aceitar atendimento:', error)
+    }
+  }
+
+  const handleRejectAttendance = () => {
+    console.log('❌ Recusando atendimento para:', pendingChatId)
+    
+    // Limpar estados
+    setNeedsAttendanceDecision(false)
+    setPendingChatId(null)
+    setSelectedChatId(undefined)
+    
+    console.log('❌ Atendimento recusado')
+  }
+
+  const handleSpyAttendance = () => {
+    if (!pendingChatId) return
+    
+    console.log('👁️ Espiando conversa:', pendingChatId)
+    
+    // Permitir visualizar sem assumir
+    setSelectedChatId(pendingChatId)
+    setNeedsAttendanceDecision(false)
+    setPendingChatId(null)
+    
+    console.log('👁️ Modo espião ativado')
   }
 
   // Carregar estados do localStorage
@@ -1142,7 +1189,18 @@ function AtendimentoPage() {
             <SideChat
               chats={processedChats}
               selectedChatId={selectedChatId}
-              onSelectChat={setSelectedChatId}
+              onSelectChat={(chatId) => {
+                console.log('🎯 Chat selecionado:', chatId)
+                console.log('🔍 Estados antes:', { needsAttendanceDecision, pendingChatId, selectedChatId })
+                
+                // Para atendentes: sempre mostrar modal de decisão primeiro
+                setPendingChatId(chatId)
+                setNeedsAttendanceDecision(true)
+                
+                console.log('✅ Estados definidos:', { pendingChatId: chatId, needsAttendanceDecision: true })
+                
+                // NÃO definir selectedChatId ainda - só após aceitar
+              }}
               isLoading={loadingOverview && activeFilter === 'all'}
               onLoadMore={handleLoadMoreChats}
               hasMoreChats={(() => {
@@ -1234,7 +1292,14 @@ function AtendimentoPage() {
             selectedChat={selectedChatId ? {
               id: selectedChatId,
               name: processedChats.find(c => c.id === selectedChatId)?.name || 'Usuário'
+            } : pendingChatId ? {
+              id: pendingChatId,
+              name: processedChats.find(c => c.id === pendingChatId)?.name || 'Usuário'
             } : undefined}
+            needsAttendanceDecision={needsAttendanceDecision}
+            onAcceptAttendance={handleAcceptAttendance}
+            onRejectAttendance={handleRejectAttendance}
+            onSpyAttendance={handleSpyAttendance}
             onReply={(messageId) => {
               console.log('🔄 Responder à mensagem:', messageId)
               const message = displayMessages.find(m => m.id === messageId)
@@ -1772,18 +1837,19 @@ function AtendimentoPage() {
       )}
 
       {/* Modal de Transferir Atendimento */}
-      <TransferirAtendimentoModal
+      <TransferModal
         isOpen={showTransferirModal}
         onClose={() => {
           setShowTransferirModal(false)
           setSelectedChatForTransfer(null)
         }}
-        onConfirm={handleTransferirSave}
-        chatId={selectedChatForTransfer || undefined}
-        contactData={{
-          id: selectedChatForTransfer || '',
-          nome: processedChats.find(c => c.id === selectedChatForTransfer)?.name || '',
-          telefone: selectedChatForTransfer?.replace('@c.us', '') || ''
+        chatId={selectedChatForTransfer || ''}
+        chatName={processedChats.find(c => c.id === selectedChatForTransfer)?.name || ''}
+        currentAtendente={'Sem atendente'}
+        currentFila={'Sem fila'}
+        onTransferSuccess={() => {
+          setShowTransferirModal(false)
+          setSelectedChatForTransfer(null)
         }}
       />
     </div>

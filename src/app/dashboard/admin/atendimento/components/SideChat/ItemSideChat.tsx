@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import TransferModal from '../TransferModal'
+import AssumirModal from './AssumirModal'
 import { motion } from 'framer-motion'
 import { 
   Archive, 
@@ -14,17 +15,21 @@ import {
   DollarSign,
   Layers,
   Users,
+  User,
   Tag,
   Ticket,
   UserCheck,
-  StickyNote
+  StickyNote,
+  CheckCircle
 } from 'lucide-react'
-
 import LastMessageSideChat from './LastMessageSideChat'
 import { useChatPicture } from '@/hooks/useChatPicture'
-import { useKanbanIndicators } from '../../../kanban/[id]/hooks/useKanbanIndicators'
 import { useChatAgente } from '@/hooks/useChatAgente'
+import { useAtendimentoStates } from '@/hooks/useAtendimentoStates'
+import { useFiltersData } from '@/hooks/useFiltersData'
 import { useAtendenteData } from '@/hooks/useAtendenteData'
+import { useIndicatorData } from '../TopChatArea/Indicators/useIndicatorData'
+import { normalizeTags } from '@/utils/tags'
 
 // Helper para formatar tempo relativo
 function formatTimeRelative(timestamp: number): string {
@@ -37,13 +42,40 @@ function formatTimeRelative(timestamp: number): string {
   if (minutes < 1) return 'agora'
   if (minutes < 60) return `${minutes}m`
   if (hours < 24) return `${hours}h`
-  if (days < 7) return `${days}d`
   
-  // Para mais de uma semana, mostrar data
-  return new Date(timestamp).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit'
-  })
+  return `${days}d`
+}
+
+// Componente para badges de tags
+function TagBadges({ chatId }: { chatId: string }) {
+  const { data } = useIndicatorData(chatId, 'tags')
+  const normalized = normalizeTags(data)
+  
+  if (normalized.length === 0) return null
+  
+  return (
+    <div className="flex items-center gap-0.5 flex-wrap">
+      {normalized.slice(0, 2).map((tag) => (
+        <div
+          key={tag.id}
+          className="flex items-center gap-0.5 px-1 py-0.5 rounded-full text-white"
+          style={{ backgroundColor: tag.cor || '#9333ea' }}
+          title={`Tag: ${tag.nome}`}
+        >
+          <span className="text-[8px] font-medium truncate max-w-[40px]">
+            {tag.nome}
+          </span>
+        </div>
+      ))}
+      {normalized.length > 2 && (
+        <div className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+          <span className="text-[8px] font-medium text-gray-600 dark:text-gray-400">
+            +{normalized.length - 2}
+          </span>
+        </div>
+      )}
+    </div>
+  )
 }
 
 interface ItemSideChatProps {
@@ -88,6 +120,11 @@ interface ItemSideChatProps {
     isHidden?: boolean
     isContact?: boolean
     unreadCount?: number
+    tags?: Array<{
+      id: string
+      nome: string
+      cor?: string
+    }>
   }
   onSelect: () => void
   onTagsClick: (e: React.MouseEvent) => void
@@ -96,9 +133,28 @@ interface ItemSideChatProps {
   onToggleArchive?: (chatId: string) => void
   onToggleHidden?: (chatId: string) => void
   onDelete?: (chatId: string) => void
+  conexoes: any[]
+  filas: any[]
+  loadingConexoes: boolean
+  atendentes: Array<{
+    id: string
+    nome: string
+    email?: string
+  }>
 }
 
-const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
+type LeadStatusType = 'aguardando' | 'atendimento' | 'finalizado'
+
+const normalizeLeadStatus = (status?: string | null): LeadStatusType | null => {
+  if (!status) return null
+  const normalized = status === 'em_atendimento' ? 'atendimento' : status
+  if (normalized === 'aguardando' || normalized === 'atendimento' || normalized === 'finalizado') {
+    return normalized
+  }
+  return null
+}
+
+const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({ 
   chat,
   onSelect,
   onTagsClick,
@@ -106,21 +162,184 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   onToggleFavorite,
   onToggleArchive,
   onToggleHidden,
-  onDelete
+  onDelete,
+  conexoes,
+  filas,
+  loadingConexoes,
+  atendentes,
 }, ref) => {
   
   // Estado para o modal de transferência
   const [showTransferModal, setShowTransferModal] = useState(false)
   
-  // Buscar foto de perfil do WAHA - usar profilePictureUrl se já vier no chat
-  const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(chat.id)
-  const profileImage = chat.profilePictureUrl || pictureUrl || chat.avatar
+  // Estado para o modal de assumir
+  const [showAssumirModal, setShowAssumirModal] = useState(false)
   
-  // Buscar dados reais do chat no Kanban - igual ao KanbanCardItem
-  const { counts, loading: loadingKanbanData } = useKanbanIndicators(chat.id)
+  // Buscar status do chat lead
+  const { buscarStatusChat, finalizarAtendimento } = useAtendimentoStates()
+  const [chatLead, setChatLead] = useState<any>(null)
+  const [loadingLead, setLoadingLead] = useState(false)
+  const [showFinalizarModal, setShowFinalizarModal] = useState(false)
+  const [isFinalizando, setIsFinalizando] = useState(false)
+
+  const applyChatLeadStatus = React.useCallback((status: any) => {
+    if (!status) {
+      setChatLead(null)
+      return
+    }
+
+    const normalizedStatus = normalizeLeadStatus(status.status) || 'aguardando'
+    setChatLead({ ...status, status: normalizedStatus })
+  }, [])
+  
+  // Buscar foto de perfil do WAHA
+  const { pictureUrl: profileImage, isLoading: isLoadingPicture } = useChatPicture(chat.id, { 
+    enabled: !!chat.id 
+  })
+
+  // Estados para conexões e filas agora são recebidos via props compartilhadas
+
+  // Função para obter dados da conexão baseado no chat
+  const getConexaoInfo = () => {
+    console.log('🔍 [CONEXAO_INFO] Iniciando busca...')
+    console.log('🔍 [CONEXAO_INFO] Chat ID:', chat.id)
+    console.log('🔍 [CONEXAO_INFO] Total conexões:', conexoes.length)
+    console.log('🔍 [CONEXAO_INFO] Conexões:', conexoes)
+    
+    if (!chat.id || conexoes.length === 0) {
+      console.log('❌ [CONEXAO_INFO] Sem chat.id ou conexões vazias')
+      return null
+    }
+    
+    // NOVA LÓGICA: Como agora todas as conexões têm chats automáticos,
+    // vamos assumir que qualquer chat pode usar qualquer conexão configurada
+    // Por enquanto, vamos pegar a primeira conexão que tem filas configuradas
+    
+    const conexaoComFilas = conexoes.find(conn => {
+      console.log('🔍 [CONEXAO_INFO] Verificando conexão:', {
+        id: conn.id,
+        sessionName: conn.sessionName,
+        phoneId: conn.sessionData?.phone_id,
+        modulation: conn.modulation,
+        hasFilas: conn.modulation?.selectedFilas?.length > 0
+      })
+      
+      return conn.modulation?.selectedFilas && conn.modulation.selectedFilas.length > 0
+    })
+    
+    console.log('🔍 [CONEXAO_INFO] Conexão com filas encontrada:', conexaoComFilas)
+    
+    if (conexaoComFilas) {
+      const info = {
+        nome: conexaoComFilas.modulation?.connectionName || conexaoComFilas.sessionData?.push_name || 'WhatsApp',
+        pushName: conexaoComFilas.sessionData?.push_name || 'WhatsApp',
+        filas: conexaoComFilas.modulation?.selectedFilas || []
+      }
+      console.log('✅ [CONEXAO_INFO] Info retornada:', info)
+      return info
+    }
+    
+    // Fallback: se nenhuma conexão tem filas, pega a primeira disponível
+    if (conexoes.length > 0) {
+      const primeiraConexao = conexoes[0]
+      const info = {
+        nome: primeiraConexao.modulation?.connectionName || primeiraConexao.sessionData?.push_name || 'WhatsApp',
+        pushName: primeiraConexao.sessionData?.push_name || 'WhatsApp',
+        filas: []
+      }
+      console.log('⚠️ [CONEXAO_INFO] Usando primeira conexão como fallback:', info)
+      return info
+    }
+    
+    console.log('❌ [CONEXAO_INFO] Nenhuma conexão encontrada')
+    return null
+  }
+
+  // Função para obter dados da fila por ID
+  const getFilaById = (filaId: string) => {
+    return filas.find(fila => fila.id === filaId)
+  }
+  
+  // Função para buscar status do chat
+  const fetchLeadStatus = async () => {
+    if (!chat.id) return
+    
+    setLoadingLead(true)
+    try {
+      console.log('🔄 [LEAD_STATUS] Buscando status para chat:', chat.id)
+      const status = await buscarStatusChat(chat.id)
+      console.log('✅ [LEAD_STATUS] Status recebido:', status)
+      applyChatLeadStatus(status)
+      setLeadStatus(normalizeLeadStatus(status?.status) || null)
+    } catch (error) {
+      console.error('❌ [LEAD_STATUS] Erro ao buscar status:', error)
+    } finally {
+      setLoadingLead(false)
+    }
+  }
+
+  // Buscar status do chat lead
+  useEffect(() => {
+    fetchLeadStatus()
+  }, [chat.id, buscarStatusChat])
+
+  // Escutar eventos globais de atualização
+  useEffect(() => {
+    const handleChatUpdate = (event: CustomEvent) => {
+      if (event.detail.chatId === chat.id) {
+        console.log('🔄 [GLOBAL_UPDATE] Atualizando chat:', chat.id)
+        fetchLeadStatus()
+      }
+    }
+
+    window.addEventListener('chatStatusUpdated', handleChatUpdate as EventListener)
+    
+    return () => {
+      window.removeEventListener('chatStatusUpdated', handleChatUpdate as EventListener)
+    }
+  }, [chat.id])
+  
+
   
   // Estado para informações do Kanban
   const [kanbanInfo, setKanbanInfo] = useState<{ board?: string, column?: string }>({})
+  const [loadingKanbanData, setLoadingKanbanData] = useState(false)
+
+  // Tags simplificadas - usando mesmo padrão do ChatHeader
+  
+  const canFinalizarAtendimento = chatLead?.status === 'atendimento'
+
+  const handleFinalizarClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!canFinalizarAtendimento) return
+    setShowFinalizarModal(true)
+  }
+
+  const handleConfirmFinalizar = async () => {
+    if (!canFinalizarAtendimento) return
+
+    setIsFinalizando(true)
+    try {
+      const result = await finalizarAtendimento(chat.id)
+      applyChatLeadStatus(result)
+      setLeadStatus('finalizado')
+      window.dispatchEvent(new CustomEvent('chatStatusUpdated', {
+        detail: { chatId: chat.id }
+      }))
+      setShowFinalizarModal(false)
+      console.log('✅ Atendimento finalizado com sucesso')
+    } catch (error) {
+      console.error('❌ Erro ao finalizar atendimento:', error)
+      alert('Erro ao finalizar atendimento. Tente novamente.')
+    } finally {
+      setIsFinalizando(false)
+    }
+  }
+
+  const handleCancelFinalizar = () => {
+    if (isFinalizando) return
+    setShowFinalizarModal(false)
+  }
   
   // Estado de conexão - usar isOnline do chat ou um valor default
   const conexaoStatus = chat.isOnline ? 'WhatsApp' : null
@@ -129,10 +348,58 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   const { agente } = useChatAgente(chat.id)
   
   // Buscar atendente responsável pelo chat
-  const { atendenteData } = useAtendenteData(chat.id)
+  const { atendenteData, refetch: refetchAtendente } = useAtendenteData(chat.id)
+  
+  // Buscar nome do responsável usando os dados já carregados
+  const nomeResponsavel = React.useMemo(() => {
+    // Usar atendenteData que vem do useAtendenteData
+    if (!atendenteData?.atendente) return ''
+    
+    console.log('🔍 [ItemSideChat] Buscando nome para ID:', atendenteData.atendente)
+    console.log('👥 [ItemSideChat] Lista de atendentes:', atendentes.length)
+    
+    const atendente = atendentes.find(a => a.id === atendenteData.atendente)
+    console.log('✅ [ItemSideChat] Atendente encontrado:', atendente)
+    
+    return atendente?.nome || 'Rodrigo Tappy'
+  }, [atendenteData?.atendente, atendentes])
   
   // Estado para status do lead
   const [leadStatus, setLeadStatus] = useState<string | null>(null)
+
+  const leadStatusDisplay = React.useMemo<LeadStatusType | null>(() => {
+    if (chatLead?.status) {
+      return chatLead.status as LeadStatusType
+    }
+    return normalizeLeadStatus(leadStatus)
+  }, [chatLead?.status, leadStatus])
+
+  // Listener para recarregar dados quando atendimento for assumido
+  React.useEffect(() => {
+    const handleAtendimentoAssumido = (event: CustomEvent) => {
+      if (event.detail.chatId === chat.id) {
+        console.log('🔄 [ItemSideChat] Recarregando dados após assumir atendimento')
+        refetchAtendente()
+        // Também recarregar o status do chat lead
+        const fetchStatus = async () => {
+          try {
+            const status = await buscarStatusChat(chat.id)
+            applyChatLeadStatus(status)
+            setLeadStatus(normalizeLeadStatus(status?.status) || null)
+          } catch (error) {
+            console.error('Erro ao recarregar status:', error)
+          }
+        }
+        fetchStatus()
+      }
+    }
+
+    window.addEventListener('atendimento-assumido', handleAtendimentoAssumido as EventListener)
+    
+    return () => {
+      window.removeEventListener('atendimento-assumido', handleAtendimentoAssumido as EventListener)
+    }
+  }, [chat.id, refetchAtendente, buscarStatusChat])
   
   // Buscar status do lead
   useEffect(() => {
@@ -150,7 +417,9 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         
         if (response.ok) {
           const leadData = await response.json()
-          setLeadStatus(leadData?.status || leadData?.lead_status || null)
+          const leadApiStatus = leadData?.status || leadData?.lead_status || null
+          const normalized = normalizeLeadStatus(leadApiStatus)
+          setLeadStatus(normalized || leadApiStatus)
           console.log('📊 Status do lead encontrado:', leadData?.status)
         }
       } catch (error) {
@@ -226,12 +495,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     }
   }, [chat.id])
   
-  // Função para lidar com a transferência
-  const handleTransfer = (targetId: string, type: 'atendente' | 'fila', notes?: string) => {
-    console.log('Transferindo para:', { targetId, type, notes })
-    // TODO: Implementar transferência real via API
-    setShowTransferModal(false)
-  }
+  // Função handleTransfer removida - agora usamos o TransferModal integrado
   
   // Formatação do timestamp igual WhatsApp Web
   const formatTimestamp = (timestamp: number) => {
@@ -355,6 +619,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             {chat.id.replace('@c.us', '').replace(/(\d{2})(\d{2})(\d{4,5})(\d{4})/, '($1) $2 $3-$4')}
           </div>
 
+
           {/* Última Mensagem */}
           <LastMessageSideChat 
             message={chat.lastMessage}
@@ -364,77 +629,90 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           {/* Todas as badges abaixo do telefone */}
           <div className="flex items-center gap-0.5 mt-0.5 flex-wrap">
             {/* Indicador de Contato Cadastrado */}
-            {chat.isContact && (
-              <div className="flex items-center px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded-full">
-                <UserCheck className="w-2 h-2 text-purple-500" />
-              </div>
-            )}
+            
 
             {/* Loading Indicator para dados do Kanban */}
             {loadingKanbanData && (
-              <div className="flex items-center px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+              <div className="flex items-center px-0.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" />
               </div>
             )}
             
-            {/* Tags - Mostrar nomes */}
-            {!!(counts.tags && counts.tags > 0) && counts.tagNames && counts.tagNames.length > 0 && (
-              <>
-                {counts.tagNames.slice(0, 2).map((tagName, index) => (
+            {/* Conexão/Status - sempre mostrar com fallback rápido */}
+            {(() => {
+              const conexaoInfo = getConexaoInfo()
+              const nomeConexao = conexaoInfo?.nome || conexaoStatus || 'WhatsApp'
+              const isLoading = loadingConexoes && conexoes.length === 0
+              
+              return (
+                <div 
+                  className="flex items-center gap-0.5 px-0.5 py-0.5 bg-green-100 dark:bg-green-900/20 rounded-full"
+                  title={`Conexão: ${nomeConexao}${isLoading ? ' (carregando...)' : ''}`}
+                >
+                  <div className={`w-1.5 h-1.5 bg-green-500 rounded-full ${isLoading ? 'animate-spin' : 'animate-pulse'}`}></div>
+                  <span className="text-[8px] font-medium text-green-600">
+                    {isLoading ? 'Carregando...' : nomeConexao}
+                  </span>
+                </div>
+              )
+            })()}
+            
+            {/* Filas da Conexão */}
+            {(() => {
+              const conexaoInfo = getConexaoInfo()
+              const filasConexao = conexaoInfo?.filas || []
+              
+              // Se tem fila do chat, mostrar ela primeiro
+              if (chat.fila && typeof chat.fila === 'object') {
+                return (
                   <div 
-                    key={index}
-                    className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 dark:bg-purple-900/20 rounded-full"
-                    title={`Tag: ${tagName}`}
+                    className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
+                    style={{ 
+                      backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
+                      color: chat.fila.cor || '#9333ea'
+                    }}
+                    title={`Fila: ${chat.fila.nome}`}
                   >
-                    <Tag className="w-2 h-2 text-purple-500" />
-                    <span className="text-[9px] font-medium text-purple-600 truncate max-w-[40px]">{tagName}</span>
+                    <Users className="w-1.5 h-1.5" />
+                    <span className="text-[8px] font-medium truncate max-w-[46px]">{chat.fila.nome}</span>
                   </div>
-                ))}
-                {counts.tagNames.length > 2 && (
-                  <div 
-                    className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full"
-                    title={`Mais ${counts.tagNames.length - 2} tags`}
-                  >
-                    <span className="text-[9px] font-medium text-gray-600 dark:text-gray-400">+{counts.tagNames.length - 2}</span>
-                  </div>
-                )}
-              </>
-            )}
-            
-            {/* Conexão/Status - sempre mostrar para teste */}
-            {(conexaoStatus || true) && (
-              <div 
-                className="flex items-center gap-0.5 px-1 py-0.5 bg-green-100 dark:bg-green-900/20 rounded-full"
-                title={`Conexão: ${conexaoStatus || 'WhatsApp'}`}
-              >
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-[9px] font-medium text-green-600">{conexaoStatus || 'WhatsApp'}</span>
-              </div>
-            )}
-            
-            {/* Fila */}
-            {chat.fila && typeof chat.fila === 'object' && (
-              <div 
-                className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
-                style={{ 
-                  backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
-                  color: chat.fila.cor || '#9333ea'
-                }}
-                title={`Fila: ${chat.fila.nome}`}
-              >
-                <Users className="w-2 h-2" />
-                <span className="text-[9px] font-medium truncate max-w-[50px]">{chat.fila.nome}</span>
-              </div>
-            )}
+                )
+              }
+              
+              // Senão, mostrar filas da conexão
+              if (filasConexao.length > 0) {
+                return filasConexao.slice(0, 2).map((filaId, index) => {
+                  const fila = getFilaById(filaId)
+                  if (!fila) return null
+                  
+                  return (
+                    <div 
+                      key={filaId}
+                      className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
+                      style={{ 
+                        backgroundColor: `${fila.cor || '#9333ea'}20`,
+                        color: fila.cor || '#9333ea'
+                      }}
+                      title={`Fila: ${fila.nome}`}
+                    >
+                      <Users className="w-1.5 h-1.5" />
+                      <span className="text-[8px] font-medium truncate max-w-[46px]">{fila.nome}</span>
+                    </div>
+                  )
+                })
+              }
+              
+              return null
+            })()}
             
             {/* Kanban + Coluna - forçar aparecer */}
             {(kanbanInfo.board || kanbanInfo.column || true) && (
               <div 
-                className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full"
+                className="flex items-center gap-0.5 px-0.5 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full"
                 title={`Kanban: ${kanbanInfo.board || 'Vendas'} - ${kanbanInfo.column || 'Prospecção'}`}
               >
-                <Layers className="w-2 h-2 text-blue-500" />
-                <span className="text-[9px] font-medium text-blue-600 truncate max-w-[60px]">
+                <Layers className="w-1.5 h-1.5 text-blue-500" />
+                <span className="text-[8px] font-medium text-blue-600 truncate max-w-[54px]">
                   {kanbanInfo.column || 'Prospecção'}
                 </span>
               </div>
@@ -444,48 +722,54 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       </div>
 
-      {/* Badges do Atendente e Status do Lead - bem próximos do timestamp */}
-      <div className="absolute top-3 right-12 flex items-center gap-1">
-        {/* Badge do Atendente - SEMPRE MOSTRA */}
-        <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full">
-          <UserCheck className="w-2.5 h-2.5 text-indigo-600" />
-          <span className="text-[9px] font-medium text-indigo-600 truncate max-w-[60px]">
-            {atendenteData?.atendente || agente?.nome || 'Sem atendente'}
+      {/* Badges do Atendente, Status e Tags */}
+      <div className="absolute top-1.5 right-[70px] flex items-center gap-1.5">
+        <div className="flex items-center gap-0.5 px-1 py-0.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full">
+          <UserCheck className="w-2 h-2 text-indigo-600" />
+          <span className="text-[8px] font-medium text-indigo-600 truncate max-w-[56px]">
+            {nomeResponsavel || 'Sem atendente'}
           </span>
         </div>
-        
-        {/* Badge do Status do Lead */}
-        {(leadStatus || true) && (
-          <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/20 rounded-full">
-            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-            <span className="text-[9px] font-medium text-orange-600 truncate max-w-[50px]">
-              {leadStatus || 'Qualificado'}
+
+        {leadStatusDisplay && (
+          <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
+            leadStatusDisplay === 'aguardando'
+              ? 'bg-yellow-100 dark:bg-yellow-900/20'
+              : leadStatusDisplay === 'atendimento'
+              ? 'bg-green-100 dark:bg-green-900/20'
+              : 'bg-gray-100 dark:bg-gray-900/20'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              leadStatusDisplay === 'aguardando'
+                ? 'bg-yellow-500'
+                : leadStatusDisplay === 'atendimento'
+                ? 'bg-green-500'
+                : 'bg-gray-500'
+            }`}></div>
+            <span className={`text-[8px] font-medium truncate max-w-[46px] ${
+              leadStatusDisplay === 'aguardando'
+                ? 'text-yellow-600'
+                : leadStatusDisplay === 'atendimento'
+                ? 'text-green-600'
+                : 'text-gray-600'
+            }`}>
+              {leadStatusDisplay === 'aguardando'
+                ? 'Aguardando'
+                : leadStatusDisplay === 'atendimento'
+                ? 'Em Atendimento'
+                : 'Finalizado'}
             </span>
           </div>
         )}
+
+        {/* Tags como badges coloridas */}
+        <TagBadges chatId={chat.id} />
       </div>
 
       {/* Timestamp no canto superior direito */}
-      <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
-        {/* Timestamp com indicador de atendente */}
-        <div className="flex items-center gap-1">
-          <div className="text-xs text-gray-400">
-            {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
-          </div>
-          {/* Indicador visual do status do atendente */}
-          <div className={`w-2 h-2 rounded-full ${
-            atendenteData?.atendente 
-              ? atendenteData.status === 'em_atendimento'
-                ? 'bg-green-500' 
-                : atendenteData.status === 'aguardando'
-                ? 'bg-yellow-500'
-                : 'bg-gray-400'
-              : 'bg-red-400'
-          }`} title={
-            atendenteData?.atendente 
-              ? `${atendenteData.atendente} - ${atendenteData.status}`
-              : 'Sem atendente'
-          } />
+      <div className="absolute top-1 right-3 flex flex-col items-end gap-1">
+        <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
         </div>
         
         {/* Pin/Badge de mensagens novas - estilo WhatsApp */}
@@ -518,6 +802,30 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           <Star className="w-3 h-3" fill={chat.isFavorite ? 'currentColor' : 'none'} />
         </button>
         
+        {/* Assumir - Novo botão */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowAssumirModal(true)
+          }}
+          className={`relative p-1.5 rounded-lg transition-colors ${
+            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578' 
+              ? 'text-green-500 hover:text-green-600' 
+              : 'text-slate-400 hover:text-green-400'
+          }`}
+          title={
+            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+              ? 'Você assumiu este atendimento'
+              : 'Assumir atendimento'
+          }
+        >
+          <UserCheck className="w-3 h-3" />
+          {/* Badge indicando que você assumiu */}
+          {atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578' && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
+          )}
+        </button>
+        
         {/* Transferir - IGUAL AO ANTIGO */}
         <button
           onClick={(e) => {
@@ -529,6 +837,17 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         >
           <UserPlus className="w-3 h-3" />
         </button>
+        
+        {/* 🆕 Finalizar Atendimento - Só mostra se estiver em atendimento */}
+        {canFinalizarAtendimento && (
+          <button
+            onClick={handleFinalizarClick}
+            className="p-1.5 text-slate-400 hover:text-green-400 rounded-lg transition-colors"
+            title="Finalizar atendimento"
+          >
+            <CheckCircle className="w-3 h-3" />
+          </button>
+        )}
         
         {/* Arquivar - IGUAL AO ANTIGO */}
         <button
@@ -589,15 +908,109 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       </div>
     </motion.div>
 
+    {/* Modal de confirmação de finalização */}
+    {showFinalizarModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div 
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={handleCancelFinalizar}
+        />
+        <div className="relative w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Finalizar atendimento?</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                O chat será marcado como finalizado e sairá da fila de atendimentos ativos.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleCancelFinalizar}
+              className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors"
+              disabled={isFinalizando}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirmFinalizar}
+              disabled={isFinalizando}
+              className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isFinalizando ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Finalizando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Confirmar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Modal de Transferência */}
     <TransferModal
       isOpen={showTransferModal}
       onClose={() => setShowTransferModal(false)}
       chatId={chat.id}
       chatName={chat.name}
-      currentAtendente={'Não atribuído'}
-      currentFila={typeof chat.fila === 'object' ? chat.fila.nome : (chat.fila || 'Sem fila')}
-      onTransfer={handleTransfer}
+      currentAtendente={chatLead?.responsavel || 'Não atribuído'}
+      currentFila={chatLead?.fila_id || 'Sem fila'}
+      onTransferSuccess={() => {
+        // Recarregar status do chat após transferência
+        const fetchStatus = async () => {
+          try {
+            const status = await buscarStatusChat(chat.id)
+            applyChatLeadStatus(status)
+          } catch (error) {
+            console.error('Erro ao recarregar status:', error)
+          }
+        }
+        fetchStatus()
+      }}
+    />
+
+    {/* Modal de Assumir */}
+    <AssumirModal
+      isOpen={showAssumirModal}
+      onClose={() => setShowAssumirModal(false)}
+      chatId={chat.id}
+      chatName={chat.name}
+      currentAtendente={nomeResponsavel || 'Sem atendente'}
+      onAssumirSuccess={() => {
+        // Recarregar status do chat após assumir
+        const fetchStatus = async () => {
+          try {
+            console.log('🔄 [ASSUMIR] Recarregando status do chat:', chat.id)
+            const status = await buscarStatusChat(chat.id)
+            console.log('✅ [ASSUMIR] Novo status recebido:', status)
+            applyChatLeadStatus(status)
+            setLeadStatus(normalizeLeadStatus(status?.status) || null)
+            
+            // Disparar evento global para atualizar outros componentes
+            const event = new CustomEvent('chatStatusUpdated', {
+              detail: { chatId: chat.id, status: status }
+            })
+            window.dispatchEvent(event)
+            console.log('📡 [ASSUMIR] Evento global disparado para chat:', chat.id)
+            
+            // Forçar re-render do componente
+            setShowAssumirModal(false)
+          } catch (error) {
+            console.error('❌ [ASSUMIR] Erro ao recarregar status:', error)
+          }
+        }
+        fetchStatus()
+      }}
     />
   </>
   )

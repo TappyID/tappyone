@@ -55,10 +55,11 @@ export async function GET(request: NextRequest) {
 
     const sessionName = whatsappConnection.session_name
 
-    // 🚀 OTIMIZAÇÃO: Adicionar suporte a paginação 
+    // 🚀 OTIMIZAÇÃO: Adicionar suporte a paginação e sessionName específico
     const url = new URL(request.url)
     const limit = url.searchParams.get('limit') || '50'
     const offset = url.searchParams.get('offset') || '0'
+    const specificSession = url.searchParams.get('session')
     
     // Usar backend Go com Redis cache em vez de WAHA direto
     const response = await fetch(`${backendUrl}/api/whatsapp/chats/cached?session=${sessionName}&limit=${limit}&offset=${offset}`, {

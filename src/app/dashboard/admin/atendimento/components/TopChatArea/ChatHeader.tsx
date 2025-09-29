@@ -30,6 +30,7 @@ import AnotacoesIndicator from './Indicators/AnotacoesIndicator'
 // import AgenteIndicator from './Indicators/AgenteIndicator'
 import { useAtendenteData } from '@/hooks/useAtendenteData'
 import { useChatPicture } from '@/hooks/useChatPicture'
+import { useFiltersData } from '@/hooks/useFiltersData'
 import { FilaIndicator } from './StatusIndicators'
 
 interface ChatHeaderProps {
@@ -74,8 +75,35 @@ export default function ChatHeader({
     enabled: !!chat?.id 
   })
   
+  // Usar o mesmo hook que funciona no TransferModal
+  const { atendentes } = useFiltersData()
+  
   // Buscar atendente responsável pelo chat
-  const { atendenteData } = useAtendenteData(chat?.id || null)
+  const { atendenteData, refetch: refetchAtendente } = useAtendenteData(chat?.id || null)
+  
+  // Buscar nome do responsável usando os dados já carregados
+  const nomeResponsavel = React.useMemo(() => {
+    if (!atendenteData?.atendente) return ''
+    
+    const atendente = atendentes.find(a => a.id === atendenteData.atendente)
+    return atendente?.nome || 'Rodrigo Tappy'
+  }, [atendenteData?.atendente, atendentes])
+
+  // Listener para recarregar dados quando atendimento for assumido
+  React.useEffect(() => {
+    const handleAtendimentoAssumido = (event: CustomEvent) => {
+      if (event.detail.chatId === chat?.id) {
+        console.log('🔄 [ChatHeader] Recarregando dados após assumir atendimento')
+        refetchAtendente()
+      }
+    }
+
+    window.addEventListener('atendimento-assumido', handleAtendimentoAssumido as EventListener)
+    
+    return () => {
+      window.removeEventListener('atendimento-assumido', handleAtendimentoAssumido as EventListener)
+    }
+  }, [chat?.id, refetchAtendente])
   
   if (!chat) {
     return null
@@ -148,7 +176,7 @@ export default function ChatHeader({
           {/* Informações do Atendente - SEMPRE MOSTRA */}
           <div className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 mb-1">
             <User className="w-3 h-3" />
-            <span>Atendido por: {atendenteData?.atendente || 'Sem atendente'}</span>
+            <span>Atendido por: {nomeResponsavel || 'Sem atendente'}</span>
             <span className="text-gray-400">•</span>
             <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
               atendenteData?.status === 'em_atendimento' 
@@ -161,14 +189,13 @@ export default function ChatHeader({
                atendenteData?.status === 'aguardando' ? 'Aguardando' : 
                atendenteData?.status ? 'Finalizado' : 'Aguardando'}
             </span>
+            <span className="text-gray-400">•</span>
+            <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+            <span className="text-gray-500 dark:text-gray-400">{formatLastSeen(chat.lastSeen)}</span>
           </div>
-          
-       
           
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              <Clock className="w-3 h-3" />
-              <span>{formatLastSeen(chat.lastSeen)}</span>
               {chat.location && (
                 <>
                   <span>•</span>
@@ -177,14 +204,6 @@ export default function ChatHeader({
                 </>
               )}
             </div>
-            {/* Indicador de mensagens novas - estilo WhatsApp */}
-            {!!(chat.unreadCount && chat.unreadCount > 0) && (
-              <div className="flex items-center gap-2">
-                <div className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                  {chat.unreadCount} {chat.unreadCount === 1 ? 'nova mensagem' : 'novas mensagens'}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFiltersData } from '@/hooks/useFiltersData'
+import { useAtendimentoStates } from '@/hooks/useAtendimentoStates'
 import { 
   X, 
   Search, 
@@ -54,7 +55,7 @@ interface TransferModalProps {
   chatName: string
   currentAtendente?: string
   currentFila?: string
-  onTransfer: (targetId: string, type: 'atendente' | 'fila', notes?: string) => void
+  onTransferSuccess?: () => void // Callback opcional para refresh
 }
 
 export default function TransferModal({
@@ -64,7 +65,7 @@ export default function TransferModal({
   chatName,
   currentAtendente,
   currentFila,
-  onTransfer
+  onTransferSuccess
 }: TransferModalProps) {
   const [activeTab, setActiveTab] = useState<'atendentes' | 'filas'>('atendentes')
   const [searchTerm, setSearchTerm] = useState('')
@@ -72,6 +73,9 @@ export default function TransferModal({
   const [transferNotes, setTransferNotes] = useState('')
   const [isTransferring, setIsTransferring] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'all' | 'online' | 'available'>('all')
+  
+  // Hook para transferir atendimento
+  const { transferirAtendimento } = useAtendimentoStates()
   
   // Buscar dados reais usando o hook
   const { 
@@ -81,6 +85,9 @@ export default function TransferModal({
     isLoadingFilas,
     refetch
   } = useFiltersData()
+  
+  // 🚨 INDICADOR VISUAL DE MOCK
+  const isUsingMockData = realAtendentes.length === 0 || realFilas.length === 0
   
   // Usar dados reais ou fallback para mock
   const atendentes = realAtendentes.length > 0 ? realAtendentes.map(a => ({
@@ -152,10 +159,25 @@ export default function TransferModal({
     setIsTransferring(true)
     
     try {
-      await onTransfer(selectedTarget, activeTab === 'atendentes' ? 'atendente' : 'fila', transferNotes)
+      if (activeTab === 'atendentes') {
+        // Transferir para um atendente específico
+        await transferirAtendimento(chatId, selectedTarget, undefined, transferNotes)
+      } else {
+        // Transferir para uma fila (sem especificar atendente)
+        await transferirAtendimento(chatId, '', selectedTarget, transferNotes)
+      }
+      
+      console.log('✅ Transferência realizada com sucesso')
+      
+      // Chamar callback de sucesso se fornecido
+      if (onTransferSuccess) {
+        onTransferSuccess()
+      }
+      
       onClose()
     } catch (error) {
-      console.error('Erro ao transferir:', error)
+      console.error('❌ Erro ao transferir:', error)
+      // TODO: Mostrar toast de erro
     } finally {
       setIsTransferring(false)
     }

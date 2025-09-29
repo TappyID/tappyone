@@ -57,6 +57,8 @@ export default function FilasPage() {
 
   const fetchFilas = async () => {
     try {
+      console.log('📋 [FETCH] Buscando filas...')
+      
       const response = await fetch('/api/filas', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -66,12 +68,33 @@ export default function FilasPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setFilas(Array.isArray(data.data) ? data.data : [])
+        console.log('📋 [FETCH] Dados recebidos:', data)
+        
+        const lista = (Array.isArray(data.data) ? data.data : [])
+          .filter((fila: any) => {
+            // Filtrar apenas filas válidas e ativas
+            const isValid = fila && 
+                           fila.id && 
+                           fila.status !== 'inactive' && 
+                           fila.status !== 'deleted' && 
+                           fila.ativo !== false && 
+                           !fila.deletedAt
+            
+            if (!isValid) {
+              console.log('🚫 [FETCH] Fila filtrada:', fila?.id, fila?.nome)
+            }
+            
+            return isValid
+          })
+        
+        console.log('✅ [FETCH] Filas válidas encontradas:', lista.length)
+        setFilas(lista)
       } else {
-        console.error('Erro ao buscar filas:', response.status)
+        const errorData = await response.json()
+        console.error('❌ [FETCH] Erro ao buscar filas:', response.status, errorData)
       }
     } catch (error) {
-      console.error('Erro ao buscar filas:', error)
+      console.error('❌ [FETCH] Erro na requisição:', error)
     }
   }
 
@@ -116,6 +139,8 @@ export default function FilasPage() {
 
   const handleCreateFila = async (novaFila: Omit<Fila, 'id' | 'criadoEm' | 'atualizadoEm' | 'estatisticas'>) => {
     try {
+      console.log('➕ [CREATE] Criando nova fila:', novaFila)
+      
       const response = await fetch('/api/filas', {
         method: 'POST',
         headers: {
@@ -126,14 +151,22 @@ export default function FilasPage() {
       })
 
       if (response.ok) {
-        const novaFilaCriada = await response.json()
-        setFilas(prev => [...(Array.isArray(prev) ? prev : []), novaFilaCriada])
+        const filaCreated = await response.json()
+        console.log('✅ [CREATE] Fila criada com sucesso:', filaCreated)
+        
+        // Fechar modal primeiro
         setShowCreateModal(false)
+        
+        // Recarregar lista para garantir dados completos
+        await fetchFilas()
+        
+        console.log('🔄 [CREATE] Lista recarregada após criação')
       } else {
-        console.error('Erro ao criar fila:', response.status)
+        const errorData = await response.json()
+        console.error('❌ [CREATE] Erro ao criar fila:', response.status, errorData)
       }
     } catch (error) {
-      console.error('Erro ao criar fila:', error)
+      console.error('❌ [CREATE] Erro na requisição:', error)
     }
   }
 
@@ -151,29 +184,8 @@ export default function FilasPage() {
       })
 
       if (response.ok) {
-        const responseData = await response.json()
-        console.log('✅ [UPDATE] Resposta da API:', responseData)
-        
-        // Verificar se é um objeto direto ou tem wrapper
-        const filaAtualizada = responseData.data || responseData
-        console.log('✅ [UPDATE] Fila processada:', filaAtualizada)
-        
-        setFilas(prev => {
-          console.log('🔍 [UPDATE] Estado anterior:', prev)
-          console.log('🔍 [UPDATE] Fila atualizada a ser inserida:', filaAtualizada)
-          console.log('🔍 [UPDATE] ID da fila (parâmetro):', id, 'tipo:', typeof id)
-          
-          const novasFilas = prev.map(fila => {
-            console.log('🔍 [UPDATE] Comparando:', fila.id, 'tipo:', typeof fila.id, 'com:', id, 'tipo:', typeof id)
-            if (fila.id === id || fila.id === String(id) || String(fila.id) === String(id)) {
-              console.log('🔍 [UPDATE] ✅ Match! Substituindo fila:', fila.id, 'por:', filaAtualizada)
-              return filaAtualizada
-            }
-            return fila
-          })
-          console.log('✅ [UPDATE] Estado final:', novasFilas)
-          return novasFilas
-        })
+        await fetchFilas()
+        setEditingFila(null)
       } else {
         const errorData = await response.json()
         console.error('❌ [UPDATE] Erro ao atualizar fila:', response.status, errorData)
@@ -185,6 +197,11 @@ export default function FilasPage() {
 
   const handleDeleteFila = async (id: string) => {
     try {
+      console.log('🗑️ [DELETE] Iniciando exclusão da fila:', id)
+      
+      // Remover imediatamente do estado local (otimistic update)
+      setFilas(prev => prev.filter(fila => fila.id !== id))
+      
       const response = await fetch(`/api/filas/${id}`, {
         method: 'DELETE',
         headers: {
@@ -194,12 +211,18 @@ export default function FilasPage() {
       })
 
       if (response.ok) {
-        setFilas(prev => prev.filter(fila => fila.id !== id))
+        console.log('✅ [DELETE] Fila excluída com sucesso')
+        // Recarregar para garantir sincronização
+        await fetchFilas()
       } else {
-        console.error('Erro ao deletar fila:', response.status)
+        console.error('❌ [DELETE] Erro ao deletar fila:', response.status)
+        // Reverter mudança otimista em caso de erro
+        await fetchFilas()
       }
     } catch (error) {
-      console.error('Erro ao deletar fila:', error)
+      console.error('❌ [DELETE] Erro na requisição:', error)
+      // Reverter mudança otimista em caso de erro
+      await fetchFilas()
     }
   }
 

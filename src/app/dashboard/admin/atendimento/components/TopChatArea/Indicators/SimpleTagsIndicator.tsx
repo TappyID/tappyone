@@ -3,6 +3,7 @@
 import React from 'react'
 import { Tag } from 'lucide-react'
 import { useIndicatorData } from './useIndicatorData'
+import { normalizeTags } from '@/utils/tags'
 
 interface SimpleTagsIndicatorProps {
   contatoId?: string | null
@@ -11,12 +12,14 @@ interface SimpleTagsIndicatorProps {
 
 export default function SimpleTagsIndicator({ contatoId, onClick }: SimpleTagsIndicatorProps) {
   const { count, data } = useIndicatorData(contatoId, 'tags')
+  const normalized = normalizeTags(data)
+  const normalizedCount = normalized.length
   
   if (!contatoId) return null
   
   // Criar tooltip com nomes das tags
-  const tagsTooltip = count > 0 
-    ? `Tags (${count}): ${data.map(tag => tag.nome).join(', ')}`
+  const tagsTooltip = normalizedCount > 0 
+    ? `Tags (${normalizedCount}): ${normalized.map(tag => tag.nome).join(', ')}`
     : `Nenhuma tag`
 
   return (
@@ -29,7 +32,7 @@ export default function SimpleTagsIndicator({ contatoId, onClick }: SimpleTagsIn
       
       {/* Badge com contador */}
       <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full border border-white flex items-center justify-center bg-emerald-500">
-        <span className="text-xs font-bold text-white">{count}</span>
+        <span className="text-xs font-bold text-white">{normalizedCount}</span>
       </div>
     </button>
   )

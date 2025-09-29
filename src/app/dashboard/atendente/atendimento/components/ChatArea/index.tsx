@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, MessageCircle, ChevronUp } from 'lucide-react'
 
 import MessageBubble from './MessageBubble'
+import AtendimentoModal from './AtendimentoModal'
 
 interface ChatAreaProps {
   // Mensagens do chat
@@ -78,6 +79,12 @@ interface ChatAreaProps {
     name: string
   }
   
+  // Estado do atendimento (para atendentes)
+  needsAttendanceDecision?: boolean
+  onAcceptAttendance?: () => void
+  onRejectAttendance?: () => void
+  onSpyAttendance?: () => void
+  
   // Callbacks para ações das mensagens
   onReply?: (messageId: string) => void
   onForward?: (messageId: string) => void
@@ -95,6 +102,10 @@ export default function ChatArea({
   totalMessages = 0,
   onLoadMore,
   selectedChat,
+  needsAttendanceDecision = false,
+  onAcceptAttendance,
+  onRejectAttendance,
+  onSpyAttendance,
   onReply,
   onForward,
   onReaction,
@@ -104,6 +115,19 @@ export default function ChatArea({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
+
+  // Debug: Log das props recebidas
+  React.useEffect(() => {
+    console.log('🎯 [ChatArea] Props recebidas:', {
+      needsAttendanceDecision,
+      selectedChat,
+      hasCallbacks: {
+        onAcceptAttendance: !!onAcceptAttendance,
+        onRejectAttendance: !!onRejectAttendance,
+        onSpyAttendance: !!onSpyAttendance
+      }
+    })
+  }, [needsAttendanceDecision, selectedChat, onAcceptAttendance, onRejectAttendance, onSpyAttendance])
 
   // Auto-scroll DESABILITADO para permitir scroll manual
   // useEffect(() => {
@@ -217,7 +241,9 @@ export default function ChatArea({
         }
       `}</style>
       
-    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden relative h-full">
+    <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden relative h-full ${
+      needsAttendanceDecision ? 'blur-sm pointer-events-none' : ''
+    }`}>
       
       {/* Badge de mensagens não carregadas - estilo WhatsApp Web */}
       {(() => {
@@ -339,6 +365,17 @@ export default function ChatArea({
         <div ref={messagesEndRef} />
       </div>
     </div>
+
+    {/* Modal de Decisão de Atendimento */}
+    <AtendimentoModal
+      isOpen={needsAttendanceDecision}
+      chatName={selectedChat?.name || 'Usuário'}
+      chatId={selectedChat?.id || ''}
+      onAccept={() => onAcceptAttendance?.()}
+      onReject={() => onRejectAttendance?.()}
+      onSpy={() => onSpyAttendance?.()}
+      onClose={() => onRejectAttendance?.()} // Fechar = Recusar
+    />
     </>
   )
 }

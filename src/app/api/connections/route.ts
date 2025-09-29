@@ -35,6 +35,34 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
+    
+    // 🔥 CONVERTER snake_case para camelCase
+    if (data.connections) {
+      data.connections = data.connections.map((conn: any) => ({
+        ...conn,
+        sessionName: conn.session_name,
+        sessionData: conn.session_data,
+        userId: conn.user_id,
+        connectedAt: conn.connected_at,
+        lastSyncAt: conn.last_sync_at,
+        createdAt: conn.created_at,
+        updatedAt: conn.updated_at
+      }))
+    }
+    
+    // 🔥 DEBUG: Verificar conversão
+    console.log('🔍 [CONNECTIONS] Dados convertidos para camelCase:')
+    if (data.connections) {
+      data.connections.forEach((conn: any, index: number) => {
+        console.log(`✅ [CONNECTIONS] Conexão ${index + 1}:`, {
+          id: conn.id,
+          sessionName: conn.sessionName,
+          sessionData: conn.sessionData,
+          status: conn.status
+        })
+      })
+    }
+    
     return NextResponse.json(data)
   } catch (error) {
     console.error('❌ [CONNECTIONS] Erro na API proxy:', error)

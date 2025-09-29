@@ -29,7 +29,10 @@ import {
   Tag,
   Clock,
   UserX,
-  Layers
+  Layers,
+  Bot,
+  Flame,
+  Grid3X3
 } from 'lucide-react'
 
 // import SearchInput from './SearchInput' // Não usado mais
@@ -73,6 +76,10 @@ interface SideFilterProps {
   selectedKanbanStatus: string
   selectedTicketStatus: string
   selectedPriceRange: string
+  
+  // Status Filter
+  selectedStatusFilter: string
+  onStatusFilterChange: (status: string) => void
   
   // Estados de loading
   isLoadingTags: boolean
@@ -257,12 +264,10 @@ export default function SideFilter({
 
   // Definir tabs de filtros igual ao antigo
   const filterTabs = [
-    { id: 'all', label: 'Todas', icon: MessageCircle, count: totalChats },
     { id: 'unread', label: 'Não lidas', icon: Circle, count: unreadChats },
     { id: 'read-no-reply', label: 'Não respondidas', icon: CheckCircle2, count: readChats },
     { id: 'favorites', label: 'Favoritos', icon: Star, count: favoriteChats },
     { id: 'archived', label: 'Arquivados', icon: Archive, count: archivedChats },
-    { id: 'groups', label: 'Grupos', icon: Users, count: groupChats },
     { id: 'hidden', label: 'Ocultos', icon: EyeOff, count: hiddenChats },
   ]
 
@@ -428,87 +433,12 @@ export default function SideFilter({
         </div>
         )}
 
-        {/* Linha Divisória Superior */}
-        <div className="border-t border-gray-200 dark:border-gray-700 mt-4 mb-3"></div>
+        
 
-        {/* 📊 Filtros de Status - Com Background e Badges */}
-        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-0">
-          <div className="grid grid-cols-4 gap-2">
-            {/* Atendimento */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
-              title="Em Atendimento"
-            >
-              <div className="relative">
-                <MessageCircle className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  12
-                </span>
-              </div>
-              <span>Atendimento</span>
-            </motion.button>
-            
-            {/* Aguardando */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
-              title="Aguardando"
-            >
-              <div className="relative">
-                <Clock className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  5
-                </span>
-              </div>
-              <span>Aguardando</span>
-            </motion.button>
-            
-            {/* No Agente */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
-              title="Sem Agente"
-            >
-              <div className="relative">
-                <UserX className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  3
-                </span>
-              </div>
-              <span>No Agente</span>
-            </motion.button>
-            
-            {/* Grupos */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative flex flex-col items-center gap-1 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 shadow-sm"
-              title="Grupos"
-            >
-              <div className="relative">
-                <Users className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  8
-                </span>
-              </div>
-              <span>Grupos</span>
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Linha Divisória Inferior */}
-        <div className="border-t border-gray-200 dark:border-gray-700 mt-2 mb-0"></div>
-      </div>
-
-      {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}
-     
+         
 
       {/* 🎯 TABS DE FILTROS PRINCIPAIS */}
-      <div className="px-4 pb-2">
+      <div className="px-0 pt-2">
         <div className="bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
           <div 
             className="flex gap-1 overflow-x-auto pb-1 cursor-grab active:cursor-grabbing"
@@ -573,6 +503,157 @@ export default function SideFilter({
           </div>
         </div>
       </div>
+
+        {/* 📊 Filtros de Status - Apenas Ícones com Tooltips */}
+        <div className="bg-gray-50 dark:bg-gray-800/30 mt-2 rounded-lg p-2">
+          <div className="flex justify-start gap-3">
+            {/* Todos Atendimentos */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <Grid3X3 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  43
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Todos Atendimentos
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+            
+            {/* Leads Quentes */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <Flame className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  9
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Leads Quentes
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+            
+            {/* Atendimento */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <MessageCircle className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  12
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Em Atendimento
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+            
+            {/* Aguardando */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <Clock className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  5
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Aguardando
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+            
+            {/* Agente IA */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 hover:text-cyan-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <Bot className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-cyan-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  7
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Agente IA
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+            
+            {/* Grupos */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <Users className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  8
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Grupos
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+            
+            {/* Finalizados */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+            >
+              <div className="relative">
+                <CheckCircle2 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  15
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Finalizados
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+          </div>
+        </div>
+
+       
+      </div>
+
+      {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}
+    
 
       {/* ⚙️ SIDEBAR DE FILTROS AVANÇADOS */}
       <AnimatePresence>

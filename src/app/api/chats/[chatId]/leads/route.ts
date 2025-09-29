@@ -101,6 +101,67 @@ export async function POST(
   }
 }
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { chatId: string } }
+) {
+  try {
+    const chatId = params.chatId
+    const token = request.headers.get('authorization')
+    const body = await request.json()
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
+    }
+
+    console.log(`🔄 [LEADS] PUT - ChatId: ${chatId}`)
+    console.log('📋 [LEADS] Dados para atualizar:', body)
+
+    const backendUrl = getBackendUrl()
+    const response = await fetch(`${backendUrl}/api/chats/${chatId}/leads`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      },
+      body: JSON.stringify(body),
+    })
+
+    console.log('📡 [LEADS] Status da resposta:', response.status)
+    
+    // Verificar se a resposta tem conteúdo
+    const responseText = await response.text()
+    console.log('📄 [LEADS] Resposta raw:', responseText)
+    
+    let data
+    try {
+      data = responseText ? JSON.parse(responseText) : {}
+    } catch (parseError) {
+      console.error('❌ [LEADS] Erro ao parsear JSON:', parseError)
+      console.error('📄 [LEADS] Resposta que causou erro:', responseText)
+      return NextResponse.json(
+        { error: 'Resposta inválida do backend', raw: responseText },
+        { status: 500 }
+      )
+    }
+    
+    if (!response.ok) {
+      console.error('❌ [LEADS] Erro do backend:', data)
+      return NextResponse.json(data, { status: response.status })
+    }
+
+    console.log('✅ [LEADS] Lead atualizado com sucesso!')
+    return NextResponse.json(data)
+
+  } catch (error) {
+    console.error('❌ [LEADS] Erro na API:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { chatId: string } }
