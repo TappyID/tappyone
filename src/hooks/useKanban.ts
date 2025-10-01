@@ -272,17 +272,13 @@ export function useKanban() {
     quadroId: string
   }): Promise<any> => {
     try {
-      console.log('📡 [HOOK] Enviando dados da coluna para API:', colunaData)
-      
-      const data = await makeAuthenticatedRequest('/kanban/colunas', {
+      const data = await makeAuthenticatedRequest('/kanban/column-create', {
         method: 'POST',
         body: JSON.stringify(colunaData),
       })
       
-      console.log('📡 [HOOK] Resposta da API para coluna:', data)
       return data
     } catch (err) {
-      console.error('❌ [HOOK] Erro ao criar coluna:', err)
       throw err
     }
   }

@@ -91,16 +91,7 @@ export default function KanbanCardItem({
   const chatIdForIndicators = card.id?.includes('@c.us') ? card.id : 
                               card.phone ? `${card.phone}@c.us` : 
                               card.id
-  console.log('🎯 [KanbanCardItem] ChatId para indicadores:', chatIdForIndicators)
   const { counts, loading: loadingIndicators } = useKanbanIndicators(chatIdForIndicators)
-  
-  // Debug: Mostrar os dados do card e counts
-  console.log('🔍 [KanbanCardItem] Card:', {
-    id: card.id,
-    phone: card.phone,
-    name: card.nome || card.name
-  })
-  console.log('🔍 [KanbanCardItem] Counts:', counts)
 
   // Hook para status do agente IA
   const { 

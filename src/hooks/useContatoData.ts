@@ -19,6 +19,12 @@ interface ContatoData {
     email: string;
   };
   kanbanBoard?: string;
+  kanbanStatus?: {
+    id: string;
+    nome: string;
+    cor?: string;
+    quadroId?: string;
+  };
   orcamento?: {
     valor: number;
     status: string;
@@ -127,6 +133,7 @@ export function useContatoData(chatIds: string[]) {
         agendamentosResponse,
         assinaturasResponse,
         ticketsResponse,
+        kanbanStatusResponse,
       ] = await Promise.all([
         fetch(`/api/contatos/${contatoData.id}/tags`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -145,6 +152,10 @@ export function useContatoData(chatIds: string[]) {
         }).catch(() => null),
 
         fetch(`/api/tickets?contato_id=${numeroTelefone}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
+
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/kanban-status`, {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null),
       ]);
@@ -237,6 +248,24 @@ export function useContatoData(chatIds: string[]) {
         }
       }
 
+      let kanbanStatus = null;
+      if (kanbanStatusResponse?.ok) {
+        const kanbanData = await kanbanStatusResponse.json();
+        const status = kanbanData?.data || kanbanData || null;
+        if (status) {
+          kanbanStatus = {
+            id: status.id || status.coluna_id || status.columnId || status.uuid,
+            nome: status.nome || status.name || status.columnName || "Kanban",
+            cor: status.cor || status.color,
+            quadroId:
+              status.quadro_id ||
+              status.kanban_id ||
+              status.boardId ||
+              status.quadroId,
+          };
+        }
+      }
+
       const result = {
         id: contatoData.id,
         fila: contatoData.fila
@@ -249,6 +278,7 @@ export function useContatoData(chatIds: string[]) {
         tags,
         atendente: contatoData.atendente,
         kanbanBoard: contatoData.kanbanBoard,
+        kanbanStatus,
         orcamento,
         agendamento,
         assinatura,

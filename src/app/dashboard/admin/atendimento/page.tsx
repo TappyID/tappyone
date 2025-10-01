@@ -674,7 +674,7 @@ function AtendimentoPage() {
       : sortedChats;
 
     return chatsToShow.map((chat) => {
-      const extraData = chatsExtraData[chat.id] || {};
+      const extraData = contatosData[chat.id] || chatsExtraData[chat.id] || {};
 
       return {
         id: chat.id,
@@ -703,6 +703,8 @@ function AtendimentoPage() {
         orcamentos: extraData.orcamentos,
         tickets: extraData.tickets,
         isContact: extraData.isContact,
+        kanbanStatus: extraData.kanbanStatus || chat.kanbanStatus,
+        fila: extraData.fila || chat.fila,
         // Dados mock por enquanto
         rating:
           Math.random() > 0.6 ? Math.floor(Math.random() * 5) + 1 : undefined,
@@ -1158,6 +1160,28 @@ function AtendimentoPage() {
             ]
           : [];
 
+      const kanbanStatusFromContato = contatoData.kanbanStatus
+        ? {
+            id: contatoData.kanbanStatus.id,
+            nome: contatoData.kanbanStatus.nome,
+            cor: contatoData.kanbanStatus.cor || "#3B82F6",
+            quadro:
+              contatoData.kanbanStatus.quadroId ||
+              contatoData.kanbanStatus.quadro_id ||
+              contatoData.kanbanStatus.kanban_id,
+          }
+        : contatoData.kanban?.length > 0
+          ? {
+              id: contatoData.kanban[0].coluna_id,
+              nome: contatoData.kanban[0].coluna_nome || "Kanban",
+              cor: contatoData.kanban[0].coluna_cor || "#3B82F6",
+              quadro:
+                contatoData.kanban[0].quadro_id ||
+                contatoData.kanban[0].kanban_id ||
+                contatoData.kanban[0].quadro,
+            }
+          : undefined;
+
       return {
         ...chat, // Usar dados já processados (incluindo lastMessage.body correto)
         sessionName, // ✅ GARANTIR que sessionName está presente
@@ -1225,23 +1249,14 @@ function AtendimentoPage() {
 
         // Kanban - buscar dados reais do contato ou exemplo usando quadros reais
         kanbanStatus:
-          contatoData.kanban?.length > 0
-            ? {
-                id: contatoData.kanban[0].coluna_id,
-                nome: contatoData.kanban[0].coluna_nome || "Kanban",
-                cor: contatoData.kanban[0].coluna_cor || "#3B82F6",
-                quadro:
-                  contatoData.kanban[0].quadro_id ||
-                  contatoData.kanban[0].kanban_id ||
-                  contatoData.kanban[0].quadro,
-              }
-            : hasDataExample &&
-                Math.random() > 0.4 &&
-                realKanbanStatuses.length > 0
-              ? realKanbanStatuses[
-                  Math.floor(Math.random() * realKanbanStatuses.length)
-                ]
-              : undefined,
+          kanbanStatusFromContato ||
+          (hasDataExample &&
+          Math.random() > 0.4 &&
+          realKanbanStatuses.length > 0
+            ? realKanbanStatuses[
+                Math.floor(Math.random() * realKanbanStatuses.length)
+              ]
+            : undefined),
 
         // Fila - buscar dados reais do contato ou exemplo usando filas reais
         fila: contatoData.fila
@@ -1463,12 +1478,27 @@ function AtendimentoPage() {
 
     // Filtro por colunas específicas do Kanban
     if (selectedKanbanColunas.length > 0) {
+      console.log('[FILTRO KANBAN COLUNAS] Filtrando por colunas:', selectedKanbanColunas);
+      console.log('[FILTRO KANBAN COLUNAS] Total de chats antes do filtro:', result.length);
+      
       result = result.filter((chat) => {
         const colunaId = chat.kanbanStatus?.id;
-        return colunaId
+        const match = colunaId
           ? selectedKanbanColunas.includes(String(colunaId))
           : false;
+        
+        if (match) {
+          console.log('[FILTRO KANBAN COLUNAS] Chat matched:', {
+            chatId: chat.id,
+            colunaId,
+            kanbanStatus: chat.kanbanStatus
+          });
+        }
+        
+        return match;
       });
+      
+      console.log('[FILTRO KANBAN COLUNAS] Total de chats após filtro:', result.length);
     }
 
     // Filtro por status kanban específico

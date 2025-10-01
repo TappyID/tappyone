@@ -285,6 +285,8 @@ export default function SideFilter({
           const token = localStorage.getItem("token");
           const allColunas: any[] = [];
 
+          console.log('[KANBAN COLUNAS] Buscando colunas para quadros:', selectedQuadrosMulti);
+
           // Buscar colunas de todos os quadros selecionados
           for (const quadroId of selectedQuadrosMulti) {
             const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
@@ -296,20 +298,36 @@ export default function SideFilter({
 
             if (response.ok) {
               const data = await response.json();
-              if (data.colunas) {
+              console.log(`[KANBAN COLUNAS] Resposta COMPLETA do quadro ${quadroId}:`, JSON.stringify(data, null, 2));
+              console.log(`[KANBAN COLUNAS] Chaves disponíveis:`, Object.keys(data));
+              
+              // Tentar tanto "colunas" quanto "Colunas" (case sensitive)
+              const colunas = data.colunas || data.Colunas || [];
+              
+              if (colunas && colunas.length > 0) {
+                console.log(`[KANBAN COLUNAS] ${colunas.length} colunas encontradas no quadro ${quadroId}:`, colunas);
                 // Adicionar colunas com referência ao quadro
-                data.colunas.forEach((col: any) => {
+                colunas.forEach((col: any) => {
                   allColunas.push({
                     ...col,
-                    quadroNome: data.nome || "Quadro",
+                    quadroNome: data.nome || data.Nome || "Quadro",
                   });
                 });
+              } else {
+                console.warn(`[KANBAN COLUNAS] Nenhuma coluna encontrada no quadro ${quadroId}. Data:`, data);
               }
+            } else {
+              console.error(`[KANBAN COLUNAS] Erro ao buscar quadro ${quadroId}:`, response.status);
+              const errorText = await response.text();
+              console.error(`[KANBAN COLUNAS] Erro detalhado:`, errorText);
             }
           }
 
+          console.log('[KANBAN COLUNAS] Total de colunas carregadas:', allColunas);
           setKanbanColunas(allColunas);
-        } catch {}
+        } catch (error) {
+          console.error('[KANBAN COLUNAS] Erro ao buscar colunas:', error);
+        }
       } else {
         setKanbanColunas([]);
         onKanbanColunasChange([]);
@@ -959,15 +977,21 @@ export default function SideFilter({
 
               {/* Filtro de Colunas do Kanban - React Select MULTI com DADOS REAIS */}
               <Select2
-                label="Colunas do Kanban (Múltipla Seleção)"
+                label={`Colunas do Kanban (${kanbanColunas.length} disponíveis)`}
                 value={selectedKanbanColunas}
-                onChange={(val) => onKanbanColunasChange(val as string[])}
-                options={kanbanColunas.map((col) => ({
-                  id: col.id,
-                  nome: col.nome,
-                  icon: col.icone || "",
-                  cor: col.cor,
-                }))}
+                onChange={(val) => {
+                  console.log('[KANBAN COLUNAS] Colunas selecionadas:', val);
+                  onKanbanColunasChange(val as string[]);
+                }}
+                options={kanbanColunas.map((col) => {
+                  console.log('[KANBAN COLUNAS] Mapeando coluna:', col);
+                  return {
+                    id: col.id,
+                    nome: col.nome,
+                    icon: col.icone || "",
+                    cor: col.cor,
+                  };
+                })}
                 placeholder="Selecione múltiplas colunas"
                 icon={Layers}
                 iconColor="teal"

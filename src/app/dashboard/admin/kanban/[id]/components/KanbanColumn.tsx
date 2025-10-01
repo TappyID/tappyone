@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { createPortal } from 'react-dom'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useKanbanColors } from '../hooks/useKanbanColors'
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -175,11 +174,6 @@ export default function KanbanColumn({
   // 🗑️ Estados para modal de confirmação de exclusão
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedTargetColumn, setSelectedTargetColumn] = useState('')
-  
-  // ⚙️ Estado para mini modal dos 3 pontinhos
-  const [showActionsModal, setShowActionsModal] = useState(false)
-  
-  // 🎯 Fechar modal ao clicar fora - REMOVIDO para usar overlay
 
   // 🗑️ Função para abrir modal de confirmação
   const handleDeleteClick = () => {
@@ -378,8 +372,8 @@ export default function KanbanColumn({
           </div>
           
           {/* Lado Direito - Contador e Ações */}
-          <div className="flex items-center gap-3">
-            {/* Contador de Cards Sofisticado */}
+          <div className="flex items-center gap-2">
+            {/* Contador de Cards */}
             <motion.div 
               className={`px-3 py-1.5 rounded-full font-bold text-xs transition-all duration-300 ${
                 theme === 'dark' 
@@ -399,152 +393,74 @@ export default function KanbanColumn({
             >
               {coluna.cards?.length || 0}
             </motion.div>
-            
-            {/* Botão de 3 Pontinhos */}
-            <div className="relative actions-modal-container">
-              <motion.button
-                data-no-dnd="true"
-                onPointerDown={(e) => {
-                  e.stopPropagation() // Impede o DND de capturar
-                }}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  console.log('🔘 Clicou nos 3 pontinhos! Estado atual:', showActionsModal)
-                  setShowActionsModal(!showActionsModal)
-                }}
-                className={`p-1.5 rounded-lg transition-all duration-300 cursor-pointer ${
-                  theme === 'dark'
-                    ? 'hover:bg-gray-500/20 text-gray-400 hover:text-gray-300 border border-transparent hover:border-gray-500/30'
-                    : 'hover:bg-gray-50 text-gray-600 hover:text-gray-700 border border-transparent hover:border-gray-300/50'
-                } backdrop-blur-sm shadow-sm hover:shadow-md`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title="Opções da coluna"
-              >
-                <MoreHorizontal className="w-3.5 h-3.5" />
-              </motion.button>
 
-              {/* Sidebar dos 3 Pontinhos - RENDERIZADO NO BODY VIA PORTAL */}
-              <AnimatePresence>
-                {showActionsModal && typeof document !== 'undefined' && createPortal(
-                  <>
-                    {/* Overlay */}
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      onClick={() => setShowActionsModal(false)}
-                      className="fixed inset-0 bg-black/30 backdrop-blur-sm"
-                      style={{ zIndex: 99999 }}
-                    />
-                    
-                    {/* Sidebar */}
-                    <motion.div
-                      initial={{ x: 400, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: 400, opacity: 0 }}
-                      transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                      style={{ zIndex: 100000 }}
-                      className={`fixed right-0 top-0 h-full w-80 shadow-2xl ${
-                        theme === 'dark' 
-                          ? 'bg-slate-800/95 border-l border-slate-700' 
-                          : 'bg-white/95 border-l border-gray-200'
-                      } backdrop-blur-xl`}
-                    >
-                      {/* Header do Sidebar */}
-                      <div className={`p-4 border-b ${
-                        theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <h3 className={`font-bold text-lg ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            Opções da Coluna
-                          </h3>
-                          <motion.button
-                            whileHover={{ scale: 1.1, rotate: 90 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setShowActionsModal(false)}
-                            className={`p-2 rounded-lg ${
-                              theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
-                            }`}
-                          >
-                            <X className="w-5 h-5" />
-                          </motion.button>
-                        </div>
-                      </div>
+            {/* Botão Configurações */}
+            <motion.button
+              data-no-dnd="true"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (onOpenConfig) {
+                  onOpenConfig(coluna)
+                }
+              }}
+              className={`p-1.5 rounded-lg transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'hover:bg-blue-500/20 text-blue-400 hover:text-blue-300'
+                  : 'hover:bg-blue-50 text-blue-600 hover:text-blue-700'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Configurações"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </motion.button>
 
-                      {/* Conteúdo do Sidebar */}
-                      <div className="p-4 space-y-2">
-                        {/* Botão Configurações */}
-                        <motion.button
-                          onClick={() => {
-                            setShowActionsModal(false)
-                            onOpenConfig?.(coluna)
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                            theme === 'dark'
-                              ? 'hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-transparent hover:border-blue-500/30'
-                              : 'hover:bg-blue-50 text-blue-600 hover:text-blue-700 border border-transparent hover:border-blue-300'
-                          }`}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Settings className="w-5 h-5" />
-                          <span className="text-sm font-medium">Configurações</span>
-                        </motion.button>
+            {/* Botão Trocar Cor */}
+            <motion.button
+              data-no-dnd="true"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenColorModal(coluna)
+              }}
+              className={`p-1.5 rounded-lg transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300'
+                  : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Trocar Cor"
+            >
+              <div 
+                className="w-3.5 h-3.5 rounded-full border-2 border-white/50"
+                style={{ backgroundColor: coluna.cor }}
+              />
+            </motion.button>
 
-                        {/* Botão Trocar Cor */}
-                        <motion.button
-                          onClick={() => {
-                            setShowActionsModal(false)
-                            onOpenColorModal(coluna)
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                            theme === 'dark'
-                              ? 'hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-transparent hover:border-purple-500/30'
-                              : 'hover:bg-purple-50 text-purple-600 hover:text-purple-700 border border-transparent hover:border-purple-300'
-                          }`}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <div 
-                            className="w-5 h-5 rounded-full border-2 border-white/50 shadow-sm"
-                            style={{ backgroundColor: coluna.cor }}
-                          />
-                          <span className="text-sm font-medium">Trocar Cor</span>
-                        </motion.button>
-
-                        {/* Divisor */}
-                        <div className={`h-px my-2 ${
-                          theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
-                        }`} />
-
-                        {/* Botão Deletar */}
-                        <motion.button
-                          onClick={() => {
-                            setShowActionsModal(false)
-                            handleDeleteClick()
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                            theme === 'dark'
-                              ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-transparent hover:border-red-500/30'
-                              : 'hover:bg-red-50 text-red-500 hover:text-red-600 border border-transparent hover:border-red-300'
-                          }`}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                          <span className="text-sm font-medium">Deletar</span>
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  </>,
-                  document.body
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Botão Deletar */}
+            <motion.button
+              data-no-dnd="true"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleDeleteClick()
+              }}
+              className={`p-1.5 rounded-lg transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300'
+                  : 'hover:bg-red-50 text-red-600 hover:text-red-700'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Deletar Coluna"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </motion.button>
           </div>
         </div>
       </div>

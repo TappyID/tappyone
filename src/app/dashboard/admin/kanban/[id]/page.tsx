@@ -70,7 +70,6 @@ function QuadroPage() {
   const loadWhatsAppChats = useCallback(async () => {
     try {
       setLoadingChats(true)
-      console.log('🔍 Carregando chats da API WAHA...')
       
       // Token fixo mais longo (1 ano) para desenvolvimento
       const FALLBACK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
@@ -85,13 +84,11 @@ function QuadroPage() {
           const now = Math.floor(Date.now() / 1000)
           
           if (payload.exp && payload.exp < now) {
-            console.log('🔄 Token expirado, usando fallback')
             token = FALLBACK_TOKEN
             localStorage.setItem('token', FALLBACK_TOKEN)
           }
         }
       } catch (error) {
-        console.log('⚠️ Erro ao verificar token, usando fallback')
         token = FALLBACK_TOKEN
         localStorage.setItem('token', FALLBACK_TOKEN)
       }
@@ -102,15 +99,11 @@ function QuadroPage() {
         ? '/api/waha-proxy' 
         : 'http://159.65.34.199:3001'
       
-      console.log('📋 Buscando chats da WAHA...')
-      
       const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=500&offset=0`, {
         headers: {
           'X-Api-Key': 'tappyone-waha-2024-secretkey'
         }
       })
-      
-      console.log('🔍 Response status:', response.status)
       
       if (!response.ok) {
         if (response.status === 401) {
@@ -120,17 +113,8 @@ function QuadroPage() {
       }
       
       const data = await response.json()
-      console.log('🔍 Dados recebidos da WAHA:', data)
       
-      // WAHA retorna array direto com: chats[], totalChats, unreadChats, etc
       const chatsArray = data.chats || data.data || data || []
-      
-      console.log('🔍 Chats extraídos da WAHA:', chatsArray.length)
-      console.log('📊 Estatísticas:', {
-        total: data.totalChats,
-        unread: data.unreadChats,
-        groups: data.groupChats
-      })
       setWhatsappChats(chatsArray)
       setChatsError(null)
       
@@ -146,21 +130,54 @@ function QuadroPage() {
   useEffect(() => {
     loadWhatsAppChats()
   }, [loadWhatsAppChats])
+  
+  // 🔄 Buscar colunas do backend - DIRETO NO USEEFFECT
+  useEffect(() => {
+    if (!quadroId) return
+    
+    const fetchColunas = async () => {
+      try {
+        setColunasLoading(true)
+        const token = localStorage.getItem('token')
+        
+        const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          if (data.colunas && data.colunas.length > 0) {
+            const colunasFormatadas = data.colunas
+              .sort((a: any, b: any) => a.posicao - b.posicao)
+              .map((col: any) => ({
+                id: col.id,
+                nome: col.nome,
+                cor: col.cor || '#3B82F6',
+                ordem: col.posicao
+              }))
+            
+            setColunas(colunasFormatadas)
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar colunas:', error)
+      } finally {
+        setColunasLoading(false)
+      }
+    }
+    
+    fetchColunas()
+  }, [quadroId])
 
-  // Hook do Kanban
   const {
     loading: loadingKanban,
     forceRefresh
   } = useKanbanOptimized(quadroId)
 
-  // Estados para simular dados do Kanban (temporário até hooks estarem prontos)
-  const [colunas, setColunas] = useState([
-    { id: '1', nome: 'Novos Chats', cor: '#3B82F6', ordem: 0 },
-    { id: '2', nome: 'Em Atendimento', cor: '#10B981', ordem: 1 },
-    { id: '3', nome: 'Aguardando', cor: '#F59E0B', ordem: 2 },
-    { id: '4', nome: 'Finalizados', cor: '#EF4444', ordem: 3 }
-  ])
-  
   const quadro = { 
     id: quadroId, 
     nome: 'Kanban WhatsApp', 
@@ -173,6 +190,10 @@ function QuadroPage() {
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showMetrics, setShowMetrics] = useState(false)
+  
+  // Estados das colunas do Kanban - carregadas do backend
+  const [colunas, setColunas] = useState<any[]>([])
+  const [colunasLoading, setColunasLoading] = useState(true)
   
   // Estados de edição
   const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
@@ -190,6 +211,11 @@ function QuadroPage() {
   const [conexaoFilaModal, setConexaoFilaModal] = useState({ isOpen: false, card: null })
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [selectedColumnForConfig, setSelectedColumnForConfig] = useState<any>(null)
+  const [showAddColunaModal, setShowAddColunaModal] = useState(false)
+  const [novaColunaData, setNovaColunaData] = useState({ nome: '', cor: '#3B82F6' })
+  const [colunaLoading, setColunaLoading] = useState(false)
+  const [colunaError, setColunaError] = useState('')
+  const [colunaSuccess, setColunaSuccess] = useState(false)
   
   // Estado para controlar a visualização ativa (kanban, funil, ncs)
   const [activeView, setActiveView] = useState<'kanban' | 'funnel' | 'ncs'>('kanban')
@@ -244,15 +270,26 @@ function QuadroPage() {
     }
   }, [cardColumnMapping, quadroId])
 
-  // Funções mock para CRUD (temporário)
+  // Função REAL para criar coluna no backend
   const createColuna = async (data: any) => {
-    const newColuna = {
-      id: Date.now().toString(),
-      nome: data.nome,
-      cor: data.cor,
-      ordem: colunas.length
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token não encontrado')
+    
+    const response = await fetch('/api/kanban/column-create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Erro ao criar coluna')
     }
-    setColunas(prev => [...prev, newColuna])
+    
+    return await response.json()
   }
 
   const updateColuna = async (id: string, data: any) => {
@@ -266,7 +303,6 @@ function QuadroPage() {
   }
 
   const updateQuadro = async (id: string, data: any) => {
-    console.log('Update quadro:', id, data)
   }
 
   // Mapear chats do WhatsApp para as colunas
@@ -300,15 +336,6 @@ function QuadroPage() {
       // Limitar quantidade de cards visíveis para performance
       const cardsVisiveis = cardsNaColuna.slice(0, MAX_VISIBLE_CARDS)
 
-      // Debug para ver estrutura dos dados
-      if (cardsVisiveis.length > 0) {
-        console.log('📋 Estrutura do primeiro chat:', {
-          id: cardsVisiveis[0].id,
-          name: cardsVisiveis[0].name,
-          pushName: cardsVisiveis[0].pushName,
-          allProps: Object.keys(cardsVisiveis[0])
-        })
-      }
 
       // Adicionar os dados corretos do chat (nome, telefone, etc)
       const cardsFormatados = cardsVisiveis.map((chat, index) => ({
@@ -377,7 +404,6 @@ function QuadroPage() {
   // 🗑️ Função para deletar coluna com realocação de contatos
   const handleDeleteWithReallocation = async (columnId: string, targetColumnId: string) => {
     try {
-      console.log('🗑️ Realocando contatos da coluna', columnId, 'para', targetColumnId)
       
       // 1. Encontrar a coluna que será deletada
       const sourceColumn = colunasComCards.find(col => col.id === columnId)
@@ -390,14 +416,11 @@ function QuadroPage() {
       // TODO: Implementar API para mover cards em lote
       // Por enquanto, vamos simular movendo um por um
       for (const card of sourceColumn.cards) {
-        console.log('📦 Movendo card', card.id, 'para coluna', targetColumnId)
         // await moveCardToColumn(card.id, targetColumnId)
       }
 
       // 3. Deletar a coluna vazia
       await deleteColuna(columnId)
-      
-      console.log('✅ Coluna deletada e contatos realocados com sucesso!')
     } catch (error) {
       console.error('❌ Erro ao realocar contatos:', error)
       alert('Erro ao realocar contatos. Tente novamente.')
@@ -409,15 +432,54 @@ function QuadroPage() {
     setShowCriarCardModal(true)
   }
 
-  const handleAddColuna = async () => {
-    const nome = prompt('Nome da nova coluna:')
-    if (nome) {
-      await createColuna({
-        nome,
-        cor: '#' + Math.floor(Math.random()*16777215).toString(16),
-        ordem: colunas.length,
+  // Abre o modal para adicionar coluna
+  const handleAddColuna = () => {
+    setNovaColunaData({ nome: '', cor: '#3B82F6' })
+    setColunaError('')
+    setColunaSuccess(false)
+    setShowAddColunaModal(true)
+  }
+
+  // Salva a nova coluna no backend
+  const handleSaveColuna = async () => {
+    if (!novaColunaData.nome.trim()) {
+      setColunaError('Digite um nome para a coluna')
+      return
+    }
+    
+    if (novaColunaData.nome.length > 50) {
+      setColunaError('O nome da coluna deve ter no máximo 50 caracteres')
+      return
+    }
+    
+    setColunaLoading(true)
+    setColunaError('')
+    
+    try {
+      const payload = {
+        nome: novaColunaData.nome,
+        cor: novaColunaData.cor,
+        posicao: colunas.length,
         quadroId: quadroId
+      }
+      
+      await createColuna(payload)
+      
+      setColunaSuccess(true)
+      
+      // Recarregar página inteira para garantir que vê a nova coluna
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
+    } catch (error: any) {
+      console.error('❌ ERRO COMPLETO:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
       })
+      setColunaError(`Erro: ${error.message || 'Falha ao criar coluna'}`)
+    } finally {
+      setColunaLoading(false)
     }
   }
 
@@ -433,7 +495,6 @@ function QuadroPage() {
     
     if (cardArrastado) {
       setActiveCard(cardArrastado)
-      console.log('🎯 Iniciando drag do card:', cardArrastado.name)
       return
     }
 
@@ -441,7 +502,6 @@ function QuadroPage() {
     const colunaArrastada = colunas.find(col => col.id === active.id)
     if (colunaArrastada) {
       setActiveColumn(colunaArrastada)
-      console.log('🎯 Iniciando drag da coluna:', colunaArrastada.nome)
     }
   }
 
@@ -453,23 +513,13 @@ function QuadroPage() {
     setActiveColumn(null)
     
     if (!over) return
-
     const activeId = active.id as string
     const overId = over.id as string
 
     // 🔄 Verificar se está reordenando colunas
     const isColumnDrag = colunas.some(col => col.id === activeId)
     
-    console.log('🔄 Debug DragEnd:', {
-      activeId,
-      overId,
-      isColumnDrag,
-      activeType: active.data.current?.type,
-      overType: over.data.current?.type
-    })
-    
-    if (isColumnDrag) {
-      // NOVA LÓGICA: Aceitar qualquer coluna como destino
+    if (isColumnDrag && over.data.current?.type === 'column') {
       let targetColumnId = overId
       
       // Se o overId é de um card, pegar a coluna do card
@@ -488,14 +538,11 @@ function QuadroPage() {
         // Reordenar colunas
         const oldIndex = colunas.findIndex(col => col.id === activeId)
         const newIndex = colunas.findIndex(col => col.id === targetColumnId)
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const newColunas = arrayMove(colunas, oldIndex, newIndex)
-        setColunas(newColunas)
         
-        // Opcional: Salvar nova ordem no backend
-        console.log('🔄 Nova ordem das colunas:', newColunas.map(c => c.nome))
-      }
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const newColunas = arrayMove(colunas, oldIndex, newIndex)
+          setColunas(newColunas)
+        }
       }
     } else if (!isColumnDrag) {
       // Lógica para mover cards
@@ -520,8 +567,6 @@ function QuadroPage() {
           ...prev,
           [activeId]: newColumnId
         }))
-        
-        console.log(`🔄 Card ${activeId} movido para coluna ${newColumnId}`)
       }
     }
   }
@@ -553,37 +598,31 @@ function QuadroPage() {
   const onOpenChat = (card: any) => {
     setSelectedChat(card)
     setShowChatModal(true)
-    console.log('Abrindo chat modal para:', card.name)
   }
   
   const onOpenOrcamento = (card: any) => {
     setSelectedChat(card)
     setShowOrcamentoSheet(true)
-    console.log('Abrindo orçamento sheet para:', card.name)
   }
   
   const onOpenAgendamento = (card: any) => {
     setSelectedChat(card)
     setShowAgendamentoSheet(true)
-    console.log('Abrindo agendamento sheet para:', card.name)
   }
   
   const onOpenTags = (card: any) => {
     setSelectedChat(card)
     setShowTagsSheet(true)
-    console.log('Abrindo tags sheet para:', card.name)
   }
   
   const onOpenAnotacoes = (card: any) => {
     setSelectedChat(card)
     setShowAnotacoesSheet(true)
-    console.log('Abrindo anotações sheet para:', card.name)
   }
   
   const onOpenTickets = (card: any) => {
     setSelectedChat(card)
     setShowTicketsSheet(true)
-    console.log('Abrindo tickets sheet para:', card.name)
   }
 
   if (loadingChats) {
@@ -661,12 +700,6 @@ function QuadroPage() {
   }
 
   const colunasComCards = mapearConversasParaColunas()
-  
-  // Debug: Verificar se as colunas têm cards
-  console.log('🎯 [KANBAN PAGE] Colunas com cards:', colunasComCards.length)
-  colunasComCards.forEach((col, index) => {
-    console.log(`📋 [KANBAN PAGE] Coluna ${index + 1} "${col.nome}": ${col.cards?.length || 0} cards`)
-  })
 
   return (
     <div 
@@ -881,6 +914,97 @@ function QuadroPage() {
       )}
 
       {/* MODAIS REAIS DA OLDPAGE */}
+
+      {/* Modal Adicionar Coluna */}
+      {showAddColunaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 shadow-xl"
+          >
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Nova Coluna
+            </h3>
+            
+            {/* Mensagens de Status */}
+            {colunaError && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+                <p className="text-sm text-red-700 dark:text-red-300">❌ {colunaError}</p>
+              </div>
+            )}
+            
+            {colunaSuccess && (
+              <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300">✅ Coluna criada com sucesso!</p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nome da Coluna
+                </label>
+                <input
+                  type="text"
+                  value={novaColunaData.nome}
+                  onChange={(e) => setNovaColunaData({ ...novaColunaData, nome: e.target.value })}
+                  disabled={colunaLoading}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  placeholder="Ex: Em Progresso"
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cor
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={novaColunaData.cor}
+                    onChange={(e) => setNovaColunaData({ ...novaColunaData, cor: e.target.value })}
+                    disabled={colunaLoading}
+                    className="w-20 h-10 rounded cursor-pointer disabled:opacity-50"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {novaColunaData.cor}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setShowAddColunaModal(false)}
+                disabled={colunaLoading}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                         text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveColuna}
+                disabled={colunaLoading}
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600
+                         disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {colunaLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar Coluna'
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
       
       {/* Agendamento Bottom Sheet */}
       {showAgendamentoSheet && selectedChat && (

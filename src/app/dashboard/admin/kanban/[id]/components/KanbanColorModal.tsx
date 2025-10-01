@@ -68,14 +68,10 @@ export default function KanbanColorModal({ isOpen, onClose }: KanbanColorModalPr
     localStorage.removeItem('kanbanColors')
     window.dispatchEvent(new Event('kanbanColorsChanged'))
   }
-
-  console.log('🎨 [KanbanColorModal] isOpen:', isOpen)
   
   if (!isOpen || typeof document === 'undefined') {
     return null
   }
-
-  console.log('🎨 [KanbanColorModal] RENDERIZANDO MODAL!')
   
   return createPortal(
     <AnimatePresence>

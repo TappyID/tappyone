@@ -28,6 +28,7 @@ import { useChatPicture } from '@/hooks/useChatPicture'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import { useAtendimentoStates } from '@/hooks/useAtendimentoStates'
 import { useFiltersData } from '@/hooks/useFiltersData'
+import { useKanbanInfo } from '@/hooks/useKanbanInfo'
 import { useAtendenteData } from '@/hooks/useAtendenteData'
 import { useIndicatorData } from '../TopChatArea/Indicators/useIndicatorData'
 import { normalizeTags } from '@/utils/tags'
@@ -186,6 +187,9 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   const [loadingLead, setLoadingLead] = useState(false)
   const [showFinalizarModal, setShowFinalizarModal] = useState(false)
   const [isFinalizando, setIsFinalizando] = useState(false)
+
+  // Buscar informações do Kanban REAL
+  const { kanbanInfo: realKanbanInfo } = useKanbanInfo(chat.id)
 
   const applyChatLeadStatus = React.useCallback((status: any) => {
     if (!status) {
@@ -711,18 +715,35 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               )
             })()}
 
-            {/* Kanban + Coluna - DADOS REAIS */}
-            {(kanbanInfo.board && kanbanInfo.column) && (
-              <div
-                className="flex items-center gap-0.5 px-0.5 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full"
-                title={`Kanban: ${kanbanInfo.board} - ${kanbanInfo.column}`}
-              >
-                <Layers className="w-1.5 h-1.5 text-blue-500" />
-                <span className="text-[8px] font-medium text-blue-600 truncate max-w-[54px]">
-                  {kanbanInfo.column}
-                </span>
-              </div>
-            )}
+            {/* Kanban + Coluna - DADOS REAIS DO HOOK */}
+            {(() => {
+              console.log('🎯 [KANBAN DEBUG]', {
+                chatId: chat.id,
+                realKanbanInfo,
+                hasBoard: !!realKanbanInfo.board,
+                hasColumn: !!realKanbanInfo.column
+              })
+              
+              // Sempre mostrar badge para debug
+              return (
+                <div
+                  className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full border-2"
+                  style={{
+                    backgroundColor: realKanbanInfo.columnColor 
+                      ? `${realKanbanInfo.columnColor}20` 
+                      : 'rgb(219 234 254)',
+                    color: realKanbanInfo.columnColor || 'rgb(37 99 235)',
+                    borderColor: realKanbanInfo.board ? 'green' : 'red'
+                  }}
+                  title={`DEBUG - Quadro: ${realKanbanInfo.board || 'NULL'}\nColuna: ${realKanbanInfo.column || 'NULL'}\nChatID: ${chat.id}`}
+                >
+                  <Layers className="w-1.5 h-1.5" style={{ color: realKanbanInfo.columnColor || 'rgb(59 130 246)' }} />
+                  <span className="text-[8px] font-medium truncate max-w-[54px]">
+                    {realKanbanInfo.column || 'SEM KANBAN'}
+                  </span>
+                </div>
+              )
+            })()}
             </div>
           </div>
 

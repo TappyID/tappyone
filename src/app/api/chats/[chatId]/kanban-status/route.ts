@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { chatId: string } }
@@ -11,27 +13,30 @@ export async function GET(
       return NextResponse.json({ error: 'Chat ID é obrigatório' }, { status: 400 })
     }
 
-    // Buscar em qual coluna do Kanban o chat está
-    const query = `
-      SELECT k.id, k.nome, k.cor 
-      FROM kanban_cards kc
-      JOIN kanban_colunas k ON k.id = kc.coluna_id
-      WHERE kc.chat_id = $1
-      ORDER BY kc.created_at DESC
-      LIMIT 1
-    `
-
-    // Simulação da consulta - substitua pela sua implementação de DB
-    // const result = await db.query(query, [chatId])
+    // Pegar token do header
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
     
-    // Por enquanto, retornar mock baseado no chatId
-    const mockKanbanStatus = {
-      id: '1',
-      nome: 'Prospecção',
-      cor: '#3b82f6'
+    if (!token) {
+      return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    return NextResponse.json(mockKanbanStatus)
+    // Fazer requisição pro backend Go
+    const response = await fetch(`${BACKEND_URL}/api/kanban/card-by-chat/${chatId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json({ error: 'Chat não está em nenhum Kanban' }, { status: 404 })
+      }
+      throw new Error(`Backend retornou ${response.status}`)
+    }
+
+    const data = await response.json()
+    
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Erro ao buscar status do Kanban:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
