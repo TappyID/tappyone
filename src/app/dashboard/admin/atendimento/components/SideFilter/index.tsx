@@ -1,18 +1,18 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react'
-import '../SideChat/ScrollbarStyles.css'
-import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Search, 
-  Filter, 
-  MessageCircle, 
-  Circle, 
-  CheckCircle2, 
-  Star, 
-  Archive, 
-  Users, 
+import React, { useState, useEffect, useRef } from "react";
+import "../SideChat/ScrollbarStyles.css";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search,
+  Filter,
+  MessageCircle,
+  Circle,
+  CheckCircle2,
+  Star,
+  Archive,
+  Users,
   EyeOff,
   User,
   Settings,
@@ -33,103 +33,126 @@ import {
   Bot,
   Flame,
   Grid3X3,
-  Phone
-} from 'lucide-react'
+  Phone,
+} from "lucide-react";
 
 // import SearchInput from './SearchInput' // Não usado mais
-import FilterTags from './FilterTags'
-import FilterFilas from './FilterFilas'
-import FilterKanban from './FilterKanban'
-import FilterTickets from './FilterTickets'
+import FilterTags from "./FilterTags";
+import FilterFilas from "./FilterFilas";
+import FilterKanban from "./FilterKanban";
+import FilterTickets from "./FilterTickets";
 // import FilterAgendamentos from './FilterAgendamentos' // REMOVIDO
-import FilterPrecos from './FilterPrecos'
-import { useKanban } from '@/hooks/useKanban'
-import { useAtendentes } from '@/hooks/useAtendentes'
-import { useTickets } from '@/hooks/useTickets'
-import { useTheme } from '@/contexts/ThemeContext'
-import Select2 from './Select2'
+import FilterPrecos from "./FilterPrecos";
+import { useKanban } from "@/hooks/useKanban";
+import { useAtendentes } from "@/hooks/useAtendentes";
+import { useTickets } from "@/hooks/useTickets";
+import { useTheme } from "@/contexts/ThemeContext";
+import Select2 from "./Select2";
 
 interface SearchOptions {
-  searchInChats: boolean
-  searchInMessages: boolean
-  searchInContacts: boolean
+  searchInChats: boolean;
+  searchInMessages: boolean;
+  searchInContacts: boolean;
 }
 
 interface SideFilterProps {
   // Search
-  searchQuery: string
-  onSearchChange: (query: string) => void
-  
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+
   // Tags Filter
-  selectedTag: string
-  onTagChange: (tag: string) => void
-  tags: Array<{ id: string; nome: string; cor?: string }>
-  
+  selectedTag: string;
+  onTagChange: (tag: string) => void;
+  tags: Array<{ id: string; nome: string; cor?: string }>;
+
   // ✅ Tags Filter (múltipla seleção)
-  selectedTagsMulti?: string[]
-  onTagsMultiChange?: (tags: string[]) => void
-  
-  // Filas Filter  
-  selectedFila: string
-  onFilaChange: (fila: string) => void
-  filas: Array<{ id: string; nome: string; cor?: string }>
-  
+  selectedTagsMulti?: string[];
+  onTagsMultiChange?: (tags: string[]) => void;
+
+  // Filas Filter
+  selectedFila: string;
+  onFilaChange: (fila: string) => void;
+  filas: Array<{ id: string; nome: string; cor?: string }>;
+  selectedFilasMulti?: string[];
+  onFilasMultiChange?: (filas: string[]) => void;
+
   // ✅ Conexões Filter (múltipla seleção)
-  selectedConexoes?: string[]
-  onConexoesChange?: (conexoes: string[]) => void
-  
+  selectedConexoes?: string[];
+  onConexoesChange?: (conexoes: string[]) => void;
+
+  // Atendentes Filter (múltipla seleção)
+  selectedAtendentes?: string[];
+  onAtendentesChange?: (atendentes: string[]) => void;
+
+  // Kanban quadros e colunas (múltipla seleção)
+  selectedQuadrosMulti?: string[];
+  onQuadrosMultiChange?: (quadros: string[]) => void;
+  selectedKanbanColunas?: string[];
+  onKanbanColunasChange?: (colunas: string[]) => void;
+
+  // Prioridades de ticket (múltipla seleção)
+  selectedTicketsMulti?: string[];
+  onTicketsMultiChange?: (prioridades: string[]) => void;
+
   // Dados dos filtros avançados
-  kanbanStatuses: Array<{ id: string; nome: string; cor?: string }>
-  ticketStatuses: Array<{ id: string; nome: string; cor?: string }>
-  priceRanges: Array<{ id: string; nome: string; valor_min?: number; valor_max?: number }>
-  selectedKanbanStatus: string
-  selectedTicketStatus: string
-  selectedPriceRange: string
-  
+  kanbanStatuses: Array<{ id: string; nome: string; cor?: string }>;
+  ticketStatuses: Array<{ id: string; nome: string; cor?: string }>;
+  priceRanges: Array<{
+    id: string;
+    nome: string;
+    valor_min?: number;
+    valor_max?: number;
+  }>;
+  selectedKanbanStatus: string;
+  selectedTicketStatus: string;
+  selectedPriceRange: string;
+
   // Status Filter
-  selectedStatusFilter: string
-  onStatusFilterChange: (status: string) => void
-  
+  selectedStatusFilter: string;
+  onStatusFilterChange: (status: string) => void;
+
   // Estados de loading
-  isLoadingTags: boolean
-  isLoadingFilas: boolean
-  isLoadingKanban: boolean
-  isLoadingTickets: boolean
-  isLoadingAtendentes: boolean
-  
+  isLoadingTags: boolean;
+  isLoadingFilas: boolean;
+  isLoadingKanban: boolean;
+  isLoadingTickets: boolean;
+  isLoadingAtendentes: boolean;
+
   // Dados para contadores
-  totalChats: number
-  unreadChats: number
-  readChats: number
-  archivedChats: number
-  groupChats: number
-  favoriteChats: number
-  hiddenChats: number
-  emAtendimentoChats: number
-  aguardandoChats: number
-  finalizadoChats: number
-  agentesIAChats: number
-  leadsQuentesChats: number
-  
+  totalChats: number;
+  unreadChats: number;
+  readChats: number;
+  archivedChats: number;
+  groupChats: number;
+  favoriteChats: number;
+  hiddenChats: number;
+  emAtendimentoChats: number;
+  aguardandoChats: number;
+  finalizadoChats: number;
+  agentesIAChats: number;
+  leadsQuentesChats: number;
+
   // Controle do filtro ativo
-  activeFilter: string
-  onFilterChange: (filter: string) => void
-  
+  activeFilter: string;
+  onFilterChange: (filter: string) => void;
+
   // Opções de busca
-  searchOptions: SearchOptions
-  onSearchOptionsChange: (options: SearchOptions) => void
-  
+  searchOptions: SearchOptions;
+  onSearchOptionsChange: (options: SearchOptions) => void;
+
   // Ordenação
-  sortBy: 'name' | 'date'
-  sortOrder: 'asc' | 'desc'
-  onSortChange: (sortBy: 'name' | 'date', sortOrder: 'asc' | 'desc') => void
-  
+  sortBy: "name" | "date";
+  sortOrder: "asc" | "desc";
+  onSortChange: (sortBy: "name" | "date", sortOrder: "asc" | "desc") => void;
+
   // Debug info
   debugInfo?: {
-    totalChatsTransformados: number
-    chatLeadsCarregados: number
-    primeirosChatLeads: any[]
-  }
+    totalChatsTransformados: number;
+    chatLeadsCarregados: number;
+    primeirosChatLeads: any[];
+  };
+
+  conversations?: any[];
 }
 
 export default function SideFilter({
@@ -143,16 +166,26 @@ export default function SideFilter({
   selectedFila,
   onFilaChange,
   filas,
+  selectedFilasMulti = [],
+  onFilasMultiChange = () => {},
   selectedConexoes = [],
   onConexoesChange = () => {},
-  selectedPriceRange = 'todos',
+  selectedAtendentes = [],
+  onAtendentesChange = () => {},
+  selectedQuadrosMulti = [],
+  onQuadrosMultiChange = () => {},
+  selectedKanbanColunas = [],
+  onKanbanColunasChange = () => {},
+  selectedTicketsMulti = [],
+  onTicketsMultiChange = () => {},
+  selectedPriceRange = "todos",
   onPriceRangeChange = () => {},
   priceRanges = [],
   kanbanStatuses = [],
-  selectedKanbanStatus = 'todos',
+  selectedKanbanStatus = "todos",
   onKanbanStatusChange = () => {},
   ticketStatuses = [],
-  selectedTicketStatus = 'todos',
+  selectedTicketStatus = "todos",
   onTicketStatusChange = () => {},
   isLoadingTags = false,
   isLoadingFilas = false,
@@ -173,7 +206,7 @@ export default function SideFilter({
   finalizadoChats = 0,
   agentesIAChats = 0,
   leadsQuentesChats = 0,
-  activeFilter = 'all',
+  activeFilter = "all",
   onFilterChange = () => {},
   // Debug props
   debugInfo,
@@ -181,175 +214,203 @@ export default function SideFilter({
   onSearchOptionsChange,
   sortBy,
   sortOrder,
-  onSortChange
+  onSortChange,
 }: SideFilterProps) {
   // Debug: log das tags recebidas
-  useEffect(() => {
-    console.log('🏷️ [SideFilter] Tags recebidas:', tags?.length || 0, tags)
-    console.log('🎯 [SideFilter] Filas recebidas:', filas?.length || 0, filas)
-  }, [tags, filas])
-
   // Estados para o novo sistema de filtros
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [showSortOptions, setShowSortOptions] = useState(false)
-  
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showSortOptions, setShowSortOptions] = useState(false);
+
   // Estados para ordenação (agora vêm como props)
-  
+
   // Estado para filtro sem fila
-  const [showOnlyWithoutQueue, setShowOnlyWithoutQueue] = useState(false)
-  
+  const [showOnlyWithoutQueue, setShowOnlyWithoutQueue] = useState(false);
+
   // Estado para controlar visibilidade das opções de busca
-  const [showSearchOptions, setShowSearchOptions] = useState(false)
-  
+  const [showSearchOptions, setShowSearchOptions] = useState(false);
+
   // Hooks para buscar dados reais - SEM MOCKS PORRA!
-  const { quadros: kanbanQuadros } = useKanban()
-  const { atendentes: atendentesReais } = useAtendentes()
-  const { tickets: ticketsReais } = useTickets()
-  
+  const { quadros: kanbanQuadros } = useKanban();
+  const { atendentes: atendentesReais } = useAtendentes();
+  const { tickets: ticketsReais } = useTickets();
+
   // Estado para conexões
-  const [conexoes, setConexoes] = useState<any[]>([])
-  const [isLoadingConexoes, setIsLoadingConexoes] = useState(false)
-  
+  const [conexoes, setConexoes] = useState<any[]>([]);
+  const [isLoadingConexoes, setIsLoadingConexoes] = useState(false);
+
   // Buscar conexões reais - MESMA API DO SIDECHAT
   useEffect(() => {
     const fetchConexoes = async () => {
-      setIsLoadingConexoes(true)
+      setIsLoadingConexoes(true);
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('/api/connections', {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/connections", {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
         if (response.ok) {
-          const data = await response.json()
-          const conexoesData = data.connections || data.data || []
+          const data = await response.json();
+          const conexoesData = data.connections || data.data || [];
           const conexoesFormatted = conexoesData.map((conn: any) => ({
             value: conn.id,
-            label: conn.nome || conn.modulation?.connectionName || `Conexão ${conn.numero}`,
+            label:
+              conn.nome ||
+              conn.modulation?.connectionName ||
+              `Conexão ${conn.numero}`,
             numero: conn.numero,
-            status: conn.status
-          }))
-          setConexoes(conexoesFormatted)
-          console.log('📞 [SideFilter] Conexões carregadas:', conexoesFormatted.length, conexoesFormatted)
-        } else {
-          console.error('❌ [SideFilter] Erro ao buscar conexões:', response.status)
+            status: conn.status,
+          }));
+          setConexoes(conexoesFormatted);
         }
-      } catch (error) {
-        console.error('❌ [SideFilter] Erro ao buscar conexões:', error)
+      } catch {
       } finally {
-        setIsLoadingConexoes(false)
+        setIsLoadingConexoes(false);
       }
-    }
-    
-    fetchConexoes()
-  }, [])
-  
+    };
+
+    fetchConexoes();
+  }, []);
+
   // Estado para armazenar colunas do quadro selecionado
-  const [kanbanColunas, setKanbanColunas] = useState<any[]>([])
-  const [selectedKanbanColuna, setSelectedKanbanColuna] = useState<string[]>([])
-  const [selectedAtendente, setSelectedAtendente] = useState<string[]>([])
-  const [selectedFiltrosEspeciais, setSelectedFiltrosEspeciais] = useState<string[]>([])
-  const [selectedConexoesMulti, setSelectedConexoesMulti] = useState<string[]>([])
-  // selectedTagsMulti agora vem via props (não precisa de estado local)
-  const [selectedFilasMulti, setSelectedFilasMulti] = useState<string[]>([])
-  const [selectedQuadrosMulti, setSelectedQuadrosMulti] = useState<string[]>([])
-  const [selectedTicketsMulti, setSelectedTicketsMulti] = useState<string[]>([])
-  
+  const [kanbanColunas, setKanbanColunas] = useState<any[]>([]);
+
   // Buscar colunas quando selecionar quadros (múltiplos)
   useEffect(() => {
     const fetchKanbanColunas = async () => {
       if (selectedQuadrosMulti.length > 0) {
         try {
-          const token = localStorage.getItem('token')
-          const allColunas: any[] = []
-          
+          const token = localStorage.getItem("token");
+          const allColunas: any[] = [];
+
           // Buscar colunas de todos os quadros selecionados
           for (const quadroId of selectedQuadrosMulti) {
             const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
               headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            })
-            
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+
             if (response.ok) {
-              const data = await response.json()
+              const data = await response.json();
               if (data.colunas) {
                 // Adicionar colunas com referência ao quadro
                 data.colunas.forEach((col: any) => {
                   allColunas.push({
                     ...col,
-                    quadroNome: data.nome || 'Quadro'
-                  })
-                })
+                    quadroNome: data.nome || "Quadro",
+                  });
+                });
               }
             }
           }
-          
-          setKanbanColunas(allColunas)
-        } catch (error) {
-          console.error('Erro ao buscar colunas:', error)
-        }
+
+          setKanbanColunas(allColunas);
+        } catch {}
       } else {
-        setKanbanColunas([])
+        setKanbanColunas([]);
+        onKanbanColunasChange([]);
       }
-    }
-    
-    fetchKanbanColunas()
-  }, [selectedQuadrosMulti])
-  
+    };
+
+    fetchKanbanColunas();
+  }, [selectedQuadrosMulti, onKanbanColunasChange]);
+
   // Opções de ordenação
   const sortOptions = [
-    { id: 'date-desc', label: 'Mais recentes primeiro', sortBy: 'date', sortOrder: 'desc', icon: ArrowDown },
-    { id: 'date-asc', label: 'Mais antigas primeiro', sortBy: 'date', sortOrder: 'asc', icon: ArrowUp },
-    { id: 'name-asc', label: 'Nome A-Z', sortBy: 'name', sortOrder: 'asc', icon: ArrowUp },
-    { id: 'name-desc', label: 'Nome Z-A', sortBy: 'name', sortOrder: 'desc', icon: ArrowDown },
-  ]
-  
-  const currentSort = sortOptions.find(opt => opt.sortBy === sortBy && opt.sortOrder === sortOrder)
-  const sortDropdownRef = useRef<HTMLDivElement>(null)
-  const sortButtonRef = useRef<HTMLButtonElement>(null)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
-  
+    {
+      id: "date-desc",
+      label: "Mais recentes primeiro",
+      sortBy: "date",
+      sortOrder: "desc",
+      icon: ArrowDown,
+    },
+    {
+      id: "date-asc",
+      label: "Mais antigas primeiro",
+      sortBy: "date",
+      sortOrder: "asc",
+      icon: ArrowUp,
+    },
+    {
+      id: "name-asc",
+      label: "Nome A-Z",
+      sortBy: "name",
+      sortOrder: "asc",
+      icon: ArrowUp,
+    },
+    {
+      id: "name-desc",
+      label: "Nome Z-A",
+      sortBy: "name",
+      sortOrder: "desc",
+      icon: ArrowDown,
+    },
+  ];
+
+  const currentSort = sortOptions.find(
+    (opt) => opt.sortBy === sortBy && opt.sortOrder === sortOrder,
+  );
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const sortButtonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    right: 0,
+  });
+
   // Calcular posição do dropdown
   const updateDropdownPosition = () => {
     if (sortButtonRef.current) {
-      const rect = sortButtonRef.current.getBoundingClientRect()
+      const rect = sortButtonRef.current.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + 4,
-        right: window.innerWidth - rect.right
-      })
+        right: window.innerWidth - rect.right,
+      });
     }
-  }
-  
+  };
+
   // Fechar dropdown quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node) &&
-          sortButtonRef.current && !sortButtonRef.current.contains(event.target as Node)) {
-        setShowSortOptions(false)
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(event.target as Node) &&
+        sortButtonRef.current &&
+        !sortButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowSortOptions(false);
       }
-    }
-    
-    if (showSortOptions) {
-      updateDropdownPosition()
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showSortOptions])
+    };
 
+    if (showSortOptions) {
+      updateDropdownPosition();
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showSortOptions]);
 
   // Definir tabs de filtros igual ao antigo
   const filterTabs = [
-    { id: 'unread', label: 'Não lidas', icon: Circle, count: unreadChats },
-    { id: 'read-no-reply', label: 'Não respondidas', icon: CheckCircle2, count: readChats },
-    { id: 'favorites', label: 'Favoritos', icon: Star, count: favoriteChats },
-    { id: 'archived', label: 'Arquivados', icon: Archive, count: archivedChats },
-    { id: 'hidden', label: 'Ocultos', icon: EyeOff, count: hiddenChats },
-  ]
+    { id: "unread", label: "Não lidas", icon: Circle, count: unreadChats },
+    {
+      id: "read-no-reply",
+      label: "Não respondidas",
+      icon: CheckCircle2,
+      count: readChats,
+    },
+    { id: "favorites", label: "Favoritos", icon: Star, count: favoriteChats },
+    {
+      id: "archived",
+      label: "Arquivados",
+      icon: Archive,
+      count: archivedChats,
+    },
+    { id: "hidden", label: "Ocultos", icon: EyeOff, count: hiddenChats },
+  ];
 
   // Modo colapsado - só mostra ícone
   if (isCollapsed) {
@@ -358,14 +419,14 @@ export default function SideFilter({
         <motion.button
           whileHover={{ scale: 1.05 }}
           onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          className="w-full p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 
+          className="w-full p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800
                      dark:hover:bg-gray-700 rounded-lg transition-colors"
           title="Filtros"
         >
           <Filter className="w-4 h-4 mx-auto text-gray-600 dark:text-gray-400" />
         </motion.button>
       </div>
-    )
+    );
   }
 
   return (
@@ -379,76 +440,82 @@ export default function SideFilter({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar conversas..."
-            className="w-full pl-10 pr-40 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 
+            className="w-full pl-10 pr-40 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200
                        dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        text-sm placeholder-gray-500 dark:placeholder-gray-400"
           />
-          
+
           {/* Loading indicator durante busca */}
-          {searchQuery.trim() && (searchOptions.searchInMessages || searchOptions.searchInContacts) && (
-            <div className="absolute right-44 top-1/2 -translate-y-1/2">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
-              />
-            </div>
-          )}
-          
+          {searchQuery.trim() &&
+            (searchOptions.searchInMessages ||
+              searchOptions.searchInContacts) && (
+              <div className="absolute right-44 top-1/2 -translate-y-1/2">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+                />
+              </div>
+            )}
+
           {/* Separador visual entre busca e filtros */}
           <div className="absolute right-36 top-1/2 -translate-y-1/2 h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-          
+
           {/* Ícones de Filtro e Ordenação */}
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {/* Ícone de Filtros Avançados */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={`p-1.5 rounded-md transition-all duration-200 ${
-                showAdvancedFilters 
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                showAdvancedFilters
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
               title="Filtros Avançados"
             >
               <Filter className="w-3.5 h-3.5" />
             </button>
-            
+
             {/* Ícone de Ordenação com Dropdown */}
             <div className="relative">
               <button
                 ref={sortButtonRef}
                 onClick={() => setShowSortOptions(!showSortOptions)}
                 className={`p-1.5 rounded-md transition-all duration-200 ${
-                  showSortOptions 
-                    ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  showSortOptions
+                    ? "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
                 title={`Ordenar por: ${currentSort?.label}`}
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
               </button>
             </div>
-            
+
             {/* Ícone de Filtro Sem Fila - AGORA CONTROLA OPÇÕES DE BUSCA */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowSearchOptions(!showSearchOptions)}
               className={`p-1.5 rounded-md transition-all duration-200 ${
-                showSearchOptions 
-                  ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' 
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                showSearchOptions
+                  ? "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
+                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
-              title={showSearchOptions ? "Ocultar opções de busca" : "Mostrar opções de busca"}
+              title={
+                showSearchOptions
+                  ? "Ocultar opções de busca"
+                  : "Mostrar opções de busca"
+              }
             >
               <motion.div
-                animate={{ 
+                animate={{
                   scale: showSearchOptions ? [1, 1.2, 1] : 1,
-                  rotate: showSearchOptions ? [0, 5, -5, 0] : 0
+                  rotate: showSearchOptions ? [0, 5, -5, 0] : 0,
                 }}
-                transition={{ 
+                transition={{
                   duration: showSearchOptions ? 0.6 : 0.2,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
               >
                 <EyeOff className="w-3.5 h-3.5" />
@@ -456,133 +523,147 @@ export default function SideFilter({
             </motion.button>
           </div>
         </div>
-        
 
         {/* Ícones de opções de busca - FORA do input - CONDICIONAL */}
         {showSearchOptions && (
-        <div className="flex items-center gap-2 mt-3 px-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Buscar em:</span>
-          
-          {/* Ícone Chats */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSearchOptionsChange({ ...searchOptions, searchInChats: !searchOptions.searchInChats })}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              searchOptions.searchInChats 
-                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
-                : 'text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-            }`}
-            title="Buscar em Chats"
-          >
-            <MessageCircle className="w-3 h-3" />
-            <span>Chats</span>
-          </motion.button>
-          
-          {/* Ícone Mensagens */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSearchOptionsChange({ ...searchOptions, searchInMessages: !searchOptions.searchInMessages })}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              searchOptions.searchInMessages 
-                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
-                : 'text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-            }`}
-            title="Buscar em Mensagens"
-          >
-            <MessageCircle className="w-3 h-3" />
-            <span>Mensagens</span>
-          </motion.button>
-          
-          {/* Ícone Contatos */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSearchOptionsChange({ ...searchOptions, searchInContacts: !searchOptions.searchInContacts })}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              searchOptions.searchInContacts 
-                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
-                : 'text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-            }`}
-            title="Buscar em Contatos (WAHA)"
-          >
-            <User className="w-3 h-3" />
-            <span>Contatos</span>
-          </motion.button>
-        </div>
+          <div className="flex items-center gap-2 mt-3 px-1">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              Buscar em:
+            </span>
+
+            {/* Ícone Chats */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() =>
+                onSearchOptionsChange({
+                  ...searchOptions,
+                  searchInChats: !searchOptions.searchInChats,
+                })
+              }
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                searchOptions.searchInChats
+                  ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                  : "text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              }`}
+              title="Buscar em Chats"
+            >
+              <MessageCircle className="w-3 h-3" />
+              <span>Chats</span>
+            </motion.button>
+
+            {/* Ícone Mensagens */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() =>
+                onSearchOptionsChange({
+                  ...searchOptions,
+                  searchInMessages: !searchOptions.searchInMessages,
+                })
+              }
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                searchOptions.searchInMessages
+                  ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                  : "text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              }`}
+              title="Buscar em Mensagens"
+            >
+              <MessageCircle className="w-3 h-3" />
+              <span>Mensagens</span>
+            </motion.button>
+
+            {/* Ícone Contatos */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() =>
+                onSearchOptionsChange({
+                  ...searchOptions,
+                  searchInContacts: !searchOptions.searchInContacts,
+                })
+              }
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                searchOptions.searchInContacts
+                  ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                  : "text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              }`}
+              title="Buscar em Contatos (WAHA)"
+            >
+              <User className="w-3 h-3" />
+              <span>Contatos</span>
+            </motion.button>
+          </div>
         )}
 
-        
+        {/* 🎯 TABS DE FILTROS PRINCIPAIS */}
+        <div className="px-0 pt-2">
+          <div className="bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div
+              className="flex gap-1 overflow-x-auto pb-1 cursor-grab active:cursor-grabbing"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                WebkitOverflowScrolling: "touch",
+              }}
+              onMouseDown={(e) => {
+                const container = e.currentTarget as HTMLDivElement;
+                const startX = e.pageX - container.offsetLeft;
+                const scrollLeft = container.scrollLeft;
+                const handleMouseMove = (e: MouseEvent) => {
+                  const x = e.pageX - container.offsetLeft;
+                  const walk = (x - startX) * 2;
+                  container.scrollLeft = scrollLeft - walk;
+                };
+                const handleMouseUp = () => {
+                  document.removeEventListener("mousemove", handleMouseMove);
+                  document.removeEventListener("mouseup", handleMouseUp);
+                };
+                document.addEventListener("mousemove", handleMouseMove);
+                document.addEventListener("mouseup", handleMouseUp);
+                e.preventDefault();
+              }}
+            >
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              {filterTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeFilter === tab.id;
 
-         
-
-      {/* 🎯 TABS DE FILTROS PRINCIPAIS */}
-      <div className="px-0 pt-2">
-        <div className="bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div 
-            className="flex gap-1 overflow-x-auto pb-1 cursor-grab active:cursor-grabbing"
-            style={{ 
-              scrollbarWidth: 'none', 
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch'
-            }}
-            onMouseDown={(e) => {
-              const container = e.currentTarget as HTMLDivElement;
-              const startX = e.pageX - container.offsetLeft;
-              const scrollLeft = container.scrollLeft;
-              const handleMouseMove = (e: MouseEvent) => {
-                const x = e.pageX - container.offsetLeft;
-                const walk = (x - startX) * 2;
-                container.scrollLeft = scrollLeft - walk;
-              };
-              const handleMouseUp = () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-              };
-              document.addEventListener('mousemove', handleMouseMove);
-              document.addEventListener('mouseup', handleMouseUp);
-              e.preventDefault();
-            }}
-          >
-            <style jsx>{`
-              div::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
-            {filterTabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeFilter === tab.id
-              
-              return (
-                <motion.button
-                  key={tab.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => onFilterChange(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-w-fit ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                  {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                return (
+                  <motion.button
+                    key={tab.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onFilterChange(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-w-fit ${
                       isActive
-                        ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
-                        : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  )}
-                </motion.button>
-              )
-            })}
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-xs ${
+                          isActive
+                            ? "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
+                            : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
 
         {/* 📊 Filtros de Status - Apenas Ícones com Tooltips */}
         <div className="bg-gray-50 dark:bg-gray-800/30 mt-2 rounded-lg p-2">
@@ -591,11 +672,11 @@ export default function SideFilter({
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('all')}
+              onClick={() => onFilterChange("all")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'all'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-400 dark:border-gray-500'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700'
+                activeFilter === "all"
+                  ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-400 dark:border-gray-500"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -604,23 +685,23 @@ export default function SideFilter({
                   {totalChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Todos Atendimentos
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-          
+
             {/* Em Atendimento */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('em_atendimento')}
+              onClick={() => onFilterChange("em_atendimento")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'em_atendimento'
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-2 border-green-400'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 border border-gray-200 dark:border-gray-700'
+                activeFilter === "em_atendimento"
+                  ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-2 border-green-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -629,23 +710,23 @@ export default function SideFilter({
                   {emAtendimentoChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Em Atendimento
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-            
+
             {/* Aguardando */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('aguardando')}
+              onClick={() => onFilterChange("aguardando")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'aguardando'
-                  ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-2 border-yellow-400'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 border border-gray-200 dark:border-gray-700'
+                activeFilter === "aguardando"
+                  ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-2 border-yellow-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -654,7 +735,7 @@ export default function SideFilter({
                   {aguardandoChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Aguardando
@@ -666,11 +747,11 @@ export default function SideFilter({
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('finalizado')}
+              onClick={() => onFilterChange("finalizado")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'finalizado'
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-2 border-blue-400'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 border border-gray-200 dark:border-gray-700'
+                activeFilter === "finalizado"
+                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-2 border-blue-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -679,23 +760,23 @@ export default function SideFilter({
                   {finalizadoChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Finalizados
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-            
+
             {/* Agente IA */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('agentes_ia')}
+              onClick={() => onFilterChange("agentes_ia")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'agentes_ia'
-                  ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 border-2 border-cyan-400'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 hover:text-cyan-600 border border-gray-200 dark:border-gray-700'
+                activeFilter === "agentes_ia"
+                  ? "bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 border-2 border-cyan-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 hover:text-cyan-600 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -704,23 +785,23 @@ export default function SideFilter({
                   {agentesIAChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Agente IA
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-            
+
             {/* Grupos */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('groups')}
+              onClick={() => onFilterChange("groups")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'groups'
-                  ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-2 border-purple-400'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 border border-gray-200 dark:border-gray-700'
+                activeFilter === "groups"
+                  ? "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-2 border-purple-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -729,25 +810,23 @@ export default function SideFilter({
                   {groupChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Grupos
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-            
-    
-              
+
             {/* Leads Quentes */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onFilterChange('leads_quentes')}
+              onClick={() => onFilterChange("leads_quentes")}
               className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
-                activeFilter === 'leads_quentes'
-                  ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-2 border-orange-400'
-                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 border border-gray-200 dark:border-gray-700'
+                activeFilter === "leads_quentes"
+                  ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-2 border-orange-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="relative">
@@ -756,14 +835,13 @@ export default function SideFilter({
                   {leadsQuentesChats}
                 </span>
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Leads Quentes
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-            
           </div>
         </div>
       </div>
@@ -799,9 +877,8 @@ export default function SideFilter({
                 label="Conexões (Múltipla Seleção)"
                 value={selectedConexoes}
                 onChange={(val) => {
-                  const valores = val as string[]
-                  onConexoesChange(valores)
-                  console.log('🔗 [SideFilter] Conexões selecionadas:', valores)
+                  const valores = val as string[];
+                  onConexoesChange(valores);
                 }}
                 options={conexoes}
                 placeholder="Selecione múltiplas conexões"
@@ -818,9 +895,8 @@ export default function SideFilter({
                 label="Tags (Múltipla Seleção)"
                 value={selectedTagsMulti}
                 onChange={(val) => {
-                  const valores = val as string[]
-                  onTagsMultiChange(valores)
-                  console.log('🏷️ [SideFilter] Tags selecionadas:', valores)
+                  const valores = val as string[];
+                  onTagsMultiChange(valores);
                 }}
                 options={tags}
                 placeholder="Selecione múltiplas tags"
@@ -836,7 +912,7 @@ export default function SideFilter({
               <Select2
                 label="Filas de Atendimento (Múltipla Seleção)"
                 value={selectedFilasMulti}
-                onChange={(val) => setSelectedFilasMulti(val as string[])}
+                onChange={(val) => onFilasMultiChange(val as string[])}
                 options={filas}
                 placeholder="Selecione múltiplas filas"
                 icon={Users}
@@ -849,11 +925,11 @@ export default function SideFilter({
               {/* Filtro de Atendentes - React Select MULTI com DADOS REAIS */}
               <Select2
                 label="Atendentes (Múltipla Seleção)"
-                value={selectedAtendente}
-                onChange={(val) => setSelectedAtendente(val as string[])}
-                options={atendentesReais.map(at => ({ 
-                  id: at.id, 
-                  nome: at.nome || 'Sem nome' 
+                value={selectedAtendentes}
+                onChange={(val) => onAtendentesChange(val as string[])}
+                options={atendentesReais.map((at) => ({
+                  id: at.id || at.nome || at.email || at.usuarioId,
+                  nome: at.nome || at.email || "Sem nome",
                 }))}
                 placeholder="Selecione múltiplos atendentes"
                 icon={User}
@@ -868,8 +944,9 @@ export default function SideFilter({
                 label="Quadros Kanban (Múltipla Seleção)"
                 value={selectedQuadrosMulti}
                 onChange={(val) => {
-                  setSelectedQuadrosMulti(val as string[])
-                  setSelectedKanbanColuna([]) // Reset colunas quando mudar quadro
+                  const valores = val as string[];
+                  onQuadrosMultiChange(valores);
+                  onKanbanColunasChange([]); // Reset colunas quando mudar quadro
                 }}
                 options={kanbanQuadros}
                 placeholder="Selecione múltiplos quadros"
@@ -883,13 +960,13 @@ export default function SideFilter({
               {/* Filtro de Colunas do Kanban - React Select MULTI com DADOS REAIS */}
               <Select2
                 label="Colunas do Kanban (Múltipla Seleção)"
-                value={selectedKanbanColuna}
-                onChange={(val) => setSelectedKanbanColuna(val as string[])}
-                options={kanbanColunas.map(col => ({ 
-                  id: col.id, 
+                value={selectedKanbanColunas}
+                onChange={(val) => onKanbanColunasChange(val as string[])}
+                options={kanbanColunas.map((col) => ({
+                  id: col.id,
                   nome: col.nome,
-                  icon: col.icone || '',
-                  cor: col.cor
+                  icon: col.icone || "",
+                  cor: col.cor,
                 }))}
                 placeholder="Selecione múltiplas colunas"
                 icon={Layers}
@@ -897,20 +974,22 @@ export default function SideFilter({
                 isMulti={true}
                 isClearable
                 isSearchable
-                isLoading={kanbanColunas.length === 0 && selectedQuadrosMulti.length > 0}
+                isLoading={
+                  kanbanColunas.length === 0 && selectedQuadrosMulti.length > 0
+                }
               />
 
               {/* Filtro de PRIORIDADE de Tickets - React Select MULTI */}
               <Select2
                 label="Prioridade de Tickets (Múltipla Seleção)"
                 value={selectedTicketsMulti}
-                onChange={(val) => setSelectedTicketsMulti(val as string[])}
+                onChange={(val) => onTicketsMultiChange(val as string[])}
                 options={[
-                  { id: 'urgente', nome: 'Urgente', icon: '🔴' },
-                  { id: 'alta', nome: 'Alta', icon: '🟠' },
-                  { id: 'media', nome: 'Média', icon: '🟡' },
-                  { id: 'baixa', nome: 'Baixa', icon: '🟢' },
-                  { id: 'sem_prioridade', nome: 'Sem Prioridade', icon: '⚪' }
+                  { id: "urgente", nome: "Urgente", icon: "🔴" },
+                  { id: "alta", nome: "Alta", icon: "🟠" },
+                  { id: "media", nome: "Média", icon: "🟡" },
+                  { id: "baixa", nome: "Baixa", icon: "🟢" },
+                  { id: "sem_prioridade", nome: "Sem Prioridade", icon: "⚪" },
                 ]}
                 placeholder="Selecione prioridades"
                 icon={Ticket}
@@ -919,7 +998,6 @@ export default function SideFilter({
                 isClearable
                 isSearchable={false}
               />
-
 
               {/* Filtro de Faixa de Preços - React Select COM DADOS REAIS */}
               <Select2
@@ -933,15 +1011,13 @@ export default function SideFilter({
                 isClearable
                 isSearchable
               />
-              
-            
 
               {/* Botão de Limpar Filtros */}
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-2 px-4 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 
+                  className="w-full py-2 px-4 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30
                              text-red-600 dark:text-red-400 rounded-lg text-sm font-medium transition-colors"
                 >
                   Limpar Todos os Filtros
@@ -963,50 +1039,56 @@ export default function SideFilter({
           />
         )}
       </AnimatePresence>
-      
+
       {/* Portal para Dropdown de Ordenação */}
-      {showSortOptions && typeof window !== 'undefined' && createPortal(
-        <AnimatePresence>
-          <motion.div
-            ref={sortDropdownRef}
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
-            style={{
-              top: dropdownPosition.top,
-              right: dropdownPosition.right
-            }}
-          >
-            <div className="p-1">
-              {sortOptions.map((option) => {
-                const IconComponent = option.icon
-                const isActive = sortBy === option.sortBy && sortOrder === option.sortOrder
-                
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => {
-                      onSortChange(option.sortBy as 'name' | 'date', option.sortOrder as 'asc' | 'desc')
-                      setShowSortOptions(false)
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                      isActive
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <IconComponent className="w-3.5 h-3.5" />
-                    <span>{option.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </motion.div>
-        </AnimatePresence>,
-        document.body
-      )}
+      {showSortOptions &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            <motion.div
+              ref={sortDropdownRef}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
+              style={{
+                top: dropdownPosition.top,
+                right: dropdownPosition.right,
+              }}
+            >
+              <div className="p-1">
+                {sortOptions.map((option) => {
+                  const IconComponent = option.icon;
+                  const isActive =
+                    sortBy === option.sortBy && sortOrder === option.sortOrder;
+
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        onSortChange(
+                          option.sortBy as "name" | "date",
+                          option.sortOrder as "asc" | "desc",
+                        );
+                        setShowSortOptions(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                        isActive
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      <IconComponent className="w-3.5 h-3.5" />
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </AnimatePresence>,
+          document.body,
+        )}
     </div>
-  )
+  );
 }

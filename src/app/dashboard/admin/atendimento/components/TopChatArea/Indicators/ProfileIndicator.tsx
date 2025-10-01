@@ -11,7 +11,7 @@ interface ProfileIndicatorProps {
 
 export default function ProfileIndicator({ chatId, onClick }: ProfileIndicatorProps) {
   if (!chatId) return null
-  
+
   return (
     <motion.button
       whileHover={{ scale: 1.15 }}
@@ -22,9 +22,9 @@ export default function ProfileIndicator({ chatId, onClick }: ProfileIndicatorPr
     >
       <div className="relative">
         <UserCircle className="w-5 h-5 transition-colors text-cyan-600" />
-        
+
         {/* Indicator dot */}
-        <motion.div 
+        <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-500 rounded-full border border-white dark:border-gray-800 animate-pulse"

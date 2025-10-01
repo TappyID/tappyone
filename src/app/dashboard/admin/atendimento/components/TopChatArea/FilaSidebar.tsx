@@ -27,15 +27,13 @@ export default function FilaSidebar({ isOpen, onClose, chatId }: FilaSidebarProp
       const response = await fetch(`/api/filas?chatId=${chatId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setFila(data.fila || null)
         setEstatisticas(data.estatisticas || null)
       }
-    } catch (error) {
-      console.error('Erro:', error)
-    } finally {
+    } catch {} finally {
       setLoading(false)
     }
   }
@@ -45,7 +43,7 @@ export default function FilaSidebar({ isOpen, onClose, chatId }: FilaSidebarProp
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-      
+
       <div className="absolute top-0 right-0 h-full w-96 bg-white shadow-xl border-l">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">

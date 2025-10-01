@@ -1,11 +1,11 @@
 'use client'
 
 import React from 'react'
-import { 
-  Image, 
-  Video, 
-  Mic, 
-  FileText, 
+import {
+  Image,
+  Video,
+  Mic,
+  FileText,
   MapPin,
   Phone,
   User,
@@ -24,11 +24,11 @@ interface LastMessageSideChatProps {
   maxLength?: number
 }
 
-export default function LastMessageSideChat({ 
-  message, 
-  maxLength = 50 
+export default function LastMessageSideChat({
+  message,
+  maxLength = 50
 }: LastMessageSideChatProps) {
-  
+
   // Se não há mensagem, retornar fallback
   if (!message) {
     return (
@@ -38,11 +38,11 @@ export default function LastMessageSideChat({
       </div>
     )
   }
-  
+
   // Função para obter ícone baseado no tipo
   const getMessageIcon = (type?: string) => {
     const iconProps = { className: "w-2.5 h-2.5 text-gray-500" }
-    
+
     switch (type) {
       case 'image': return <Image {...iconProps} />
       case 'video': return <Video {...iconProps} />
@@ -58,7 +58,7 @@ export default function LastMessageSideChat({
   // Função para obter texto baseado no tipo
   const getMessageText = (message: any): string => {
     if (!message) return 'Mensagem'
-    
+
     switch (message.type) {
       case 'video': return '🎥 Vídeo'
       case 'audio': return '🎵 Áudio'
@@ -91,15 +91,15 @@ export default function LastMessageSideChat({
 
       {/* Indicador de quem enviou */}
       <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
-        message.sender === 'agent' 
-          ? 'bg-blue-500' 
+        message.sender === 'agent'
+          ? 'bg-blue-500'
           : 'bg-gray-400'
       }`} />
 
       {/* Conteúdo da mensagem */}
       <p className={`text-[10px] truncate min-w-0 ${
-        message.isRead === false 
-          ? 'font-semibold text-gray-900 dark:text-gray-100' 
+        message.isRead === false
+          ? 'font-semibold text-gray-900 dark:text-gray-100'
           : 'text-gray-600 dark:text-gray-400'
       }`}>
         {truncatedText}

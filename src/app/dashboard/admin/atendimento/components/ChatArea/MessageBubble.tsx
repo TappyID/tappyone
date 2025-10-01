@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Check, 
+import {
+  Check,
   CheckCheck,
   Languages,
   Reply
@@ -81,7 +81,7 @@ interface MessageBubbleProps {
   }
   isLastMessage?: boolean
   showAvatar?: boolean
-  
+
   // Callbacks para ações das mensagens
   onReply?: (messageId: string) => void
   onForward?: (messageId: string) => void
@@ -90,8 +90,8 @@ interface MessageBubbleProps {
   onAIReply?: (messageId: string, content: string) => void
 }
 
-const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({ 
-  message, 
+const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
+  message,
   isLastMessage = false,
   showAvatar = false,
   onReply,
@@ -100,20 +100,20 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
   onTranslate,
   onAIReply
 }, ref) => {
-  
+
   // INVERTIDO: user = esquerda (recebe), agent = direita (envia)
   const isFromUser = message.sender !== 'user'
-  
+
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
     })
   }
 
   const getStatusIcon = () => {
     if (isFromUser) return null // Usuário não tem status de entrega
-    
+
     switch (message.status) {
       case 'sending':
         return <div className="w-3 h-3 rounded-full bg-gray-400 animate-pulse" />
@@ -132,12 +132,12 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
     if (!message.replyTo) return null
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         className={`mb-2.5 p-2.5 rounded-xl border-l-[3px] backdrop-blur-sm ${
-        isFromUser 
-          ? 'bg-white/10 border-white/40 shadow-lg' 
+        isFromUser
+          ? 'bg-white/10 border-white/40 shadow-lg'
           : 'bg-black/5 dark:bg-white/5 border-gray-400 dark:border-gray-600'
       }`}>
         <div className="flex items-start gap-2">
@@ -162,22 +162,22 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
             }}>
               {message.replyTo.type === 'image' && (
                 <>
-                  {message.replyTo.content && message.replyTo.content !== 'Imagem' 
-                    ? message.replyTo.content 
+                  {message.replyTo.content && message.replyTo.content !== 'Imagem'
+                    ? message.replyTo.content
                     : 'Imagem'}
                 </>
               )}
               {message.replyTo.type === 'audio' && (
                 <>
-                  {message.replyTo.content && message.replyTo.content !== 'Áudio' 
-                    ? message.replyTo.content 
+                  {message.replyTo.content && message.replyTo.content !== 'Áudio'
+                    ? message.replyTo.content
                     : 'Mensagem de áudio'}
                 </>
               )}
               {message.replyTo.type === 'video' && (
                 <>
-                  {message.replyTo.content && message.replyTo.content !== 'Vídeo' 
-                    ? message.replyTo.content 
+                  {message.replyTo.content && message.replyTo.content !== 'Vídeo'
+                    ? message.replyTo.content
                     : 'Vídeo'}
                 </>
               )}
@@ -211,9 +211,9 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
                   {message.replyTo.content || 'Evento'}
                 </>
               )}
-              {(!message.replyTo.type || message.replyTo.type === 'text') && 
-                (message.replyTo.content.length > 50 
-                  ? `${message.replyTo.content.substring(0, 50)}...` 
+              {(!message.replyTo.type || message.replyTo.type === 'text') &&
+                (message.replyTo.content.length > 50
+                  ? `${message.replyTo.content.substring(0, 50)}...`
                   : message.replyTo.content)
               }
             </div>
@@ -238,7 +238,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
               duration={message.metadata?.duration}
               isFromUser={isFromUser}
               caption={message.content !== 'Áudio' ? message.content : undefined}
-              onTranscribe={(audioUrl) => console.log('🎙️ Transcrever áudio:', audioUrl)}
+              onTranscribe={(audioUrl) => undefined}
             />
           </div>
         )
@@ -332,8 +332,8 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden rounded-2xl shadow-xl"
               >
-                <img 
-                  src={mediaUrl} 
+                <img
+                  src={mediaUrl}
                   alt="Imagem compartilhada"
                   className="max-w-full h-auto cursor-pointer hover:brightness-95 transition-all"
                 />
@@ -382,10 +382,10 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
 
             {/* Conteúdo da mensagem */}
             <p className="text-sm break-words">{content}</p>
-            
+
             {/* Tradução */}
             {message.translation && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 className="mt-2.5 p-2.5 rounded-xl border-l-[3px] border-blue-400 bg-gradient-to-r from-blue-50/80 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 backdrop-blur-sm shadow-sm"
@@ -417,7 +417,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
     >
       {/* Avatar do agente (só para mensagens do agente) */}
       {!isFromUser && showAvatar && (
-        <motion.div 
+        <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 self-end mb-1 shadow-lg ring-2 ring-white/20"
@@ -430,15 +430,15 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
       <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md relative">
         {/* Renderizar conteúdo baseado no tipo */}
         {message.type === 'text' ? (
-          <motion.div 
+          <motion.div
             className={`p-4 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-200 ${
-            isFromUser 
-              ? 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 text-white shadow-blue-500/30' 
+            isFromUser
+              ? 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 text-white shadow-blue-500/30'
               : 'bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100 shadow-gray-500/10 border border-gray-200/50 dark:border-gray-700/50'
           }`}
-            whileHover={{ 
-              boxShadow: isFromUser 
-                ? '0 20px 30px rgba(59, 130, 246, 0.3)' 
+            whileHover={{
+              boxShadow: isFromUser
+                ? '0 20px 30px rgba(59, 130, 246, 0.3)'
                 : '0 10px 20px rgba(0, 0, 0, 0.1)'
             }}
           >

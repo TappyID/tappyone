@@ -28,8 +28,7 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
     }
 
     try {
-      console.log('📅 [AgendamentoBottomSheet] Criando agendamento para chatId:', chatId)
-      
+
       const agendamentoData = {
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
@@ -38,23 +37,20 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
         tipo: tipo,
         observacoes: descricao.trim() || null
       }
-      
-      console.log('📅 [AgendamentoBottomSheet] Dados do agendamento:', agendamentoData)
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId || '')}/agendamentos`
       const response = await fetchApi('backend', path, {
         method: 'POST',
         body: JSON.stringify(agendamentoData)
       })
-      
+
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ [AgendamentoBottomSheet] Agendamento criado com sucesso:', result)
-        
+
         // Toaster de sucesso
         alert(`📅 Agendamento "${titulo}" criado com sucesso! Data: ${new Date(data).toLocaleDateString('pt-BR')} às ${horaInicio}`)
-        
+
         // Limpar formulário
         setTitulo('')
         setData('')
@@ -63,21 +59,16 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
         setTipo('reuniao')
         setDescricao('')
         onClose()
-        
+
         // Disparar evento personalizado para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('agendamentoCreated', { 
-          detail: { chatId, agendamento: result } 
+        window.dispatchEvent(new CustomEvent('agendamentoCreated', {
+          detail: { chatId, agendamento: result }
         }))
-        
+
       } else {
         // Capturar erro detalhado
         const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
-        console.error('❌ Erro detalhado da API:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        })
-        
+
         // Se for 401, sugerir relogin
         if (response.status === 401) {
           alert('❌ Token expirado ou inválido!\n\nFaça logout e login novamente.')
@@ -85,11 +76,9 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
           alert(`Erro ao criar agendamento: ${errorData.error || errorData.message || response.statusText}`)
         }
       }
-      
-    } catch (error) {
-      console.error('❌ Erro ao salvar agendamento:', error)
-    }
-    
+
+    } catch {}
+
     onClose()
   }
 
@@ -109,7 +98,7 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
       />
-      
+
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -119,7 +108,7 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <Calendar className="w-6 h-6 text-blue-600" />
@@ -129,7 +118,7 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4 pb-24">
@@ -185,8 +174,8 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
                     key={t.value}
                     onClick={() => setTipo(t.value)}
                     className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                      tipo === t.value 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                      tipo === t.value
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                         : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
                     }`}
                   >
@@ -213,7 +202,7 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
 
           </div>
         </div>
-        
+
         {/* Botões fixos na parte inferior */}
         <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
           <div className="flex justify-end gap-3">

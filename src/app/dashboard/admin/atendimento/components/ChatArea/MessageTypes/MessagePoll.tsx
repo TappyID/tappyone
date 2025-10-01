@@ -24,8 +24,8 @@ interface MessagePollProps {
   onVote?: (messageId: string, chatId: string, votes: string[]) => void
 }
 
-export default function MessagePoll({ 
-  question, 
+export default function MessagePoll({
+  question,
   options,
   totalVotes,
   isFromUser,
@@ -42,9 +42,9 @@ export default function MessagePoll({
 
   const handleOptionSelect = (optionId: string) => {
     if (hasVoted) return // Não permitir votar novamente
-    
+
     if (allowMultipleAnswers) {
-      setSelectedOptions(prev => 
+      setSelectedOptions(prev =>
         prev.includes(optionId)
           ? prev.filter(id => id !== optionId)
           : [...prev, optionId]
@@ -56,7 +56,7 @@ export default function MessagePoll({
 
   const handleVote = async () => {
     if (!messageId || !chatId || !onVote || selectedOptions.length === 0 || hasVoted) return
-    
+
     setIsVoting(true)
     try {
       // Converter IDs para nomes das opções para a API WAHA
@@ -64,11 +64,9 @@ export default function MessagePoll({
         const option = options.find(opt => opt.id === id)
         return option?.text || ''
       }).filter(Boolean)
-      
+
       await onVote(messageId, chatId, selectedOptionNames)
-    } catch (error) {
-      console.error('Erro ao votar:', error)
-    } finally {
+    } catch {} finally {
       setIsVoting(false)
     }
   }
@@ -81,7 +79,7 @@ export default function MessagePoll({
     <div className="space-y-2">
       {/* Container da Enquete */}
       <div className="rounded-2xl overflow-hidden max-w-md bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600">
-        
+
         {/* Header da enquete */}
         <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-4 text-white">
           <div className="flex items-center gap-3 mb-2">
@@ -121,7 +119,7 @@ export default function MessagePoll({
               >
                 {/* Barra de progresso (mostrada após votação) */}
                 {hasResults && (
-                  <div 
+                  <div
                     className="absolute left-0 top-0 bottom-0 bg-purple-500/20 rounded-lg transition-all duration-500"
                     style={{ width: `${percentage}%` }}
                   />
@@ -131,8 +129,8 @@ export default function MessagePoll({
                   <div className="flex items-center gap-3">
                     {/* Checkbox/Radio */}
                     <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                      isSelected 
-                        ? 'border-purple-500 bg-purple-500' 
+                      isSelected
+                        ? 'border-purple-500 bg-purple-500'
                         : 'border-gray-300 dark:border-gray-600'
                     } ${allowMultipleAnswers ? 'rounded' : 'rounded-full'}`}>
                       {isSelected && (
@@ -141,7 +139,7 @@ export default function MessagePoll({
                         }`} />
                       )}
                     </div>
-                    
+
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {option.text}
                     </span>
@@ -165,7 +163,7 @@ export default function MessagePoll({
               <Users className="w-4 h-4" />
               <span>{totalVotes} votos</span>
             </div>
-            
+
             {hasVoted ? (
               <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                 <div className="w-2 h-2 bg-green-500 rounded-full" />

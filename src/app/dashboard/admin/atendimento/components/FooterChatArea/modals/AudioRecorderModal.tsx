@@ -20,7 +20,7 @@ export default function AudioRecorderModal({
   const [recordingTime, setRecordingTime] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -49,43 +49,43 @@ export default function AudioRecorderModal({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
-      
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm'
       })
-      
+
       mediaRecorderRef.current = mediaRecorder
       chunksRef.current = []
-      
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
         }
       }
-      
+
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
         setAudioBlob(blob)
         setAudioUrl(URL.createObjectURL(blob))
-        
+
         // Parar stream
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop())
           streamRef.current = null
         }
       }
-      
+
       mediaRecorder.start()
       setIsRecording(true)
       setRecordingTime(0)
-      
+
       // Iniciar timer
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1)
       }, 1000)
-      
-    } catch (error) {
-      console.error('Erro ao iniciar gravação:', error)
+
+    } catch {
+
       alert('Não foi possível acessar o microfone')
     }
   }
@@ -94,7 +94,7 @@ export default function AudioRecorderModal({
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current)
         timerRef.current = null
@@ -107,17 +107,17 @@ export default function AudioRecorderModal({
     setIsPaused(false)
     setRecordingTime(0)
     setAudioBlob(null)
-    
+
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl)
       setAudioUrl(null)
     }
-    
+
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
-    
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
@@ -180,9 +180,9 @@ export default function AudioRecorderModal({
                     repeat: Infinity,
                   }}
                   className={`w-32 h-32 rounded-full flex items-center justify-center ${
-                    isRecording 
-                      ? 'bg-red-500/20' 
-                      : audioBlob 
+                    isRecording
+                      ? 'bg-red-500/20'
+                      : audioBlob
                         ? 'bg-green-500/20'
                         : 'bg-gray-100 dark:bg-gray-800'
                   }`}
@@ -193,7 +193,7 @@ export default function AudioRecorderModal({
                     <Mic className="w-12 h-12 text-gray-400" />
                   )}
                 </motion.div>
-                
+
                 {/* Tempo */}
                 <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
                   <span className="text-2xl font-mono text-gray-700 dark:text-gray-300">
@@ -205,8 +205,8 @@ export default function AudioRecorderModal({
               {/* Audio Player (quando há gravação) */}
               {audioUrl && !isRecording && (
                 <div className="w-full mt-8 mb-4">
-                  <audio 
-                    controls 
+                  <audio
+                    controls
                     src={audioUrl}
                     className="w-full"
                   />
@@ -247,7 +247,7 @@ export default function AudioRecorderModal({
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleReset}
-                      className="p-3 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 
+                      className="p-3 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300
                                dark:hover:bg-gray-700 rounded-full shadow-lg transition-all"
                       title="Descartar"
                     >
@@ -281,7 +281,7 @@ export default function AudioRecorderModal({
 
               {/* Dica */}
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-6 text-center">
-                {isRecording 
+                {isRecording
                   ? 'Gravando... Clique em parar quando terminar'
                   : audioBlob
                     ? 'Ouça o áudio e envie ou grave novamente'

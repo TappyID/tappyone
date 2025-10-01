@@ -15,11 +15,11 @@ interface FilterAgendamentosProps {
   isLoading?: boolean
 }
 
-export default function FilterAgendamentos({ 
-  selectedPeriodo, 
-  onPeriodoChange, 
-  agendamentoPeriodos, 
-  isLoading = false 
+export default function FilterAgendamentos({
+  selectedPeriodo,
+  onPeriodoChange,
+  agendamentoPeriodos,
+  isLoading = false
 }: FilterAgendamentosProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -30,7 +30,7 @@ export default function FilterAgendamentos({
       <motion.button
         whileHover={{ scale: 1.02 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 border border-gray-300 
+        className="w-full flex items-center justify-between p-3 border border-gray-300
                    dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800
                    hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         disabled={isLoading}
@@ -38,8 +38,8 @@ export default function FilterAgendamentos({
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium">
-            {isLoading ? 'Carregando...' : 
-              selectedPeriodo === 'todos' ? 'Todos os Períodos' : 
+            {isLoading ? 'Carregando...' :
+              selectedPeriodo === 'todos' ? 'Todos os Períodos' :
               selectedPeriodoData?.nome || 'Selecionar Período'
             }
           </span>
@@ -55,8 +55,8 @@ export default function FilterAgendamentos({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 
-                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg 
+            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800
+                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg
                        z-50 max-h-60 overflow-y-auto"
           >
             {/* Opção "Todos" */}
@@ -65,7 +65,7 @@ export default function FilterAgendamentos({
                 onPeriodoChange('todos')
                 setIsOpen(false)
               }}
-              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                          transition-colors flex items-center gap-2 ${
                 selectedPeriodo === 'todos' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
               }`}
@@ -82,7 +82,7 @@ export default function FilterAgendamentos({
                   onPeriodoChange(periodo.id)
                   setIsOpen(false)
                 }}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                            transition-colors flex items-center gap-2 ${
                   selectedPeriodo === periodo.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                 }`}
@@ -90,7 +90,7 @@ export default function FilterAgendamentos({
                 <Calendar className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-medium">{periodo.nome}</span>
                 {periodo.count && (
-                  <span className="ml-auto text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 
+                  <span className="ml-auto text-xs text-gray-500 bg-gray-100 dark:bg-gray-700
                                    px-2 py-1 rounded-full">
                     {periodo.count}
                   </span>

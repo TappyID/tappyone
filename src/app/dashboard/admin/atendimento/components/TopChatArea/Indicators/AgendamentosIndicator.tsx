@@ -12,7 +12,7 @@ interface AgendamentosIndicatorProps {
 
 export default function AgendamentosIndicator({ contatoId, onClick }: AgendamentosIndicatorProps) {
   const { count } = useIndicatorData(contatoId, 'agendamentos')
-  
+
   if (!contatoId) return null
 
   return (
@@ -31,10 +31,10 @@ export default function AgendamentosIndicator({ contatoId, onClick }: Agendament
         <Calendar className={`w-5 h-5 transition-colors ${
           count > 0 ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
         }`} />
-        
+
         {/* Badge com contador */}
         {count > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-blue-500 border-2 border-white dark:border-gray-800"

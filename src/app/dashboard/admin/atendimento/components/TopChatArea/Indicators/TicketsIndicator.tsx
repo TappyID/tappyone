@@ -12,7 +12,7 @@ interface TicketsIndicatorProps {
 
 export default function TicketsIndicator({ contatoId, onClick }: TicketsIndicatorProps) {
   const { count } = useIndicatorData(contatoId, 'tickets')
-  
+
   if (!contatoId) return null
 
   return (
@@ -31,10 +31,10 @@ export default function TicketsIndicator({ contatoId, onClick }: TicketsIndicato
         <Ticket className={`w-5 h-5 transition-colors ${
           count > 0 ? 'text-orange-600' : 'text-gray-400 group-hover:text-orange-600'
         }`} />
-        
+
         {/* Badge com contador */}
         {count > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-orange-500 border-2 border-white dark:border-gray-800"

@@ -20,12 +20,12 @@ interface MessageMenuProps {
   caption?: string
 }
 
-export default function MessageMenu({ 
-  title, 
+export default function MessageMenu({
+  title,
   description,
   items,
   isFromUser,
-  caption 
+  caption
 }: MessageMenuProps) {
   const [currentMenu, setCurrentMenu] = useState<MenuItem[]>(items)
   const [breadcrumb, setBreadcrumb] = useState<string[]>([title])
@@ -37,7 +37,7 @@ export default function MessageMenu({
       setBreadcrumb(prev => [...prev, item.title])
     } else {
       // Ação do item
-      console.log('Menu item selecionado:', item)
+
     }
   }
 
@@ -55,7 +55,7 @@ export default function MessageMenu({
     <div className="space-y-2">
       {/* Container do Menu */}
       <div className="rounded-2xl overflow-hidden max-w-sm bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600">
-        
+
         {/* Header do menu */}
         <div className="bg-gradient-to-r from-indigo-500 to-blue-600 p-4 text-white">
           <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export default function MessageMenu({
               )}
             </div>
           </div>
-          
+
           {/* Breadcrumb */}
           {breadcrumb.length > 1 && (
             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/20">

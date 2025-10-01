@@ -88,12 +88,9 @@ export function useFiltersData() {
       
       if (response.ok) {
         const data = await response.json()
-        console.log('🏷️ [TAGS API GO] Resposta completa:', data)
         
         // Backend GO retorna: { success: true, data: [...] }
         const rawTags = data.data || data.tags || data || []
-        console.log('🏷️ [TAGS API GO] Raw tags (total):', rawTags.length)
-        console.log('🏷️ [TAGS API GO] Raw tags completas:', rawTags)
         
         // Filtrar tags válidas e formatar
         const tagsFormatted = rawTags
@@ -105,19 +102,12 @@ export function useFiltersData() {
             count: tag.count || 0
           }))
         
-        console.log('🏷️ [TAGS] Total carregadas do backend GO:', tagsFormatted.length)
-        console.log('🏷️ [TAGS] TODAS as tags formatadas:', tagsFormatted)
-        console.log('🏷️ [TAGS] Tags incluem "Hacker"?', tagsFormatted.some(t => t.nome === 'Hacker'))
-        console.log('🏷️ [TAGS] Tags incluem "Rodrigo"?', tagsFormatted.some(t => t.nome === 'Rodrigo'))
         setTags(tagsFormatted)
       } else {
-        console.error('🏷️ [TAGS] API GO retornou erro:', response.status)
         const errorText = await response.text()
-        console.error('🏷️ [TAGS] Erro detalhe:', errorText)
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.error('❌ [TAGS] Erro ao buscar do backend GO:', error)
       // Array vazio se falhar - NÃO usar mocks
       setTags([])
     } finally {
@@ -157,7 +147,6 @@ export function useFiltersData() {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.error('Erro ao buscar filas:', error)
       setFilas([])
     } finally {
       setIsLoadingFilas(false)
@@ -193,7 +182,6 @@ export function useFiltersData() {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para kanban:', error)
       setKanbanStatuses([
         { id: '1', nome: 'Pipeline Vendas', cor: '#3B82F6', count: 18 },
         { id: '2', nome: 'Suporte Cliente', cor: '#F59E0B', count: 12 },
@@ -244,7 +232,6 @@ export function useFiltersData() {
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para tickets:', error)
       setTicketStatuses([
         { id: 'ABERTO', nome: 'Aberto', cor: '#F59E0B', count: 12 },
         { id: 'ANDAMENTO', nome: 'Em Andamento', cor: '#3B82F6', count: 8 },
@@ -312,10 +299,8 @@ export function useFiltersData() {
         allUsers.push(...adminsFormatted)
       }
       
-      console.log('👥 [useFiltersData] Atendentes + Admins carregados:', allUsers.length)
       setAtendentes(allUsers)
     } catch (error) {
-      console.error('Erro ao buscar atendentes:', error)
       setAtendentes([])
     } finally {
       setIsLoadingAtendentes(false)
@@ -347,12 +332,10 @@ export function useFiltersData() {
   // 🔥 Listener para recarregar tags quando uma nova é criada
   useEffect(() => {
     const handleTagCreated = () => {
-      console.log('🏷️ [useFiltersData] Tag criada/atualizada - recarregando lista...')
       fetchTags()
     }
 
     const handleTagDeleted = () => {
-      console.log('🗑️ [useFiltersData] Tag deletada - recarregando lista...')
       fetchTags()
     }
 

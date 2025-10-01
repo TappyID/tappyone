@@ -21,30 +21,28 @@ export default function TicketsSidebar({ isOpen, onClose, contatoId }: TicketsSi
 
   const fetchTickets = async () => {
     setLoading(true)
-    console.log('🎫 [TicketsSidebar] Buscando tickets do contato (telefone):', contatoId)
+
     try {
       // TICKETS USA TELEFONE DIRETO, NÃO UUID!
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/tickets?contato_id=${contatoId}`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`
         }
       })
-      
-      console.log('🎫 [TicketsSidebar] Status da resposta:', response.status)
-      
+
       if (response.ok) {
         const data = await response.json()
         const ticketsData = data.data || data || []
-        console.log('🎫 [TicketsSidebar] Tickets encontrados:', ticketsData)
+
         setTickets(Array.isArray(ticketsData) ? ticketsData : [])
-        console.log('🎫 [TicketsSidebar] Total de tickets:', ticketsData.length)
+
       } else {
-        console.log('🎫 [TicketsSidebar] Nenhum ticket encontrado')
+
         setTickets([])
       }
-    } catch (error) {
-      console.error('❌ [TicketsSidebar] Erro ao buscar tickets:', error)
+    } catch {
+
       setTickets([])
     } finally {
       setLoading(false)
@@ -56,7 +54,7 @@ export default function TicketsSidebar({ isOpen, onClose, contatoId }: TicketsSi
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-      
+
       <div className="absolute top-0 right-0 h-full w-96 bg-white shadow-xl border-l">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
@@ -82,11 +80,11 @@ export default function TicketsSidebar({ isOpen, onClose, contatoId }: TicketsSi
                     {ticket.status}
                   </span>
                 </div>
-                
+
                 {ticket.descricao && (
                   <p className="text-sm text-gray-600 mb-3">{ticket.descricao}</p>
                 )}
-                
+
                 <div className="flex flex-wrap gap-2">
                   <div className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
                     Prioridade: {ticket.prioridade}

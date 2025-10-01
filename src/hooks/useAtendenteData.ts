@@ -1,75 +1,78 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 
 interface AtendenteData {
-  atendente: string
-  atendenteId: number
-  filaId: number
-  status: 'aguardando' | 'em_atendimento' | 'finalizado'
+  atendente: string;
+  atendenteId: number;
+  filaId: number;
+  status: "aguardando" | "em_atendimento" | "finalizado";
 }
 
 interface UseAtendenteDataReturn {
-  atendenteData: AtendenteData | null
-  loading: boolean
-  error: string | null
-  refetch: () => void
+  atendenteData: AtendenteData | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
 }
 
-export function useAtendenteData(chatId: string | null): UseAtendenteDataReturn {
-  const [atendenteData, setAtendenteData] = useState<AtendenteData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function useAtendenteData(
+  chatId: string | null,
+): UseAtendenteDataReturn {
+  const [atendenteData, setAtendenteData] = useState<AtendenteData | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAtendenteData = async () => {
     if (!chatId) {
-      setAtendenteData(null)
-      return
+      setAtendenteData(null);
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(`http://159.65.34.199:8081/api/chats/${chatId}/atendente`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await fetch(
+        `http://159.65.34.199:8081/api/chats/${chatId}/atendente`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
       if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json()
-      
-      console.log('👤 [useAtendenteData] Dados do atendente:', data)
-      
+      const data = await response.json();
+
       setAtendenteData({
-        atendente: data.atendente || '',
+        atendente: data.atendente || "",
         atendenteId: data.atendenteId || 0,
         filaId: data.filaId || 0,
-        status: data.status || 'aguardando'
-      })
-
+        status: data.status || "aguardando",
+      });
     } catch (err) {
-      console.error('❌ [useAtendenteData] Erro ao buscar atendente:', err)
-      setError(err instanceof Error ? err.message : 'Erro desconhecido')
-      setAtendenteData(null)
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setAtendenteData(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchAtendenteData()
-  }, [chatId])
+    fetchAtendenteData();
+  }, [chatId]);
 
   return {
     atendenteData,
     loading,
     error,
-    refetch: fetchAtendenteData
-  }
+    refetch: fetchAtendenteData,
+  };
 }
 
-export default useAtendenteData
+export default useAtendenteData;

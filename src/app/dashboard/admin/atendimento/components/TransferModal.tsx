@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAtendimentoStates } from '@/hooks/useAtendimentoStates'
-import { 
-  X, 
-  Search, 
-  Users, 
-  User, 
+import {
+  X,
+  Search,
+  Users,
+  User,
   ChevronRight,
   Clock,
   CheckCircle,
@@ -66,7 +66,7 @@ export default function TransferModal({
   currentFila,
   onTransferSuccess
 }: TransferModalProps) {
-  
+
   if (!isOpen) {
     return null
   }
@@ -77,10 +77,10 @@ export default function TransferModal({
   const [transferNotes, setTransferNotes] = useState('')
   const [isTransferring, setIsTransferring] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'all' | 'online' | 'available'>('all')
-  
+
   // Hook para transferir atendimento
   const { transferirAtendimento } = useAtendimentoStates()
-  
+
   // Estados locais para evitar loop do useFiltersData
   const [realAtendentes, setRealAtendentes] = useState<any[]>([])
   const [realFilas, setRealFilas] = useState<any[]>([])
@@ -109,15 +109,15 @@ export default function TransferModal({
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           })
         ])
-        
+
         const allUsers = []
-        
+
         if (atendentesResponse.ok) {
           const atendentesData = await atendentesResponse.json()
-          
+
           // Os dados estão diretamente no array, não em .data
           const dataArray = atendentesData.data || atendentesData || []
-          
+
           const formatted = dataArray.map((user: any) => ({
             id: user.id,
             nome: user.nome,
@@ -129,7 +129,7 @@ export default function TransferModal({
           }))
           allUsers.push(...formatted)
         }
-        
+
         if (adminsResponse.ok) {
           const adminsData = await adminsResponse.json()
           const formatted = (adminsData.data || []).map((user: any) => ({
@@ -143,11 +143,11 @@ export default function TransferModal({
           }))
           allUsers.push(...formatted)
         }
-        
+
         // Adicionar usuário atual (que foi excluído pelo backend)
         if (currentUserResponse.ok) {
           const currentUserData = await currentUserResponse.json()
-          
+
           // A API retorna o usuário diretamente, não em { data: user }
           const userData = currentUserData.data || currentUserData
           if (userData && userData.id) {
@@ -164,8 +164,8 @@ export default function TransferModal({
           }
         }
         setRealAtendentes(allUsers)
-      } catch (error) {
-        console.error('Erro ao buscar atendentes:', error)
+      } catch {
+
         setRealAtendentes([])
       } finally {
         setIsLoadingAtendentes(false)
@@ -177,7 +177,7 @@ export default function TransferModal({
         const response = await fetch('/api/filas', {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
-        
+
         if (response.ok) {
           const data = await response.json()
           const formatted = (data.data || [])
@@ -190,8 +190,8 @@ export default function TransferModal({
             }))
             setRealFilas(formatted)
         }
-      } catch (error) {
-        console.error('Erro ao buscar filas:', error)
+      } catch {
+
         setRealFilas([])
       } finally {
         setIsLoadingFilas(false)
@@ -200,7 +200,7 @@ export default function TransferModal({
 
     fetchData()
   }, [isOpen]) // ← SÓ EXECUTA QUANDO MODAL ABRIR
-  
+
   const atendentes = useMemo(() => (
     realAtendentes.map(a => ({
       ...a,
@@ -220,13 +220,13 @@ export default function TransferModal({
 
   const currentAtendenteMatch = useMemo(() => {
     if (!currentAtendente) return null
-    
+
     // Se currentAtendente começa com "ID:", extrair o ID real
     if (currentAtendente.startsWith('ID:')) {
       const idPart = currentAtendente.replace('ID:', '')
       return atendentes.find(a => a.id.startsWith(idPart))
     }
-    
+
     return atendentes.find(a => a.id === currentAtendente || a.nome === currentAtendente)
   }, [currentAtendente, atendentes])
 
@@ -234,7 +234,7 @@ export default function TransferModal({
     if (!currentFila || currentFila === 'Sem fila') {
       return null
     }
-    
+
     return filas.find(f => f.id === currentFila || f.nome === currentFila)
   }, [currentFila, filas])
 
@@ -256,7 +256,6 @@ export default function TransferModal({
     const matchedFila = currentFilaMatch || (currentFila
       ? filas.find(f => f.id === currentFila || f.nome === currentFila)
       : null)
-
 
     if (matchedAtendenteId) {
       setSelectedAtendente(matchedAtendenteId)
@@ -280,14 +279,14 @@ export default function TransferModal({
     const filtered = atendentes.filter(atendente => {
       const matchesSearch = atendente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            atendente.email.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesFilter = filterStatus === 'all' || 
+
+      const matchesFilter = filterStatus === 'all' ||
                            (filterStatus === 'online' && atendente.status === 'online') ||
                            (filterStatus === 'available' && atendente.status === 'online' && atendente.atendimentosAtivos < 5)
-      
+
       return matchesSearch && matchesFilter
     })
-    
+
     return filtered
   }, [atendentes, searchTerm, filterStatus])
 
@@ -297,7 +296,7 @@ export default function TransferModal({
       fila.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       fila.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    
+
     return filtered
   }, [filas, searchTerm])
 
@@ -307,9 +306,9 @@ export default function TransferModal({
   const handleTransfer = async () => {
     const targetId = activeTab === 'atendentes' ? selectedAtendente : selectedFila
     if (!targetId) return
-    
+
     setIsTransferring(true)
-    
+
     try {
       if (activeTab === 'atendentes') {
         // Transferir para um atendente específico
@@ -318,16 +317,15 @@ export default function TransferModal({
         // Transferir para uma fila (limpar atendente atual)
         await transferirAtendimento(chatId, '', targetId, transferNotes)
       }
-      
-      
+
       // Chamar callback de sucesso se fornecido
       if (onTransferSuccess) {
         onTransferSuccess()
       }
-      
+
       onClose()
-    } catch (error) {
-      console.error('❌ Erro ao transferir:', error)
+    } catch {
+
       // TODO: Mostrar toast de erro
     } finally {
       setIsTransferring(false)
@@ -342,9 +340,9 @@ export default function TransferModal({
       busy: { color: 'bg-red-500', text: 'Ocupado' },
       away: { color: 'bg-yellow-500', text: 'Ausente' }
     }
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.offline
-    
+
     return (
       <span className="flex items-center gap-1">
         <div className={`w-2 h-2 rounded-full ${config.color}`} />
@@ -360,7 +358,7 @@ export default function TransferModal({
   }
 
   const renderAtendentesContent = () => {
-    
+
     if (isLoadingAtendentes) {
       return (
         <div className="flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
@@ -390,7 +388,7 @@ export default function TransferModal({
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600
                           flex items-center justify-center text-white font-semibold">
               {atendente.nome.split(' ').map(n => n[0]).join('').slice(0, 2)}
             </div>
@@ -408,7 +406,7 @@ export default function TransferModal({
                 {(atendente.filas || []).map((fila) => (
                   <span
                     key={`${atendente.id}-${fila}`}
-                    className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 
+                    className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800
                              text-gray-600 dark:text-gray-400 rounded"
                   >
                     {fila}
@@ -438,7 +436,7 @@ export default function TransferModal({
   }
 
   const renderFilasContent = () => {
-    
+
     if (isLoadingFilas) {
       return (
         <div className="flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
@@ -468,7 +466,7 @@ export default function TransferModal({
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div 
+            <div
               className="w-10 h-10 rounded-lg flex items-center justify-center"
               style={{ backgroundColor: `${fila.cor || '#3B82F6'}20` }}
             >
@@ -516,14 +514,13 @@ export default function TransferModal({
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
           />
 
-
           {/* Modal Sidebar */}
           <motion.div
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed left-0 top-0 h-full w-full max-w-2xl bg-white dark:bg-gray-900 
+            className="fixed left-0 top-0 h-full w-full max-w-2xl bg-white dark:bg-gray-900
                        shadow-2xl z-50 flex flex-col"
           >
             {/* Header */}
@@ -558,7 +555,7 @@ export default function TransferModal({
                     </p>
                   </div>
                 )}
-                
+
                 {currentFilaDisplay && (
                   <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
                     <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
@@ -594,7 +591,7 @@ export default function TransferModal({
                   />
                 )}
               </button>
-              
+
               <button
                 onClick={() => setActiveTab('filas')}
                 className={`flex-1 px-6 py-3 text-sm font-medium transition-colors relative
@@ -625,8 +622,8 @@ export default function TransferModal({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={`Buscar ${activeTab === 'atendentes' ? 'atendente' : 'fila'}...`}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 
-                           dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200
+                           dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500
                            focus:border-transparent"
                 />
               </div>
@@ -685,8 +682,8 @@ export default function TransferModal({
                 value={transferNotes}
                 onChange={(e) => setTransferNotes(e.target.value)}
                 placeholder="Adicione informações relevantes sobre o atendimento..."
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 
-                         dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200
+                         dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500
                          focus:border-transparent resize-none"
                 rows={3}
               />
@@ -697,17 +694,17 @@ export default function TransferModal({
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 
-                           border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 
+                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800
+                           border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50
                            dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancelar
                 </button>
-                
+
                 <button
                   onClick={handleTransfer}
                   disabled={isTransferDisabled}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700
                            transition-colors disabled:opacity-50 disabled:cursor-not-allowed
                            flex items-center justify-center gap-2"
                 >

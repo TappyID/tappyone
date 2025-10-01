@@ -19,12 +19,12 @@ interface MessageLinkPreviewProps {
   isFromUser: boolean
 }
 
-export default function MessageLinkPreview({ 
-  content, 
-  linkPreview, 
-  isFromUser 
+export default function MessageLinkPreview({
+  content,
+  linkPreview,
+  isFromUser
 }: MessageLinkPreviewProps) {
-  
+
   const handleLinkClick = () => {
     window.open(linkPreview.url, '_blank', 'noopener,noreferrer')
   }
@@ -68,9 +68,9 @@ export default function MessageLinkPreview({
           {(linkPreview.siteName || linkPreview.favicon) && (
             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               {linkPreview.favicon ? (
-                <img 
-                  src={linkPreview.favicon} 
-                  alt="" 
+                <img
+                  src={linkPreview.favicon}
+                  alt=""
                   className="w-4 h-4"
                   onError={(e) => {
                     // Se o favicon falhar, mostrar ícone genérico
@@ -118,7 +118,7 @@ export default function MessageLinkPreview({
         </div>
 
         {/* Overlay clicável */}
-        <div 
+        <div
           className="absolute inset-0 cursor-pointer"
           onClick={handleLinkClick}
           title={`Abrir ${linkPreview.url}`}

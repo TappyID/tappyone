@@ -43,7 +43,7 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
   const [isSaving, setIsSaving] = useState(false)
   const [showQuadroSelect, setShowQuadroSelect] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
-  
+
   const chatId = contatoId ? `${contatoId}@c.us` : null
   // Token - tentar pegar do localStorage ou usar o fixo que funciona
   const getToken = () => {
@@ -55,11 +55,11 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
     return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
   }
   const token = getToken()
-  
+
   // Carregar quadros do kanban
   useEffect(() => {
     if (isOpen) {
-      console.log('📋 Modal aberto, carregando quadros...')
+
       loadQuadros()
     }
   }, [isOpen])
@@ -68,35 +68,29 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
   const loadQuadros = async () => {
     try {
       setIsLoading(true)
-      console.log('📋 Buscando quadros do kanban...')
-      
+
       const response = await fetch('/api/kanban/quadros', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (response.ok) {
         const data = await response.json()
-        console.log('📋 Quadros encontrados:', data)
-        console.log('📋 Total de quadros:', data?.length || 0)
+
         setQuadros(data || [])
-        
+
         // Se tiver quadros, buscar em qual o contato está
         if (data && data.length > 0 && chatId) {
-          console.log('📋 Buscando contato nos quadros com chatId:', chatId)
+
           await findContactInQuadros(data, chatId)
-        } else if (!chatId) {
-          console.log('⚠️ Não há chatId para buscar nos quadros')
         }
       } else {
-        console.error('❌ Erro na resposta:', response.status)
+
         setQuadros([])
       }
-    } catch (error) {
-      console.error('❌ Erro ao buscar quadros:', error)
-    } finally {
+    } catch {} finally {
       setIsLoading(false)
     }
   }
@@ -110,35 +104,33 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
             'Authorization': `Bearer ${token}`
           }
         })
-        
+
         if (metaResponse.ok) {
           const metadata = await metaResponse.json()
           const cards = metadata.cards || {}
-          
+
           // Se encontrou o chat neste quadro
           if (cards[chatId]) {
-            console.log('📋 Contato encontrado no quadro:', quadro.nome)
+
             setSelectedQuadroId(quadro.id)
             await loadQuadroDetails(quadro.id)
-            
+
             const cardInfo = cards[chatId]
             setCurrentColumnId(cardInfo.colunaId)
             setCardMetadata(cards)
             return
           }
         }
-      } catch (error) {
-        console.error('Erro ao buscar metadata:', error)
-      }
+      } catch {}
     }
-    
+
     // Se não encontrou em nenhum quadro e temos quadros, selecionar o primeiro
     if (quadros.length > 0) {
       setSelectedQuadroId(quadros[0].id)
       await loadQuadroDetails(quadros[0].id)
     }
   }
-  
+
   // Carregar detalhes de um quadro específico
   const loadQuadroDetails = async (quadroId: string) => {
     try {
@@ -147,27 +139,22 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (response.ok) {
         const quadro = await response.json()
-        console.log('📋 Detalhes do quadro:', quadro)
+
         setSelectedQuadro(quadro)
       }
-    } catch (error) {
-      console.error('❌ Erro ao carregar quadro:', error)
-    }
+    } catch {}
   }
-  
+
   // Mudar coluna do contato
   const handleColumnClick = async (columnId: string) => {
     if (!selectedQuadroId || !chatId || columnId === currentColumnId) return
-    
+
     try {
       setIsSaving(true)
-      console.log('📋 Movendo para coluna:', columnId)
-      console.log('📋 ChatId:', chatId)
-      console.log('📋 QuadroId:', selectedQuadroId)
-      
+
       // Atualizar metadata
       const newMetadata = {
         ...cardMetadata,
@@ -178,21 +165,18 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
           phone: contatoId
         }
       }
-      
-      
+
       // Usar a API de movimentação de card com formato correto do Go
       const cardMovement = {
         CardID: chatId,
-        QuadroID: selectedQuadroId, 
+        QuadroID: selectedQuadroId,
         SourceColumnID: currentColumnId || columnId, // Coluna atual (de onde vem)
         TargetColumnID: columnId, // Coluna de destino (para onde vai)
         Position: 0,
         Nome: chatName || 'Contato',
         Phone: contatoId
       }
-      
-      console.log('📋 Movendo card via card-movement:', cardMovement)
-      
+
       const response = await fetch(`/api/kanban/card-movement`, {
         method: 'POST',
         headers: {
@@ -201,42 +185,38 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
         },
         body: JSON.stringify(cardMovement)
       })
-      
-      console.log('📋 Resposta do servidor:', response.status)
-      
+
       if (!response.ok) {
         const errorData = await response.text()
-        console.error('❌ Erro do servidor:', errorData)
+
       }
-      
+
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ Movido com sucesso!', result)
+
         setCurrentColumnId(columnId)
         setCardMetadata(newMetadata)
-        
+
         // Emitir evento para atualizar o indicador
-        window.dispatchEvent(new CustomEvent('kanbanUpdated', { 
+        window.dispatchEvent(new CustomEvent('kanbanUpdated', {
           detail: { contatoId, columnId, quadroId: selectedQuadroId }
         }))
-        
+
         // Recarregar página do kanban se estiver aberto
         if (window.location.pathname.includes('/kanban')) {
           window.location.reload()
         }
       }
-    } catch (error) {
-      console.error('❌ Erro ao mover:', error)
-    } finally {
+    } catch {} finally {
       setIsSaving(false)
     }
   }
-  
+
   // Mudar quadro
   const handleQuadroChange = async (quadroId: string) => {
     setSelectedQuadroId(quadroId)
     await loadQuadroDetails(quadroId)
-    
+
     // Buscar metadata do novo quadro
     try {
       const metaResponse = await fetch(`/api/kanban/${quadroId}/metadata`, {
@@ -244,11 +224,11 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (metaResponse.ok) {
         const metadata = await metaResponse.json()
         setCardMetadata(metadata.cards || {})
-        
+
         if (chatId && metadata.cards && metadata.cards[chatId]) {
           setCurrentColumnId(metadata.cards[chatId].colunaId)
         } else {
@@ -259,21 +239,19 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
           }
         }
       }
-    } catch (error) {
-      console.error('Erro ao buscar metadata do novo quadro:', error)
-    }
+    } catch {}
   }
-  
+
   // Drag and drop
   const handleDragOver = (e: React.DragEvent, columnId: string) => {
     e.preventDefault()
     setDragOverColumn(columnId)
   }
-  
+
   const handleDrop = async (e: React.DragEvent, targetColumnId: string) => {
     e.preventDefault()
     setDragOverColumn(null)
-    
+
     if (targetColumnId !== currentColumnId) {
       await handleColumnClick(targetColumnId)
     }
@@ -346,7 +324,7 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
                   <div className="relative">
                     <button
                       onClick={() => {
-                        console.log('📋 Click no select - quadros:', quadros.length, 'showQuadroSelect:', !showQuadroSelect)
+
                         setShowQuadroSelect(!showQuadroSelect)
                       }}
                       disabled={quadros.length === 0 || isLoading}
@@ -354,12 +332,12 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
                     >
                       <span className="flex items-center gap-2">
                         <LayoutDashboard className="w-4 h-4 text-gray-400" />
-                        {selectedQuadro ? selectedQuadro.nome : 
+                        {selectedQuadro ? selectedQuadro.nome :
                          quadros.length === 0 ? 'Nenhum quadro disponível' : 'Selecione um quadro...'}
                       </span>
                       <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showQuadroSelect ? 'rotate-180' : ''}`} />
                     </button>
-                    
+
                     {showQuadroSelect && quadros.length > 0 && (
                       <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         {quadros.map(quadro => (
@@ -383,7 +361,7 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
                     )}
                   </div>
                 </div>
-                
+
                 {/* Tabs das Colunas */}
                 {selectedQuadro && (
                   <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -425,12 +403,12 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
                     <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">
                       Informações do Card
                     </h3>
-                    
+
                     <motion.div
                       draggable
                       onDragEnd={(e) => {
                         // Pode implementar drag real aqui no futuro
-                        console.log('Drag ended')
+
                       }}
                       className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-700 cursor-move"
                       whileHover={{ scale: 1.02 }}
@@ -440,7 +418,7 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
                         <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                           <GripVertical className="w-4 h-4 text-gray-400" />
                         </div>
-                        
+
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <User className="w-4 h-4 text-gray-400" />
@@ -448,18 +426,18 @@ export default function KanbanModal({ isOpen, onClose, contatoId, chatName }: Ka
                               {chatName || 'Contato'}
                             </span>
                           </div>
-                          
+
                           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <div className="flex items-center gap-2">
                               <MessageSquare className="w-3 h-3" />
                               <span>{contatoId}</span>
                             </div>
-                            
+
                             <div className="flex items-center gap-2">
                               <LayoutDashboard className="w-3 h-3" />
                               <span>Quadro: {selectedQuadro.nome}</span>
                             </div>
-                            
+
                             <div className="flex items-center gap-2">
                               <Circle className="w-3 h-3" style={{ color: getColumnColor(selectedQuadro.colunas.find(c => c.id === currentColumnId)!) }} />
                               <span>Coluna: {selectedQuadro.colunas.find(c => c.id === currentColumnId)?.nome}</span>

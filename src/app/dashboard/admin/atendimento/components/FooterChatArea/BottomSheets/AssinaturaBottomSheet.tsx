@@ -35,14 +35,7 @@ export default function AssinaturaBottomSheet({ isOpen, onClose, chatId }: Assin
   }
 
   const handleSave = () => {
-    console.log('✍️ Assinatura:', { 
-      titulo, 
-      tipoDocumento, 
-      descricao, 
-      arquivo: arquivo?.name, 
-      prazoAssinatura, 
-      chatId 
-    })
+
     onClose()
   }
 
@@ -54,7 +47,7 @@ export default function AssinaturaBottomSheet({ isOpen, onClose, chatId }: Assin
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
       />
-      
+
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -64,7 +57,7 @@ export default function AssinaturaBottomSheet({ isOpen, onClose, chatId }: Assin
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <PenTool className="w-6 h-6 text-purple-600" />
@@ -77,7 +70,7 @@ export default function AssinaturaBottomSheet({ isOpen, onClose, chatId }: Assin
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4 pb-24">
@@ -113,8 +106,8 @@ export default function AssinaturaBottomSheet({ isOpen, onClose, chatId }: Assin
                   key={tipo.value}
                   onClick={() => setTipoDocumento(tipo.value)}
                   className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    tipoDocumento === tipo.value 
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700' 
+                    tipoDocumento === tipo.value
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700'
                       : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -187,7 +180,7 @@ export default function AssinaturaBottomSheet({ isOpen, onClose, chatId }: Assin
 
           </div>
         </div>
-        
+
         {/* Botões fixos na parte inferior */}
         <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
           <div className="flex justify-end gap-3">

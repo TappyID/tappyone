@@ -2,10 +2,10 @@
 
 import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  MoreHorizontal, 
-  Reply, 
-  Forward, 
+import {
+  MoreHorizontal,
+  Reply,
+  Forward,
   Heart,
   Languages,
   Bot,
@@ -41,7 +41,7 @@ export default function MessageActions({
   const [translatedMessage, setTranslatedMessage] = useState('')
   const [replyText, setReplyText] = useState('')
   const [isTranslating, setIsTranslating] = useState(false)
-  
+
   // Estados para gravação de voz no modal
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -54,31 +54,28 @@ export default function MessageActions({
     const portugueseWords = ['é', 'ã', 'ç', 'ê', 'ô', 'õ', 'á', 'à', 'â', 'í', 'ó', 'ú', 'não', 'sim', 'com', 'para', 'que', 'uma', 'um', 'de', 'do', 'da', 'em', 'por', 'mas', 'ou', 'este', 'esta', 'isso', 'você', 'muito', 'bem', 'obrigado', 'obrigada']
     const spanishWords = ['ñ', 'hola', 'cómo', 'está', 'necesito', 'ayuda', 'gracias', 'por', 'favor', 'sí', 'no', 'el', 'la', 'es', 'con', 'para', 'que', 'una', 'uno', 'de', 'del', 'en', 'pero', 'o', 'este', 'esta', 'esto', 'usted', 'muy', 'bien', 'bueno', 'buena']
     const englishWords = ['the', 'and', 'or', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'could', 'should', 'this', 'that', 'with', 'from', 'they', 'them', 'their', 'hello', 'how', 'you', 'need', 'help', 'thank', 'please', 'yes', 'very', 'good', 'well']
-    
+
     const textLower = text.toLowerCase()
-    
+
     let ptScore = portugueseWords.filter(word => textLower.includes(word)).length
-    let esScore = spanishWords.filter(word => textLower.includes(word)).length  
+    let esScore = spanishWords.filter(word => textLower.includes(word)).length
     let enScore = englishWords.filter(word => textLower.includes(word)).length
-    
+
     // Dar peso extra para caracteres especiais
     if (/[ñáéíóúü]/i.test(text)) esScore += 2
     if (/[ãçêôõàâ]/i.test(text)) ptScore += 2
-    
-    console.log('🔍 Scores de idioma:', { ptScore, esScore, enScore, text: text.substring(0, 50) })
-    
+
     if (ptScore > esScore && ptScore > enScore) return 'pt'
-    if (esScore > ptScore && esScore > enScore) return 'es'  
+    if (esScore > ptScore && esScore > enScore) return 'es'
     if (enScore > ptScore && enScore > esScore) return 'en'
-    
+
     return 'pt' // default
   }
 
   // Função para responder com IA
   const handleAIReply = async () => {
     try {
-      console.log('🤖 Gerando resposta com IA para:', messageContent.substring(0, 50))
-      
+
       // Chamar API de IA
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
@@ -99,30 +96,25 @@ export default function MessageActions({
           onAIReply?.(messageId, data.text)
         }
       }
-    } catch (error) {
-      console.error('❌ Erro ao gerar resposta IA:', error)
-    }
+    } catch {}
   }
 
   // Função para traduzir mensagem - SEMPRE para PT-BR
   const handleTranslate = async () => {
     try {
-      console.log('🌍 Traduzindo mensagem para PT-BR:', messageContent.substring(0, 50))
-      
+
       // Usar nova função de detecção de idioma
       const sourceLanguage = detectLanguage(messageContent)
-      
+
       // Se já está em português, não precisa traduzir
       if (sourceLanguage === 'pt') {
-        console.log('⚠️ Mensagem já está em português')
+
         onTranslate?.(messageId, 'Mensagem já está em português')
         return
       }
-      
-      console.log('🎯 Traduzindo para português:', sourceLanguage, '→ pt')
-      
+
       const prompt = `Traduza o seguinte texto para português brasileiro de forma natural e contextual: "${messageContent}"`
-      
+
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
@@ -138,40 +130,33 @@ export default function MessageActions({
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Tradução para PT-BR via Deepseek recebida:', data.text)
+
           // Chamar callback com a tradução
           onTranslate?.(messageId, data.text)
         }
       }
-    } catch (error) {
-      console.error('❌ Erro ao traduzir:', error)
-    }
+    } catch {}
   }
 
   // Função para abrir modal de resposta com tradução - SEMPRE traduz para PT-BR
   const handleOpenTranslateReply = async () => {
     try {
       setIsTranslating(true)
-      console.log('🌍📝 Traduzindo mensagem para PT-BR no modal:', messageContent.substring(0, 50))
-      
-      // Usar nova função de detecção de idioma  
+
+      // Usar nova função de detecção de idioma
       const sourceLanguage = detectLanguage(messageContent)
-      
-      console.log('🎯 Idioma detectado no modal:', sourceLanguage)
-      
+
       // Se já está em português, mostrar original
       if (sourceLanguage === 'pt') {
-        console.log('⚠️ Mensagem já está em português, mostrando original')
+
         setTranslatedMessage(messageContent)
         setIsTranslating(false)
         return
       }
-      
-      console.log('🎯 Traduzindo para português no modal:', sourceLanguage, '→ pt')
-      
+
       // Traduzir mensagem original SEMPRE para PT-BR usando Deepseek
       const prompt = `Traduza o seguinte texto para português brasileiro de forma natural e contextual: "${messageContent}"`
-      
+
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
@@ -187,14 +172,14 @@ export default function MessageActions({
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Tradução PT-BR via Deepseek recebida:', data.text)
+
           setTranslatedMessage(data.text)
         }
       } else {
         setTranslatedMessage('Erro na tradução')
       }
-    } catch (error) {
-      console.error('❌ Erro ao traduzir para modal:', error)
+    } catch {
+
       setTranslatedMessage('Erro na tradução')
     } finally {
       setIsTranslating(false)
@@ -207,19 +192,16 @@ export default function MessageActions({
 
     try {
       setIsTranslating(true)
-      console.log('📤🌍 Enviando resposta traduzida:', replyText)
-      
+
       // Detectar idioma da mensagem original para traduzir resposta de volta
       const replyTargetLanguage = detectLanguage(messageContent)
-      
-      console.log('🔄 Traduzindo resposta DE português PARA:', replyTargetLanguage)
-      
+
       // Traduzir resposta para o idioma original da mensagem usando Deepseek
-      const targetLangName = replyTargetLanguage === 'es' ? 'espanhol' : 
+      const targetLangName = replyTargetLanguage === 'es' ? 'espanhol' :
                            replyTargetLanguage === 'en' ? 'inglês' : 'português'
-      
+
       const prompt = `Traduza o seguinte texto do português para ${targetLangName} de forma natural e contextual: "${replyText}"`
-      
+
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
@@ -235,19 +217,17 @@ export default function MessageActions({
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Resposta traduzida via Deepseek:', data.text)
+
           // Enviar resposta traduzida
           onAIReply?.(messageId, data.text)
-          
+
           // Fechar modal e limpar campos
           setShowTranslateReply(false)
           setReplyText('')
           setTranslatedMessage('')
         }
       }
-    } catch (error) {
-      console.error('❌ Erro ao enviar resposta traduzida:', error)
-    } finally {
+    } catch {} finally {
       setIsTranslating(false)
     }
   }
@@ -259,79 +239,73 @@ export default function MessageActions({
       const mediaRecorder = new MediaRecorder(stream)
       mediaRecorderRef.current = mediaRecorder
       audioChunksRef.current = []
-      
+
       mediaRecorder.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data)
       }
-      
+
       mediaRecorder.onstop = async () => {
         // Tentar diferentes formatos para compatibilidade
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
           ? 'audio/webm;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/webm') 
+          : MediaRecorder.isTypeSupported('audio/webm')
           ? 'audio/webm'
           : 'audio/ogg'
-          
+
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
         await transcribeAudio(audioBlob)
-        
+
         // Parar todas as tracks do stream
         stream.getTracks().forEach(track => track.stop())
       }
-      
+
       mediaRecorder.start()
       setIsRecording(true)
-      console.log('🎙️ Gravação iniciada no modal de tradução')
-    } catch (error) {
-      console.error('❌ Erro ao iniciar gravação:', error)
+
+    } catch {
+
       alert('Não foi possível acessar o microfone. Verifique as permissões.')
     }
   }
-  
+
   const stopVoiceRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      console.log('🛑 Gravação parada')
+
     }
   }
-  
+
   const transcribeAudio = async (audioBlob: Blob) => {
     try {
       setIsTranscribing(true)
-      console.log('🔄 Transcrevendo áudio para texto...')
-      
+
       const formData = new FormData()
       // Usar extensão baseada no tipo de mídia
-      const extension = audioBlob.type.includes('webm') ? 'webm' : 
+      const extension = audioBlob.type.includes('webm') ? 'webm' :
                        audioBlob.type.includes('ogg') ? 'ogg' : 'wav'
       formData.append('audio', audioBlob, `recording.${extension}`)
-      
+
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Transcrição recebida:', data.text)
-          
+
           // Adicionar texto transcrito ao campo de resposta
           setReplyText(prevText => {
             return prevText ? `${prevText} ${data.text}` : data.text
           })
         }
-      } else {
-        console.error('❌ Erro na resposta da API:', response.status)
       }
-    } catch (error) {
-      console.error('❌ Erro ao transcrever áudio:', error)
-    } finally {
+    } catch {} finally {
       setIsTranscribing(false)
     }
   }
-  
+
   const toggleVoiceRecording = () => {
     if (isRecording) {
       stopVoiceRecording()
@@ -344,12 +318,11 @@ export default function MessageActions({
   const handleGenerateAIResponse = async () => {
     try {
       setIsGeneratingAI(true)
-      console.log('🤖 Gerando resposta IA em PT-BR para:', translatedMessage || messageContent)
-      
+
       // Usar mensagem traduzida (em português) como contexto
       const messageForContext = translatedMessage || messageContent
       const prompt = `Gere uma resposta profissional, amigável e útil em português brasileiro para esta mensagem: "${messageForContext}"`
-      
+
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
@@ -365,17 +338,12 @@ export default function MessageActions({
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Resposta IA gerada em PT-BR:', data.text)
-          
+
           // Adicionar resposta da IA ao campo (já em português)
           setReplyText(data.text)
         }
-      } else {
-        console.error('❌ Erro na resposta da API de IA:', response.status)
       }
-    } catch (error) {
-      console.error('❌ Erro ao gerar resposta com IA:', error)
-    } finally {
+    } catch {} finally {
       setIsGeneratingAI(false)
     }
   }
@@ -399,7 +367,7 @@ export default function MessageActions({
       }
     },
     {
-      id: 'forward', 
+      id: 'forward',
       label: 'Encaminhar',
       icon: Forward,
       onClick: () => {
@@ -581,7 +549,7 @@ export default function MessageActions({
                     rows={6}
                     autoFocus={!isRecording}
                   />
-                  
+
                   {/* Botões de Ação */}
                   <div className="absolute bottom-3 right-3 flex gap-2">
                     {/* Botão de IA */}
@@ -589,12 +557,12 @@ export default function MessageActions({
                       onClick={handleGenerateAIResponse}
                       disabled={isGeneratingAI || isTranscribing || isRecording}
                       className={`p-2 rounded-full transition-all ${
-                        isGeneratingAI 
+                        isGeneratingAI
                           ? 'bg-blue-500 hover:bg-blue-600 text-white'
                           : 'bg-blue-500 hover:bg-blue-600 text-white'
                       }`}
                       title={
-                        isGeneratingAI 
+                        isGeneratingAI
                           ? 'Gerando resposta...'
                           : 'Gerar resposta com IA'
                       }
@@ -605,22 +573,22 @@ export default function MessageActions({
                         <Bot className="w-4 h-4" />
                       )}
                     </button>
-                    
+
                     {/* Botão de Microfone */}
                     <button
                       onClick={toggleVoiceRecording}
                       disabled={isTranscribing || isGeneratingAI}
                       className={`p-2 rounded-full transition-all ${
-                        isRecording 
-                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
+                        isRecording
+                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
                           : isTranscribing
                             ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
                             : 'bg-purple-500 hover:bg-purple-600 text-white'
                       }`}
                       title={
-                        isRecording 
-                          ? 'Parar gravação' 
-                          : isTranscribing 
+                        isRecording
+                          ? 'Parar gravação'
+                          : isTranscribing
                             ? 'Transcrevendo...'
                             : 'Falar resposta'
                       }
@@ -635,7 +603,7 @@ export default function MessageActions({
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Indicador de status */}
                 {(isRecording || isTranscribing || isGeneratingAI) && (
                   <div className="mt-2 flex items-center gap-2 text-sm">

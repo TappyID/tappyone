@@ -11,16 +11,16 @@ interface ButtonRatingProps {
   showBadge?: boolean
 }
 
-export default function ButtonRating({ 
-  rating, 
-  onClick, 
+export default function ButtonRating({
+  rating,
+  onClick,
   type = 'star',
-  showBadge = true 
+  showBadge = true
 }: ButtonRatingProps) {
   if (!rating || rating === 0) return null
 
   const IconComponent = type === 'heart' ? Heart : Star
-  
+
   // Cores baseadas no rating
   const getRatingColor = (rating: number) => {
     if (rating >= 4.5) return 'text-green-500 bg-green-100'

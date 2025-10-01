@@ -13,12 +13,12 @@ interface FooterChatAreaProps {
   onAgentClick?: () => void
   onIAClick?: () => void
   onRespostaRapidaClick?: () => void
-  
+
   // Typing e Seen
   onStartTyping?: () => void
   onStopTyping?: () => void
   onMarkAsSeen?: (messageId: string) => void
-  
+
   // Novos handlers para envio (compatíveis com page.tsx)
   onSendContact?: (contactsData: any) => void
   onSendLocation?: (locationData: any) => void
@@ -26,18 +26,18 @@ interface FooterChatAreaProps {
   onSendList?: (listData: any) => void
   onSendEvent?: (eventData: any) => void
   onSendMedia?: (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => Promise<void>
-  
+
   // Estados
   disabled?: boolean
   isTyping?: boolean
   enableSignature?: boolean // Controla se deve adicionar assinatura automática
-  
+
   // Chat selecionado
   selectedChat?: {
     id: string
     name: string
   }
-  
+
   // Estado de resposta
   replyingTo?: {
     messageId: string
@@ -73,7 +73,7 @@ export default function FooterChatArea({
   replyingTo,
   onCancelReply
 }: FooterChatAreaProps) {
-  
+
   // Não mostrar se não há chat selecionado
   if (!selectedChat) {
     return null
@@ -82,18 +82,18 @@ export default function FooterChatArea({
   // Função para obter nome do admin logado
   const getAdminName = () => {
     // Tentar pegar do localStorage (diferentes possibilidades)
-    const userName = localStorage.getItem('userName') || 
+    const userName = localStorage.getItem('userName') ||
                     localStorage.getItem('user_name') ||
                     localStorage.getItem('name')
-    
+
     if (userName) return userName
-    
+
     // Tentar pegar do sessionStorage
     const sessionName = sessionStorage.getItem('userName') ||
                        sessionStorage.getItem('user_name')
-    
+
     if (sessionName) return sessionName
-    
+
     // Fallback para um nome padrão
     return 'Rodrigo TappyOne'
   }
@@ -101,23 +101,16 @@ export default function FooterChatArea({
   // Função para adicionar assinatura do admin na mensagem
   const handleSendMessageWithSignature = (content: string, type?: 'text') => {
     let finalMessage = content
-    
+
     // Só adicionar assinatura se estiver habilitada
     if (enableSignature) {
       const adminName = getAdminName()
-      
+
       // Adicionar assinatura no início com formatação de citação + negrito do WhatsApp
       finalMessage = `> *${adminName}*\n\n${content}`
-      
-      console.log('📤 Enviando mensagem com assinatura:', { 
-        original: content, 
-        withSignature: finalMessage,
-        adminName 
-      })
-    } else {
-      console.log('📤 Enviando mensagem sem assinatura:', content)
+
     }
-    
+
     onSendMessage(finalMessage, type)
   }
 
@@ -146,14 +139,13 @@ export default function FooterChatArea({
         return onSendLocation(locationData)
       } : undefined}
       onSendPoll={onSendPoll ? async (name: string, options: string[], multipleAnswers: boolean) => {
-        console.log('📊 FooterChatArea - Dados da enquete recebidos:', { name, options, multipleAnswers })
+
         const pollData = { name, options, multipleAnswers }
-        console.log('📊 FooterChatArea - pollData formatado:', pollData)
+
         return onSendPoll(pollData)
       } : undefined}
       onSendMenu={onSendList ? async (title: string, description: string, options: string[]) => {
-        console.log('🔗 FooterChatArea - Dados do menu recebidos:', { title, description, options })
-        
+
         // Formato correto para WAHA API sendList (igual ao CURL que funcionou)
         const listData = {
           title: title || 'Menu Interativo', // ✅ Título da mensagem (obrigatório)
@@ -171,24 +163,21 @@ export default function FooterChatArea({
             }
           ]
         }
-        
-        console.log('🔗 FooterChatArea - listData formatado para WAHA:', listData)
+
         return onSendList(listData)
       } : undefined}
       onSendEvent={onSendEvent ? async (title: string, dateTime: string) => {
-        console.log('📅 FooterChatArea - Dados do evento recebidos:', { title, dateTime })
-        
+
         // Converter data para timestamp Unix (segundos desde 1970)
         const startTime = dateTime ? Math.floor(new Date(dateTime).getTime() / 1000) : Math.floor(Date.now() / 1000)
-        
-        const eventData = { 
+
+        const eventData = {
           name: title || 'Evento sem título',
           startTime: startTime,
           isCanceled: false,
           extraGuestsAllowed: true
         }
-        
-        console.log('📅 FooterChatArea - eventData formatado para WAHA:', eventData)
+
         return onSendEvent(eventData)
       } : undefined}
       onSendMedia={onSendMedia}

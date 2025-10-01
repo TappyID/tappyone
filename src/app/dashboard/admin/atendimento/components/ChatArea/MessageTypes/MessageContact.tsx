@@ -13,15 +13,15 @@ interface MessageContactProps {
   caption?: string
 }
 
-export default function MessageContact({ 
-  name, 
+export default function MessageContact({
+  name,
   phoneNumber,
   email,
   organization,
   isFromUser,
-  caption 
+  caption
 }: MessageContactProps) {
-  
+
   const handleCall = () => {
     if (phoneNumber) {
       window.open(`tel:${phoneNumber}`, '_self')

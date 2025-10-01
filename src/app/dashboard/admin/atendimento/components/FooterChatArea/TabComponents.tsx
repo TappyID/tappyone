@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { 
+import {
   Menu,
   BarChart3,
   MapPin,
@@ -22,22 +22,22 @@ import {
 // ======================
 // COMPONENTE DE TAB
 // ======================
-export const TabButton = ({ 
-  active, 
-  onClick, 
-  children 
-}: { 
-  active: boolean, 
-  onClick: () => void, 
-  children: React.ReactNode 
+export const TabButton = ({
+  active,
+  onClick,
+  children
+}: {
+  active: boolean,
+  onClick: () => void,
+  children: React.ReactNode
 }) => (
   <motion.button
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
     onClick={onClick}
     className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-      active 
-        ? 'bg-blue-500 text-white' 
+      active
+        ? 'bg-blue-500 text-white'
         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
     }`}
   >
@@ -121,7 +121,7 @@ export const VideoButton = ({ onClick }: { onClick?: () => void }) => (
 )
 
 // ======================
-// AÇÕES DO SISTEMA  
+// AÇÕES DO SISTEMA
 // ======================
 export const AgendamentoButton = ({ onClick }: { onClick?: () => void }) => (
   <motion.button
@@ -208,7 +208,7 @@ export const AtendenteButton = ({ onClick }: { onClick?: () => void }) => (
 )
 
 // ======================
-// NOVOS BOTÕES WHATSAPP  
+// NOVOS BOTÕES WHATSAPP
 // ======================
 export const AudioWhatsappButton = ({ onClick }: { onClick?: () => void }) => (
   <motion.button

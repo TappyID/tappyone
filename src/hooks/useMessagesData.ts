@@ -112,7 +112,6 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       // Buscar mensagens com paginação otimizada (5 iniciais, depois 20)
       const limit = offset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT
       
-      console.log(`🔄 Buscando ${limit} mensagens (offset: ${offset})`)
       
       // CRITICAL: Force HTTPS proxy for production
       const isProduction = typeof window !== 'undefined' && (
@@ -127,10 +126,8 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
         : 'http://159.65.34.199:3001'
       
       // Critical debug log
-      console.log('🔐 [v3.0] useMessagesData - isProduction:', isProduction, 'baseUrl:', baseUrl, 'hostname:', window.location.hostname)
       
       const url = `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`
-      console.log('🔗 [v3.0] Fetching URL:', url)
       
       const response = await fetch(url, {
         headers: {
@@ -143,9 +140,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       }
 
       const data = await response.json()
-      console.log('📨 Mensagens carregadas:', data.length, 'para chat', chatId)
       
-      console.log(`📊 Retornado: ${data.length} mensagens de ${limit} solicitadas`)
       
       // Se retornou a quantidade completa solicitada, provavelmente há mais mensagens
       // Se retornou menos que solicitado, chegamos ao fim
@@ -157,19 +152,15 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
         // No primeiro carregamento, estimar total
         const estimatedTotal = hasMoreMessages ? data.length * 3 : data.length
         setTotalMessages(estimatedTotal)
-        console.log(`📊 Total estimado: ${estimatedTotal} mensagens`)
       } else if (append) {
         // Ao carregar mais, atualizar estimativa
         const currentTotal = messages.length + data.length
         const newEstimate = hasMoreMessages ? currentTotal * 2 : currentTotal
         setTotalMessages(newEstimate)
-        console.log(`📊 Total atualizado: ${newEstimate} mensagens`)
       }
       
       if (hasMoreMessages) {
-        console.log(`🔄 Há mais mensagens: carregadas ${data.length}/${limit} (completo)`)
       } else {
-        console.log(`🏁 Fim das mensagens: carregadas ${data.length}/${limit} (incompleto)`)
       }
       
       if (data.length === 0) {
@@ -180,7 +171,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       // Log detalhado para debug de tipos específicos
       data.forEach((msg: any, index: number) => {
         if (index < 5) { // Só primeiras 5 para não spam
-          console.log(`🔍 Mensagem ${index}:`, {
+          console.log(`📨 Mensagem ${index}:`, {
             hasMedia: msg.hasMedia,
             body: msg.body,
             processedType: msg.processedType,
@@ -202,7 +193,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
         
         // Debug do tipo detectado
         if (detectedType !== 'text') {
-          console.log(`🎯 Tipo detectado: ${detectedType} para mensagem:`, {
+          console.log('📝 Tipo detectado:', {
             id: msg.id,
             body: msg.body,
             hasMedia: msg.hasMedia,
@@ -214,7 +205,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
         // Debug completo da mensagem para entender estrutura de reply
         if (msg.body?.includes('respondend') || msg.caption?.includes('respondend') || 
             Object.keys(msg).some(key => key.toLowerCase().includes('quot') || key.toLowerCase().includes('reply'))) {
-          console.log('🔍 Mensagem com possível reply - estrutura completa:', {
+          console.log('🔍 Mensagem com reply:', {
             msgId: msg.id,
             keys: Object.keys(msg),
             msg: JSON.stringify(msg, null, 2)
@@ -286,7 +277,7 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
             type: msgType
           }
           
-          console.log('📨 Reply detectado:', {
+          console.log('✅ Reply processado:', {
             messageId: msg.id,
             quotedStructure: Object.keys(quotedMsg),
             replyTo: replyToData
@@ -306,12 +297,10 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
         }
       })
       
-      console.log('🔄 Mensagens transformadas:', transformedMessages.slice(0, 2)) // Debug das mensagens processadas
       
       // Debug específico para mensagens com reply
       const messagesWithReply = transformedMessages.filter(m => m.replyTo)
       if (messagesWithReply.length > 0) {
-        console.log('📨 Mensagens com reply encontradas:', messagesWithReply.length, messagesWithReply)
       }
 
       if (append) {
@@ -323,7 +312,6 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       }
       
     } catch (err) {
-      console.error('Erro ao buscar mensagens:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       setMessages([])
     } finally {
@@ -332,24 +320,19 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
   }
 
   const loadMore = () => {
-    console.log('🔄 LoadMore chamado:', { chatId, loading, hasMore, currentMessages: messages.length })
     
     if (!chatId) {
-      console.log('❌ LoadMore: Sem chatId')
       return
     }
     if (loading) {
-      console.log('❌ LoadMore: Já carregando')
       return  
     }
     if (!hasMore) {
-      console.log('❌ LoadMore: Não há mais mensagens')
       return
     }
     
     // Usar o número real de mensagens como offset
     const newOffset = messages.length
-    console.log('✅ LoadMore: Carregando mais mensagens com offset', newOffset)
     fetchMessages(chatId, newOffset, true)
   }
 
@@ -384,11 +367,9 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
       
       // Debug log para polling
-      console.log('🔄 [v3.0] Polling - isProduction:', isProduction, 'baseUrl:', baseUrl, 'hostname:', window.location.hostname)
       
       // Buscar apenas as 5 mensagens mais recentes para verificar mudanças de status
       const pollingUrl = `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`
-      console.log('🔗 [v3.0] Polling URL:', pollingUrl)
       
       fetch(pollingUrl, {
         headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
@@ -433,7 +414,6 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
           
           // 3. Se há mensagens novas, adicionar ao FINAL da lista (mais recentes)
           if (newMessages.length > 0) {
-            console.log('🆕 Novas mensagens detectadas:', newMessages.length)
             // Ordenar por timestamp para garantir ordem correta
             const allMessages = [...updatedExisting, ...newMessages]
               .sort((a, b) => a.timestamp - b.timestamp)
@@ -443,7 +423,6 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
           return updatedExisting
         })
       })
-      .catch(error => console.log('Status polling error:', error))
     }, 5000)
 
     // Cleanup

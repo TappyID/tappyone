@@ -20,37 +20,28 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
   const [ticketsExistentes, setTicketsExistentes] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
-  console.log('🎫 [TicketBottomSheet] Renderizado com chatId:', chatId)
-
   // 🚀 BUSCAR TICKETS ESPECÍFICOS DO CHAT
   const fetchTickets = useCallback(async () => {
     if (!chatId) return
-    
+
     try {
       setLoading(true)
-      console.log('🎫 [TicketBottomSheet] Buscando tickets para chatId:', chatId)
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId)}/tickets`
-      console.log('🌐 [TicketBottomSheet] Path backend:', path)
-      
+
       const response = await fetchApi('backend', path)
-      
+
       if (!response.ok) {
-        console.log('🎫 [TicketBottomSheet] Erro ao buscar tickets:', response.status)
         setTicketsExistentes([])
         return
       }
-      
+
       const data = await response.json()
       const ticketsData = Array.isArray(data) ? data : (data.data || [])
-      
-      console.log('🎫 [TicketBottomSheet] Resposta completa da API:', data)
-      console.log('🎫 [TicketBottomSheet] Total de tickets retornados:', ticketsData.length)
-      
+
       setTicketsExistentes(ticketsData)
-    } catch (error) {
-      console.error('❌ [TicketBottomSheet] Erro ao buscar tickets:', error)
+    } catch {
       setTicketsExistentes([])
     } finally {
       setLoading(false)
@@ -95,39 +86,31 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
     }
 
     try {
-      console.log('🎫 [TicketBottomSheet] Criando ticket para chatId:', chatId)
-      
+
       // Gerar número único do ticket
       const ticketNumber = `TKT-${Date.now()}`
-      
+
       const ticketData = {
         titulo: titulo.trim(),
         descricao: descricao.trim(),
         prioridade: prioridade,
         categoria: categoria
       }
-      
-      console.log('🎫 [TicketBottomSheet] Dados do ticket:', ticketData)
-      console.log('🎫 [TicketBottomSheet] ChatId original:', chatId)
-      console.log('🎫 [TicketBottomSheet] ChatId codificado:', encodeURIComponent(chatId || ''))
-      console.log('🎫 [TicketBottomSheet] Token:', localStorage.getItem('token'))
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId || '')}/tickets`
-      console.log('🎫 [TicketBottomSheet] Path completo:', path)
-      
+
       const response = await fetchApi('backend', path, {
         method: 'POST',
         body: JSON.stringify(ticketData)
       })
-      
+
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ [TicketBottomSheet] Ticket criado com sucesso:', result)
-        
+
         // Toaster de sucesso
         alert(`🎫 Ticket "${titulo}" criado com sucesso! Prioridade: ${prioridade.toUpperCase()}`)
-        
+
         // Limpar formulário
         setTitulo('')
         setDescricao('')
@@ -135,22 +118,20 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
         setCategoria('suporte')
         setStatus('aberto')
         onClose()
-        
+
         // Disparar evento personalizado para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('ticketCreated', { 
-          detail: { chatId, ticket: result } 
+        window.dispatchEvent(new CustomEvent('ticketCreated', {
+          detail: { chatId, ticket: result }
         }))
         // Recarregar tickets
         fetchTickets()
-        
+
       } else {
         const errorData = await response.json().catch(() => null)
-        console.error('❌ [TicketBottomSheet] Erro ao criar ticket:', response.status, errorData)
         alert(`❌ Erro ao criar ticket: ${errorData?.error || response.statusText}`)
       }
-      
+
     } catch (error) {
-      console.error('❌ [TicketBottomSheet] Erro ao salvar ticket:', error)
       alert(`❌ Erro ao salvar ticket: ${error.message}`)
     }
   }
@@ -158,7 +139,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
   // Deletar ticket
   const handleDeletarTicket = async (ticketId: string) => {
     if (!confirm('Deseja realmente deletar este ticket?')) return
-    
+
     try {
       const token = localStorage.getItem('token')
       const response = await fetch(`http://159.65.34.199:8081/api/tickets/${ticketId}`, {
@@ -167,21 +148,16 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (response.ok) {
-        console.log('✅ Ticket deletado com sucesso!')
         fetchTickets() // Recarregar tickets
-        
+
         // Disparar evento para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('ticketDeleted', { 
-          detail: { ticketId } 
+        window.dispatchEvent(new CustomEvent('ticketDeleted', {
+          detail: { ticketId }
         }))
-      } else {
-        console.error('❌ Erro ao deletar ticket:', response.status)
       }
-    } catch (error) {
-      console.error('❌ Erro ao deletar ticket:', error)
-    }
+    } catch {}
   }
 
   return (
@@ -192,7 +168,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
       />
-      
+
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -202,7 +178,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <Ticket className="w-6 h-6 text-red-600" />
@@ -212,7 +188,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4 pb-24">
@@ -242,7 +218,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">Status</label>
               <div className="grid grid-cols-2 gap-2">
@@ -253,8 +229,8 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                       key={s.value}
                       onClick={() => setStatus(s.value as any)}
                       className={`p-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
-                        status === s.value 
-                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20' 
+                        status === s.value
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                           : 'border-gray-200 dark:border-gray-600'
                       }`}
                     >
@@ -277,8 +253,8 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                   key={p.value}
                   onClick={() => setPrioridade(p.value as any)}
                   className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    prioridade === p.value 
-                      ? `border-current ${p.bg} ${p.color}` 
+                    prioridade === p.value
+                      ? `border-current ${p.bg} ${p.color}`
                       : 'border-gray-200 dark:border-gray-600 text-gray-600'
                   }`}
                 >
@@ -309,7 +285,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">
               Tickets Existentes ({ticketsExistentes.length})
             </h3>
-            
+
             {loading && ticketsExistentes.length === 0 ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
@@ -321,7 +297,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                   const statusOption = statusOptions.find(s => s.value === ticket.status?.toLowerCase())
                   const StatusIcon = statusOption?.icon || AlertCircle
                   const prioridadeOption = prioridades.find(p => p.value === ticket.prioridade?.toLowerCase())
-                  
+
                   return (
                     <motion.div
                       key={ticket.id}
@@ -353,7 +329,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      
+
                       <div className="flex items-center gap-4 mt-3">
                         {/* Status */}
                         <div className="flex items-center gap-1">
@@ -362,14 +338,14 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                             {ticket.status?.replace('_', ' ') || 'Aberto'}
                           </span>
                         </div>
-                        
+
                         {/* Prioridade */}
                         <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                           prioridadeOption?.bg || 'bg-gray-50'
                         } ${prioridadeOption?.color || 'text-gray-600'}`}>
                           {ticket.prioridade || 'Média'}
                         </div>
-                        
+
                         {/* Categoria */}
                         {ticket.categoria && (
                           <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
@@ -377,7 +353,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                         <span className="text-xs text-gray-500">
                           {new Date(ticket.criadoEm).toLocaleDateString('pt-BR')} às{' '}
@@ -410,7 +386,7 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
 
           </div>
         </div>
-        
+
         {/* Botões fixos na parte inferior */}
         <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
           <div className="flex justify-end gap-3">

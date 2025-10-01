@@ -12,7 +12,7 @@ interface OrcamentosIndicatorProps {
 
 export default function OrcamentosIndicator({ contatoId, onClick }: OrcamentosIndicatorProps) {
   const { count } = useIndicatorData(contatoId, 'orcamentos')
-  
+
   if (!contatoId) return null
 
   return (
@@ -31,10 +31,10 @@ export default function OrcamentosIndicator({ contatoId, onClick }: OrcamentosIn
         <DollarSign className={`w-5 h-5 transition-colors ${
           count > 0 ? 'text-green-600' : 'text-gray-400 group-hover:text-green-600'
         }`} />
-        
+
         {/* Badge com contador */}
         {count > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-green-500 border-2 border-white dark:border-gray-800"

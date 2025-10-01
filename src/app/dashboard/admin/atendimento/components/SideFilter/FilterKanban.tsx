@@ -16,11 +16,11 @@ interface FilterKanbanProps {
   isLoading?: boolean
 }
 
-export default function FilterKanban({ 
-  selectedQuadro, 
-  onQuadroChange, 
-  quadros, 
-  isLoading = false 
+export default function FilterKanban({
+  selectedQuadro,
+  onQuadroChange,
+  quadros,
+  isLoading = false
 }: FilterKanbanProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -33,7 +33,7 @@ export default function FilterKanban({
       <motion.button
         whileHover={{ scale: 1.02 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 border border-gray-300 
+        className="w-full flex items-center justify-between p-3 border border-gray-300
                    dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800
                    hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         disabled={isLoading}
@@ -41,13 +41,13 @@ export default function FilterKanban({
         <div className="flex items-center gap-2">
           <Kanban className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium">
-            {isLoading ? 'Carregando...' : 
-              selectedQuadro === 'todos' ? 'Todos os Quadros' : 
+            {isLoading ? 'Carregando...' :
+              selectedQuadro === 'todos' ? 'Todos os Quadros' :
               selectedQuadroData?.nome || 'Selecionar Quadro'
             }
           </span>
           {selectedQuadroData?.cor && (
-            <div 
+            <div
               className="w-3 h-3 rounded-sm border"
               style={{ backgroundColor: selectedQuadroData.cor }}
             />
@@ -64,8 +64,8 @@ export default function FilterKanban({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 
-                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg 
+            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800
+                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg
                        z-50 max-h-60 overflow-y-auto"
           >
             {/* Opção "Todos" */}
@@ -74,7 +74,7 @@ export default function FilterKanban({
                 onQuadroChange('todos')
                 setIsOpen(false)
               }}
-              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                          transition-colors flex items-center gap-2 ${
                 selectedQuadro === 'todos' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
               }`}
@@ -91,11 +91,11 @@ export default function FilterKanban({
                   onQuadroChange(quadro.id)
                   setIsOpen(false)
                 }}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                            transition-colors ${
                   selectedQuadro === quadro.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                 }`}
-                style={{ 
+                style={{
                   borderLeft: `4px solid ${quadro.cor || '#6b7280'}`,
                   marginLeft: '8px',
                   paddingLeft: '12px'
@@ -104,7 +104,7 @@ export default function FilterKanban({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{quadro.nome}</span>
                   {quadro.colunas && (
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 
+                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700
                                      px-2 py-1 rounded-full">
                       {quadro.colunas} colunas
                     </span>

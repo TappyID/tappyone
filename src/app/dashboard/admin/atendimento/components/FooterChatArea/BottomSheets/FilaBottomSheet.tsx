@@ -15,7 +15,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
   const [filaAtual, setFilaAtual] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [filaSelecionada, setFilaSelecionada] = useState('')
-  
+
   // Buscar filas disponíveis e fila atual do contato
   useEffect(() => {
     if (!isOpen || !chatId) return
@@ -24,39 +24,35 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
       try {
         setLoading(true)
         const telefone = chatId.replace('@c.us', '')
-        
-        console.log('🏢 [FilaBottomSheet] Buscando dados para telefone:', telefone)
-        
+
         // 1. Buscar fila atual do contato
         const conexaoResponse = await fetch(`/api/conexoes/contato/${telefone}`, {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
           }
         })
-        
+
         if (conexaoResponse.ok) {
           const conexaoData = await conexaoResponse.json()
           setFilaAtual(conexaoData.fila)
           setFilaSelecionada(conexaoData.fila?.id || '')
-          console.log('🏢 [FilaBottomSheet] Fila atual:', conexaoData.fila)
+
         }
-        
+
         // 2. Buscar todas as filas disponíveis
         const filasResponse = await fetch('/api/filas', {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
           }
         })
-        
+
         if (filasResponse.ok) {
           const filasData = await filasResponse.json()
           setFilas(filasData.data || filasData || [])
-          console.log('🏢 [FilaBottomSheet] Filas disponíveis:', filasData)
+
         }
-        
-      } catch (error) {
-        console.error('❌ [FilaBottomSheet] Erro ao buscar dados:', error)
-      } finally {
+
+      } catch {} finally {
         setLoading(false)
       }
     }
@@ -71,9 +67,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
     try {
       setLoading(true)
       const telefone = chatId.replace('@c.us', '')
-      
-      console.log('🏢 [FilaBottomSheet] Trocando fila para:', filaSelecionada)
-      
+
       const response = await fetch(`/api/conexoes/contato/${telefone}/fila`, {
         method: 'PUT',
         headers: {
@@ -82,28 +76,28 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
         },
         body: JSON.stringify({ filaId: filaSelecionada })
       })
-      
+
       if (response.ok) {
-        console.log('✅ [FilaBottomSheet] Fila trocada com sucesso!')
+
         alert(`✅ Fila trocada com sucesso!`)
         onClose()
-        
+
         // Disparar evento para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('filaChanged', { 
-          detail: { contatoId: telefone, filaId: filaSelecionada } 
+        window.dispatchEvent(new CustomEvent('filaChanged', {
+          detail: { contatoId: telefone, filaId: filaSelecionada }
         }))
       } else {
-        console.error('❌ [FilaBottomSheet] Erro ao trocar fila')
+
         alert('❌ Erro ao trocar fila')
       }
-    } catch (error) {
-      console.error('❌ [FilaBottomSheet] Erro:', error)
+    } catch {
+
       alert('❌ Erro ao trocar fila')
     } finally {
       setLoading(false)
     }
   }
-  
+
   if (!isOpen) return null
 
   const getFilaColor = (cor: string) => {
@@ -126,7 +120,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
       />
-      
+
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -136,7 +130,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <Users className="w-6 h-6 text-indigo-600" />
@@ -149,7 +143,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4 pb-24">
@@ -199,7 +193,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
                           {fila.descricao || 'Sem descrição'}
                         </p>
                       </div>
-                      
+
                       <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
                         {fila.atendentes && (
                           <div className="flex items-center gap-1">
@@ -240,7 +234,7 @@ export default function FilaBottomSheet({ isOpen, onClose, chatId }: FilaBottomS
             <button
               onClick={handleTrocarFila}
               disabled={!filaSelecionada || loading || filaSelecionada === filaAtual?.id}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 
+              className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400
                        text-white font-medium rounded-lg transition-colors"
             >
               {loading ? 'Processando...' : 'Transferir para Fila'}

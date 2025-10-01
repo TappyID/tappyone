@@ -25,14 +25,14 @@ export default function FilterPrecos({
   priceRanges,
   isLoading = false
 }: FilterPrecosProps) {
-  
+
   // Função para obter ícone baseado no valor
   const getRangeIcon = (min: number) => {
     if (min === 0) return <TrendingDown className="w-3.5 h-3.5" />
     if (min > 5000) return <TrendingUp className="w-3.5 h-3.5" />
     return <DollarSign className="w-3.5 h-3.5" />
   }
-  
+
   // Função para obter cor baseada no valor
   const getRangeColor = (min: number) => {
     if (min === 0) return 'text-gray-500'
@@ -74,7 +74,7 @@ export default function FilterPrecos({
       {priceRanges.map((range) => {
         const isSelected = selectedRange === range.id
         const colorClass = getRangeColor(range.min)
-        
+
         return (
           <motion.button
             key={range.id}
@@ -90,11 +90,11 @@ export default function FilterPrecos({
             <div className={`${isSelected ? 'text-green-600' : colorClass}`}>
               {getRangeIcon(range.min)}
             </div>
-            
+
             <div className="flex-1 text-left">
               <span className="text-sm font-medium">{range.label}</span>
             </div>
-            
+
             {range.count !== undefined && range.count > 0 && (
               <span className={`px-2 py-0.5 text-xs rounded-full ${
                 isSelected
@@ -107,7 +107,7 @@ export default function FilterPrecos({
           </motion.button>
         )
       })}
-      
+
       {/* Informação adicional */}
       <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center">

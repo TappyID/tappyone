@@ -15,11 +15,11 @@ export default function SimpleTagsIndicator({ contatoId, onClick }: SimpleTagsIn
   const { count, data } = useIndicatorData(contatoId, 'tags')
   const normalized = normalizeTags(data)
   const normalizedCount = normalized.length
-  
+
   if (!contatoId) return null
-  
+
   // Criar tooltip com nomes das tags
-  const tagsTooltip = normalizedCount > 0 
+  const tagsTooltip = normalizedCount > 0
     ? `Tags (${normalizedCount}): ${normalized.map(tag => tag.nome).join(', ')}`
     : `Nenhuma tag`
 
@@ -39,10 +39,10 @@ export default function SimpleTagsIndicator({ contatoId, onClick }: SimpleTagsIn
         <Tag className={`w-5 h-5 transition-colors ${
           normalizedCount > 0 ? 'text-emerald-600' : 'text-gray-400 group-hover:text-emerald-600'
         }`} />
-        
+
         {/* Badge com contador */}
         {normalizedCount > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-emerald-500 border-2 border-white dark:border-gray-800"
