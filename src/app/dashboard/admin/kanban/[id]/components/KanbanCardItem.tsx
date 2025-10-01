@@ -23,6 +23,7 @@ import LastMessageSideChat from '../../../atendimento/components/SideChat/LastMe
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import AgenteSelectionModal from '../../../atendimento/components/FooterChatArea/modals/AgenteSelectionModal'
+import { useKanbanColors } from '../hooks/useKanbanColors'
 
 interface KanbanCardItemProps {
   card: {
@@ -74,6 +75,8 @@ export default function KanbanCardItem({
   ticketsCount,
   tagsCount
 }: KanbanCardItemProps) {
+  
+  const kanbanColors = useKanbanColors()
   
   // Buscar foto de perfil do WAHA - igual ItemSideChat
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(card.id)
@@ -192,7 +195,7 @@ export default function KanbanCardItem({
       ref={setNodeRef}
       {...attributes}
       className={`relative group select-none ${
-        isDragging ? 'z-50' : ''
+        isDragging ? 'z-40' : ''
       }`}
       style={{
         ...style, // Estilo do sortable
@@ -250,13 +253,14 @@ export default function KanbanCardItem({
       <div
         {...listeners}
         className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out cursor-grab active:cursor-grabbing ${
-          theme === 'dark'
-            ? 'bg-slate-800/60 hover:bg-slate-800/80'
-            : 'bg-white hover:bg-white'
-        } ${isDragging ? 'rotate-2 scale-95 opacity-60' : 'hover:scale-[1.02]'}`}
+          isDragging ? 'rotate-2 scale-95 opacity-60' : 'hover:scale-[1.02]'
+        }`}
         style={{
-         
+          background: isHovered 
+            ? `linear-gradient(to bottom, ${kanbanColors.cards.hoverBg}, ${kanbanColors.cards.bgPrimary})`
+            : `linear-gradient(to bottom, ${kanbanColors.cards.bgPrimary}, ${kanbanColors.cards.bgSecondary})`,
           borderRadius: '20px',
+          border: `1px solid ${kanbanColors.cards.border}`,
           filter: !isDragging && !isHovered ? `drop-shadow(0 4px 15px rgba(0,0,0,0.05))` : 'none'
         }}
       >

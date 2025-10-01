@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -11,12 +10,7 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { actualTheme } = useTheme()
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed)
-  }
 
   return (
     <div className={`min-h-screen flex transition-all duration-500 ${
@@ -24,41 +18,26 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
         : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
     }`}>
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 z-40">
-        <Sidebar 
-          isCollapsed={sidebarCollapsed} 
-          onToggle={toggleSidebar} 
-        />
+      {/* Sidebar - Fixed, expande ao hover */}
+      <div className="fixed left-0 top-0 z-40 h-screen">
+        <Sidebar />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Content - Largura total com margem fixa para sidebar */}
+      <div className="flex-1 flex flex-col ml-20">
         {/* TopBar */}
-        <TopBar sidebarCollapsed={sidebarCollapsed} />
+        <TopBar />
 
         {/* Page Content */}
         <motion.main
           className="flex-1 overflow-auto"
-          initial={false}
-          animate={{ 
-            marginLeft: sidebarCollapsed ? 80 : 280 
-          }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 300, 
-            damping: 30,
-            mass: 0.8
-          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
         >
-          <motion.div
-            className="p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div className="p-6">
             {children}
-          </motion.div>
+          </div>
         </motion.main>
       </div>
     </div>

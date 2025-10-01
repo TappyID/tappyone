@@ -7,7 +7,6 @@ import { LucideIcon } from 'lucide-react'
 interface TopBarButtonProps {
   icon: LucideIcon
   onClick?: () => void
-  sidebarCollapsed?: boolean
   badge?: number | boolean
   badgeColor?: string
   tooltip?: string
@@ -18,7 +17,6 @@ interface TopBarButtonProps {
 export function TopBarButton({ 
   icon: Icon, 
   onClick, 
-  sidebarCollapsed = true, 
   badge, 
   badgeColor = 'bg-red-500',
   tooltip,
@@ -29,22 +27,18 @@ export function TopBarButton({
     <div className="relative group">
       <motion.button
         onClick={onClick}
-        className={`relative p-3 rounded-xl transition-all duration-200 group backdrop-blur-sm border ${
-          sidebarCollapsed 
-            ? `bg-white/70 border-white/20 shadow-sm hover:bg-white/90 hover:shadow-md ${isActive ? 'bg-white text-[#273155] shadow-md' : 'text-gray-600'}`
-            : `bg-white/10 border-white/20 hover:bg-white/20 ${isActive ? 'bg-white/20 text-white' : 'text-white'}`
+        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 group backdrop-blur-sm border border-white/20 shadow-sm hover:shadow-lg ${
+          isActive 
+            ? 'bg-white/20 text-white' 
+            : 'bg-white/10 text-white hover:bg-white/20'
         }`}
-        whileHover={{ scale: 1.05, y: -1 }}
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         title={tooltip}
       >
         <Icon 
           size={18} 
-          className={`transition-colors duration-200 ${
-            sidebarCollapsed 
-              ? (isActive ? 'text-[#273155]' : 'text-gray-600 group-hover:text-[#273155]')
-              : (isActive ? 'text-white' : 'text-white/90 group-hover:text-white')
-          }`} 
+          className="transition-colors duration-200 text-white" 
         />
         
         {/* Badge */}

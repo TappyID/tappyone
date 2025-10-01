@@ -42,11 +42,9 @@ import { SidebarLogo } from './SidebarLogo'
 import { SidebarToggle } from './SidebarToggle'
 import { SidebarItem } from './SidebarItem'
 import './sidebar-scrollbar.css'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
-interface SidebarProps {
-  isCollapsed: boolean
-  onToggle: () => void
-}
+interface SidebarProps {}
 
 const menuItems = [
   {
@@ -239,12 +237,14 @@ const menuItems = [
   }
 ]
 
-export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname()
   const [openSubmenus, setOpenSubmenus] = useState<string[]>([])
+  const [isHovered, setIsHovered] = useState(false)
+  const { colorTheme } = useColorTheme()
 
   const toggleSubmenu = (title: string) => {
-    if (isCollapsed) return
+    if (!isHovered) return
     
     setOpenSubmenus(prev => 
       prev.includes(title) 
@@ -263,9 +263,12 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     <motion.div
       className="relative h-screen shadow-xl shadow-black/5"
       initial={false}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       animate={{ 
-        width: isCollapsed ? 80 : 280,
-        backgroundColor: isCollapsed ? "#f9fafb" : "#273155"
+        width: isHovered ? 280 : 80,
+        backgroundImage: `linear-gradient(180deg, ${colorTheme.primary}, ${colorTheme.secondary})`,
+        opacity: isHovered ? 1 : 0.95
       }}
       transition={{ 
         type: "spring", 
@@ -281,19 +284,15 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         }} />
       </div>
 
-      {/* Toggle Button */}
-      <SidebarToggle isCollapsed={isCollapsed} onToggle={onToggle} />
+      {/* Toggle Button - Removido, expande ao hover */}
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Logo */}
         <motion.div 
-          className="border-b"
-          animate={{
-            borderColor: isCollapsed ? "rgb(229 231 235 / 0.5)" : "rgb(255 255 255 / 0.1)"
-          }}
+          className="border-b border-white/10"
         >
-          <SidebarLogo isCollapsed={isCollapsed} />
+          <SidebarLogo isCollapsed={!isHovered} />
         </motion.div>
 
         {/* Navigation */}
@@ -319,7 +318,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 <div>
                   {/* Submenu Header */}
                   <motion.div
-                    whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
+                    whileHover={{ scale: !isHovered ? 1 : 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="relative"
                   >
@@ -362,7 +361,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                           />
                         </motion.div>
                         
-                        {!isCollapsed && (
+                        {!!isHovered && (
                           <motion.span 
                             className={`font-medium text-sm transition-all duration-300 select-none ${
                               isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
@@ -371,17 +370,17 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                             }`}
                             initial={false}
                             animate={{
-                              opacity: isCollapsed ? 0 : 1,
-                              x: isCollapsed ? -10 : 0
+                              opacity: !isHovered ? 0 : 1,
+                              x: !isHovered ? -10 : 0
                             }}
-                            transition={{ duration: 0.2, delay: isCollapsed ? 0 : 0.1 }}
+                            transition={{ duration: 0.2, delay: !isHovered ? 0 : 0.1 }}
                           >
                             {item.title}
                           </motion.span>
                         )}
                       </div>
                       
-                      {!isCollapsed && (
+                      {!!isHovered && (
                         <motion.div
                           animate={{ rotate: isSubmenuOpen(item.title) ? 90 : 0 }}
                           transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -413,7 +412,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                     </motion.button>
                     
                     {/* Tooltip para modo colapsado */}
-                    {isCollapsed && (
+                    {!isHovered && (
                       <motion.div
                         className="absolute left-full ml-4 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50"
                         initial={{ opacity: 0, x: -10 }}
@@ -426,7 +425,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                   </motion.div>
                   
                   {/* Submenu Items */}
-                  {!isCollapsed && (
+                  {!!isHovered && (
                     <motion.div
                       initial={false}
                       animate={{ 
@@ -514,7 +513,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                   title={item.title}
                   href={item.href}
                   isActive={pathname === item.href}
-                  isCollapsed={isCollapsed}
+                  isCollapsed={!isHovered}
                   color={item.color}
                 />
               )}
@@ -524,27 +523,21 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
         {/* Footer */}
         <motion.div 
-          className="p-4 border-t"
+          className="p-4 border-t border-white/10"
           initial={{ opacity: 0 }}
           animate={{ 
-            opacity: 1,
-            borderColor: isCollapsed ? "rgb(229 231 235 / 0.5)" : "rgb(255 255 255 / 0.1)"
+            opacity: 1
           }}
           transition={{ delay: 0.3 }}
         >
           <motion.div
             className="text-center"
-            animate={{ opacity: isCollapsed ? 0 : 1 }}
+            animate={{ opacity: !isHovered ? 0 : 1 }}
             transition={{ duration: 0.2 }}
           >
-            <motion.p 
-              className="text-xs font-medium"
-              animate={{
-                color: isCollapsed ? "rgb(107 114 128)" : "rgb(255 255 255 / 0.7)"
-              }}
-            >
+            <p className="text-xs font-medium text-white/70">
               TappyOne CRM v2.0
-            </motion.p>
+            </p>
           </motion.div>
         </motion.div>
       </div>

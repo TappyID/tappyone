@@ -13,27 +13,26 @@ import { ColorThemeSelector } from './ColorThemeSelector'
 import { ChatToggle } from './ChatToggle'
 import { ProfileDropdown } from './ProfileDropdown'
 import { GlassClock } from './GlassClock'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
-interface TopBarProps {
-  sidebarCollapsed: boolean
-}
+export function TopBar() {
+  const { colorTheme } = useColorTheme()
+  
+  // Converter hex para rgba
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
 
-export function TopBar({ sidebarCollapsed }: TopBarProps) {
   return (
     <motion.header
-      className="h-16 backdrop-blur-md border-b shadow-sm sticky top-0 z-30"
-      initial={false}
-      animate={{ 
-        marginLeft: sidebarCollapsed ? 80 : 280,
-        backgroundColor: sidebarCollapsed ? 'rgba(255, 255, 255, 0.8)' : 'rgba(39, 49, 85, 0.95)',
-        borderBottomColor: sidebarCollapsed ? 'rgba(229, 231, 235, 0.6)' : 'rgba(59, 130, 246, 0.3)',
-        color: sidebarCollapsed ? '#1e293b' : '#ffffff'
-      }}
-      transition={{ 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 30,
-        mass: 0.8
+      className="h-16 backdrop-blur-xl border-b shadow-lg sticky top-0 z-30"
+      style={{
+        backgroundImage: `linear-gradient(135deg, ${hexToRgba(colorTheme.primary, 0.75)}, ${hexToRgba(colorTheme.secondary, 0.75)})`,
+        borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+        color: '#ffffff'
       }}
     >
       <div className="h-full px-8 flex items-center justify-between">
@@ -44,7 +43,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <SearchBar sidebarCollapsed={sidebarCollapsed} />
+          <SearchBar />
         </motion.div>
 
         {/* Right Section - Actions */}
@@ -62,7 +61,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.25 }}
             >
-              <QuickResponsesButton sidebarCollapsed={sidebarCollapsed} />
+              <QuickResponsesButton />
             </motion.div>
 
             <motion.div
@@ -70,7 +69,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <AgendaButton sidebarCollapsed={sidebarCollapsed} />
+              <AgendaButton />
             </motion.div>
 
             <motion.div
@@ -78,7 +77,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.35 }}
             >
-              <QuoteButton sidebarCollapsed={sidebarCollapsed} />
+              <QuoteButton />
             </motion.div>
 
             <motion.div
@@ -86,13 +85,11 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <SubscriptionButton sidebarCollapsed={sidebarCollapsed} />
+              <SubscriptionButton />
             </motion.div>
 
             {/* Divider */}
-            <div className={`mx-3 h-8 w-px ${
-              sidebarCollapsed ? 'bg-gray-200/60' : 'bg-white/30'
-            }`}></div>
+            <div className="mx-3 h-8 w-px bg-white/30"></div>
 
             {/* System Buttons */}
             <motion.div
@@ -100,7 +97,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.45 }}
             >
-              <NotificationsDropdown sidebarCollapsed={sidebarCollapsed} />
+              <NotificationsDropdown />
             </motion.div>
 
             <motion.div
@@ -108,7 +105,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <LanguageSelector sidebarCollapsed={sidebarCollapsed} />
+              <LanguageSelector />
             </motion.div>
 
             <motion.div
@@ -116,7 +113,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.55 }}
             >
-              <ThemeToggle sidebarCollapsed={sidebarCollapsed} />
+              <ThemeToggle />
             </motion.div>
 
             <motion.div
@@ -124,7 +121,7 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.6 }}
             >
-              <ColorThemeSelector sidebarCollapsed={sidebarCollapsed} />
+              <ColorThemeSelector />
             </motion.div>
 
             {/* ChatToggle temporariamente comentado para debug
@@ -133,17 +130,18 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.65 }}
             >
-              <ChatToggle sidebarCollapsed={sidebarCollapsed} />
+              <ChatToggle />
             </motion.div>
             */}
 
-            {/* Glass Clock */}
+            {/* Glass Clock - com espaço maior antes */}
             <motion.div
+              className="ml-4"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 }}
             >
-              <GlassClock sidebarCollapsed={sidebarCollapsed} />
+              <GlassClock />
             </motion.div>
           </div>
 
@@ -155,10 +153,8 @@ export function TopBar({ sidebarCollapsed }: TopBarProps) {
             transition={{ delay: 0.75 }}
           >
             {/* Smaller divider */}
-            <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-px h-6 ${
-              sidebarCollapsed ? 'bg-gray-200/60' : 'bg-white/30'
-            }`} />
-            <ProfileDropdown sidebarCollapsed={sidebarCollapsed} />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-px h-6 bg-white/30" />
+            <ProfileDropdown />
           </motion.div>
         </motion.div>
       </div>

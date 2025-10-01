@@ -14,11 +14,19 @@ export interface ColorTheme {
 const colorThemes: ColorTheme[] = [
   {
     id: 'default',
-    name: 'Padrão',
+    name: 'Azul Padrão',
     primary: '#273155',
     secondary: '#3b82f6',
     accent: '#1e40af',
     colors: ['#273155', '#3b82f6', '#1e40af', '#1d4ed8']
+  },
+  {
+    id: 'ocean',
+    name: 'Oceano',
+    primary: '#305e73',
+    secondary: '#3a6d84',
+    accent: '#2a5363',
+    colors: ['#305e73', '#3a6d84', '#2a5363', '#1a4353']
   },
   {
     id: 'emerald',
@@ -30,7 +38,7 @@ const colorThemes: ColorTheme[] = [
   },
   {
     id: 'purple',
-    name: 'Roxo',
+    name: 'Roxo Real',
     primary: '#581c87',
     secondary: '#a855f7',
     accent: '#9333ea',
@@ -38,7 +46,7 @@ const colorThemes: ColorTheme[] = [
   },
   {
     id: 'rose',
-    name: 'Rosa',
+    name: 'Rosa Pink',
     primary: '#881337',
     secondary: '#f43f5e',
     accent: '#e11d48',
@@ -46,7 +54,7 @@ const colorThemes: ColorTheme[] = [
   },
   {
     id: 'orange',
-    name: 'Laranja',
+    name: 'Laranja Vibrante',
     primary: '#9a3412',
     secondary: '#f97316',
     accent: '#ea580c',
@@ -54,11 +62,27 @@ const colorThemes: ColorTheme[] = [
   },
   {
     id: 'teal',
-    name: 'Azul-verde',
+    name: 'Azul-Verde',
     primary: '#134e4a',
     secondary: '#14b8a6',
     accent: '#0d9488',
     colors: ['#134e4a', '#14b8a6', '#0d9488', '#0f766e']
+  },
+  {
+    id: 'cyan',
+    name: 'Ciano Moderno',
+    primary: '#155e75',
+    secondary: '#06b6d4',
+    accent: '#0891b2',
+    colors: ['#155e75', '#06b6d4', '#0891b2', '#0e7490']
+  },
+  {
+    id: 'indigo',
+    name: 'Índigo Profundo',
+    primary: '#3730a3',
+    secondary: '#6366f1',
+    accent: '#4f46e5',
+    colors: ['#3730a3', '#6366f1', '#4f46e5', '#4338ca']
   }
 ]
 

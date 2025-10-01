@@ -4,11 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Calendar } from 'lucide-react'
 import { TopBarButton } from './TopBarButton'
 
-interface AgendaButtonProps {
-  sidebarCollapsed?: boolean
-}
-
-export function AgendaButton({ sidebarCollapsed = true }: AgendaButtonProps) {
+export function AgendaButton() {
   const router = useRouter()
 
   const handleClick = () => {
@@ -22,7 +18,6 @@ export function AgendaButton({ sidebarCollapsed = true }: AgendaButtonProps) {
     <TopBarButton
       icon={Calendar}
       onClick={handleClick}
-      sidebarCollapsed={sidebarCollapsed}
       badge={pendingAppointments > 0 ? pendingAppointments : false}
       badgeColor="bg-blue-500"
       tooltip="Agendamentos"

@@ -33,23 +33,20 @@ export function SidebarItem({
       <Link href={href}>
         <motion.div
           className={cn(
-            "group relative flex items-center rounded-xl transition-all duration-300 ease-out overflow-hidden",
+            "group relative flex items-center rounded-lg transition-all duration-300 ease-out overflow-hidden backdrop-blur-sm",
             "active:scale-[0.98]",
             isCollapsed ? "p-3 justify-center" : "p-3 gap-3",
             isSubmenuItem ? "ml-2 py-2 px-3 rounded-lg" : "",
             isActive 
-              ? (isCollapsed ? "bg-white text-[#273155] shadow-lg" : "bg-white/10 text-white shadow-lg")
-              : (isCollapsed ? "text-gray-600 hover:bg-white/80 hover:text-gray-900" : "text-white/70 hover:bg-white/5 hover:text-white")
+              ? (isCollapsed ? "bg-white/20 border border-white/30 text-white shadow-lg" : "bg-white/10 text-white shadow-lg")
+              : (isCollapsed ? "bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:border-white/30" : "text-white/70 hover:bg-white/5 hover:text-white")
           )}
-          whileHover={!isSubmenuItem ? { x: isCollapsed ? 0 : 2 } : {}}
+          whileHover={!isSubmenuItem ? { x: isCollapsed ? 0 : 2, scale: isCollapsed ? 1.05 : 1 } : {}}
         >
           {/* Indicador ativo */}
           {isActive && (
             <motion.div
-              className={cn(
-                "absolute left-0 top-1/2 h-6 w-1 rounded-r-full",
-                isCollapsed ? "bg-[#273155]" : "bg-white"
-              )}
+              className="absolute left-0 top-1/2 h-6 w-1 rounded-r-full bg-white"
               layoutId={isSubmenuItem ? `submenu-indicator-${title}` : "activeIndicator"}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -59,23 +56,12 @@ export function SidebarItem({
 
           {/* Ícone com Background */}
           <motion.div
-            className={cn(
-              "relative flex items-center justify-center rounded-lg transition-all duration-200",
-              isCollapsed ? "p-2" : "p-2",
-              isActive 
-                ? (isCollapsed ? "bg-[#273155]/10 shadow-sm" : "bg-white/20 shadow-sm")
-                : (isCollapsed ? "bg-gray-100 group-hover:bg-gray-200" : "bg-white/10 group-hover:bg-white/15")
-            )}
+            className="relative flex items-center justify-center rounded-lg transition-all duration-200 bg-white/20"
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
             <Icon
-              className={cn(
-                "transition-all duration-300",
-                isActive 
-                  ? (isCollapsed ? `${color} drop-shadow-sm` : "text-white drop-shadow-sm")
-                  : (isCollapsed ? "text-gray-600 group-hover:text-gray-900" : "text-white/70 group-hover:text-white")
-              )}
+              className="transition-all duration-300 text-white drop-shadow-sm"
               size={isCollapsed ? 20 : 18}
               strokeWidth={isActive ? 2.5 : 2}
             />

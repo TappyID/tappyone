@@ -33,9 +33,11 @@ import {
   AlertTriangle,
   Columns,
   TrendingUp,
-  Activity
+  Activity,
+  Palette
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import KanbanColorModal from './KanbanColorModal'
 
 interface KanbanHeaderProps {
   theme: string
@@ -112,6 +114,8 @@ export default function KanbanHeader({
   const [showFiltersSection, setShowFiltersSection] = useState(false)
   // 🔄 Estado para modal de confirmação de remapeamento
   const [showRemapModal, setShowRemapModal] = useState(false)
+  // 🎨 Estado para modal de customização de cores
+  const [showColorModal, setShowColorModal] = useState(false)
   
   // Função para toggle de opções de busca
   const toggleSearchOption = (option: keyof typeof searchOptions) => {
@@ -397,6 +401,28 @@ export default function KanbanHeader({
                 </span>
               </motion.button>
             )}
+
+            {/* Botão de Customização de Cores */}
+            <motion.button
+              onClick={() => {
+                console.log('🎨 CLICOU NO BOTÃO DE CORES!')
+                setShowColorModal(true)
+                console.log('🎨 showColorModal setado para TRUE')
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 text-pink-400 border border-pink-500/30'
+                  : 'bg-gradient-to-r from-pink-100 to-purple-100 hover:from-pink-200 hover:to-purple-200 text-pink-600 border border-pink-300'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Personalizar cores do Kanban"
+            >
+              <Palette className="w-4 h-4" />
+              <span className="text-sm">
+                Cores
+              </span>
+            </motion.button>
 
             {/* Botão Funil */}
             <motion.button
@@ -853,6 +879,12 @@ export default function KanbanHeader({
         </AnimatePresence>,
         document.body
       )}
+
+      {/* Modal de Customização de Cores */}
+      <KanbanColorModal
+        isOpen={showColorModal}
+        onClose={() => setShowColorModal(false)}
+      />
     </div>
   )
 }

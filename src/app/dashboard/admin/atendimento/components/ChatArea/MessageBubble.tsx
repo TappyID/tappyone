@@ -101,7 +101,8 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
   onAIReply
 }, ref) => {
   
-  const isFromUser = message.sender === 'user'
+  // INVERTIDO: user = esquerda (recebe), agent = direita (envia)
+  const isFromUser = message.sender !== 'user'
   
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', { 

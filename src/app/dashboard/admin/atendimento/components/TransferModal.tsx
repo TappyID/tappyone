@@ -66,6 +66,10 @@ export default function TransferModal({
   currentFila,
   onTransferSuccess
 }: TransferModalProps) {
+  
+  if (!isOpen) {
+    return null
+  }
   const [activeTab, setActiveTab] = useState<'atendentes' | 'filas'>('atendentes')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAtendente, setSelectedAtendente] = useState<string | null>(null)
@@ -91,14 +95,17 @@ export default function TransferModal({
       const token = localStorage.getItem('token')
       if (!token) return
 
-      // Buscar atendentes e admins
+      // Buscar atendentes, admins e usuário atual
       setIsLoadingAtendentes(true)
       try {
-        const [atendentesResponse, adminsResponse] = await Promise.all([
+        const [atendentesResponse, adminsResponse, currentUserResponse] = await Promise.all([
           fetch('/api/users?tipo=atendente', {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           }),
           fetch('/api/users?tipo=admin', {
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+          }),
+          fetch('/api/auth/me', {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           })
         ])
@@ -107,12 +114,17 @@ export default function TransferModal({
         
         if (atendentesResponse.ok) {
           const atendentesData = await atendentesResponse.json()
-          const formatted = (atendentesData.data || []).map((user: any) => ({
+          
+          // Os dados estão diretamente no array, não em .data
+          const dataArray = atendentesData.data || atendentesData || []
+          
+          const formatted = dataArray.map((user: any) => ({
             id: user.id,
             nome: user.nome,
             email: user.email,
             status: user.status || 'offline',
             atendimentosAtivos: user.atendimentosAtivos || 0,
+            filas: user.filas || [],
             tipo: 'atendente'
           }))
           allUsers.push(...formatted)
@@ -126,11 +138,31 @@ export default function TransferModal({
             email: user.email,
             status: 'online',
             atendimentosAtivos: 0,
+            filas: [],
             tipo: 'admin'
           }))
           allUsers.push(...formatted)
         }
         
+        // Adicionar usuário atual (que foi excluído pelo backend)
+        if (currentUserResponse.ok) {
+          const currentUserData = await currentUserResponse.json()
+          
+          // A API retorna o usuário diretamente, não em { data: user }
+          const userData = currentUserData.data || currentUserData
+          if (userData && userData.id) {
+            const currentUser = {
+              id: userData.id,
+              nome: userData.nome,
+              email: userData.email,
+              status: 'online',
+              atendimentosAtivos: 0,
+              filas: [],
+              tipo: userData.tipo?.toLowerCase() || 'admin'
+            }
+            allUsers.push(currentUser)
+          }
+        }
         setRealAtendentes(allUsers)
       } catch (error) {
         console.error('Erro ao buscar atendentes:', error)
@@ -156,7 +188,7 @@ export default function TransferModal({
               cor: fila.cor || '#3B82F6',
               descricao: fila.descricao || ''
             }))
-          setRealFilas(formatted)
+            setRealFilas(formatted)
         }
       } catch (error) {
         console.error('Erro ao buscar filas:', error)
@@ -188,11 +220,21 @@ export default function TransferModal({
 
   const currentAtendenteMatch = useMemo(() => {
     if (!currentAtendente) return null
+    
+    // Se currentAtendente começa com "ID:", extrair o ID real
+    if (currentAtendente.startsWith('ID:')) {
+      const idPart = currentAtendente.replace('ID:', '')
+      return atendentes.find(a => a.id.startsWith(idPart))
+    }
+    
     return atendentes.find(a => a.id === currentAtendente || a.nome === currentAtendente)
   }, [currentAtendente, atendentes])
 
   const currentFilaMatch = useMemo(() => {
-    if (!currentFila) return null
+    if (!currentFila || currentFila === 'Sem fila') {
+      return null
+    }
+    
     return filas.find(f => f.id === currentFila || f.nome === currentFila)
   }, [currentFila, filas])
 
@@ -215,6 +257,7 @@ export default function TransferModal({
       ? filas.find(f => f.id === currentFila || f.nome === currentFila)
       : null)
 
+
     if (matchedAtendenteId) {
       setSelectedAtendente(matchedAtendenteId)
       setActiveTab('atendentes')
@@ -233,22 +276,30 @@ export default function TransferModal({
   }, [isOpen, currentAtendente, currentAtendenteMatch, currentFilaMatch, currentFila, filas])
 
   // Filtrar atendentes
-  const filteredAtendentes = atendentes.filter(atendente => {
-    const matchesSearch = atendente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         atendente.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAtendentes = useMemo(() => {
+    const filtered = atendentes.filter(atendente => {
+      const matchesSearch = atendente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           atendente.email.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesFilter = filterStatus === 'all' || 
+                           (filterStatus === 'online' && atendente.status === 'online') ||
+                           (filterStatus === 'available' && atendente.status === 'online' && atendente.atendimentosAtivos < 5)
+      
+      return matchesSearch && matchesFilter
+    })
     
-    const matchesFilter = filterStatus === 'all' || 
-                         (filterStatus === 'online' && atendente.status === 'online') ||
-                         (filterStatus === 'available' && atendente.status === 'online' && atendente.atendimentosAtivos < 5)
-    
-    return matchesSearch && matchesFilter
-  })
+    return filtered
+  }, [atendentes, searchTerm, filterStatus])
 
   // Filtrar filas
-  const filteredFilas = filas.filter(fila =>
-    fila.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fila.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredFilas = useMemo(() => {
+    const filtered = filas.filter(fila =>
+      fila.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fila.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    
+    return filtered
+  }, [filas, searchTerm])
 
   const isTransferDisabled = (activeTab === 'atendentes' ? !selectedAtendente : !selectedFila) || isTransferring
 
@@ -264,11 +315,10 @@ export default function TransferModal({
         // Transferir para um atendente específico
         await transferirAtendimento(chatId, targetId, undefined, transferNotes)
       } else {
-        // Transferir para uma fila (sem especificar atendente)
+        // Transferir para uma fila (limpar atendente atual)
         await transferirAtendimento(chatId, '', targetId, transferNotes)
       }
       
-      console.log('✅ Transferência realizada com sucesso')
       
       // Chamar callback de sucesso se fornecido
       if (onTransferSuccess) {
@@ -310,6 +360,7 @@ export default function TransferModal({
   }
 
   const renderAtendentesContent = () => {
+    
     if (isLoadingAtendentes) {
       return (
         <div className="flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
@@ -354,7 +405,7 @@ export default function TransferModal({
                 {atendente.email}
               </p>
               <div className="flex flex-wrap gap-1 mt-2">
-                {atendente.filas.map((fila) => (
+                {(atendente.filas || []).map((fila) => (
                   <span
                     key={`${atendente.id}-${fila}`}
                     className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 
@@ -387,6 +438,7 @@ export default function TransferModal({
   }
 
   const renderFilasContent = () => {
+    
     if (isLoadingFilas) {
       return (
         <div className="flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
@@ -463,6 +515,7 @@ export default function TransferModal({
             onClick={onClose}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
           />
+
 
           {/* Modal Sidebar */}
           <motion.div

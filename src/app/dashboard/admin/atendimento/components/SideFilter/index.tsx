@@ -32,7 +32,8 @@ import {
   Layers,
   Bot,
   Flame,
-  Grid3X3
+  Grid3X3,
+  Phone
 } from 'lucide-react'
 
 // import SearchInput from './SearchInput' // Não usado mais
@@ -96,6 +97,11 @@ interface SideFilterProps {
   groupChats: number
   favoriteChats: number
   hiddenChats: number
+  emAtendimentoChats: number
+  aguardandoChats: number
+  finalizadoChats: number
+  agentesIAChats: number
+  leadsQuentesChats: number
   
   // Controle do filtro ativo
   activeFilter: string
@@ -143,6 +149,11 @@ export default function SideFilter({
   groupChats = 0,
   favoriteChats = 0,
   hiddenChats = 0,
+  emAtendimentoChats = 0,
+  aguardandoChats = 0,
+  finalizadoChats = 0,
+  agentesIAChats = 0,
+  leadsQuentesChats = 0,
   activeFilter = 'all',
   onFilterChange = () => {},
   searchOptions,
@@ -151,6 +162,12 @@ export default function SideFilter({
   sortOrder,
   onSortChange
 }: SideFilterProps) {
+  // Debug: log das tags recebidas
+  useEffect(() => {
+    console.log('🏷️ [SideFilter] Tags recebidas:', tags?.length || 0, tags)
+    console.log('🎯 [SideFilter] Filas recebidas:', filas?.length || 0, filas)
+  }, [tags, filas])
+
   // Estados para o novo sistema de filtros
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [showSortOptions, setShowSortOptions] = useState(false)
@@ -168,11 +185,53 @@ export default function SideFilter({
   const { atendentes: atendentesReais } = useAtendentes()
   const { tickets: ticketsReais } = useTickets()
   
+  // Estado para conexões
+  const [conexoes, setConexoes] = useState<any[]>([])
+  const [isLoadingConexoes, setIsLoadingConexoes] = useState(false)
+  
+  // Buscar conexões reais - MESMA API DO SIDECHAT
+  useEffect(() => {
+    const fetchConexoes = async () => {
+      setIsLoadingConexoes(true)
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/connections', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          const conexoesData = data.connections || data.data || []
+          const conexoesFormatted = conexoesData.map((conn: any) => ({
+            value: conn.id,
+            label: conn.nome || conn.modulation?.connectionName || `Conexão ${conn.numero}`,
+            numero: conn.numero,
+            status: conn.status
+          }))
+          setConexoes(conexoesFormatted)
+          console.log('📞 [SideFilter] Conexões carregadas:', conexoesFormatted.length, conexoesFormatted)
+        } else {
+          console.error('❌ [SideFilter] Erro ao buscar conexões:', response.status)
+        }
+      } catch (error) {
+        console.error('❌ [SideFilter] Erro ao buscar conexões:', error)
+      } finally {
+        setIsLoadingConexoes(false)
+      }
+    }
+    
+    fetchConexoes()
+  }, [])
+  
   // Estado para armazenar colunas do quadro selecionado
   const [kanbanColunas, setKanbanColunas] = useState<any[]>([])
   const [selectedKanbanColuna, setSelectedKanbanColuna] = useState<string[]>([])
   const [selectedAtendente, setSelectedAtendente] = useState<string[]>([])
   const [selectedFiltrosEspeciais, setSelectedFiltrosEspeciais] = useState<string[]>([])
+  const [selectedConexoesMulti, setSelectedConexoesMulti] = useState<string[]>([])
   const [selectedTagsMulti, setSelectedTagsMulti] = useState<string[]>([])
   const [selectedFilasMulti, setSelectedFilasMulti] = useState<string[]>([])
   const [selectedQuadrosMulti, setSelectedQuadrosMulti] = useState<string[]>([])
@@ -511,12 +570,17 @@ export default function SideFilter({
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+              onClick={() => onFilterChange('all')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'all'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-400 dark:border-gray-500'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="relative">
                 <Grid3X3 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                 <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  43
+                  {totalChats}
                 </span>
               </div>
               
@@ -526,37 +590,22 @@ export default function SideFilter({
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
-            
-            {/* Leads Quentes */}
+          
+            {/* Em Atendimento */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
-            >
-              <div className="relative">
-                <Flame className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  9
-                </span>
-              </div>
-              
-              {/* Tooltip */}
-              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                Leads Quentes
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
-              </div>
-            </motion.button>
-            
-            {/* Atendimento */}
-            <motion.button
-              whileHover={{ scale: 1.15 }}
-              whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+              onClick={() => onFilterChange('em_atendimento')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'em_atendimento'
+                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-2 border-green-400'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 border border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="relative">
                 <MessageCircle className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                 <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  12
+                  {emAtendimentoChats}
                 </span>
               </div>
               
@@ -571,12 +620,17 @@ export default function SideFilter({
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+              onClick={() => onFilterChange('aguardando')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'aguardando'
+                  ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-2 border-yellow-400'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 border border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="relative">
                 <Clock className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                 <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  5
+                  {aguardandoChats}
                 </span>
               </div>
               
@@ -586,17 +640,47 @@ export default function SideFilter({
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
+
+            {/* Finalizados */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onFilterChange('finalizado')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'finalizado'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-2 border-blue-400'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <div className="relative">
+                <CheckCircle2 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  {finalizadoChats}
+                </span>
+              </div>
+              
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Finalizados
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
             
             {/* Agente IA */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 hover:text-cyan-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+              onClick={() => onFilterChange('agentes_ia')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'agentes_ia'
+                  ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 border-2 border-cyan-400'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 hover:text-cyan-600 border border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="relative">
                 <Bot className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                 <span className="absolute -top-1 -right-1 bg-cyan-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  7
+                  {agentesIAChats}
                 </span>
               </div>
               
@@ -611,12 +695,17 @@ export default function SideFilter({
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+              onClick={() => onFilterChange('groups')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'groups'
+                  ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-2 border-purple-400'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 border border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="relative">
                 <Users className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                 <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  8
+                  {groupChats}
                 </span>
               </div>
               
@@ -627,25 +716,33 @@ export default function SideFilter({
               </div>
             </motion.button>
             
-            {/* Finalizados */}
+    
+              
+            {/* Leads Quentes */}
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-full text-gray-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200"
+              onClick={() => onFilterChange('leads_quentes')}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === 'leads_quentes'
+                  ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-2 border-orange-400'
+                  : 'text-gray-500 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 border border-gray-200 dark:border-gray-700'
+              }`}
             >
               <div className="relative">
-                <CheckCircle2 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
-                  15
+                <Flame className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  {leadsQuentesChats}
                 </span>
               </div>
               
               {/* Tooltip */}
               <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                Finalizados
+                Leads Quentes
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
+            
           </div>
         </div>
 
@@ -681,6 +778,21 @@ export default function SideFilter({
 
             {/* Conteúdo da sidebar com scroll */}
             <div className="p-4 space-y-4 overflow-y-auto h-[calc(100vh-73px)] custom-scrollbar">
+              {/* Filtro de Conexões - React Select MULTI */}
+              <Select2
+                label="Conexões (Múltipla Seleção)"
+                value={selectedConexoesMulti}
+                onChange={(val) => setSelectedConexoesMulti(val as string[])}
+                options={conexoes}
+                placeholder="Selecione múltiplas conexões"
+                icon={Phone}
+                iconColor="green"
+                isMulti={true}
+                isClearable
+                isSearchable
+                isLoading={isLoadingConexoes}
+              />
+
               {/* Filtro de Tags - React Select MULTI */}
               <Select2
                 label="Tags (Múltipla Seleção)"

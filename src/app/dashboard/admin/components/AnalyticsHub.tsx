@@ -1,24 +1,15 @@
 'use client'
-
 import { useState } from 'react'
+import { Activity, TrendingUp, Filter, Zap, Target, Users, BarChart3 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  TrendingUp, 
-  Users, 
-  Target, 
-  BarChart3,
-  Activity,
-  Eye,
-  Zap
-} from 'lucide-react'
 import FunnelAnalytics from './analytics/FunnelAnalytics'
 import NCSAnalytics from './analytics/NCSAnalytics'
 import OverviewAnalytics from './analytics/OverviewAnalytics'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
 const tabs = [
   {
     id: 'funnel',
-    label: 'Funil',
     icon: Target,
     description: 'Análise de conversão',
     gradient: 'from-blue-600 to-purple-600'
@@ -41,6 +32,7 @@ const tabs = [
 
 export default function AnalyticsHub() {
   const [activeTab, setActiveTab] = useState('funnel')
+  const { colorTheme } = useColorTheme()
 
   const renderContent = () => {
     switch (activeTab) {
@@ -81,9 +73,12 @@ export default function AnalyticsHub() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full p-4 rounded-2xl transition-all duration-300 relative overflow-hidden group ${
                     isActive 
-                      ? 'bg-gradient-to-r from-[#305e73] to-[#3a6d84] text-white shadow-lg' 
+                      ? 'text-white shadow-lg' 
                       : 'bg-gray-50/50 dark:bg-secondary/50 hover:bg-gray-100/80 dark:hover:bg-secondary/80 text-gray-700 dark:text-card-foreground hover:text-gray-900 dark:hover:text-card-foreground'
                   }`}
+                  style={isActive ? {
+                    background: `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.secondary})`
+                  } : {}}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

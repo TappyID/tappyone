@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
+import { useKanbanColors } from './hooks/useKanbanColors'
 
 // Componentes componentizados
 import KanbanHeader from './components/KanbanHeader'
@@ -54,6 +55,7 @@ const MAX_VISIBLE_CARDS = 100 // Máximo de cards visíveis por coluna
 
 function QuadroPage() {
   const { theme } = useTheme()
+  const kanbanColors = useKanbanColors()
   const { user } = useAuth()
   const params = useParams()
   const router = useRouter()
@@ -94,12 +96,18 @@ function QuadroPage() {
         localStorage.setItem('token', FALLBACK_TOKEN)
       }
       
-      const response = await fetch('/api/whatsapp/chats', {
-        method: 'GET',
+      // Buscar chats diretamente da WAHA (mesmo sistema do /atendimento)
+      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      const baseUrl = isProduction 
+        ? '/api/waha-proxy' 
+        : 'http://159.65.34.199:3001'
+      
+      console.log('📋 Buscando chats da WAHA...')
+      
+      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=500&offset=0`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+          'X-Api-Key': 'tappyone-waha-2024-secretkey'
+        }
       })
       
       console.log('🔍 Response status:', response.status)
@@ -112,12 +120,17 @@ function QuadroPage() {
       }
       
       const data = await response.json()
-      console.log('🔍 Dados recebidos da API:', data)
+      console.log('🔍 Dados recebidos da WAHA:', data)
       
-      // A API pode retornar diferentes estruturas
-      const chatsArray = data.data || data.chats || data || []
+      // WAHA retorna array direto com: chats[], totalChats, unreadChats, etc
+      const chatsArray = data.chats || data.data || data || []
       
-      console.log('🔍 Chats extraídos:', chatsArray.length)
+      console.log('🔍 Chats extraídos da WAHA:', chatsArray.length)
+      console.log('📊 Estatísticas:', {
+        total: data.totalChats,
+        unread: data.unreadChats,
+        groups: data.groupChats
+      })
       setWhatsappChats(chatsArray)
       setChatsError(null)
       
@@ -648,13 +661,25 @@ function QuadroPage() {
   }
 
   const colunasComCards = mapearConversasParaColunas()
+  
+  // Debug: Verificar se as colunas têm cards
+  console.log('🎯 [KANBAN PAGE] Colunas com cards:', colunasComCards.length)
+  colunasComCards.forEach((col, index) => {
+    console.log(`📋 [KANBAN PAGE] Coluna ${index + 1} "${col.nome}": ${col.cards?.length || 0} cards`)
+  })
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${
-      theme === 'dark' 
-        ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
-        : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
-    }`}>
+    <div 
+      className="min-h-screen transition-all duration-500"
+      style={{
+        background: kanbanColors.board.bgImage 
+          ? `linear-gradient(to bottom right, ${kanbanColors.board.bgPrimary}dd, ${kanbanColors.board.bgSecondary}dd), url(${kanbanColors.board.bgImage})`
+          : `linear-gradient(to bottom right, ${kanbanColors.board.bgPrimary}, ${kanbanColors.board.bgSecondary})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       
       {/* TopBar Original */}
       <AtendimentosTopBar 

@@ -198,22 +198,30 @@ export default function ChatArea({
           background: #3B82F6dd;
         }
         
-        /* Pattern de pontinhos para light mode */
-        .chat-dots-pattern {
+        /* Elegant Dots Background Pattern - Light Mode */
+        .whatsapp-chat-bg {
+          position: relative;
+          background-color: #f8f9fa;
           background-image: 
-            radial-gradient(circle at 2px 2px, rgba(0,0,0,0.06) 1px, transparent 0),
-            radial-gradient(circle at 12px 12px, rgba(0,0,0,0.03) 1px, transparent 0),
-            radial-gradient(circle at 6px 18px, rgba(0,0,0,0.04) 1px, transparent 0);
-          background-size: 24px 24px;
+            radial-gradient(circle, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+            radial-gradient(circle, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px;
+          background-position: 0 0, 10px 10px;
         }
         
-        /* Pattern de pontinhos para dark mode */
-        .dark .chat-dots-pattern {
+        .whatsapp-chat-bg > * {
+          position: relative;
+          z-index: 1;
+        }
+        
+        /* Elegant Dots Background Pattern - Dark Mode */
+        .dark .whatsapp-chat-bg {
+          background-color: #1e2530;
           background-image: 
-            radial-gradient(circle at 2px 2px, rgba(255,255,255,0.12) 1px, transparent 0),
-            radial-gradient(circle at 12px 12px, rgba(255,255,255,0.06) 1px, transparent 0),
-            radial-gradient(circle at 6px 18px, rgba(255,255,255,0.09) 1px, transparent 0);
-          background-size: 24px 24px;
+            radial-gradient(circle, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+            radial-gradient(circle, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px;
+          background-position: 0 0, 10px 10px;
         }
       `}</style>
       
@@ -240,7 +248,7 @@ export default function ChatArea({
       {/* Área de mensagens com pattern WhatsApp */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 chat-dots-pattern"
+        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative whatsapp-chat-bg"
         onScroll={handleScroll}
         style={{
           height: 'calc(100vh - 180px)',

@@ -13,11 +13,7 @@ import {
   X
 } from 'lucide-react'
 
-interface NotificationsDropdownProps {
-  sidebarCollapsed?: boolean
-}
-
-export function NotificationsDropdown({ sidebarCollapsed = true }: NotificationsDropdownProps) {
+export function NotificationsDropdown() {
   const [showNotifications, setShowNotifications] = useState(false)
 
   return (
@@ -26,11 +22,7 @@ export function NotificationsDropdown({ sidebarCollapsed = true }: Notifications
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setShowNotifications(!showNotifications)}
-        className={`w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 ${
-          sidebarCollapsed
-            ? 'bg-white/70 border-white/20 hover:bg-white/90 hover:shadow-md text-gray-600'
-            : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
-        } shadow-sm hover:shadow-lg`}
+        className="w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border border-white/20 bg-white/10 hover:bg-white/20 text-white shadow-sm hover:shadow-lg transition-all duration-300"
         title="Notificações"
       >
         <Bell className="w-4 h-4" />
@@ -49,45 +41,25 @@ export function NotificationsDropdown({ sidebarCollapsed = true }: Notifications
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`absolute top-full right-0 mt-2 w-96 rounded-2xl shadow-2xl border overflow-hidden z-[99999] ${
-              sidebarCollapsed
-                ? 'bg-white border-gray-200'
-                : 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20'
-            }`}
+            className="absolute top-full right-0 mt-2 w-96 rounded-2xl shadow-2xl border bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20 overflow-hidden z-[99999]"
           >
             {/* Header */}
-            <div className={`p-4 border-b ${
-              sidebarCollapsed ? 'border-gray-100' : 'border-white/10'
-            }`}>
+            <div className="p-4 border-b border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    sidebarCollapsed
-                      ? 'bg-gray-100'
-                      : 'bg-gradient-to-br from-white/30 to-white/10'
-                  }`}>
-                    <Bell className={`w-4 h-4 ${
-                      sidebarCollapsed ? 'text-gray-600' : 'text-white'
-                    }`} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-white/30 to-white/10">
+                    <Bell className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className={`text-lg font-semibold ${
-                      sidebarCollapsed ? 'text-gray-900' : 'text-white'
-                    }`}>Notificações</h3>
-                    <p className={`text-xs ${
-                      sidebarCollapsed ? 'text-gray-500' : 'text-white/60'
-                    }`}>3 não lidas</p>
+                    <h3 className="text-lg font-semibold text-white">Notificações</h3>
+                    <p className="text-xs text-white/60">3 não lidas</p>
                   </div>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setShowNotifications(false)}
-                  className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${
-                    sidebarCollapsed
-                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                  }`}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white"
                 >
                   <X className="w-3 h-3" />
                 </motion.button>
@@ -152,13 +124,9 @@ export function NotificationsDropdown({ sidebarCollapsed = true }: Notifications
                 return (
                   <motion.div
                     key={notification.id}
-                    whileHover={{ backgroundColor: sidebarCollapsed ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.05)' }}
-                    className={`p-4 border-b cursor-pointer transition-all ${
-                      sidebarCollapsed ? 'border-gray-50' : 'border-white/5'
-                    } ${
-                      notification.unread
-                        ? sidebarCollapsed ? 'bg-blue-50/50' : 'bg-white/5'
-                        : ''
+                    whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    className={`p-4 border-b cursor-pointer transition-all border-white/5 ${
+                      notification.unread ? 'bg-white/5' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -167,21 +135,15 @@ export function NotificationsDropdown({ sidebarCollapsed = true }: Notifications
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className={`text-sm font-medium truncate ${
-                            sidebarCollapsed ? 'text-gray-900' : 'text-white'
-                          }`}>{notification.title}</h4>
+                          <h4 className="text-sm font-medium truncate text-white">{notification.title}</h4>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className={`text-xs ${
-                              sidebarCollapsed ? 'text-gray-500' : 'text-white/60'
-                            }`}>{notification.time}</span>
+                            <span className="text-xs text-white/60">{notification.time}</span>
                             {notification.unread && (
                               <div className="w-2 h-2 bg-blue-400 rounded-full" />
                             )}
                           </div>
                         </div>
-                        <p className={`text-xs truncate ${
-                          sidebarCollapsed ? 'text-gray-600' : 'text-white/70'
-                        }`}>{notification.description}</p>
+                        <p className="text-xs truncate text-white/70">{notification.description}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -190,31 +152,19 @@ export function NotificationsDropdown({ sidebarCollapsed = true }: Notifications
             </div>
             
             {/* Footer */}
-            <div className={`p-4 border-t ${
-              sidebarCollapsed
-                ? 'border-gray-100 bg-gray-50'
-                : 'border-white/10 bg-white/5'
-            }`}>
+            <div className="p-4 border-t border-white/10 bg-white/5">
               <div className="flex items-center justify-between">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    sidebarCollapsed
-                      ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                  }`}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-white/10 hover:bg-white/20 text-white"
                 >
                   Marcar todas como lidas
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`px-3 py-1.5 border rounded-lg text-xs font-medium transition-all ${
-                    sidebarCollapsed
-                      ? 'bg-blue-500 border-blue-400 text-white hover:bg-blue-600'
-                      : 'bg-blue-500/20 border-blue-400/30 text-blue-300 hover:bg-blue-500/30'
-                  }`}
+                  className="px-3 py-1.5 border rounded-lg text-xs font-medium transition-all bg-blue-500/20 border-blue-400/30 text-blue-300 hover:bg-blue-500/30"
                 >
                   Ver todas
                 </motion.button>

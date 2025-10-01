@@ -20,7 +20,8 @@ import {
   Ticket,
   UserCheck,
   StickyNote,
-  CheckCircle
+  CheckCircle,
+  Bot
 } from 'lucide-react'
 import LastMessageSideChat from './LastMessageSideChat'
 import { useChatPicture } from '@/hooks/useChatPicture'
@@ -169,6 +170,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   atendentes,
 }, ref) => {
   
+  
   // Estado para o modal de transferência
   const [showTransferModal, setShowTransferModal] = useState(false)
   
@@ -201,13 +203,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
   // Função para obter dados da conexão baseado no chat
   const getConexaoInfo = () => {
-    console.log('🔍 [CONEXAO_INFO] Iniciando busca...')
-    console.log('🔍 [CONEXAO_INFO] Chat ID:', chat.id)
-    console.log('🔍 [CONEXAO_INFO] Total conexões:', conexoes.length)
-    console.log('🔍 [CONEXAO_INFO] Conexões:', conexoes)
-    
     if (!chat.id || conexoes.length === 0) {
-      console.log('❌ [CONEXAO_INFO] Sem chat.id ou conexões vazias')
       return null
     }
     
@@ -215,27 +211,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     // vamos assumir que qualquer chat pode usar qualquer conexão configurada
     // Por enquanto, vamos pegar a primeira conexão que tem filas configuradas
     
-    const conexaoComFilas = conexoes.find(conn => {
-      console.log('🔍 [CONEXAO_INFO] Verificando conexão:', {
-        id: conn.id,
-        sessionName: conn.sessionName,
-        phoneId: conn.sessionData?.phone_id,
-        modulation: conn.modulation,
-        hasFilas: conn.modulation?.selectedFilas?.length > 0
-      })
-      
-      return conn.modulation?.selectedFilas && conn.modulation.selectedFilas.length > 0
-    })
-    
-    console.log('🔍 [CONEXAO_INFO] Conexão com filas encontrada:', conexaoComFilas)
+    const conexaoComFilas = conexoes.find(conn => conn.modulation?.selectedFilas?.length > 0)
     
     if (conexaoComFilas) {
       const info = {
-        nome: conexaoComFilas.modulation?.connectionName || conexaoComFilas.sessionData?.push_name || 'WhatsApp',
-        pushName: conexaoComFilas.sessionData?.push_name || 'WhatsApp',
+        nome: conexaoComFilas.nome || 
+              conexaoComFilas.modulation?.connectionName || 
+              conexaoComFilas.sessionData?.push_name || 
+              `Conexão ${conexaoComFilas.numero}` || 
+              'WhatsApp',
+        pushName: conexaoComFilas.sessionData?.push_name || conexaoComFilas.nome || 'WhatsApp',
         filas: conexaoComFilas.modulation?.selectedFilas || []
       }
-      console.log('✅ [CONEXAO_INFO] Info retornada:', info)
       return info
     }
     
@@ -243,15 +230,17 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     if (conexoes.length > 0) {
       const primeiraConexao = conexoes[0]
       const info = {
-        nome: primeiraConexao.modulation?.connectionName || primeiraConexao.sessionData?.push_name || 'WhatsApp',
-        pushName: primeiraConexao.sessionData?.push_name || 'WhatsApp',
+        nome: primeiraConexao.nome || 
+              primeiraConexao.modulation?.connectionName || 
+              primeiraConexao.sessionData?.push_name || 
+              `Conexão ${primeiraConexao.numero}` || 
+              'WhatsApp',
+        pushName: primeiraConexao.sessionData?.push_name || primeiraConexao.nome || 'WhatsApp',
         filas: []
       }
-      console.log('⚠️ [CONEXAO_INFO] Usando primeira conexão como fallback:', info)
       return info
     }
     
-    console.log('❌ [CONEXAO_INFO] Nenhuma conexão encontrada')
     return null
   }
 
@@ -266,13 +255,11 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     
     setLoadingLead(true)
     try {
-      console.log('🔄 [LEAD_STATUS] Buscando status para chat:', chat.id)
       const status = await buscarStatusChat(chat.id)
-      console.log('✅ [LEAD_STATUS] Status recebido:', status)
       applyChatLeadStatus(status)
       setLeadStatus(normalizeLeadStatus(status?.status) || null)
     } catch (error) {
-      console.error('❌ [LEAD_STATUS] Erro ao buscar status:', error)
+      console.error('Erro ao buscar status:', error)
     } finally {
       setLoadingLead(false)
     }
@@ -287,7 +274,6 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   useEffect(() => {
     const handleChatUpdate = (event: CustomEvent) => {
       if (event.detail.chatId === chat.id) {
-        console.log('🔄 [GLOBAL_UPDATE] Atualizando chat:', chat.id)
         fetchLeadStatus()
       }
     }
@@ -368,11 +354,20 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   const [leadStatus, setLeadStatus] = useState<string | null>(null)
 
   const leadStatusDisplay = React.useMemo<LeadStatusType | null>(() => {
+    // Se tem chatLead com status definido
     if (chatLead?.status) {
       return chatLead.status as LeadStatusType
     }
-    return normalizeLeadStatus(leadStatus)
-  }, [chatLead?.status, leadStatus])
+    // Se tem leadStatus local
+    if (leadStatus) {
+      return normalizeLeadStatus(leadStatus)
+    }
+    // Padrão: se não tem atendente, está aguardando
+    if (!atendenteData?.atendente) {
+      return 'aguardando'
+    }
+    return null
+  }, [chatLead?.status, leadStatus, atendenteData?.atendente])
 
   // Listener para recarregar dados quando atendimento for assumido
   React.useEffect(() => {
@@ -438,7 +433,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       try {
         const token = localStorage.getItem('token') || 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
         
-        console.log('🎯 [ItemSideChat] Buscando Kanban info para chat:', chat.id)
+        setLoadingKanbanData(true)
         
         // Buscar todos os quadros
         const quadrosResponse = await fetch('/api/kanban/quadros', {
@@ -446,12 +441,12 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         })
         
         if (!quadrosResponse.ok) {
-          console.log('❌ Erro ao buscar quadros:', quadrosResponse.status)
+          setLoadingKanbanData(false)
           return
         }
         
-        const quadros = await quadrosResponse.json()
-        console.log('📋 Quadros encontrados:', quadros.length)
+        const quadrosData = await quadrosResponse.json()
+        const quadros = quadrosData.data || quadrosData.quadros || quadrosData || []
         
         // Para cada quadro, buscar os metadados
         for (const quadro of quadros) {
@@ -464,7 +459,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           const metadata = await metadataResponse.json()
           const cards = metadata?.cards || []
           
-          // Procurar este chat no quadro - melhorar busca
+          // Procurar este chat no quadro
           const phoneNumber = chat.id.replace('@c.us', '')
           const card = cards.find((c: any) => {
             const cardPhone = c.telefone || c.phone || c.chatId?.replace('@c.us', '') || ''
@@ -474,19 +469,22 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           })
           
           if (card) {
-            console.log('✅ Card encontrado no Kanban:', card)
+            // Buscar nome da coluna
             const columnInfo = metadata?.columns?.find((col: any) => col.id === card.column_id)
+            const columnName = columnInfo?.nome || columnInfo?.title || card.columnTitle || card.coluna
+            
             setKanbanInfo({
               board: quadro.nome,
-              column: columnInfo?.title || card.columnTitle || card.coluna || 'Em Atendimento'
+              column: columnName
             })
+            setLoadingKanbanData(false)
             return // Encontrou, pode parar
           }
         }
         
-        console.log('⚠️ Chat não encontrado em nenhum quadro Kanban')
+        setLoadingKanbanData(false)
       } catch (error) {
-        console.error('Erro ao buscar info do Kanban:', error)
+        setLoadingKanbanData(false)
       }
     }
     
@@ -662,19 +660,24 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               const conexaoInfo = getConexaoInfo()
               const filasConexao = conexaoInfo?.filas || []
               
+              
               // Se tem fila do chat, mostrar ela primeiro
               if (chat.fila && typeof chat.fila === 'object') {
                 return (
                   <div 
-                    className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
+                    className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full relative"
                     style={{ 
                       backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
                       color: chat.fila.cor || '#9333ea'
                     }}
-                    title={`Fila: ${chat.fila.nome}`}
+                    title={`🔍 DEBUG CHAT.FILA: ${chat.fila.nome} | ID: ${chat.fila.id} | ChatLead: ${chatLead?.fila_id || 'NONE'} | Fonte: CHAT_LEAD`}
                   >
                     <Users className="w-1.5 h-1.5" />
                     <span className="text-[8px] font-medium truncate max-w-[46px]">{chat.fila.nome}</span>
+                    {/* DEBUG VISUAL - FILA DO CHAT LEAD */}
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 text-white text-[6px] rounded-full flex items-center justify-center">
+                      L
+                    </div>
                   </div>
                 )
               }
@@ -688,32 +691,47 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                   return (
                     <div 
                       key={filaId}
-                      className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
+                      className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full relative"
                       style={{ 
                         backgroundColor: `${fila.cor || '#9333ea'}20`,
                         color: fila.cor || '#9333ea'
                       }}
-                      title={`Fila: ${fila.nome}`}
+                      title={`🔍 DEBUG FILA: ${fila.nome} | ID: ${filaId} | ChatLead: ${chatLead?.fila_id || 'NONE'} | Conexão: ${filasConexao.length} filas`}
                     >
                       <Users className="w-1.5 h-1.5" />
                       <span className="text-[8px] font-medium truncate max-w-[46px]">{fila.nome}</span>
+                      {/* DEBUG VISUAL */}
+                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 text-white text-[6px] rounded-full flex items-center justify-center">
+                        {index + 1}
+                      </div>
                     </div>
                   )
                 })
               }
               
-              return null
+              // Se não tem fila, mostrar "Sem fila"
+              return (
+                <div 
+                  className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800/40 rounded-full"
+                  title="Este chat não está em nenhuma fila"
+                >
+                  <Users className="w-1.5 h-1.5 text-gray-400" />
+                  <span className="text-[8px] font-medium text-gray-500 dark:text-gray-400">
+                    Sem fila
+                  </span>
+                </div>
+              )
             })()}
             
-            {/* Kanban + Coluna - forçar aparecer */}
-            {(kanbanInfo.board || kanbanInfo.column || true) && (
+            {/* Kanban + Coluna - DADOS REAIS */}
+            {(kanbanInfo.board && kanbanInfo.column) && (
               <div 
                 className="flex items-center gap-0.5 px-0.5 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full"
-                title={`Kanban: ${kanbanInfo.board || 'Vendas'} - ${kanbanInfo.column || 'Prospecção'}`}
+                title={`Kanban: ${kanbanInfo.board} - ${kanbanInfo.column}`}
               >
                 <Layers className="w-1.5 h-1.5 text-blue-500" />
                 <span className="text-[8px] font-medium text-blue-600 truncate max-w-[54px]">
-                  {kanbanInfo.column || 'Prospecção'}
+                  {kanbanInfo.column}
                 </span>
               </div>
             )}
@@ -724,10 +742,28 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       {/* Badges do Atendente, Status e Tags */}
       <div className="absolute top-1.5 right-[70px] flex items-center gap-1.5">
-        <div className="flex items-center gap-0.5 px-1 py-0.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full">
-          <UserCheck className="w-2 h-2 text-indigo-600" />
-          <span className="text-[8px] font-medium text-indigo-600 truncate max-w-[56px]">
-            {nomeResponsavel || 'Sem atendente'}
+        <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
+          atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+            ? 'bg-green-100 dark:bg-green-900/20' // Verde se você é o atendente
+            : atendenteData?.atendente
+            ? 'bg-blue-100 dark:bg-blue-900/20' // Azul se tem outro atendente
+            : 'bg-gray-100 dark:bg-gray-900/20' // Cinza se não tem atendente
+        }`}>
+          <UserCheck className={`w-2 h-2 ${
+            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+              ? 'text-green-600' // Verde se você é o atendente
+              : atendenteData?.atendente
+              ? 'text-blue-600' // Azul se tem outro atendente
+              : 'text-gray-600' // Cinza se não tem atendente
+          }`} />
+          <span className={`text-[8px] font-medium truncate max-w-[56px] ${
+            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+              ? 'text-green-600' // Verde se você é o atendente
+              : atendenteData?.atendente
+              ? 'text-blue-600' // Azul se tem outro atendente
+              : 'text-gray-600' // Cinza se não tem atendente
+          }`}>
+            {nomeResponsavel || 'Sem atendentes'}
           </span>
         </div>
 
@@ -762,19 +798,31 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           </div>
         )}
 
+        {/* Badge de Agente IA - Verde se ativo */}
+        {agente?.ativo && (
+          <div className="relative flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/20">
+            <Bot className="w-2 h-2 text-cyan-600" />
+            {/* Pin indicador - Verde se ativo */}
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+            <span className="text-[8px] font-medium truncate max-w-[40px] text-cyan-600">
+              {agente?.nome || 'IA'}
+            </span>
+          </div>
+        )}
+
         {/* Tags como badges coloridas */}
         <TagBadges chatId={chat.id} />
       </div>
 
       {/* Timestamp no canto superior direito */}
-      <div className="absolute top-1 right-3 flex flex-col items-end gap-1">
-        <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+      <div className="absolute top-1.5 right-2 flex flex-col items-end gap-0.5">
+        <div className="text-[9px] font-medium text-gray-400 dark:text-gray-500">
           {chat.lastMessage?.timestamp ? formatTimestamp(chat.lastMessage.timestamp) : 'Agora'}
         </div>
         
-        {/* Pin/Badge de mensagens novas - estilo WhatsApp */}
+        {/* Pin/Badge de mensagens novas - compacto */}
         {!!(chat.unreadCount && chat.unreadCount > 0) && (
-          <div className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
+          <div className="bg-green-500 text-white text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center px-1 rounded-full shadow-sm">
             {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
           </div>
         )}
@@ -802,52 +850,33 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           <Star className="w-3 h-3" fill={chat.isFavorite ? 'currentColor' : 'none'} />
         </button>
         
-        {/* Assumir - Novo botão */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setShowAssumirModal(true)
-          }}
-          className={`relative p-1.5 rounded-lg transition-colors ${
-            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578' 
-              ? 'text-green-500 hover:text-green-600' 
-              : 'text-slate-400 hover:text-green-400'
-          }`}
-          title={
-            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
-              ? 'Você assumiu este atendimento'
-              : 'Assumir atendimento'
-          }
-        >
-          <UserCheck className="w-3 h-3" />
-          {/* Badge indicando que você assumiu */}
-          {atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578' && (
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
-          )}
-        </button>
+     
         
-        {/* Transferir - IGUAL AO ANTIGO */}
+        {/* Transferir - com indicador de atendente */}
         <button
           onClick={(e) => {
             e.stopPropagation()
             setShowTransferModal(true)
           }}
-          className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
-          title="Transferir conversa"
+          className={`relative p-1.5 rounded-lg transition-colors ${
+            atendenteData?.atendente 
+              ? 'text-blue-500 hover:text-blue-600' 
+              : 'text-slate-400 hover:text-blue-400'
+          }`}
+          title={
+            atendenteData?.atendente
+              ? `Transferir de ${nomeResponsavel || 'Atendente atual'}`
+              : 'Transferir conversa'
+          }
         >
           <UserPlus className="w-3 h-3" />
+          {/* Badge indicando que tem atendente */}
+          {atendenteData?.atendente && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-gray-800"></div>
+          )}
         </button>
         
-        {/* 🆕 Finalizar Atendimento - Só mostra se estiver em atendimento */}
-        {canFinalizarAtendimento && (
-          <button
-            onClick={handleFinalizarClick}
-            className="p-1.5 text-slate-400 hover:text-green-400 rounded-lg transition-colors"
-            title="Finalizar atendimento"
-          >
-            <CheckCircle className="w-3 h-3" />
-          </button>
-        )}
+       
         
         {/* Arquivar - IGUAL AO ANTIGO */}
         <button
@@ -870,23 +899,6 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         </button>
         
         {/* Ícone de mensagens removido - usando só o pin abaixo do horário */}
-
-     
-        
-        {/* Ocultar/Mostrar - IGUAL AO ANTIGO 
-          onClick={(e) => {
-            e.stopPropagation()
-            if (onToggleHidden) {
-              onToggleHidden(chat.id)
-            } else {
-              console.log('onToggleHidden não implementado para:', chat.id)
-            }
-          }}
-          className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg transition-colors"
-          title={chat.isHidden ? 'Mostrar conversa' : 'Ocultar conversa'}
-        >
-          {chat.isHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-        </button>
         
         {/* Excluir - IGUAL AO ANTIGO */}
         <button
@@ -963,55 +975,67 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       onClose={() => setShowTransferModal(false)}
       chatId={chat.id}
       chatName={chat.name}
-      currentAtendente={chatLead?.responsavel || 'Não atribuído'}
-      currentFila={chatLead?.fila_id || 'Sem fila'}
+      currentAtendente={chatLead?.responsavelUser?.nome || (chatLead?.responsavel && chatLead.responsavel !== 'Não atribuído' ? `ID:${chatLead.responsavel.slice(0,8)}` : 'Não atribuído')}
+      currentFila={(typeof chat.fila === 'object' ? chat.fila?.id : null) || chatLead?.fila?.id || chatLead?.fila_id || 'Sem fila'}
       onTransferSuccess={() => {
-        // Recarregar status do chat após transferência
-        const fetchStatus = async () => {
-          try {
-            const status = await buscarStatusChat(chat.id)
-            applyChatLeadStatus(status)
-          } catch (error) {
-            console.error('Erro ao recarregar status:', error)
+          // Recarregar status do chat após transferência
+          const fetchStatus = async () => {
+            try {
+              const status = await buscarStatusChat(chat.id)
+              applyChatLeadStatus(status)
+              
+              // Disparar evento global para atualizar toda a lista
+              window.dispatchEvent(new CustomEvent('chatTransferred', { 
+                detail: { chatId: chat.id } 
+              }))
+              
+              console.log('✅ [ItemSideChat] Chat transferido, evento disparado')
+            } catch (error) {
+              console.error('Erro ao recarregar status:', error)
+            }
           }
-        }
-        fetchStatus()
-      }}
-    />
+          fetchStatus()
+        }}
+      />
 
-    {/* Modal de Assumir */}
-    <AssumirModal
-      isOpen={showAssumirModal}
-      onClose={() => setShowAssumirModal(false)}
-      chatId={chat.id}
-      chatName={chat.name}
-      currentAtendente={nomeResponsavel || 'Sem atendente'}
-      onAssumirSuccess={() => {
-        // Recarregar status do chat após assumir
-        const fetchStatus = async () => {
-          try {
-            console.log('🔄 [ASSUMIR] Recarregando status do chat:', chat.id)
-            const status = await buscarStatusChat(chat.id)
-            console.log('✅ [ASSUMIR] Novo status recebido:', status)
-            applyChatLeadStatus(status)
-            setLeadStatus(normalizeLeadStatus(status?.status) || null)
-            
-            // Disparar evento global para atualizar outros componentes
-            const event = new CustomEvent('chatStatusUpdated', {
-              detail: { chatId: chat.id, status: status }
-            })
-            window.dispatchEvent(event)
-            console.log('📡 [ASSUMIR] Evento global disparado para chat:', chat.id)
-            
-            // Forçar re-render do componente
-            setShowAssumirModal(false)
-          } catch (error) {
-            console.error('❌ [ASSUMIR] Erro ao recarregar status:', error)
+      {/* Modal de Assumir */}
+      <AssumirModal
+        isOpen={showAssumirModal}
+        onClose={() => setShowAssumirModal(false)}
+        chatId={chat.id}
+        chatName={chat.name}
+        currentAtendente={nomeResponsavel || 'Sem atendente'}
+        onAssumirSuccess={() => {
+          // Recarregar status do chat após assumir
+          // Disparar evento global para atualizar toda a lista
+          window.dispatchEvent(new CustomEvent('chatTransferred', { 
+            detail: { chatId: chat.id } 
+          }))
+          console.log('✅ [ItemSideChat] Chat assumido, evento disparado')
+          const fetchStatus = async () => {
+            try {
+              console.log('🔄 [ASSUMIR] Recarregando status do chat:', chat.id)
+              const status = await buscarStatusChat(chat.id)
+              console.log('✅ [ASSUMIR] Novo status recebido:', status)
+              applyChatLeadStatus(status)
+              setLeadStatus(normalizeLeadStatus(status?.status) || null)
+              
+              // Disparar evento global para atualizar outros componentes
+              const event = new CustomEvent('chatStatusUpdated', {
+                detail: { chatId: chat.id, status: status }
+              })
+              window.dispatchEvent(event)
+              console.log('📡 [ASSUMIR] Evento global disparado para chat:', chat.id)
+              
+              // Forçar re-render do componente
+              setShowAssumirModal(false)
+            } catch (error) {
+              console.error('❌ [ASSUMIR] Erro ao recarregar status:', error)
+            }
           }
-        }
-        fetchStatus()
-      }}
-    />
+          fetchStatus()
+        }}
+      />
   </>
   )
 })

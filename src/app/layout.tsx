@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   keywords: 'CRM, WhatsApp, IA, Atendimento, Kanban',
   authors: [{ name: 'TappyOne' }],
   viewport: 'width=device-width, initial-scale=1',
+  icons: {
+    icon: '/favicontappy.png',
+    shortcut: '/favicontappy.png',
+    apple: '/favicontappy.png',
+  },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
@@ -33,6 +39,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${poppins.variable}`}>
+      <head>
+        <link rel="icon" href="/favicontappy.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicontappy.png" />
+      </head>
       <body className={`${poppins.className} antialiased`}>
         <ThemeProvider>
           <ColorThemeProvider>

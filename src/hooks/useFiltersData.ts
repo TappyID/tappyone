@@ -84,6 +84,8 @@ export function useFiltersData() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('🏷️ [TAGS API] Resposta:', data)
+        
         // Ajustar estrutura para ser consistente
         const tagsFormatted = (data.data || data.tags || data || []).map((tag: any) => ({
           id: tag.id,
@@ -91,8 +93,11 @@ export function useFiltersData() {
           cor: tag.cor || '#3B82F6',
           count: tag.count || 0
         }))
+        
+        console.log('🏷️ [TAGS] Total carregadas:', tagsFormatted.length, tagsFormatted)
         setTags(tagsFormatted)
       } else {
+        console.error('🏷️ [TAGS] API retornou erro:', response.status)
         throw new Error('API não disponível')
       }
     } catch (error) {

@@ -27,6 +27,22 @@ export default function LoginPage() {
   const { isAuthenticated, loading, user, login, getDashboardRoute } = useAuth()
   const { theme } = useTheme()
 
+  // Carregar credenciais salvas ao montar o componente
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail')
+    const savedPassword = localStorage.getItem('rememberedPassword')
+    const wasRemembered = localStorage.getItem('rememberMe') === 'true'
+    
+    if (savedEmail && savedPassword && wasRemembered) {
+      setEmail(savedEmail)
+      setPassword(savedPassword)
+      setRememberMe(true)
+      console.log('✅ Credenciais carregadas do localStorage:', { email: savedEmail })
+    } else {
+      console.log('ℹ️ Nenhuma credencial salva encontrada')
+    }
+  }, [])
+
   // Redirecionar se já estiver logado
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
@@ -68,6 +84,19 @@ export default function LoginPage() {
 
       if (response.ok) {
         const data = await response.json()
+        
+        // Salvar ou limpar credenciais baseado no "Lembrar-me"
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email)
+          localStorage.setItem('rememberedPassword', password)
+          localStorage.setItem('rememberMe', 'true')
+          console.log('✅ Credenciais salvas no localStorage')
+        } else {
+          localStorage.removeItem('rememberedEmail')
+          localStorage.removeItem('rememberedPassword')
+          localStorage.removeItem('rememberMe')
+          console.log('🗑️ Credenciais removidas do localStorage')
+        }
         
         // Usar o hook para fazer login
         login(data.token, data.usuario)
@@ -117,6 +146,19 @@ export default function LoginPage() {
     setForgotEmail('')
     setForgotSuccess(false)
     setForgotLoading(false)
+  }
+
+  // Limpar credenciais salvas quando desmarcar o checkbox
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMe(checked)
+    
+    if (!checked) {
+      // Se desmarcar, limpar imediatamente do localStorage
+      localStorage.removeItem('rememberedEmail')
+      localStorage.removeItem('rememberedPassword')
+      localStorage.removeItem('rememberMe')
+      console.log('🗑️ Credenciais removidas (checkbox desmarcado)')
+    }
   }
 
   return (
@@ -275,8 +317,8 @@ export default function LoginPage() {
                     id="remember"
                     type="checkbox"
                     checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-[#273155] bg-gray-100 border-gray-300 rounded focus:ring-[#273155] focus:ring-2 transition-colors"
+                    onChange={(e) => handleRememberMeChange(e.target.checked)}
+                    className="w-4 h-4 text-[#273155] bg-gray-100 border-gray-300 rounded focus:ring-[#273155] focus:ring-2 transition-colors cursor-pointer"
                   />
                   <Label htmlFor="remember" className={`text-sm font-medium cursor-pointer ${
                     theme === 'dark' ? 'text-gray-300' : 'text-gray-600'

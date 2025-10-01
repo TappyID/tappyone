@@ -175,8 +175,15 @@ export function useAuth() {
   const logout = () => {
     localStorage.removeItem('token')
     
+    // Limpar credenciais salvas do "Lembrar-me"
+    localStorage.removeItem('rememberedEmail')
+    localStorage.removeItem('rememberedPassword')
+    localStorage.removeItem('rememberMe')
+    
     // Limpar cookie do token
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; secure; samesite=strict'
+    
+    console.log('🔒 Logout realizado - todas as credenciais removidas')
     
     setAuthState({
       user: null,

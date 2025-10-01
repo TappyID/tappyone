@@ -28,6 +28,7 @@ import {
   Moon,
   Bot,
   Expand,
+  Palette,
   FileText,
   Ticket,
   Calendar,
@@ -37,6 +38,8 @@ import { useAuth } from '@/hooks/useAuth'
 import ReactCountryFlag from 'react-country-flag'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
+import { ColorThemeModal } from '../../components/ColorThemeModal'
 import { useAtendentes } from '@/hooks/useAtendentes'
 import { useTickets } from '@/hooks/useTickets'
 // Removidos hooks do WhatsApp para evitar ERR_INSUFFICIENT_RESOURCES
@@ -75,7 +78,9 @@ export default function AtendimentosTopBar({
   const [showTranslation, setShowTranslation] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('pt-BR')
   const { actualTheme, setTheme } = useTheme()
+  const { colorTheme } = useColorTheme()
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showColorModal, setShowColorModal] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -162,7 +167,10 @@ export default function AtendimentosTopBar({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -80, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="h-16 bg-gradient-to-r from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-b border-white/10 shadow-2xl relative z-[10000]"
+          className="h-16 backdrop-blur-xl border-b border-white/10 shadow-2xl relative z-[10000]"
+          style={{
+            background: `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.secondary})`
+          }}
         >
       {/* Glass Effect Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 backdrop-blur-sm" />
@@ -775,7 +783,10 @@ export default function AtendimentosTopBar({
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+            </motion.div>
+
+          {/* Divider */}
+          <div className="h-8 w-px bg-white/20" />
 
           {/* Dark/Light Mode Toggle */}
           <motion.div className="relative">
@@ -826,6 +837,24 @@ export default function AtendimentosTopBar({
                 {actualTheme === 'dark' ? '🌙' : '☀️'}
               </span>
             </motion.div>
+          </motion.div>
+
+          {/* Color Theme Button */}
+          <motion.div className="relative">
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 10 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowColorModal(true)}
+              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300 group"
+              title="Personalizar Cores"
+            >
+              <Palette className="w-4 h-4 text-white group-hover:text-pink-300 transition-colors" />
+            </motion.button>
+            
+            {/* Badge */}
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-pink-300/30">
+              <span className="text-[10px] font-bold text-white">🎨</span>
+            </div>
           </motion.div>
 
           {/* Profile */}
@@ -984,6 +1013,12 @@ export default function AtendimentosTopBar({
         </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Color Theme Modal */}
+      <ColorThemeModal
+        isOpen={showColorModal}
+        onClose={() => setShowColorModal(false)}
+      />
     </>
   )
 }

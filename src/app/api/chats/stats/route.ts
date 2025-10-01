@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    console.log('📊 [STATS] GET - Buscando estatísticas de atendimento')
 
     // Construir query params
     const queryParams = new URLSearchParams()
@@ -47,7 +46,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data, { status: response.status })
     }
 
-    console.log('✅ [STATS] Estatísticas obtidas:', data.data)
     return NextResponse.json(data)
 
   } catch (error) {

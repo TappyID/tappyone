@@ -30,6 +30,8 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
 // Chart Data
 const revenueData = [
@@ -119,6 +121,9 @@ export default function AdminDashboard() {
     }
   ]
 
+  const { theme } = useTheme()
+  const { colorTheme } = useColorTheme()
+
   return (
     <AdminLayout>
       {/* Welcome Section */}
@@ -128,23 +133,44 @@ export default function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="bg-gradient-to-r from-[#273155] to-[#1e2442] rounded-2xl p-8 text-white">
-          <motion.h1
-            className="text-3xl font-bold mb-2"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            Bem-vindo de volta, {user.nome}! 👋
-          </motion.h1>
-          <motion.p
-            className="text-white/80 text-lg"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            Aqui está um resumo do que está acontecendo no seu CRM hoje.
-          </motion.p>
+        <div 
+          className="rounded-2xl p-8 shadow-xl relative overflow-hidden"
+          style={{
+            background: theme === 'dark'
+              ? `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.secondary})`
+              : `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.secondary})`
+          }}
+        >
+          {/* Glass effect overlay for dark mode */}
+          {theme === 'dark' && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
+              <div className="absolute inset-0 border border-white/10 rounded-2xl" />
+            </>
+          )}
+          
+          {/* Content */}
+          <div className="relative z-10">
+            <motion.h1
+              className="text-3xl font-bold mb-2 text-white"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              Bem-vindo de volta, {user.nome}! 👋
+            </motion.h1>
+            <motion.p
+              className={`text-lg ${
+                theme === 'dark' ? 'text-gray-300' : 'text-white/90'
+              }`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              Aqui está um resumo do que está acontecendo no seu CRM hoje.
+            </motion.p>
+          </div>
         </div>
       </motion.div>
 

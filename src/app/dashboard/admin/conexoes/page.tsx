@@ -54,74 +54,55 @@ export default function ConexoesPage() {
         filasCount = filasData.data?.length || 0
       }
 
-      // Processar conexões
+      // Processar conexões E somar chats/grupos de todas
       let totalConns = 0
       let activeConns = 0
+      let sumChats = 0
+      let sumGroups = 0
+      
       if (connectionsResponse.ok) {
         const connectionsData = await connectionsResponse.json()
         const connections = connectionsData.connections || []
+        
         totalConns = connections.length
-        activeConns = connections.filter((conn: any) => conn.status === 'connected').length
+        activeConns = connections.filter((conn: any) => conn.status === 'connected' || conn.status === 'WORKING').length
+        
+        // 🔥 SOMAR chats e grupos de TODAS as conexões
+        connections.forEach((conn: any) => {
+          const sessionData = conn.sessionData || conn.session_data
+          if (sessionData) {
+            const chats = sessionData.total_chats || 0
+            const groups = sessionData.total_groups || 0
+            sumChats += chats
+            sumGroups += groups
+          }
+        })
       }
 
       setTotalFilas(filasCount)
       setActiveConnections(activeConns)
       setTotalConnections(totalConns)
-      
-      // Buscar dados reais da WAHA se houver conexões ativas
-      if (activeConns > 0) {
-        try {
-          console.log('🔍 [WAHA] Buscando chats da WAHA...')
-          const wahaResponse = await fetch('/api/whatsapp/chats')
-          console.log('🔍 [WAHA] Response status:', wahaResponse.status)
-          
-          if (wahaResponse.ok) {
-            const wahaData = await wahaResponse.json()
-            console.log('🔍 [WAHA] Dados recebidos:', wahaData)
-            
-            const chats = Array.isArray(wahaData) ? wahaData : wahaData.data || []
-            console.log('🔍 [WAHA] Total de chats:', chats.length)
-            
-            const individualChats = chats.filter((chat: any) => !chat.id?.includes('@g.us'))
-            const groupChats = chats.filter((chat: any) => chat.id?.includes('@g.us'))
-            
-            console.log('📱 [WAHA] Chats individuais:', individualChats.length)
-            console.log('👥 [WAHA] Grupos:', groupChats.length)
-            
-            setTotalChats(individualChats.length)
-            setTotalGroups(groupChats.length)
-          } else {
-            console.warn('⚠️ [WAHA] Erro na resposta:', wahaResponse.status)
-            const errorText = await wahaResponse.text()
-            console.error('❌ [WAHA] Detalhes do erro:', errorText)
-            
-            // Fallback para valores estimados
-            setTotalChats(1200)
-            setTotalGroups(45)
-          }
-        } catch (error) {
-          console.error('❌ [WAHA] Erro ao buscar dados:', error)
-          setTotalChats(1200)
-          setTotalGroups(45)
-        }
-      } else {
-        console.log('⚠️ [WAHA] Nenhuma conexão ativa, definindo chats/grupos como 0')
-        setTotalChats(0)
-        setTotalGroups(0)
-      }
+      setTotalChats(sumChats)
+      setTotalGroups(sumGroups)
       
     } catch (error) {
-      console.error('❌ [STATS] Erro:', error)
+      console.error('❌ [STATS] Erro ao carregar estatísticas:', error)
       // Fallback values
-      setTotalFilas(2)
-      setTotalChats(1200)
-      setTotalGroups(45)
-      setActiveConnections(2)
-      setTotalConnections(2)
+      setTotalFilas(0)
+      setTotalChats(0)
+      setTotalGroups(0)
+      setActiveConnections(0)
+      setTotalConnections(0)
     } finally {
       setStatsLoading(false)
     }
   }
+
+  // Carregar estatísticas na montagem do componente
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
   // Handlers dos modais
   const handleEditConnection = (connection: any) => {
     console.log('🔧 [EDIT CONNECTION] ==========================================')

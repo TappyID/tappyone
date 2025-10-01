@@ -15,6 +15,8 @@ import useChatsOverview from '@/hooks/useChatsOverview'
 import { useFiltersData } from '@/hooks/useFiltersData'
 import useMessagesData from '@/hooks/useMessagesData'
 import { useSearchData } from '@/hooks/useSearchData'
+import { useChatStats } from '@/hooks/useChatStats'
+// import { useChatLeadBatch } from '@/hooks/useChatLeadBatch' // DESABILITADO - causando loop
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
 import TransferirAtendimentoModal from '../atendimentos/components/modals/TransferirAtendimentoModal'
@@ -280,6 +282,60 @@ function AtendimentoPage() {
     readNoReplyCount,
     groupChatsCount
   } = useChatsOverview()
+
+  // Hook para estatísticas de atendimento (dados reais do backend)
+  const { stats: chatStats } = useChatStats()
+
+  // Hook para buscar dados de chat leads em batch (DESABILITADO - causando loop)
+  // const activeChatIdsForLeads = useMemo(() => {
+  //   return overviewChats.slice(0, 20).map(chat => chat.id).filter(Boolean)
+  // }, [overviewChats])
+
+  // const { chatLeads } = useChatLeadBatch(activeChatIdsForLeads)
+  const chatLeads: Record<string, any> = {} // Mock vazio por enquanto
+
+  // Estado para armazenar agentes ativos (para contagem)
+  const [agentesAtivos, setAgentesAtivos] = useState<Set<string>>(new Set())
+  
+  // Buscar agentes ativos dos primeiros 50 chats (em paralelo para performance)
+  useEffect(() => {
+    const fetchAgentesAtivos = async () => {
+      const chatIdsToCheck = overviewChats.slice(0, 50).map(c => c.id)
+      const token = localStorage.getItem('token')
+      
+      if (!token || chatIdsToCheck.length === 0) return
+      
+      // Buscar todos em paralelo
+      const promises = chatIdsToCheck.map(async (chatId) => {
+        try {
+          const res = await fetch(`/api/chat-agentes/${encodeURIComponent(chatId)}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            cache: 'no-cache'
+          })
+          const data = await res.json()
+          return { chatId, ativo: data.ativo === true }
+        } catch (err) {
+          return { chatId, ativo: false }
+        }
+      })
+      
+      const results = await Promise.all(promises)
+      const agentesSet = new Set<string>()
+      
+      results.forEach(({ chatId, ativo }) => {
+        if (ativo) {
+          agentesSet.add(chatId)
+        }
+      })
+      
+      setAgentesAtivos(agentesSet)
+      console.log('🤖 [AGENTES ATIVOS] Total:', agentesSet.size, 'de', chatIdsToCheck.length, 'chats verificados')
+    }
+    
+    if (overviewChats.length > 0) {
+      fetchAgentesAtivos()
+    }
+  }, [overviewChats.length])
 
   // Hook para busca avançada
   const searchResults = useSearchData(searchQuery, searchOptions)
@@ -792,6 +848,20 @@ function AtendimentoPage() {
     fetchChats()
   }, [])
 
+  // Listener para atualizar lista quando houver transferência
+  useEffect(() => {
+    const handleChatTransferred = (event: any) => {
+      console.log('🔄 [AtendimentoPage] Chat transferido, recarregando lista...', event.detail)
+      // Aguardar 500ms para garantir que o backend atualizou
+      setTimeout(() => {
+        fetchChats(searchQuery)
+      }, 500)
+    }
+    
+    window.addEventListener('chatTransferred', handleChatTransferred)
+    return () => window.removeEventListener('chatTransferred', handleChatTransferred)
+  }, [searchQuery])
+
   // Debounce para pesquisa
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -945,6 +1015,12 @@ function AtendimentoPage() {
         isOnline: Math.random() > 0.7,
         connectionStatus: ['connected', 'disconnected', 'connecting'][Math.floor(Math.random() * 3)] as 'connected' | 'disconnected' | 'connecting',
         
+        // Chat Lead Status (buscar dados reais do batch)
+        chatLeadStatus: chatLeads[chat.id] || contatoData.chatLead,
+        
+        // Agente IA ativo (verificar no Set de agentes ativos)
+        hasActiveAgent: agentesAtivos.has(chat.id),
+        
         // Estados de favorito, arquivado, oculto
         isFavorite: favoriteChats.has(chat.id),
         isArchived: archivedChats.has(chat.id),
@@ -960,6 +1036,9 @@ function AtendimentoPage() {
       case 'read':
         result = result.filter(chat => (chat.unreadCount || 0) === 0)
         break
+      case 'read-no-reply':
+        result = result.filter(chat => (chat.unreadCount || 0) === 0 && !chat.lastMessage?.fromMe)
+        break
       case 'favorites':
         result = result.filter(chat => favoriteChats.has(chat.id))
         break
@@ -971,6 +1050,52 @@ function AtendimentoPage() {
         break
       case 'hidden':
         result = result.filter(chat => hiddenChats.has(chat.id))
+        break
+      case 'em_atendimento':
+        result = result.filter(chat => {
+          const chatLeadStatus = chat.chatLeadStatus?.status?.toLowerCase()
+          const hasAtendente = !!chat.chatLeadStatus?.responsavel
+          return (
+            chatLeadStatus === 'em_atendimento' || 
+            chatLeadStatus === 'atendimento' ||
+            (chatLeadStatus === 'em_atendimento' && hasAtendente)
+          )
+        })
+        console.log(`🟢 [FILTRO] Em Atendimento: ${result.length} chats`)
+        break
+      case 'aguardando':
+        result = result.filter(chat => {
+          const chatLeadStatus = chat.chatLeadStatus?.status?.toLowerCase()
+          const hasNoAtendente = !chat.chatLeadStatus?.responsavel
+          return (
+            chatLeadStatus === 'aguardando' || 
+            chatLeadStatus === 'pendente' ||
+            hasNoAtendente
+          )
+        })
+        console.log(`🟡 [FILTRO] Aguardando: ${result.length} chats`)
+        break
+      case 'finalizado':
+        result = result.filter(chat => {
+          const chatLeadStatus = chat.chatLeadStatus?.status?.toLowerCase()
+          return (
+            chatLeadStatus === 'finalizado' || 
+            chatLeadStatus === 'concluido'
+          )
+        })
+        console.log(`🔵 [FILTRO] Finalizado: ${result.length} chats`)
+        break
+      case 'agentes_ia':
+        result = result.filter(chat => chat.hasActiveAgent === true)
+        console.log(`🤖 [FILTRO] Agentes IA: ${result.length} chats com agente ativo`)
+        break
+      case 'leads_quentes':
+        result = result.filter(chat => {
+          // Lead quente: tem rating alto OU tem tags OU tem agendamentos próximos
+          return (chat.rating && chat.rating >= 4) || 
+                 (chat.tags && chat.tags.length > 0) ||
+                 (chat.agendamentos && chat.agendamentos.length > 0)
+        })
         break
       case 'all':
       default:
@@ -1030,6 +1155,90 @@ function AtendimentoPage() {
     
     return result
   }, [transformedChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter, selectedTag, selectedFila, selectedKanbanStatus, selectedTicketStatus, selectedPriceRange])
+
+  // Calcular contadores para os novos filtros (usando dados reais do backend quando disponíveis)
+  const chatCounters = useMemo(() => {
+    const counts = {
+      emAtendimento: 0,
+      aguardando: 0,
+      finalizado: 0,
+      agentesIA: 0,
+      leadsQuentes: 0
+    }
+    
+    // Contar nos chats processados (limitar para performance)
+    const chatsToCount = processedChats.slice(0, 200)
+    
+    chatsToCount.forEach((chat, index) => {
+      // Debug dos primeiros 5 chats para entender a estrutura
+      if (index < 5) {
+        console.log(`🔍 [DEBUG CHAT ${index}]:`, {
+          id: chat.id,
+          chatLeadStatus: chat.chatLeadStatus,
+          hasActiveAgent: chat.hasActiveAgent,
+          name: chat.name
+        })
+      }
+      
+      // Contar por status do ChatLead
+      const leadStatus = chat.chatLeadStatus?.status?.toLowerCase()
+      const hasResponsavel = !!chat.chatLeadStatus?.responsavel
+      
+      // Debug para entender o status
+      if (index < 10 && (leadStatus || hasResponsavel)) {
+        console.log(`📋 [STATUS CHAT ${index}]:`, {
+          name: chat.name,
+          leadStatus,
+          hasResponsavel,
+          responsavel: chat.chatLeadStatus?.responsavel
+        })
+      }
+      
+      if (leadStatus === 'em_atendimento' || leadStatus === 'atendimento') {
+        counts.emAtendimento++
+      } else if (leadStatus === 'aguardando' || leadStatus === 'pendente') {
+        counts.aguardando++
+      } else if (leadStatus === 'finalizado' || leadStatus === 'concluido') {
+        counts.finalizado++
+      } else if (!hasResponsavel) {
+        // Se não tem responsável, considerar como aguardando
+        counts.aguardando++
+      }
+      
+      // Contar agentes IA ativos
+      if (chat.hasActiveAgent === true) {
+        counts.agentesIA++
+        console.log(`🤖 [AGENTE ATIVO] Chat ${chat.name}: hasActiveAgent = true`)
+      }
+      
+      // Contar leads quentes
+      const isHotLead = 
+        (chat.rating && chat.rating >= 4) || 
+        (chat.tags && chat.tags.length > 0) ||
+        (chat.agendamentos && chat.agendamentos.length > 0) ||
+        (chat.unreadCount && chat.unreadCount > 5)
+        
+      if (isHotLead) {
+        counts.leadsQuentes++
+      }
+    })
+    
+    // Debug dos contadores
+    console.log('📊 [CONTADORES] Calculados:', counts)
+    
+    // Se os contadores dos chats forem 0, usar backend stats como fallback
+    if (counts.emAtendimento === 0 && chatStats.atendimento > 0) {
+      counts.emAtendimento = chatStats.atendimento
+    }
+    if (counts.aguardando === 0 && chatStats.aguardando > 0) {
+      counts.aguardando = chatStats.aguardando
+    }
+    if (counts.finalizado === 0 && chatStats.finalizado > 0) {
+      counts.finalizado = chatStats.finalizado
+    }
+    
+    return counts
+  }, [processedChats.length, chatStats.atendimento, chatStats.aguardando, chatStats.finalizado])
 
   // Expor funções para testes no console (só uma vez)
   useEffect(() => {
@@ -1120,6 +1329,12 @@ function AtendimentoPage() {
               groupChats={groupChatsCount} // Total real de grupos da WAHA
               favoriteChats={favoriteChats.size}
               hiddenChats={hiddenChats.size}
+              // Novos contadores
+              emAtendimentoChats={chatCounters.emAtendimento}
+              aguardandoChats={chatCounters.aguardando}
+              finalizadoChats={chatCounters.finalizado}
+              agentesIAChats={chatCounters.agentesIA}
+              leadsQuentesChats={chatCounters.leadsQuentes}
               // Controle do filtro ativo
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}

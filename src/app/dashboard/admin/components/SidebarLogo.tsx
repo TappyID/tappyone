@@ -16,7 +16,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
   return (
     <Link href="/dashboard/admin">
       <motion.div
-        className="flex items-center gap-3 p-4 group cursor-pointer"
+        className="flex items-center gap-3 h-16 px-4 group cursor-pointer"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
@@ -71,8 +71,8 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
             <Image
               src="/logo-branca.svg"
               alt="TappyOne Logo"
-              width={160}
-              height={44}
+              width={140}
+              height={36}
               className="object-contain"
               priority
             />

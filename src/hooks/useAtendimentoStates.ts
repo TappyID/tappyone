@@ -176,7 +176,6 @@ export const useAtendimentoStates = () => {
       }
 
       const data = await response.json()
-      console.log('📊 [STATS] Estatísticas:', data.data)
       setStats(data.data)
       return data.data as AtendimentoStats
     } finally {
