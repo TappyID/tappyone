@@ -6,6 +6,7 @@ interface ChatOverview {
   id: string
   name: string
   image?: string
+  sessionName?: string // 🔥 CRÍTICO: Identificador da conexão WhatsApp
   lastMessage?: {
     id: string
     body: string
@@ -33,15 +34,17 @@ interface UseChatsOverviewReturn {
   isLoadingMore: boolean
   markChatAsRead: (chatId: string) => Promise<void>
   markChatAsUnread: (chatId: string) => Promise<boolean>
-  totalChatsCount: number // Total real de chats do WhatsApp
-  unreadChatsCount: number // Total real de chats não lidos
-  readNoReplyCount: number // Total de chats lidos mas não respondidos
-  groupChatsCount: number // Total real de grupos
+  totalChatsCount: number
+  unreadChatsCount: number
+  readNoReplyCount: number
+  groupChatsCount: number
 }
 
 export default function useChatsOverview(): UseChatsOverviewReturn {
+  console.log('🎯 [useChatsOverview] HOOK INICIALIZADO!')
+  
   const [chats, setChats] = useState<ChatOverview[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // ✅ Começar com loading=true
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -49,8 +52,12 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
   const [unreadChatsCount, setUnreadChatsCount] = useState(0)
   const [readNoReplyCount, setReadNoReplyCount] = useState(0)
   const [groupChatsCount, setGroupChatsCount] = useState(0)
+  const [initialized, setInitialized] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   const fetchChatsOverview = async (limit = 12, offset = 0, append = false) => {
+    console.log('🔥 [fetchChatsOverview] FUNÇÃO CHAMADA!', { limit, offset, append })
+    
     try {
       setLoading(true)
       setError(null)
@@ -67,25 +74,80 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       
       console.log('📋 Buscando chats com paginação:', { limit, offset, append })
       
-      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=${limit}&offset=${offset}`, {
+      // ✅ BUSCAR DE TODAS AS CONEXÕES ATIVAS
+      // Buscar lista de sessões ativas
+      console.log('🔗 Buscando sessões de:', `${baseUrl}/api/sessions`)
+      
+      const sessionsResponse = await fetch(`${baseUrl}/api/sessions`, {
         headers: {
           'X-Api-Key': 'tappyone-waha-2024-secretkey'
         }
       })
-
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
       
-      console.log('📊 WAHA retornou', data.length, 'chats nesta página (limit:', limit, 'offset:', offset, ')')
-      console.log('🔍 Primeiros 3 chats desta página:', data.slice(0, 3).map(c => ({ id: c.id, name: c.name })))
+      console.log('🔗 Status da busca de sessões:', sessionsResponse.status)
+      
+      if (!sessionsResponse.ok) {
+        console.error('❌ Erro ao buscar sessões:', sessionsResponse.status, sessionsResponse.statusText)
+        throw new Error(`Erro ao buscar sessões: ${sessionsResponse.status}`)
+      }
+      
+      const sessions = await sessionsResponse.json()
+      console.log('🔗 Sessões encontradas:', sessions.length, sessions)
+      
+      // Buscar chats de todas as sessões em paralelo
+      const allChatsPromises = sessions.map(async (session: any) => {
+        try {
+          const response = await fetch(`${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`, {
+            headers: {
+              'X-Api-Key': 'tappyone-waha-2024-secretkey'
+            }
+          })
+          
+          if (!response.ok) {
+            console.warn(`⚠️ Erro ao buscar chats da sessão ${session.name}:`, response.status)
+            return []
+          }
+          
+          const data = await response.json()
+          console.log(`✅ Sessão ${session.name}: ${data.chats?.length || 0} chats`)
+          console.log(`🔍 DEBUG Resposta WAHA sessão ${session.name}:`, data)
+          
+          // ✅ CRÍTICO: Adicionar sessionName em cada chat
+          const rawChats = data.chats || data || []
+          console.log(`🔗 [SESSÃO ${session.name}] ANTES de adicionar sessionName - ${rawChats.length} chats`)
+          
+          const chatsComSession = rawChats.map((chat: any) => {
+            const chatComSession = {
+              ...chat,
+              sessionName: session.name // Marcar de qual sessão veio
+            }
+            // Log do primeiro chat para debug
+            if (rawChats.indexOf(chat) === 0) {
+              console.log(`🔥 [PRIMEIRO CHAT] Original:`, chat)
+              console.log(`🔥 [PRIMEIRO CHAT] Com sessionName:`, chatComSession)
+            }
+            return chatComSession
+          })
+          
+          console.log(`✅ [SESSÃO ${session.name}] DEPOIS - ${chatsComSession.length} chats marcados com sessionName="${session.name}"`)
+          
+          return chatsComSession
+        } catch (err) {
+          console.error(`❌ Erro na sessão ${session.name}:`, err)
+          return []
+        }
+      })
+      
+      const allChatsArrays = await Promise.all(allChatsPromises)
+      const allChats = allChatsArrays.flat()
+      
+      console.log(`📊 Total de chats de todas as conexões: ${allChats.length}`)
+      console.log('🔍 Primeiros 3 chats:', allChats.slice(0, 3).map(c => ({ id: c.id, name: c.name })))
       
       // Se retornou menos que o limit, não há mais páginas
-      const noMorePages = data.length < limit
+      const noMorePages = allChats.length < limit
       console.log('🔍 [hasMore] Debug paginação:', {
-        dataLength: data.length,
+        dataLength: allChats.length,
         limit,
         noMorePages,
         hasMoreWillBe: !noMorePages,
@@ -95,10 +157,10 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       setHasMore(!noMorePages)
 
       // Debug para verificar unreadCount da WAHA
-      console.log('🔍 DEBUG WAHA - Dados brutos recebidos:', data.slice(0, 2))
+      console.log('🔍 DEBUG WAHA - Dados brutos recebidos:', allChats.slice(0, 2))
       
       // Debug específico para estrutura de unreadCount
-      data.slice(0, 5).forEach((chat: any, index: number) => {
+      allChats.slice(0, 5).forEach((chat: any, index: number) => {
         console.log(`🔍 DEBUG WAHA - Chat ${index + 1} estrutura COMPLETA:`, {
           id: chat.id,
           name: chat.name,
@@ -112,7 +174,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       })
       
       // Procurar qualquer propriedade que possa indicar mensagens não lidas
-      const chatComMensagens = data.find((chat: any) => 
+      const chatComMensagens = allChats.find((chat: any) => 
         chat.lastMessage && !chat.lastMessage.fromMe
       )
       if (chatComMensagens) {
@@ -125,7 +187,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       }
       
       // Transformar dados da WAHA para formato interno
-      const transformedChats: ChatOverview[] = data.map((chat: any) => {
+      const transformedChats: ChatOverview[] = allChats.map((chat: any) => {
         // Debug específico do unreadCount
         if (chat.unreadCount > 0) {
           console.log('🔍 DEBUG WAHA - Chat com unreadCount > 0:', {
@@ -140,10 +202,20 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
           console.log('🖼️ Avatar encontrado para', chat.name, ':', chat.contact.profilePicUrl)
         }
         
+        // 🔥 DEBUG: Verificar se sessionName está presente (apenas primeiro chat)
+        if (allChats.indexOf(chat) === 0) {
+          if (!chat.sessionName) {
+            console.warn('⚠️ [sessionName] Chat SEM sessionName:', chat.id, chat.name)
+          } else {
+            console.log('✅ [sessionName] Chat COM sessionName:', chat.id, chat.sessionName)
+          }
+        }
+        
         return {
           id: chat.id,
           name: chat.name || chat.contact?.name || chat.contact?.pushname || 'Usuário',
           image: chat.contact?.profilePicUrl || chat.profilePicUrl || null,
+          sessionName: chat.sessionName, // 🔥 CRÍTICO: Preservar sessionName na transformação
         lastMessage: chat.lastMessage ? {
           id: chat.lastMessage.id,
           body: (() => {
@@ -441,15 +513,22 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     }
   }
 
+  // 🔥 FORÇAR EXECUÇÃO - usar useLayoutEffect
   useEffect(() => {
-    fetchChatsOverview(12, 0, false) // Carregar primeira página (12 chats)
-    fetchTotalChatsCount() // Buscar total real de chats
+    if (isMounted) return
     
-    // Soft refresh a cada 60 segundos (DESABILITADO temporariamente para debug)
-    // const interval = setInterval(softRefresh, 60000)
+    console.log('🚀🚀🚀 [useEffect] EXECUTANDO PELA PRIMEIRA VEZ!')
+    setIsMounted(true)
     
-    // return () => clearInterval(interval)
-  }, [])
+    // Executar com delay zero para garantir que roda
+    setTimeout(() => {
+      console.log('⏰ [useEffect] Timeout executado - chamando funções')
+      fetchChatsOverview(12, 0, false)
+      fetchTotalChatsCount()
+    }, 0)
+    
+    console.log('✅ [useEffect] Timeout agendado!')
+  }, [isMounted])
 
   return {
     chats,

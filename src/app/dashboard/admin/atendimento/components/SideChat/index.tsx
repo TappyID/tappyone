@@ -27,6 +27,7 @@ interface SideChatProps {
     name: string
     avatar?: string
     profilePictureUrl?: string
+    sessionName?: string // 🔥 CRÍTICO: Identificador da sessão WhatsApp
     lastMessage: {
       type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
       content: string
@@ -389,6 +390,8 @@ export default function SideChat({
 
   return (
     <div className="relative flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+    
+      
       {/* Lista de Chats com scroll */}
       <div 
         ref={scrollContainerRef}

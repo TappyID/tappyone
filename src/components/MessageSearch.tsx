@@ -288,10 +288,10 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
                         ) : message.caption ? (
                           <div className="space-y-1">
                             <p className="text-gray-500 dark:text-gray-400 italic text-xs">
-                              {message.type === 'image' && '📷 Imagem'}
-                              {message.type === 'video' && '🎥 Vídeo'}
-                              {message.type === 'audio' && '🎵 Áudio'}
-                              {message.type === 'document' && '📄 Documento'}
+                              {message.type === 'image' && 'Imagem'}
+                              {message.type === 'video' && 'Vídeo'}
+                              {message.type === 'audio' && 'Áudio'}
+                              {message.type === 'document' && 'Documento'}
                             </p>
                             <p className="line-clamp-2 leading-relaxed">
                               {highlightText(message.caption, query)}
@@ -299,12 +299,12 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
                           </div>
                         ) : (
                           <p className="text-gray-500 dark:text-gray-400 italic">
-                            {message.type === 'image' && '📷 Imagem'}
-                            {message.type === 'video' && '🎥 Vídeo'}
-                            {message.type === 'audio' && '🎵 Áudio'}
-                            {message.type === 'document' && '📄 Documento'}
-                            {message.type === 'location' && '📍 Localização'}
-                            {message.type === 'poll' && '📊 Enquete'}
+                            {message.type === 'image' && 'Imagem'}
+                            {message.type === 'video' && 'Vídeo'}
+                            {message.type === 'audio' && 'Áudio'}
+                            {message.type === 'document' && 'Documento'}
+                            {message.type === 'location' && 'Localização'}
+                            {message.type === 'poll' && 'Enquete'}
                           </p>
                         )}
                       </div>

@@ -68,49 +68,58 @@ export function useFiltersData() {
   const [isLoadingTickets, setIsLoadingTickets] = useState(false)
   const [isLoadingAtendentes, setIsLoadingAtendentes] = useState(false)
 
-  // Buscar tags reais
+  // Buscar tags reais do backend GO
   const fetchTags = async () => {
     setIsLoadingTags(true)
     try {
-      const token = localStorage.getItem('token')
-      if (!token) throw new Error('Token não encontrado')
+      let token = localStorage.getItem('token')
+      if (!token) {
+        token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
+      }
       
-      const response = await fetch('/api/tags', {
+      // 🔥 NOVO ENDPOINT: Buscar tags únicas de todos os chats (chat_tags table)
+      const baseUrl = 'http://159.65.34.199:8081'
+      const response = await fetch(`${baseUrl}/api/chats/tags/all`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       
       if (response.ok) {
         const data = await response.json()
-        console.log('🏷️ [TAGS API] Resposta:', data)
+        console.log('🏷️ [TAGS API GO] Resposta completa:', data)
         
-        // Ajustar estrutura para ser consistente
-        const tagsFormatted = (data.data || data.tags || data || []).map((tag: any) => ({
-          id: tag.id,
-          nome: tag.nome,
-          cor: tag.cor || '#3B82F6',
-          count: tag.count || 0
-        }))
+        // Backend GO retorna: { success: true, data: [...] }
+        const rawTags = data.data || data.tags || data || []
+        console.log('🏷️ [TAGS API GO] Raw tags (total):', rawTags.length)
+        console.log('🏷️ [TAGS API GO] Raw tags completas:', rawTags)
         
-        console.log('🏷️ [TAGS] Total carregadas:', tagsFormatted.length, tagsFormatted)
+        // Filtrar tags válidas e formatar
+        const tagsFormatted = rawTags
+          .filter((tag: any) => tag && tag.id && tag.nome) // Apenas tags válidas
+          .map((tag: any) => ({
+            id: tag.id,
+            nome: tag.nome || tag.name,
+            cor: tag.cor || tag.color || '#3B82F6',
+            count: tag.count || 0
+          }))
+        
+        console.log('🏷️ [TAGS] Total carregadas do backend GO:', tagsFormatted.length)
+        console.log('🏷️ [TAGS] TODAS as tags formatadas:', tagsFormatted)
+        console.log('🏷️ [TAGS] Tags incluem "Hacker"?', tagsFormatted.some(t => t.nome === 'Hacker'))
+        console.log('🏷️ [TAGS] Tags incluem "Rodrigo"?', tagsFormatted.some(t => t.nome === 'Rodrigo'))
         setTags(tagsFormatted)
       } else {
-        console.error('🏷️ [TAGS] API retornou erro:', response.status)
+        console.error('🏷️ [TAGS] API GO retornou erro:', response.status)
+        const errorText = await response.text()
+        console.error('🏷️ [TAGS] Erro detalhe:', errorText)
         throw new Error('API não disponível')
       }
     } catch (error) {
-      console.log('Usando dados mock para tags:', error)
-      // Dados mock enquanto não há API
-      setTags([
-        { id: '1', nome: 'Vendas', cor: '#10B981', count: 25 },
-        { id: '2', nome: 'Suporte', cor: '#3B82F6', count: 18 },
-        { id: '3', nome: 'Financeiro', cor: '#F59E0B', count: 12 },
-        { id: '4', nome: 'Urgente', cor: '#EF4444', count: 7 },
-        { id: '5', nome: 'VIP', cor: '#8B5CF6', count: 5 },
-        { id: '6', nome: 'Follow-up', cor: '#06B6D4', count: 15 }
-      ])
+      console.error('❌ [TAGS] Erro ao buscar do backend GO:', error)
+      // Array vazio se falhar - NÃO usar mocks
+      setTags([])
     } finally {
       setIsLoadingTags(false)
     }
@@ -333,6 +342,30 @@ export function useFiltersData() {
     fetchTicketStatuses()
     fetchAtendentes()
     generatePriceRanges()
+  }, [])
+
+  // 🔥 Listener para recarregar tags quando uma nova é criada
+  useEffect(() => {
+    const handleTagCreated = () => {
+      console.log('🏷️ [useFiltersData] Tag criada/atualizada - recarregando lista...')
+      fetchTags()
+    }
+
+    const handleTagDeleted = () => {
+      console.log('🗑️ [useFiltersData] Tag deletada - recarregando lista...')
+      fetchTags()
+    }
+
+    // Escutar eventos globais de tags
+    window.addEventListener('tag-created', handleTagCreated)
+    window.addEventListener('tag-updated', handleTagCreated)
+    window.addEventListener('tag-deleted', handleTagDeleted)
+
+    return () => {
+      window.removeEventListener('tag-created', handleTagCreated)
+      window.removeEventListener('tag-updated', handleTagCreated)
+      window.removeEventListener('tag-deleted', handleTagDeleted)
+    }
   }, [])
 
   // Função para recarregar dados específicos

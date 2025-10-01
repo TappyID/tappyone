@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, MessageCircle, ChevronUp } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 import MessageBubble from './MessageBubble'
 
@@ -104,6 +105,7 @@ export default function ChatArea({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
+  const { actualTheme } = useTheme()
 
   // Auto-scroll DESABILITADO para permitir scroll manual
   // useEffect(() => {
@@ -216,10 +218,10 @@ export default function ChatArea({
         
         /* Elegant Dots Background Pattern - Dark Mode */
         .dark .whatsapp-chat-bg {
-          background-color: #1e2530;
+          background-color: #0a0a0a;
           background-image: 
-            radial-gradient(circle, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-            radial-gradient(circle, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+            radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
           background-size: 20px 20px, 20px 20px;
           background-position: 0 0, 10px 10px;
         }
@@ -248,12 +250,18 @@ export default function ChatArea({
       {/* Área de mensagens com pattern WhatsApp */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative whatsapp-chat-bg"
+        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative"
         onScroll={handleScroll}
         style={{
           height: 'calc(100vh - 180px)',
           minHeight: '500px',
-          maxHeight: 'calc(100vh - 180px)'
+          maxHeight: 'calc(100vh - 180px)',
+          backgroundColor: actualTheme === 'dark' ? '#0a0a0a' : '#f8f9fa',
+          backgroundImage: actualTheme === 'dark' 
+            ? 'radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px), radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px)'
+            : 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 1px, transparent 1px), radial-gradient(circle, rgba(139, 92, 246, 0.04) 1px, transparent 1px)',
+          backgroundSize: '20px 20px, 20px 20px',
+          backgroundPosition: '0 0, 10px 10px'
         }}
       >
         {/* Loading mais mensagens no topo */}

@@ -111,14 +111,12 @@ const ProfileSidebar = ({
   }
   
   return (
-    <div className={`w-2/5 flex flex-col transition-all duration-300 ${
-      theme === 'dark' ? 'bg-slate-800' : 'bg-gray-50'
-    } rounded-r-2xl border-l ${
-      theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
+    <div className={`w-full h-full flex flex-col transition-all duration-300 ${
+      theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-50'
     }`}>
       {/* Header */}
       <div className={`p-4 border-b ${
-        theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
+        theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
       }`}>
         <div className="flex justify-between items-center">
           <h3 className={`text-lg font-semibold ${

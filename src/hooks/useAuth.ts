@@ -30,6 +30,7 @@ export function useAuth() {
   }, [])
 
   const checkAuth = async () => {
+    console.log('🔐 [useAuth] checkAuth chamado')
     let token: string | null = null
     
     try {
@@ -55,6 +56,7 @@ export function useAuth() {
     }
 
     try {
+      console.log('🔐 [useAuth] Verificando token com /api/auth/me...')
       const response = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,8 +64,11 @@ export function useAuth() {
         }
       })
 
+      console.log('🔐 [useAuth] Response status:', response.status)
+      
       if (response.ok) {
         const userData = await response.json()
+        console.log('✅ [useAuth] Token válido, usuário:', userData.nome)
         setAuthState({
           user: userData,
           token,
@@ -72,6 +77,7 @@ export function useAuth() {
         })
       } else {
         // Token inválido
+        console.warn('⚠️ [useAuth] Token inválido (status:', response.status, ') - removendo token')
         try {
           localStorage.removeItem('token')
         } catch (removeError) {

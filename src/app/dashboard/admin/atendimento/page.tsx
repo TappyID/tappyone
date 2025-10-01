@@ -16,7 +16,7 @@ import { useFiltersData } from '@/hooks/useFiltersData'
 import useMessagesData from '@/hooks/useMessagesData'
 import { useSearchData } from '@/hooks/useSearchData'
 import { useChatStats } from '@/hooks/useChatStats'
-// import { useChatLeadBatch } from '@/hooks/useChatLeadBatch' // DESABILITADO - causando loop
+import { useChatLeadBatch } from '@/hooks/useChatLeadBatch'
 import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import QuickActionsSidebar from '../atendimentos/components/QuickActionsSidebar'
 import TransferirAtendimentoModal from '../atendimentos/components/modals/TransferirAtendimentoModal'
@@ -82,6 +82,8 @@ function AtendimentoPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState('todas')
   const [selectedFila, setSelectedFila] = useState('todas')
+  const [selectedConexoes, setSelectedConexoes] = useState<string[]>([]) // ✅ Filtro de conexões
+  const [selectedTagsMulti, setSelectedTagsMulti] = useState<string[]>([]) // ✅ Filtro de tags múltiplas
   const [activeFilter, setActiveFilter] = useState('all') // Novo estado para filtros de tabs
   
   // Estados para opções de busca
@@ -114,6 +116,29 @@ function AtendimentoPage() {
     isLoadingAtendentes,
     refetch: refetchFilters
   } = useFiltersData()
+  
+  // 🔥 Buscar conexões para o filtro
+  const [conexoesParaFiltro, setConexoesParaFiltro] = useState<any[]>([])
+  useEffect(() => {
+    const fetchConexoes = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/connections', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setConexoesParaFiltro(data.connections || [])
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar conexões:', error)
+      }
+    }
+    fetchConexoes()
+  }, [])
   
   // Estados dos modais
   const [showAgenteModal, setShowAgenteModal] = useState(false)
@@ -286,56 +311,36 @@ function AtendimentoPage() {
   // Hook para estatísticas de atendimento (dados reais do backend)
   const { stats: chatStats } = useChatStats()
 
-  // Hook para buscar dados de chat leads em batch (DESABILITADO - causando loop)
-  // const activeChatIdsForLeads = useMemo(() => {
-  //   return overviewChats.slice(0, 20).map(chat => chat.id).filter(Boolean)
-  // }, [overviewChats])
+  // Hook para buscar dados de chat leads em batch (OTIMIZADO - apenas 50 primeiros chats)
+  const activeChatIdsForLeads = useMemo(() => {
+    return overviewChats.slice(0, 50).map(chat => chat.id).filter(Boolean)
+  }, [overviewChats])
 
-  // const { chatLeads } = useChatLeadBatch(activeChatIdsForLeads)
-  const chatLeads: Record<string, any> = {} // Mock vazio por enquanto
+  const { chatLeads, loading: loadingChatLeads } = useChatLeadBatch(activeChatIdsForLeads)
+  
+  // Debug para ver se chatLeads está retornando dados
+  useEffect(() => {
+    console.log('🔍 [DEBUG chatLeads]:', {
+      total: Object.keys(chatLeads).length,
+      primeiros5: Object.entries(chatLeads).slice(0, 5).map(([id, lead]) => ({
+        id: id.substring(0, 15) + '...',
+        status: lead?.status,
+        responsavel: lead?.responsavel,
+        hasActiveAgent: lead?.hasActiveAgent
+      }))
+    })
+  }, [chatLeads])
 
   // Estado para armazenar agentes ativos (para contagem)
   const [agentesAtivos, setAgentesAtivos] = useState<Set<string>>(new Set())
   
-  // Buscar agentes ativos dos primeiros 50 chats (em paralelo para performance)
-  useEffect(() => {
-    const fetchAgentesAtivos = async () => {
-      const chatIdsToCheck = overviewChats.slice(0, 50).map(c => c.id)
-      const token = localStorage.getItem('token')
-      
-      if (!token || chatIdsToCheck.length === 0) return
-      
-      // Buscar todos em paralelo
-      const promises = chatIdsToCheck.map(async (chatId) => {
-        try {
-          const res = await fetch(`/api/chat-agentes/${encodeURIComponent(chatId)}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            cache: 'no-cache'
-          })
-          const data = await res.json()
-          return { chatId, ativo: data.ativo === true }
-        } catch (err) {
-          return { chatId, ativo: false }
-        }
-      })
-      
-      const results = await Promise.all(promises)
-      const agentesSet = new Set<string>()
-      
-      results.forEach(({ chatId, ativo }) => {
-        if (ativo) {
-          agentesSet.add(chatId)
-        }
-      })
-      
-      setAgentesAtivos(agentesSet)
-      console.log('🤖 [AGENTES ATIVOS] Total:', agentesSet.size, 'de', chatIdsToCheck.length, 'chats verificados')
-    }
-    
-    if (overviewChats.length > 0) {
-      fetchAgentesAtivos()
-    }
-  }, [overviewChats.length])
+  // ❌ DESABILITADO: Busca individual de agentes (muito lento!)
+  // Agora usa apenas os dados do useChatAgente dentro do ItemSideChat
+  // O contador será calculado baseado nos chats visíveis que têm agente
+  
+  // useEffect(() => {
+  //   // Buscar agentes ativos - DESABILITADO para performance
+  // }, [])
 
   // Hook para busca avançada
   const searchResults = useSearchData(searchQuery, searchOptions)
@@ -450,6 +455,11 @@ function AtendimentoPage() {
       displayedChatsCount
     })
     
+    // 🔥 DEBUG CRÍTICO: Ver sessionName
+    if (overviewChats.length > 0) {
+      console.log('🔥 [CHAT 1] sessionName:', (overviewChats[0] as any).sessionName, 'tipo:', typeof (overviewChats[0] as any).sessionName)
+    }
+    
     let filteredChats = overviewChats
     
     // Aplicar filtro de busca avançada
@@ -498,8 +508,47 @@ function AtendimentoPage() {
       }
     }
     
-    // Aplicar filtro de tag
-    if (selectedTag !== 'todas') {
+    // Aplicar filtro de tags (múltipla seleção)
+    if (selectedTagsMulti && selectedTagsMulti.length > 0) {
+      console.log('🏷️ [Filtro Tags] Aplicando filtro:', {
+        tagsSelecionadas: selectedTagsMulti,
+        totalChatsAntes: filteredChats.length
+      })
+      
+      let chatsComTags = 0
+      let chatsSemTags = 0
+      
+      filteredChats = filteredChats.filter(chat => {
+        const extraData = chatsExtraData[chat.id] || {}
+        const chatTags = extraData.tags || []
+        
+        if (chatTags.length === 0) {
+          chatsSemTags++
+          return false // Não mostrar chats sem tags quando há filtro ativo
+        }
+        
+        // Verificar se o chat tem pelo menos uma das tags selecionadas
+        const temAlgumaTag = chatTags.some((tag: any) => 
+          selectedTagsMulti.includes(tag.id)
+        )
+        
+        if (temAlgumaTag) {
+          chatsComTags++
+        }
+        
+        return temAlgumaTag
+      })
+      
+      console.log('✅ [Filtro Tags] Resultado:', {
+        totalChatsDepois: filteredChats.length,
+        chatsComTags,
+        chatsSemTags,
+        tagsFiltradas: selectedTagsMulti.length
+      })
+    }
+    
+    // Fallback: Aplicar filtro de tag single (compatibilidade com filtro antigo)
+    else if (selectedTag !== 'todas') {
       filteredChats = filteredChats.filter(chat => {
         const extraData = chatsExtraData[chat.id] || {}
         return extraData.tags?.some((tag: any) => tag.id === selectedTag)
@@ -511,6 +560,44 @@ function AtendimentoPage() {
       filteredChats = filteredChats.filter(chat => {
         const extraData = chatsExtraData[chat.id] || {}
         return extraData.fila?.id === selectedFila
+      })
+    }
+    
+    // ✅ Aplicar filtro de conexões (múltipla seleção) - CORRIGIDO para usar sessionName
+    if (selectedConexoes && selectedConexoes.length > 0 && conexoesParaFiltro.length > 0) {
+      console.log('🔍 [Filtro Conexões] Aplicando filtro:', {
+        conexoesSelecionadas: selectedConexoes,
+        totalConexoes: conexoesParaFiltro.length,
+        totalChatsAntes: filteredChats.length
+      })
+      
+      let chatsComErro = 0
+      
+      filteredChats = filteredChats.filter(chat => {
+        // 🔥 CORREÇÃO: Usar sessionName do chat para identificar a conexão
+        const chatSessionName = (chat as any).sessionName
+        
+        if (!chatSessionName) {
+          chatsComErro++
+          return true // Mostrar chat se não tem sessionName (fallback)
+        }
+        
+        // Encontrar a conexão pelo sessionName
+        const conexaoDoChat = conexoesParaFiltro.find(conn => conn.sessionName === chatSessionName)
+        
+        if (!conexaoDoChat) {
+          chatsComErro++
+          return true // Mostrar chat se não encontrou conexão (fallback)
+        }
+        
+        // Verificar se a conexão está nas selecionadas
+        return selectedConexoes.includes(conexaoDoChat.id)
+      })
+      
+      console.log('✅ [Filtro Conexões] Resultado:', {
+        totalChatsDepois: filteredChats.length,
+        chatsComErro,
+        chatsFiltrados: filteredChats.length > 0 ? 'OK' : 'NENHUM'
       })
     }
     
@@ -531,7 +618,7 @@ function AtendimentoPage() {
     })
     
     // Limitar para performance (apenas se há filtros ativos)
-    const hasActiveFilters = searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas'
+    const hasActiveFilters = searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas' || (selectedConexoes && selectedConexoes.length > 0)
     const chatsToShow = hasActiveFilters ? sortedChats.slice(0, displayedChatsCount) : sortedChats
     
     console.log('🔍 [chatsToShow] Debug:', {
@@ -549,6 +636,7 @@ function AtendimentoPage() {
         id: chat.id,
         name: chat.name,
         avatar: chat.image, // Foto real do contato
+        sessionName: (chat as any).sessionName, // ✅ CRÍTICO: Passar sessionName para identificar conexão
         lastMessage: {
           type: chat.lastMessage?.type === 'text' ? 'text' as const : 
                 chat.lastMessage?.hasMedia ? 'image' as const : 'text' as const,
@@ -576,7 +664,7 @@ function AtendimentoPage() {
         fila: Math.random() > 0.2 ? mockFilas[Math.floor(Math.random() * mockFilas.length)] : undefined
       }
     })
-  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila, favoriteChats, archivedChats, hiddenChats, searchOptions, searchResults, sortBy, sortOrder])
+  }, [overviewChats, selectedChatId, chatsExtraData, displayedChatsCount, searchQuery, selectedTag, selectedFila, selectedConexoes, selectedTagsMulti, conexoesParaFiltro, favoriteChats, archivedChats, hiddenChats, searchOptions, searchResults, sortBy, sortOrder])
 
 
   // Função para carregar mais chats (agora usa paginação real da API)
@@ -592,8 +680,8 @@ function AtendimentoPage() {
       processedChatsLength: processedChats.length
     })
     
-    // Não carregar mais se há filtros ativos (busca, tag, fila) - nesse caso usa paginação local
-    if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas') {
+    // Não carregar mais se há filtros ativos (busca, tag, fila, conexões) - nesse caso usa paginação local
+    if (searchQuery.trim() || selectedTag !== 'todas' || selectedFila !== 'todas' || (selectedConexoes && selectedConexoes.length > 0)) {
       console.log('🔍 Filtros ativos - usando paginação local')
       if (isLoadingMoreChats || displayedChatsCount >= overviewChats.length) {
         console.log('❌ Não carregar mais - já carregando ou limite atingido (filtros)')
@@ -678,10 +766,7 @@ function AtendimentoPage() {
     }))
   }, [selectedChatId, realMessages, hasMoreMessages, totalMessages, loadingMessages, translatedMessages])
 
-  // Estados para chats com pesquisa
-  const [whatsappChats, setWhatsappChats] = useState<any[]>([])
-  const [loadingChats, setLoadingChats] = useState(true)
-  const [isSearching, setIsSearching] = useState(false)
+  // ❌ REMOVIDO: Estados antigos de whatsappChats (agora usa useChatsOverview)
 
   // Funções para manipular os ícones do SideChat - IGUAL AO ConversationSidebar
   const toggleFavoriteConversation = (chatId: string) => {
@@ -942,6 +1027,8 @@ function AtendimentoPage() {
   const processedChats = useMemo(() => {
     
     let result = transformedChats.map((chat: any) => {
+      // ✅ ADICIONAR sessionName - sempre adicionar
+      let sessionName = chat.sessionName // Já tem do hook (esperamos que sim após fix)
       
       const contatoData: any = contatosData[chat.id] || {}
       
@@ -965,6 +1052,7 @@ function AtendimentoPage() {
 
       return {
         ...chat, // Usar dados já processados (incluindo lastMessage.body correto)
+        sessionName, // ✅ GARANTIR que sessionName está presente
         // Garantir que lastMessage existe
         lastMessage: chat.lastMessage || {
           type: 'text' as const,
@@ -1018,8 +1106,8 @@ function AtendimentoPage() {
         // Chat Lead Status (buscar dados reais do batch)
         chatLeadStatus: chatLeads[chat.id] || contatoData.chatLead,
         
-        // Agente IA ativo (verificar no Set de agentes ativos)
-        hasActiveAgent: agentesAtivos.has(chat.id),
+        // Agente IA ativo (usar do chatLeads que já busca isso)
+        hasActiveAgent: chatLeads[chat.id]?.hasActiveAgent || agentesAtivos.has(chat.id),
         
         // Estados de favorito, arquivado, oculto
         isFavorite: favoriteChats.has(chat.id),
@@ -1053,27 +1141,33 @@ function AtendimentoPage() {
         break
       case 'em_atendimento':
         result = result.filter(chat => {
-          const chatLeadStatus = chat.chatLeadStatus?.status?.toLowerCase()
-          const hasAtendente = !!chat.chatLeadStatus?.responsavel
-          return (
-            chatLeadStatus === 'em_atendimento' || 
-            chatLeadStatus === 'atendimento' ||
-            (chatLeadStatus === 'em_atendimento' && hasAtendente)
-          )
+          const leadStatus = chat.chatLeadStatus?.status?.toLowerCase()
+          const hasResponsavel = !!chat.chatLeadStatus?.responsavel
+          
+          // Mesma lógica do contador (linha 1199-1211)
+          if (leadStatus === 'em_atendimento' || leadStatus === 'atendimento' || leadStatus === 'em_atendimento_sem_responsavel') {
+            return true
+          } else if (hasResponsavel && !leadStatus) {
+            return true // Tem responsável mas sem status = em atendimento
+          }
+          return false
         })
-        console.log(`🟢 [FILTRO] Em Atendimento: ${result.length} chats`)
         break
       case 'aguardando':
         result = result.filter(chat => {
-          const chatLeadStatus = chat.chatLeadStatus?.status?.toLowerCase()
-          const hasNoAtendente = !chat.chatLeadStatus?.responsavel
-          return (
-            chatLeadStatus === 'aguardando' || 
-            chatLeadStatus === 'pendente' ||
-            hasNoAtendente
-          )
+          const leadStatus = chat.chatLeadStatus?.status?.toLowerCase()
+          const hasResponsavel = !!chat.chatLeadStatus?.responsavel
+          
+          // Mesma lógica do contador
+          if (leadStatus === 'aguardando' || leadStatus === 'pendente') {
+            return true
+          } else if (!hasResponsavel && !leadStatus) {
+            return true // Sem responsável nem status = aguardando
+          } else if (leadStatus === 'em_atendimento' || leadStatus === 'atendimento' || leadStatus === 'finalizado' || leadStatus === 'concluido') {
+            return false // Já está em outro status
+          }
+          return false
         })
-        console.log(`🟡 [FILTRO] Aguardando: ${result.length} chats`)
         break
       case 'finalizado':
         result = result.filter(chat => {
@@ -1083,11 +1177,11 @@ function AtendimentoPage() {
             chatLeadStatus === 'concluido'
           )
         })
-        console.log(`🔵 [FILTRO] Finalizado: ${result.length} chats`)
         break
       case 'agentes_ia':
+        // Filtrar chats que têm agente IA ativo
+        // Por enquanto, filtra baseado em hasActiveAgent (será vazio até implementar batch)
         result = result.filter(chat => chat.hasActiveAgent === true)
-        console.log(`🤖 [FILTRO] Agentes IA: ${result.length} chats com agente ativo`)
         break
       case 'leads_quentes':
         result = result.filter(chat => {
@@ -1156,7 +1250,7 @@ function AtendimentoPage() {
     return result
   }, [transformedChats, contatosData, favoriteChats, archivedChats, hiddenChats, activeFilter, selectedTag, selectedFila, selectedKanbanStatus, selectedTicketStatus, selectedPriceRange])
 
-  // Calcular contadores para os novos filtros (usando dados reais do backend quando disponíveis)
+  // Calcular contadores para os novos filtros (baseado em dados visíveis)
   const chatCounters = useMemo(() => {
     const counts = {
       emAtendimento: 0,
@@ -1166,50 +1260,37 @@ function AtendimentoPage() {
       leadsQuentes: 0
     }
     
-    // Contar nos chats processados (limitar para performance)
-    const chatsToCount = processedChats.slice(0, 200)
+    // Contar apenas chats VISÍVEIS (excluir ocultos e arquivados, assim como o filtro 'all')
+    const chatsToCount = transformedChats.filter(chat => 
+      !hiddenChats.has(chat.id) && !archivedChats.has(chat.id)
+    )
     
-    chatsToCount.forEach((chat, index) => {
-      // Debug dos primeiros 5 chats para entender a estrutura
-      if (index < 5) {
-        console.log(`🔍 [DEBUG CHAT ${index}]:`, {
-          id: chat.id,
-          chatLeadStatus: chat.chatLeadStatus,
-          hasActiveAgent: chat.hasActiveAgent,
-          name: chat.name
-        })
-      }
-      
-      // Contar por status do ChatLead
+    chatsToCount.forEach((chat: any) => {
+      // Verificar status e responsável
       const leadStatus = chat.chatLeadStatus?.status?.toLowerCase()
       const hasResponsavel = !!chat.chatLeadStatus?.responsavel
       
-      // Debug para entender o status
-      if (index < 10 && (leadStatus || hasResponsavel)) {
-        console.log(`📋 [STATUS CHAT ${index}]:`, {
-          name: chat.name,
-          leadStatus,
-          hasResponsavel,
-          responsavel: chat.chatLeadStatus?.responsavel
-        })
-      }
-      
-      if (leadStatus === 'em_atendimento' || leadStatus === 'atendimento') {
+      // Lógica de contagem
+      if (leadStatus === 'em_atendimento' || leadStatus === 'atendimento' || leadStatus === 'em_atendimento_sem_responsavel') {
         counts.emAtendimento++
-      } else if (leadStatus === 'aguardando' || leadStatus === 'pendente') {
-        counts.aguardando++
       } else if (leadStatus === 'finalizado' || leadStatus === 'concluido') {
         counts.finalizado++
-      } else if (!hasResponsavel) {
-        // Se não tem responsável, considerar como aguardando
+      } else if (leadStatus === 'aguardando' || leadStatus === 'pendente') {
+        counts.aguardando++
+      } else if (hasResponsavel && !leadStatus) {
+        // Se tem responsável mas sem status explícito, está em atendimento
+        counts.emAtendimento++
+      } else {
+        // Padrão: aguardando
         counts.aguardando++
       }
       
-      // Contar agentes IA ativos
-      if (chat.hasActiveAgent === true) {
-        counts.agentesIA++
-        console.log(`🤖 [AGENTE ATIVO] Chat ${chat.name}: hasActiveAgent = true`)
-      }
+      // Contar agentes IA ativos (temporariamente desabilitado para performance)
+      // TODO: Implementar busca batch de agentes para melhorar performance
+      // Por enquanto, o contador ficará em 0
+      // if (chat.hasActiveAgent === true) {
+      //   counts.agentesIA++
+      // }
       
       // Contar leads quentes
       const isHotLead = 
@@ -1223,22 +1304,8 @@ function AtendimentoPage() {
       }
     })
     
-    // Debug dos contadores
-    console.log('📊 [CONTADORES] Calculados:', counts)
-    
-    // Se os contadores dos chats forem 0, usar backend stats como fallback
-    if (counts.emAtendimento === 0 && chatStats.atendimento > 0) {
-      counts.emAtendimento = chatStats.atendimento
-    }
-    if (counts.aguardando === 0 && chatStats.aguardando > 0) {
-      counts.aguardando = chatStats.aguardando
-    }
-    if (counts.finalizado === 0 && chatStats.finalizado > 0) {
-      counts.finalizado = chatStats.finalizado
-    }
-    
     return counts
-  }, [processedChats.length, chatStats.atendimento, chatStats.aguardando, chatStats.finalizado])
+  }, [transformedChats, contatosData, hiddenChats, archivedChats])
 
   // Expor funções para testes no console (só uma vez)
   useEffect(() => {
@@ -1309,6 +1376,12 @@ function AtendimentoPage() {
               selectedFila={selectedFila}
               onFilaChange={setSelectedFila}
               filas={realFilas}
+              // ✅ Filtro de conexões
+              selectedConexoes={selectedConexoes}
+              onConexoesChange={setSelectedConexoes}
+              // ✅ Filtro de tags múltiplas
+              selectedTagsMulti={selectedTagsMulti}
+              onTagsMultiChange={setSelectedTagsMulti}
               // Estados de loading dos filtros avançados
               isLoadingTags={isLoadingTags}
               isLoadingFilas={isLoadingFilas}
@@ -1347,6 +1420,15 @@ function AtendimentoPage() {
               onSortChange={(newSortBy, newSortOrder) => {
                 setSortBy(newSortBy)
                 setSortOrder(newSortOrder)
+              }}
+              // Debug info
+              debugInfo={{
+                totalChatsTransformados: transformedChats.length,
+                chatLeadsCarregados: Object.keys(chatLeads).length,
+                primeirosChatLeads: Object.entries(chatLeads).slice(0, 3).map(([id, lead]: any) => ({
+                  status: lead?.status,
+                  hasAgent: lead?.hasActiveAgent
+                }))
               }}
             />
           </div>

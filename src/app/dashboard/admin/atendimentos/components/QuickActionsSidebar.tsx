@@ -41,6 +41,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useTheme } from '@/contexts/ThemeContext'
 import CriarRespostaModal from '../../respostas-rapidas/components/CriarRespostaModal'
 import CriarFluxoIAModal from './CriarFluxoIAModal'
 import EditTextModal from './EditTextModal'
@@ -150,6 +151,7 @@ export default function QuickActionsSidebar({
   onCreateFlowWithAI,
   onCreateNow
 }: QuickActionsSidebarProps) {
+  const { actualTheme } = useTheme()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all']))
@@ -641,8 +643,11 @@ export default function QuickActionsSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={`fixed top-0 left-0 h-full w-[520px] bg-background border-r border-border shadow-2xl transform transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 ${
+            actualTheme === 'dark'
+              ? 'bg-gradient-to-br from-[#1a1a1a] via-gray-900 to-[#1a1a1a] border-blue-500/20'
+              : 'bg-gradient-to-br from-white via-blue-50/30 to-white border-blue-200'
+          } ${isOpen ? 'translate-x-0' : '-translate-x-full'
       } z-50 pt-20`}
         >
           {/* Header */}

@@ -146,10 +146,12 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
       setNovaTag('')
       fetchTags() // Recarregar tags
       
-      // Disparar evento para atualizar indicadores
-      window.dispatchEvent(new CustomEvent('tagCreated', { 
+      // 🔥 Disparar evento global para recarregar filtros
+      window.dispatchEvent(new CustomEvent('tag-created', { 
         detail: { chatId, tag: result } 
       }))
+      
+      console.log('📢 [TagsBottomSheet] Evento "tag-created" disparado!')
       
     } catch (error) {
       console.error('❌ Erro de rede ao criar tag:', error)
@@ -171,8 +173,8 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
         console.log('✅ Tag removida com sucesso!')
         fetchTags() // Recarregar tags
         
-        // Disparar evento para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('tagRemoved', { 
+        // 🔥 Disparar evento global para recarregar filtros
+        window.dispatchEvent(new CustomEvent('tag-deleted', { 
           detail: { chatId, tagId } 
         }))
       } else {

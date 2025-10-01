@@ -132,23 +132,26 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
     if (!message.replyTo) return null
 
     return (
-      <div className={`mb-2 p-2 rounded-lg border-l-4 ${
+      <motion.div 
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className={`mb-2.5 p-2.5 rounded-xl border-l-[3px] backdrop-blur-sm ${
         isFromUser 
-          ? 'bg-blue-600/20 border-blue-300' 
-          : 'bg-gray-100 dark:bg-gray-800 border-gray-400'
+          ? 'bg-white/10 border-white/40 shadow-lg' 
+          : 'bg-black/5 dark:bg-white/5 border-gray-400 dark:border-gray-600'
       }`}>
         <div className="flex items-start gap-2">
-          <Reply className={`w-3 h-3 mt-0.5 flex-shrink-0 ${
-            isFromUser ? 'text-blue-200' : 'text-gray-500'
+          <Reply className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${
+            isFromUser ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'
           }`} />
           <div className="flex-1 min-w-0">
-            <div className={`text-xs font-medium mb-1 ${
-              isFromUser ? 'text-blue-200' : 'text-gray-600 dark:text-gray-400'
+            <div className={`text-[10px] font-bold mb-1 uppercase tracking-wider ${
+              isFromUser ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'
             }`}>
               {message.replyTo.sender === 'user' ? 'Cliente' : 'Atendente'}
             </div>
-            <div className={`text-xs overflow-hidden ${
-              isFromUser ? 'text-blue-100' : 'text-gray-700 dark:text-gray-300'
+            <div className={`text-xs overflow-hidden font-medium ${
+              isFromUser ? 'text-white/70' : 'text-gray-600 dark:text-gray-400'
             }`}
             style={{
               display: '-webkit-box',
@@ -159,53 +162,53 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
             }}>
               {message.replyTo.type === 'image' && (
                 <>
-                  📷 {message.replyTo.content && message.replyTo.content !== 'Imagem' 
+                  {message.replyTo.content && message.replyTo.content !== 'Imagem' 
                     ? message.replyTo.content 
                     : 'Imagem'}
                 </>
               )}
               {message.replyTo.type === 'audio' && (
                 <>
-                  🎵 {message.replyTo.content && message.replyTo.content !== 'Áudio' 
+                  {message.replyTo.content && message.replyTo.content !== 'Áudio' 
                     ? message.replyTo.content 
                     : 'Mensagem de áudio'}
                 </>
               )}
               {message.replyTo.type === 'video' && (
                 <>
-                  🎥 {message.replyTo.content && message.replyTo.content !== 'Vídeo' 
+                  {message.replyTo.content && message.replyTo.content !== 'Vídeo' 
                     ? message.replyTo.content 
                     : 'Vídeo'}
                 </>
               )}
               {message.replyTo.type === 'document' && (
                 <>
-                  📄 {message.replyTo.content || 'Documento'}
+                  {message.replyTo.content || 'Documento'}
                 </>
               )}
               {message.replyTo.type === 'location' && (
                 <>
-                  📍 {message.replyTo.content || 'Localização compartilhada'}
+                  {message.replyTo.content || 'Localização compartilhada'}
                 </>
               )}
               {message.replyTo.type === 'contact' && (
                 <>
-                  👤 {message.replyTo.content || 'Contato compartilhado'}
+                  {message.replyTo.content || 'Contato compartilhado'}
                 </>
               )}
               {message.replyTo.type === 'poll' && (
                 <>
-                  📊 {message.replyTo.content || 'Enquete'}
+                  {message.replyTo.content || 'Enquete'}
                 </>
               )}
               {message.replyTo.type === 'menu' && (
                 <>
-                  📋 {message.replyTo.content || 'Menu interativo'}
+                  {message.replyTo.content || 'Menu interativo'}
                 </>
               )}
               {message.replyTo.type === 'event' && (
                 <>
-                  📅 {message.replyTo.content || 'Evento'}
+                  {message.replyTo.content || 'Evento'}
                 </>
               )}
               {(!message.replyTo.type || message.replyTo.type === 'text') && 
@@ -216,7 +219,7 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     )
   }
 
@@ -324,14 +327,20 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
         return (
           <div className="space-y-2">
             {mediaUrl && (
-              <img 
-                src={mediaUrl} 
-                alt="Imagem compartilhada"
-                className="rounded-lg max-w-full h-auto"
-              />
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden rounded-2xl shadow-xl"
+              >
+                <img 
+                  src={mediaUrl} 
+                  alt="Imagem compartilhada"
+                  className="max-w-full h-auto cursor-pointer hover:brightness-95 transition-all"
+                />
+              </motion.div>
             )}
             {content && (
-              <p className={`text-sm ${
+              <p className={`text-sm px-1 ${
                 isFromUser ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'
               }`}>
                 {content}
@@ -376,15 +385,19 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
             
             {/* Tradução */}
             {message.translation && (
-              <div className="mt-2 p-2 rounded-md border-l-2 border-blue-300 bg-blue-50/50">
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-2.5 p-2.5 rounded-xl border-l-[3px] border-blue-400 bg-gradient-to-r from-blue-50/80 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 backdrop-blur-sm shadow-sm"
+              >
                 <div className="flex items-start gap-2">
-                  <Languages className="w-3 h-3 mt-0.5 text-blue-600 flex-shrink-0" />
-                  <div>
-                    <span className="text-xs font-medium text-blue-600 block mb-1">Tradução:</span>
-                    <span className="text-sm text-blue-800">{message.translation}</span>
+                  <Languages className="w-4 h-4 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 block mb-1.5 uppercase tracking-wider">Tradução:</span>
+                    <span className="text-sm text-blue-900 dark:text-blue-100 font-medium leading-relaxed">{message.translation}</span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         )
@@ -394,30 +407,43 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`group flex items-end gap-1 mb-2 ${
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      whileHover={{ scale: 1.01 }}
+      className={`group flex items-end gap-2 mb-3 ${
         isFromUser ? 'flex-row-reverse' : 'flex-row'
       }`}
     >
       {/* Avatar do agente (só para mensagens do agente) */}
       {!isFromUser && showAvatar && (
-        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 self-end mb-1">
-          <span className="text-xs font-semibold text-white">A</span>
-        </div>
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 self-end mb-1 shadow-lg ring-2 ring-white/20"
+        >
+          <span className="text-xs font-bold text-white">A</span>
+        </motion.div>
       )}
 
       {/* Conteúdo da mensagem */}
       <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md relative">
         {/* Renderizar conteúdo baseado no tipo */}
         {message.type === 'text' ? (
-          <div className={`p-3 rounded-2xl shadow-sm ${
+          <motion.div 
+            className={`p-4 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-200 ${
             isFromUser 
-              ? 'bg-blue-500 text-white' 
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-          }`}>
+              ? 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 text-white shadow-blue-500/30' 
+              : 'bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100 shadow-gray-500/10 border border-gray-200/50 dark:border-gray-700/50'
+          }`}
+            whileHover={{ 
+              boxShadow: isFromUser 
+                ? '0 20px 30px rgba(59, 130, 246, 0.3)' 
+                : '0 10px 20px rgba(0, 0, 0, 0.1)'
+            }}
+          >
             {renderMessageContent()}
-          </div>
+          </motion.div>
         ) : (
           <div>
             {renderMessageContent()}
@@ -425,10 +451,10 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
         )}
 
         {/* Timestamp e Status */}
-        <div className={`flex items-center gap-1 mt-1 ${
+        <div className={`flex items-center gap-1.5 mt-1.5 px-1 ${
           isFromUser ? 'justify-end' : 'justify-start'
         }`}>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
             {formatTime(message.timestamp)}
           </span>
           {getStatusIcon()}

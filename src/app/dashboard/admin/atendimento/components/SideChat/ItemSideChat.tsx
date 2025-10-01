@@ -85,6 +85,7 @@ interface ItemSideChatProps {
     name: string
     avatar?: string
     profilePictureUrl?: string
+    sessionName?: string // 🔥 CRÍTICO: Identificador da sessão WhatsApp
     lastMessage: {
       type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
       content: string
@@ -177,6 +178,9 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   // Estado para o modal de assumir
   const [showAssumirModal, setShowAssumirModal] = useState(false)
   
+  // Estado para o mini modal de status
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  
   // Buscar status do chat lead
   const { buscarStatusChat, finalizarAtendimento } = useAtendimentoStates()
   const [chatLead, setChatLead] = useState<any>(null)
@@ -204,43 +208,43 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   // Função para obter dados da conexão baseado no chat
   const getConexaoInfo = () => {
     if (!chat.id || conexoes.length === 0) {
+      console.warn('⚠️ [getConexaoInfo] Chat sem ID ou sem conexões disponíveis')
       return null
     }
     
-    // NOVA LÓGICA: Como agora todas as conexões têm chats automáticos,
-    // vamos assumir que qualquer chat pode usar qualquer conexão configurada
-    // Por enquanto, vamos pegar a primeira conexão que tem filas configuradas
+    // 🔥 CORREÇÃO: Usar sessionName do chat para identificar a conexão correta
+    const chatSessionName = (chat as any).sessionName
     
-    const conexaoComFilas = conexoes.find(conn => conn.modulation?.selectedFilas?.length > 0)
+    let conexaoDoChat = null
     
-    if (conexaoComFilas) {
-      const info = {
-        nome: conexaoComFilas.nome || 
-              conexaoComFilas.modulation?.connectionName || 
-              conexaoComFilas.sessionData?.push_name || 
-              `Conexão ${conexaoComFilas.numero}` || 
-              'WhatsApp',
-        pushName: conexaoComFilas.sessionData?.push_name || conexaoComFilas.nome || 'WhatsApp',
-        filas: conexaoComFilas.modulation?.selectedFilas || []
+    // Estratégia 1: Usar sessionName se disponível (MÉTODO CORRETO)
+    if (chatSessionName) {
+      conexaoDoChat = conexoes.find(c => c.sessionName === chatSessionName)
+      
+      if (!conexaoDoChat) {
+        console.warn(`⚠️ [getConexaoInfo] SessionName "${chatSessionName}" não encontrado. Conexões disponíveis:`, conexoes.map(c => c.sessionName))
       }
-      return info
     }
     
-    // Fallback: se nenhuma conexão tem filas, pega a primeira disponível
-    if (conexoes.length > 0) {
-      const primeiraConexao = conexoes[0]
-      const info = {
-        nome: primeiraConexao.nome || 
-              primeiraConexao.modulation?.connectionName || 
-              primeiraConexao.sessionData?.push_name || 
-              `Conexão ${primeiraConexao.numero}` || 
-              'WhatsApp',
-        pushName: primeiraConexao.sessionData?.push_name || primeiraConexao.nome || 'WhatsApp',
-        filas: []
-      }
-      return info
+    // Estratégia 2: Fallback - usar primeira conexão (TEMPORÁRIO)
+    if (!conexaoDoChat && conexoes.length > 0) {
+      console.warn('⚠️ [getConexaoInfo] Usando fallback - primeira conexão para chat:', chat.name)
+      conexaoDoChat = conexoes[0]
     }
     
+    if (conexaoDoChat) {
+      return {
+        nome: conexaoDoChat.nome || 
+              conexaoDoChat.modulation?.connectionName || 
+              conexaoDoChat.sessionData?.push_name || 
+              'WhatsApp',
+        pushName: conexaoDoChat.sessionData?.push_name || conexaoDoChat.nome || 'WhatsApp',
+        filas: conexaoDoChat.modulation?.selectedFilas || []
+      }
+    }
+    
+    // Fallback final
+    console.error('❌ [getConexaoInfo] Nenhuma conexão encontrada para chat:', chat.name)
     return null
   }
 
@@ -625,7 +629,10 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
           />
 
           {/* Todas as badges abaixo do telefone */}
-          <div className="flex items-center gap-0.5 mt-0.5 flex-wrap">
+          <div className="flex flex-col gap-1 mt-0.5">
+            {/* Badges normais */}
+            <div className="flex items-center gap-0.5 flex-wrap">
+            
             {/* Indicador de Contato Cadastrado */}
             
 
@@ -735,7 +742,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                 </span>
               </div>
             )}
-          
+            </div>
           </div>
 
       </div>
@@ -768,33 +775,100 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         </div>
 
         {leadStatusDisplay && (
-          <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
-            leadStatusDisplay === 'aguardando'
-              ? 'bg-yellow-100 dark:bg-yellow-900/20'
-              : leadStatusDisplay === 'atendimento'
-              ? 'bg-green-100 dark:bg-green-900/20'
-              : 'bg-gray-100 dark:bg-gray-900/20'
-          }`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${
-              leadStatusDisplay === 'aguardando'
-                ? 'bg-yellow-500'
-                : leadStatusDisplay === 'atendimento'
-                ? 'bg-green-500'
-                : 'bg-gray-500'
-            }`}></div>
-            <span className={`text-[8px] font-medium truncate max-w-[46px] ${
-              leadStatusDisplay === 'aguardando'
-                ? 'text-yellow-600'
-                : leadStatusDisplay === 'atendimento'
-                ? 'text-green-600'
-                : 'text-gray-600'
-            }`}>
-              {leadStatusDisplay === 'aguardando'
-                ? 'Aguardando'
-                : leadStatusDisplay === 'atendimento'
-                ? 'Em Atendimento'
-                : 'Finalizado'}
-            </span>
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowStatusModal(!showStatusModal)
+              }}
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full cursor-pointer transition-all hover:ring-2 ${
+                leadStatusDisplay === 'aguardando'
+                  ? 'bg-yellow-100 dark:bg-yellow-900/20 hover:ring-yellow-300'
+                  : leadStatusDisplay === 'atendimento'
+                  ? 'bg-green-100 dark:bg-green-900/20 hover:ring-green-300'
+                  : 'bg-gray-100 dark:bg-gray-900/20 hover:ring-gray-300'
+              }`}
+              title="Clique para alterar status"
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                leadStatusDisplay === 'aguardando'
+                  ? 'bg-yellow-500'
+                  : leadStatusDisplay === 'atendimento'
+                  ? 'bg-green-500'
+                  : 'bg-gray-500'
+              }`}></div>
+              <span className={`text-[8px] font-medium truncate max-w-[46px] ${
+                leadStatusDisplay === 'aguardando'
+                  ? 'text-yellow-600'
+                  : leadStatusDisplay === 'atendimento'
+                  ? 'text-green-600'
+                  : 'text-gray-600'
+              }`}>
+                {leadStatusDisplay === 'aguardando'
+                  ? 'Aguardando'
+                  : leadStatusDisplay === 'atendimento'
+                  ? 'Em Atendimento'
+                  : 'Finalizado'}
+              </span>
+            </button>
+
+            {/* Mini Modal de Status */}
+            {showStatusModal && (
+              <>
+                {/* Overlay para fechar ao clicar fora */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowStatusModal(false)
+                  }}
+                />
+                
+                {/* Modal */}
+                <div 
+                  className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2 min-w-[160px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 px-2">
+                    Alterar Status
+                  </div>
+                  
+                  {leadStatusDisplay === 'aguardando' && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        setShowStatusModal(false)
+                        setShowAssumirModal(true)
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                    >
+                      <UserCheck className="w-3 h-3" />
+                      <span>Assumir Atendimento</span>
+                    </button>
+                  )}
+                  
+                  {leadStatusDisplay === 'atendimento' && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        setShowStatusModal(false)
+                        setShowFinalizarModal(true)
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                    >
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Encerrar Atendimento</span>
+                    </button>
+                  )}
+                  
+                  {leadStatusDisplay === 'finalizado' && (
+                    <div className="px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 text-center">
+                      Atendimento finalizado
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 

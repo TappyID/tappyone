@@ -318,16 +318,24 @@ export function Sidebar() {
                 <div>
                   {/* Submenu Header */}
                   <motion.div
-                    whileHover={{ scale: !isHovered ? 1 : 1.02 }}
+                    whileHover={{ scale: !isHovered ? 1.05 : 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="relative"
                   >
                     <motion.button
                       onClick={() => toggleSubmenu(item.title)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ease-out group relative overflow-hidden ${
-                        isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
-                          ? 'bg-white/10 text-white shadow-lg'
-                          : 'text-white/70 hover:bg-white/5 hover:text-white'
+                      className={`w-full flex items-center backdrop-blur-sm transition-all duration-300 ease-out group relative overflow-hidden ${
+                        !isHovered 
+                          ? `p-3 justify-center rounded-lg border ${
+                              isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
+                                ? 'bg-white/20 border-white/30 text-white shadow-lg'
+                                : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30'
+                            }`
+                          : `p-3 justify-between rounded-xl ${
+                              isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
+                                ? 'bg-white/10 text-white shadow-lg'
+                                : 'text-white/70 hover:bg-white/5 hover:text-white'
+                            }`
                       }`}
                     >
                       {/* Indicador ativo */}
@@ -343,15 +351,11 @@ export function Sidebar() {
                       
                       <div className="flex items-center gap-3">
                         <motion.div 
-                          className={`p-2 rounded-lg transition-all duration-200 relative ${
-                            isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
-                              ? 'bg-white/20 shadow-sm'
-                              : 'bg-white/10 group-hover:bg-white/15'
-                          }`}
+                          className="p-2 rounded-lg transition-all duration-200 relative bg-white/20"
                           whileHover={{ scale: 1.1 }}
                           transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         >
-                          <item.icon className={`w-5 h-5 ${item.color} transition-all duration-300`} strokeWidth={isSubmenuItemActive(item.children) || isSubmenuOpen(item.title) ? 2.5 : 2} />
+                          <item.icon className="w-5 h-5 text-white transition-all duration-300 drop-shadow-sm" strokeWidth={isSubmenuItemActive(item.children) || isSubmenuOpen(item.title) ? 2.5 : 2} />
                           
                           {/* Glow effect */}
                           <motion.div

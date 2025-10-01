@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Anotacao {
   id: string
@@ -132,6 +133,7 @@ export default function AnotacoesSidebar({
   selectedContact,
   activeChatId
 }: AnotacoesSidebarProps) {
+  const { actualTheme } = useTheme()
   const [anotacoes, setAnotacoes] = useState<Anotacao[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -254,7 +256,11 @@ export default function AnotacoesSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="fixed top-0 left-0 h-full w-[520px] bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 shadow-2xl border-r border-orange-500/20 dark:border-orange-500/20 z-50 pt-20"
+          className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 ${
+            actualTheme === 'dark'
+              ? 'bg-gradient-to-br from-[#1a1a1a] via-gray-900 to-[#1a1a1a] border-purple-500/20'
+              : 'bg-gradient-to-br from-white via-gray-50 to-white border-purple-200'
+          }`}
         >
           {/* Header */}
           <div className="p-4 border-b border-orange-200/50 dark:border-orange-500/20 bg-gradient-to-r from-orange-100/30 to-red-100/30 dark:from-orange-600/10 dark:to-red-600/10 backdrop-blur-sm">

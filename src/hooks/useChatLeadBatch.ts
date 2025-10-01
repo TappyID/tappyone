@@ -93,6 +93,15 @@ export function useChatLeadBatch(chatIds: string[]) {
           }
         })
 
+        console.log('✅ [useChatLeadBatch] Resultado final:', {
+          totalChats: chatIds.length,
+          totalLeadsEncontrados: Object.keys(result).length,
+          primeiros3: Object.entries(result).slice(0, 3).map(([id, lead]) => ({
+            id: id.substring(0, 15) + '...',
+            lead
+          }))
+        })
+        
         setChatLeads(result)
       } catch (err) {
         console.error('❌ [useChatLeadBatch] Erro:', err)

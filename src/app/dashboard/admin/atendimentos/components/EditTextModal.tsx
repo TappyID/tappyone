@@ -15,6 +15,7 @@ import {
   Volume2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface EditTextModalProps {
   isOpen: boolean
@@ -33,6 +34,7 @@ export default function EditTextModal({
   contactName,
   actionTitle 
 }: EditTextModalProps) {
+  const { actualTheme } = useTheme()
   const [text, setText] = useState(initialText)
   const [isGenerating, setIsGenerating] = useState(false)
   const [originalText] = useState(initialText)
@@ -138,10 +140,18 @@ export default function EditTextModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-border"
+          className={`rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border ${
+            actualTheme === 'dark'
+              ? 'bg-[#1a1a1a] border-gray-800'
+              : 'bg-white border-gray-200'
+          }`}
         >
           {/* Header */}
-          <div className="bg-primary p-6 text-primary-foreground">
+          <div className={`p-6 ${
+            actualTheme === 'dark'
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+              : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">

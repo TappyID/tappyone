@@ -20,6 +20,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface CriarFluxoIAModalProps {
   isOpen: boolean
@@ -221,6 +222,7 @@ export default function CriarFluxoIAModal({
   onClose,
   onCreateFluxo
 }: CriarFluxoIAModalProps) {
+  const { actualTheme } = useTheme()
   const [selectedFluxo, setSelectedFluxo] = useState<TipoFluxo | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
@@ -313,11 +315,19 @@ export default function CriarFluxoIAModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-background rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-4"
+          className={`rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-4 ${
+            actualTheme === 'dark'
+              ? 'bg-[#1a1a1a]'
+              : 'bg-white'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-border bg-gradient-to-r from-violet-500 to-purple-600">
+          <div className={`p-6 border-b ${
+            actualTheme === 'dark'
+              ? 'bg-gradient-to-r from-violet-600 to-purple-600 border-gray-800'
+              : 'bg-gradient-to-r from-violet-500 to-purple-500 border-gray-200'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 rounded-lg">

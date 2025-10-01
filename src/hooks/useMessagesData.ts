@@ -530,17 +530,17 @@ function getMessageStatus(msg: any): Message['status'] {
 function getDefaultContent(msg: any): string {
   const type = getMessageType(msg)
   switch (type) {
-    case 'image': return '📷 Imagem'
-    case 'video': return '🎥 Vídeo'
-    case 'audio': return '🎵 Áudio'
-    case 'document': return '📄 Documento'
-    case 'location': return '📍 Localização'
-    case 'contact': return '👤 Contato'
-    case 'call': return '📞 Chamada'
-    case 'poll': return '📊 Enquete'
-    case 'menu': return '🔗 Menu'
-    case 'event': return '📅 Evento'
-    case 'link-preview': return '🔗 Link'
+    case 'image': return 'Imagem'
+    case 'video': return 'Vídeo'
+    case 'audio': return 'Áudio'
+    case 'document': return 'Documento'
+    case 'location': return 'Localização'
+    case 'contact': return 'Contato'
+    case 'call': return 'Chamada'
+    case 'poll': return 'Enquete'
+    case 'menu': return 'Menu'
+    case 'event': return 'Evento'
+    case 'link-preview': return 'Link'
     default: return 'Mensagem'
   }
 }

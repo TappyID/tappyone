@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Tag } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useIndicatorData } from './useIndicatorData'
 import { normalizeTags } from '@/utils/tags'
 
@@ -23,17 +24,33 @@ export default function SimpleTagsIndicator({ contatoId, onClick }: SimpleTagsIn
     : `Nenhuma tag`
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.15 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className="relative p-1 rounded-sm border transition-colors bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/30"
+      className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm border ${
+        normalizedCount > 0
+          ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+      }`}
       title={tagsTooltip}
     >
-      <Tag className="w-4 h-4 text-emerald-600" />
-      
-      {/* Badge com contador */}
-      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full border border-white flex items-center justify-center bg-emerald-500">
-        <span className="text-xs font-bold text-white">{normalizedCount}</span>
+      <div className="relative">
+        <Tag className={`w-5 h-5 transition-colors ${
+          normalizedCount > 0 ? 'text-emerald-600' : 'text-gray-400 group-hover:text-emerald-600'
+        }`} />
+        
+        {/* Badge com contador */}
+        {normalizedCount > 0 && (
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-emerald-500 border-2 border-white dark:border-gray-800"
+          >
+            <span className="text-[10px] font-bold text-white px-1">{normalizedCount > 99 ? '99+' : normalizedCount}</span>
+          </motion.div>
+        )}
       </div>
-    </button>
+    </motion.button>
   )
 }

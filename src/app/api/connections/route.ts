@@ -38,16 +38,33 @@ export async function GET(request: NextRequest) {
     
     // 🔥 CONVERTER snake_case para camelCase
     if (data.connections) {
-      data.connections = data.connections.map((conn: any) => ({
-        ...conn,
-        sessionName: conn.session_name,
-        sessionData: conn.session_data,
-        userId: conn.user_id,
-        connectedAt: conn.connected_at,
-        lastSyncAt: conn.last_sync_at,
-        createdAt: conn.created_at,
-        updatedAt: conn.updated_at
-      }))
+      data.connections = data.connections.map((conn: any) => {
+        // Parse modulation se for string JSON
+        let modulation = conn.modulation
+        if (typeof modulation === 'string') {
+          try {
+            modulation = JSON.parse(modulation)
+          } catch (e) {
+            console.warn('⚠️ [CONNECTIONS] Erro ao parsear modulation:', e)
+          }
+        }
+        
+        // ✅ Extrair nome da conexão do modulation
+        const nome = modulation?.connectionName || conn.session_data?.push_name || conn.session_name || 'WhatsApp'
+        
+        return {
+          ...conn,
+          sessionName: conn.session_name,
+          sessionData: conn.session_data,
+          userId: conn.user_id,
+          connectedAt: conn.connected_at,
+          lastSyncAt: conn.last_sync_at,
+          createdAt: conn.created_at,
+          updatedAt: conn.updated_at,
+          modulation: modulation, // ✅ Preservar modulation parseado
+          nome: nome // ✅ ADICIONAR campo nome direto
+        }
+      })
     }
     
     // 🔥 DEBUG: Verificar conversão

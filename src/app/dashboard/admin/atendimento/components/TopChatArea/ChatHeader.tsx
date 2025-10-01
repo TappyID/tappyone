@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Phone, 
   Video, 
@@ -23,15 +23,16 @@ import AnotacoesBottomSheet from '../FooterChatArea/BottomSheets/AnotacoesBottom
 import AgendamentosIndicator from './Indicators/AgendamentosIndicator'
 import OrcamentosIndicator from './Indicators/OrcamentosIndicator'
 import SimpleTagsIndicator from './Indicators/SimpleTagsIndicator'
-import ContactIndicator from './Indicators/ContactIndicator'
 import TicketsIndicator from './Indicators/TicketsIndicator'
 import AnotacoesIndicator from './Indicators/AnotacoesIndicator'
-// import FilaIndicator from './Indicators/FilaIndicator'
-// import AgenteIndicator from './Indicators/AgenteIndicator'
+import FilaIndicator from './Indicators/FilaIndicator'
+import ProfileIndicator from './Indicators/ProfileIndicator'
 import { useAtendenteData } from '@/hooks/useAtendenteData'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import { useFiltersData } from '@/hooks/useFiltersData'
-import { FilaIndicator } from './StatusIndicators'
+import { useTheme } from '@/contexts/ThemeContext'
+import ProfileSidebar from '@/app/dashboard/admin/kanban/[id]/components/ProfileSidebar'
+import LeadEditSidebar from '@/app/dashboard/admin/kanban/[id]/components/ProfileSidebar/LeadEditSidebar'
 
 interface ChatHeaderProps {
   chat?: {
@@ -66,6 +67,8 @@ export default function ChatHeader({
   const [anotacoesBottomSheetOpen, setAnotacoesBottomSheetOpen] = useState(false)
   const [filaSidebarOpen, setFilaSidebarOpen] = useState(false)
   const [createContactModalOpen, setCreateContactModalOpen] = useState(false)
+  const [profileSidebarOpen, setProfileSidebarOpen] = useState(false)
+  const [leadEditSidebarOpen, setLeadEditSidebarOpen] = useState(false)
   
   // Extrair contato_id do chatId (remover @c.us)
   const contatoId = selectedChatId ? selectedChatId.replace('@c.us', '') : null
@@ -77,6 +80,9 @@ export default function ChatHeader({
   
   // Usar o mesmo hook que funciona no TransferModal
   const { atendentes } = useFiltersData()
+  
+  // Pegar o tema atual
+  const { actualTheme } = useTheme()
   
   // Buscar atendente responsável pelo chat
   const { atendenteData, refetch: refetchAtendente } = useAtendenteData(chat?.id || null)
@@ -209,14 +215,7 @@ export default function ChatHeader({
       </div>
 
       {/* Indicadores com Badges - Lado Direito */}
-      <div className="flex items-center gap-1">
-        <ContactIndicator 
-          chatId={selectedChatId}
-          onClick={() => {
-            console.log('👤 [ChatHeader] Clique no ContactIndicator - chatId:', selectedChatId)
-            setCreateContactModalOpen(true)
-          }} 
-        />
+      <div className="flex items-center gap-2">
         <SimpleTagsIndicator 
           contatoId={selectedChatId}
           onClick={() => setTagsBottomSheetOpen(true)} 
@@ -252,6 +251,10 @@ export default function ChatHeader({
         <FilaIndicator 
           chatId={selectedChatId}
           onClick={() => setFilaSidebarOpen(true)} 
+        />
+        <ProfileIndicator 
+          chatId={selectedChatId}
+          onClick={() => setProfileSidebarOpen(true)} 
         />
       </div>
       
@@ -294,6 +297,78 @@ export default function ChatHeader({
         onClose={() => setAnotacoesBottomSheetOpen(false)}
         chatId={selectedChatId}
       />
+      
+      {/* Profile Sidebar com Overlay */}
+      {profileSidebarOpen && (
+        <>
+          {/* Backdrop/Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setProfileSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
+          />
+          
+          {/* Sidebar Container */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed right-0 top-0 h-screen w-[500px] z-[9999] shadow-2xl"
+          >
+            <ProfileSidebar
+              isOpen={profileSidebarOpen}
+              onClose={() => setProfileSidebarOpen(false)}
+              theme={actualTheme}
+              contactName={chat?.name || 'Lead'}
+              contactNumber={selectedChatId || ''}
+              counts={{
+                tags: 0,
+                orcamentos: 0,
+                agendamentos: 0,
+                anotacoes: 0,
+                tickets: 0,
+                assinaturas: 0
+              }}
+              onEditLead={() => {
+                setLeadEditSidebarOpen(true)
+              }}
+            />
+          </motion.div>
+        </>
+      )}
+      
+      {/* Lead Edit Sidebar - Expande por cima do Profile */}
+      {leadEditSidebarOpen && (
+        <>
+          {/* Backdrop/Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLeadEditSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000]"
+          />
+          
+          {/* Sidebar Container */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed right-0 top-0 h-screen w-[800px] z-[10001] shadow-2xl"
+          >
+            <LeadEditSidebar
+              isOpen={leadEditSidebarOpen}
+              onClose={() => setLeadEditSidebarOpen(false)}
+              theme={actualTheme}
+              chatId={selectedChatId || ''}
+            />
+          </motion.div>
+        </>
+      )}
     </motion.div>
   )
 } 

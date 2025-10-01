@@ -77,7 +77,19 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#273155] dark:to-[#1e2442]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#273155] dark:border-white"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="relative"
+        >
+          <img 
+            src="/favicon-white.svg" 
+            alt="Loading..." 
+            className="w-32 h-32 drop-shadow-2xl"
+          />
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+        </motion.div>
       </div>
     )
   }

@@ -65,10 +65,18 @@ interface SideFilterProps {
   onTagChange: (tag: string) => void
   tags: Array<{ id: string; nome: string; cor?: string }>
   
+  // ✅ Tags Filter (múltipla seleção)
+  selectedTagsMulti?: string[]
+  onTagsMultiChange?: (tags: string[]) => void
+  
   // Filas Filter  
   selectedFila: string
   onFilaChange: (fila: string) => void
   filas: Array<{ id: string; nome: string; cor?: string }>
+  
+  // ✅ Conexões Filter (múltipla seleção)
+  selectedConexoes?: string[]
+  onConexoesChange?: (conexoes: string[]) => void
   
   // Dados dos filtros avançados
   kanbanStatuses: Array<{ id: string; nome: string; cor?: string }>
@@ -115,6 +123,13 @@ interface SideFilterProps {
   sortBy: 'name' | 'date'
   sortOrder: 'asc' | 'desc'
   onSortChange: (sortBy: 'name' | 'date', sortOrder: 'asc' | 'desc') => void
+  
+  // Debug info
+  debugInfo?: {
+    totalChatsTransformados: number
+    chatLeadsCarregados: number
+    primeirosChatLeads: any[]
+  }
 }
 
 export default function SideFilter({
@@ -123,9 +138,13 @@ export default function SideFilter({
   selectedTag,
   onTagChange,
   tags,
+  selectedTagsMulti = [],
+  onTagsMultiChange = () => {},
   selectedFila,
   onFilaChange,
   filas,
+  selectedConexoes = [],
+  onConexoesChange = () => {},
   selectedPriceRange = 'todos',
   onPriceRangeChange = () => {},
   priceRanges = [],
@@ -156,6 +175,8 @@ export default function SideFilter({
   leadsQuentesChats = 0,
   activeFilter = 'all',
   onFilterChange = () => {},
+  // Debug props
+  debugInfo,
   searchOptions,
   onSearchOptionsChange,
   sortBy,
@@ -232,7 +253,7 @@ export default function SideFilter({
   const [selectedAtendente, setSelectedAtendente] = useState<string[]>([])
   const [selectedFiltrosEspeciais, setSelectedFiltrosEspeciais] = useState<string[]>([])
   const [selectedConexoesMulti, setSelectedConexoesMulti] = useState<string[]>([])
-  const [selectedTagsMulti, setSelectedTagsMulti] = useState<string[]>([])
+  // selectedTagsMulti agora vem via props (não precisa de estado local)
   const [selectedFilasMulti, setSelectedFilasMulti] = useState<string[]>([])
   const [selectedQuadrosMulti, setSelectedQuadrosMulti] = useState<string[]>([])
   const [selectedTicketsMulti, setSelectedTicketsMulti] = useState<string[]>([])
@@ -745,12 +766,7 @@ export default function SideFilter({
             
           </div>
         </div>
-
-       
       </div>
-
-      {/* 🔍 DEBUG VISUAL - TEMPORÁRIO */}
-    
 
       {/* ⚙️ SIDEBAR DE FILTROS AVANÇADOS */}
       <AnimatePresence>
@@ -781,8 +797,12 @@ export default function SideFilter({
               {/* Filtro de Conexões - React Select MULTI */}
               <Select2
                 label="Conexões (Múltipla Seleção)"
-                value={selectedConexoesMulti}
-                onChange={(val) => setSelectedConexoesMulti(val as string[])}
+                value={selectedConexoes}
+                onChange={(val) => {
+                  const valores = val as string[]
+                  onConexoesChange(valores)
+                  console.log('🔗 [SideFilter] Conexões selecionadas:', valores)
+                }}
                 options={conexoes}
                 placeholder="Selecione múltiplas conexões"
                 icon={Phone}
@@ -797,7 +817,11 @@ export default function SideFilter({
               <Select2
                 label="Tags (Múltipla Seleção)"
                 value={selectedTagsMulti}
-                onChange={(val) => setSelectedTagsMulti(val as string[])}
+                onChange={(val) => {
+                  const valores = val as string[]
+                  onTagsMultiChange(valores)
+                  console.log('🏷️ [SideFilter] Tags selecionadas:', valores)
+                }}
                 options={tags}
                 placeholder="Selecione múltiplas tags"
                 icon={Tag}
@@ -805,6 +829,7 @@ export default function SideFilter({
                 isMulti={true}
                 isClearable
                 isSearchable
+                isLoading={isLoadingTags}
               />
 
               {/* Filtro de Filas - React Select MULTI */}
@@ -931,7 +956,6 @@ export default function SideFilter({
       <AnimatePresence>
         {showAdvancedFilters && (
           <motion.div
-            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowAdvancedFilters(false)}
