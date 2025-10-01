@@ -16,7 +16,7 @@ import {
   Edit,
   Tag
 } from 'lucide-react'
-import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
+import AtendimentosTopBar from '../components/AtendimentosTopBar'
 import { useRespostasRapidas, RespostaRapida } from '../../../../hooks/useRespostasRapidas'
 import { useTheme } from '@/contexts/ThemeContext'
 import RespostasList from './components/RespostasList'
