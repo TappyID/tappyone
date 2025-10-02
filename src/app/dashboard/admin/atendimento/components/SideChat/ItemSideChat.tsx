@@ -761,7 +761,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       </div>
 
       {/* Badges do Status e Tags */}
-      <div className="absolute top-1.5 right-[80px] flex items-center gap-1.5">
+      <div className="absolute top-1.5 right-[40px] flex items-center gap-1.5">
 
         {leadStatusDisplay && (
           <div className="relative">

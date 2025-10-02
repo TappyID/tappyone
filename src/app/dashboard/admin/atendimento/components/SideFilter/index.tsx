@@ -337,35 +337,43 @@ export default function SideFilter({
     fetchKanbanColunas();
   }, [selectedQuadrosMulti, onKanbanColunasChange]);
 
-  // Opções de ordenação
+  // Opções de ordenação - Design moderno
   const sortOptions = [
     {
       id: "date-desc",
-      label: "Mais recentes primeiro",
+      label: "Recentes",
+      description: "Mais novos primeiro",
       sortBy: "date",
       sortOrder: "desc",
-      icon: ArrowDown,
+      icon: Clock,
+      color: "blue"
     },
     {
       id: "date-asc",
-      label: "Mais antigas primeiro",
+      label: "Antigas",
+      description: "Mais antigas primeiro",
       sortBy: "date",
       sortOrder: "asc",
-      icon: ArrowUp,
+      icon: Clock,
+      color: "gray"
     },
     {
       id: "name-asc",
-      label: "Nome A-Z",
+      label: "A → Z",
+      description: "Ordem alfabética",
       sortBy: "name",
       sortOrder: "asc",
       icon: ArrowUp,
+      color: "green"
     },
     {
       id: "name-desc",
-      label: "Nome Z-A",
+      label: "Z → A",
+      description: "Ordem reversa",
       sortBy: "name",
       sortOrder: "desc",
       icon: ArrowDown,
+      color: "purple"
     },
   ];
 
@@ -860,6 +868,56 @@ export default function SideFilter({
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
               </div>
             </motion.button>
+
+            {/* Favoritos */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onFilterChange("favorites")}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === "favorites"
+                  ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-2 border-yellow-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              <div className="relative">
+                <Star className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  {favoriteChats}
+                </span>
+              </div>
+
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Favoritos
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
+
+            {/* Arquivados */}
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onFilterChange("archived")}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm ${
+                activeFilter === "archived"
+                  ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-2 border-red-400"
+                  : "text-gray-500 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              <div className="relative">
+                <Archive className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm">
+                  {archivedChats}
+                </span>
+              </div>
+
+              {/* Tooltip */}
+              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Arquivados
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </motion.button>
           </div>
         </div>
       </div>
@@ -1081,11 +1139,26 @@ export default function SideFilter({
                 right: dropdownPosition.right,
               }}
             >
-              <div className="p-1">
+              <div className="p-2 space-y-1">
                 {sortOptions.map((option) => {
                   const IconComponent = option.icon;
                   const isActive =
                     sortBy === option.sortBy && sortOrder === option.sortOrder;
+
+                  const colorClasses = {
+                    blue: isActive 
+                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800" 
+                      : "hover:bg-blue-50/50 dark:hover:bg-blue-900/10",
+                    gray: isActive 
+                      ? "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700" 
+                      : "hover:bg-gray-50/50 dark:hover:bg-gray-800/30",
+                    green: isActive 
+                      ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" 
+                      : "hover:bg-green-50/50 dark:hover:bg-green-900/10",
+                    purple: isActive 
+                      ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800" 
+                      : "hover:bg-purple-50/50 dark:hover:bg-purple-900/10"
+                  };
 
                   return (
                     <button
@@ -1097,14 +1170,41 @@ export default function SideFilter({
                         );
                         setShowSortOptions(false);
                       }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-                        isActive
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all border ${
+                        isActive ? "border" : "border-transparent"
+                      } ${colorClasses[option.color as keyof typeof colorClasses]}`}
                     >
-                      <IconComponent className="w-3.5 h-3.5" />
-                      <span>{option.label}</span>
+                      <div className={`p-1.5 rounded-md ${
+                        option.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                        option.color === 'gray' ? 'bg-gray-100 dark:bg-gray-800' :
+                        option.color === 'green' ? 'bg-green-100 dark:bg-green-900/30' :
+                        'bg-purple-100 dark:bg-purple-900/30'
+                      }`}>
+                        <IconComponent className={`w-3.5 h-3.5 ${
+                          option.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                          option.color === 'gray' ? 'text-gray-600 dark:text-gray-400' :
+                          option.color === 'green' ? 'text-green-600 dark:text-green-400' :
+                          'text-purple-600 dark:text-purple-400'
+                        }`} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className={`text-sm font-medium ${
+                          isActive ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {option.label}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {option.description}
+                        </div>
+                      </div>
+                      {isActive && (
+                        <div className={`w-2 h-2 rounded-full ${
+                          option.color === 'blue' ? 'bg-blue-500' :
+                          option.color === 'gray' ? 'bg-gray-500' :
+                          option.color === 'green' ? 'bg-green-500' :
+                          'bg-purple-500'
+                        }`} />
+                      )}
                     </button>
                   );
                 })}

@@ -36,57 +36,57 @@ export function useChatLeadBatch(chatIds: string[]) {
           throw new Error('Token não encontrado')
         }
 
-        // Fazer requisições em paralelo para leads e agentes
-        const [leadsResponse, agentesResponse] = await Promise.all([
-          // Buscar leads (batch ou individual)
-          Promise.all(
-            chatIds.slice(0, 20).map(async (chatId) => {
-              try {
-                const res = await fetch(`/api/chats/${encodeURIComponent(chatId)}/leads`, {
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                  },
-                })
-                const data = await res.json()
-                return { chatId, lead: data.data }
-              } catch {
-                return { chatId, lead: null }
-              }
+        console.log('🔄 [useChatLeadBatch] Buscando dados para', chatIds.length, 'chats')
+
+        // Buscar leads e agentes em paralelo
+        const [leadsResponse, agentesResults] = await Promise.all([
+          // Buscar TODOS os leads de uma vez
+          fetch('/api/chats/batch/leads', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              cardIds: chatIds
             })
-          ),
-          // Buscar agentes ativos (batch ou individual)
+          }),
+          // Buscar agentes ativos (primeiros 50 chats)
           Promise.all(
-            chatIds.slice(0, 20).map(async (chatId) => {
+            chatIds.slice(0, 50).map(async (chatId) => {
               try {
                 const res = await fetch(`/api/chat-agentes/${encodeURIComponent(chatId)}`, {
                   headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
                   },
                 })
+                if (!res.ok) return { chatId, hasActiveAgent: false }
                 const data = await res.json()
                 return { chatId, hasActiveAgent: data.ativo === true }
               } catch {
                 return { chatId, hasActiveAgent: false }
               }
             })
-          ),
+          )
         ])
 
-        // Mapear resultados
+        const leadsData = await leadsResponse.json()
+        console.log('📦 [useChatLeadBatch] Leads recebidos:', Object.keys(leadsData).length)
+        console.log('🤖 [useChatLeadBatch] Agentes verificados:', agentesResults.length)
+
+        // Mapear resultados do batch
         const result: Record<string, ChatLeadStatus | null> = {}
         
         chatIds.forEach((chatId) => {
-          const leadData = leadsResponse.find(r => r.chatId === chatId)
-          const agentData = agentesResponse.find(r => r.chatId === chatId)
+          const leadData = leadsData[chatId]
+          const agenteData = agentesResults.find(a => a.chatId === chatId)
           
-          if (leadData?.lead) {
+          if (leadData) {
             result[chatId] = {
-              status: leadData.lead.status || 'aguardando',
-              responsavel: leadData.lead.responsavel || '',
-              fila_id: leadData.lead.fila_id || '',
-              hasActiveAgent: agentData?.hasActiveAgent || false,
+              status: leadData.status || 'aguardando',
+              responsavel: leadData.responsavel || '',
+              fila_id: leadData.fila_id || leadData.FilaID || '',
+              hasActiveAgent: agenteData?.hasActiveAgent || false,
             }
           } else {
             result[chatId] = null
@@ -95,14 +95,17 @@ export function useChatLeadBatch(chatIds: string[]) {
 
         console.log('✅ [useChatLeadBatch] Resultado final:', {
           totalChats: chatIds.length,
-          totalLeadsEncontrados: Object.keys(result).length,
+          totalLeadsEncontrados: Object.keys(result).filter(k => result[k] !== null).length,
+          leadsComStatus: Object.entries(result).filter(([_, lead]) => lead?.status).length,
           primeiros3: Object.entries(result).slice(0, 3).map(([id, lead]) => ({
             id: id.substring(0, 15) + '...',
-            lead
+            status: lead?.status,
+            responsavel: lead?.responsavel
           }))
         })
         
         setChatLeads(result)
+        console.log('🔄 [useChatLeadBatch] setChatLeads chamado! Dados devem atualizar agora.')
       } catch (err) {
         console.error('❌ [useChatLeadBatch] Erro:', err)
         setError(err as Error)

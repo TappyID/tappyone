@@ -754,10 +754,17 @@ function AtendimentoPage() {
     searchResults,
     sortBy,
     sortOrder,
+    chatLeads, // 🔥 CRÍTICO: Adicionar chatLeads para atualizar quando os dados chegarem
   ]);
 
   // Função para carregar mais chats (agora usa paginação real da API)
   const handleLoadMoreChats = useCallback(async () => {
+    // 🚫 BLOQUEAR scroll infinito para filtros de status
+    if (["em_atendimento", "aguardando", "finalizado", "agentes_ia", "leads_quentes", "favorites", "archived", "hidden"].includes(activeFilter)) {
+      console.log('🚫 [LOAD MORE] Bloqueado para filtro:', activeFilter)
+      return
+    }
+    
     const hasClientSideFilters = Boolean(
       searchQuery.trim() ||
         selectedTag !== "todas" ||
@@ -801,6 +808,7 @@ function AtendimentoPage() {
       await loadMoreChats(); // Função do hook useChatsOverview (já gerencia isLoadingMore)
     } catch {}
   }, [
+    activeFilter, // 🔥 CRÍTICO: Adicionar activeFilter para bloquear scroll em filtros de status
     searchQuery,
     selectedTag,
     selectedTagsMulti,
@@ -1309,7 +1317,19 @@ function AtendimentoPage() {
         ] as "connected" | "disconnected" | "connecting",
 
         // Chat Lead Status (buscar dados reais do batch)
-        chatLeadStatus: chatLeads[chat.id] || contatoData.chatLead,
+        chatLeadStatus: (() => {
+          const leadData = chatLeads[chat.id] || contatoData.chatLead;
+          if (chat.name && chat.name.includes('Paul')) {
+            console.log('🔍 [LEAD DATA]', {
+              chatId: chat.id,
+              chatName: chat.name,
+              leadData,
+              chatLeadsHasData: !!chatLeads[chat.id],
+              contatoDataHasLead: !!contatoData.chatLead
+            });
+          }
+          return leadData;
+        })(),
 
         // Agente IA ativo (usar do chatLeads que já busca isso)
         hasActiveAgent:
@@ -1396,8 +1416,10 @@ function AtendimentoPage() {
         break;
       case "agentes_ia":
         // Filtrar chats que têm agente IA ativo
-        // Por enquanto, filtra baseado em hasActiveAgent (será vazio até implementar batch)
-        result = result.filter((chat) => chat.hasActiveAgent === true);
+        result = result.filter((chat) => {
+          const leadData = chatLeads[chat.id];
+          return leadData?.hasActiveAgent === true || chat.hasActiveAgent === true;
+        });
         break;
       case "leads_quentes":
         result = result.filter((chat) => {
@@ -1560,10 +1582,13 @@ function AtendimentoPage() {
     selectedKanbanStatus,
     selectedTicketStatus,
     selectedPriceRange,
+    chatLeads, // 🤖 Adicionar para filtro de agentes IA funcionar
   ]);
 
   // Calcular contadores para os novos filtros (baseado em dados visíveis)
   const chatCounters = useMemo(() => {
+    console.log('🔢 [CONTADOR] Recalculando contadores...')
+    
     const counts = {
       emAtendimento: 0,
       aguardando: 0,
@@ -1576,37 +1601,48 @@ function AtendimentoPage() {
     const chatsToCount = transformedChats.filter(
       (chat) => !hiddenChats.has(chat.id) && !archivedChats.has(chat.id),
     );
+    
+    console.log('🔢 [CONTADOR] Chats para contar:', chatsToCount.length)
+    console.log('🔢 [CONTADOR] chatLeads disponível:', Object.keys(chatLeads).length)
 
     chatsToCount.forEach((chat: any) => {
-      // Verificar status e responsável
-      const leadStatus = chat.chatLeadStatus?.status?.toLowerCase();
-      const hasResponsavel = !!chat.chatLeadStatus?.responsavel;
+      // 🔥 BUSCAR DIRETO DO chatLeads ao invés de chat.chatLeadStatus
+      const leadData = chatLeads[chat.id] || contatosData[chat.id]?.chatLead;
+      const leadStatus = leadData?.status?.toLowerCase();
+      const hasResponsavel = !!leadData?.responsavel;
 
-      // Lógica de contagem
+      // Lógica de contagem melhorada
       if (
         leadStatus === "em_atendimento" ||
         leadStatus === "atendimento" ||
+        leadStatus === "em atendimento" ||
         leadStatus === "em_atendimento_sem_responsavel"
       ) {
         counts.emAtendimento++;
-      } else if (leadStatus === "finalizado" || leadStatus === "concluido") {
+      } else if (
+        leadStatus === "finalizado" || 
+        leadStatus === "concluido" ||
+        leadStatus === "concluído"
+      ) {
         counts.finalizado++;
-      } else if (leadStatus === "aguardando" || leadStatus === "pendente") {
+      } else if (
+        leadStatus === "aguardando" || 
+        leadStatus === "pendente" ||
+        leadStatus === "novo"
+      ) {
         counts.aguardando++;
       } else if (hasResponsavel && !leadStatus) {
         // Se tem responsável mas sem status explícito, está em atendimento
         counts.emAtendimento++;
-      } else {
-        // Padrão: aguardando
+      } else if (!leadStatus) {
+        // Se não tem status nenhum, está aguardando
         counts.aguardando++;
       }
 
-      // Contar agentes IA ativos (temporariamente desabilitado para performance)
-      // TODO: Implementar busca batch de agentes para melhorar performance
-      // Por enquanto, o contador ficará em 0
-      // if (chat.hasActiveAgent === true) {
-      //   counts.agentesIA++
-      // }
+      // Contar agentes IA ativos
+      if (leadData?.hasActiveAgent === true) {
+        counts.agentesIA++
+      }
 
       // Contar leads quentes
       const isHotLead =
@@ -1620,8 +1656,9 @@ function AtendimentoPage() {
       }
     });
 
+    console.log('🔢 [CONTADOR] Resultado final:', counts)
     return counts;
-  }, [transformedChats, contatosData, hiddenChats, archivedChats]);
+  }, [transformedChats, contatosData, hiddenChats, archivedChats, chatLeads]);
 
   // Expor funções para testes no console (só uma vez)
   useEffect(() => {
@@ -1761,9 +1798,9 @@ function AtendimentoPage() {
               isLoading={loadingOverview && activeFilter === "all"}
               onLoadMore={handleLoadMoreChats}
               hasMoreChats={(() => {
-                // Para filtros específicos (favoritos, arquivados, ocultos), nunca há mais para carregar
+                // Para filtros específicos (favoritos, arquivados, ocultos, status), nunca há mais para carregar
                 if (
-                  ["favorites", "archived", "hidden"].includes(activeFilter)
+                  ["favorites", "archived", "hidden", "em_atendimento", "aguardando", "finalizado", "agentes_ia", "leads_quentes"].includes(activeFilter)
                 ) {
                   return false;
                 }
