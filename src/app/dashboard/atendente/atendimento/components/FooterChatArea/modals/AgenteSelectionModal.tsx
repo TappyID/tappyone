@@ -23,35 +23,31 @@ interface AgenteSelectionModalProps {
   chatId?: string
 }
 
-export default function AgenteSelectionModal({ 
-  isOpen, 
-  onClose, 
+export default function AgenteSelectionModal({
+  isOpen,
+  onClose,
   onSelect,
   agenteAtual,
-  chatId 
+  chatId
 }: AgenteSelectionModalProps) {
   const [agentes, setAgentes] = useState<Agente[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedAgente, setSelectedAgente] = useState<string | null>(agenteAtual?.id || null)
-  
+
   // Buscar agentes disponíveis
   useEffect(() => {
     if (!isOpen) return
-    
+
     const fetchAgentes = async () => {
       try {
         setLoading(true)
-        console.log('🤖 [AgenteSelectionModal] Buscando agentes...')
-        
+
         // Usar fetchApi que automaticamente adiciona token
         const response = await fetchApi('backend', '/api/agentes')
-        
-        console.log('🤖 [AgenteSelectionModal] Response status:', response.status)
-        
+
         if (response.ok) {
           const data = await response.json()
-          console.log('🤖 [AgenteSelectionModal] Dados recebidos:', data)
-          
+
           // Tentar diferentes formatos de resposta
           let agentesData = []
           if (Array.isArray(data)) {
@@ -61,36 +57,31 @@ export default function AgenteSelectionModal({
           } else if (data.agentes && Array.isArray(data.agentes)) {
             agentesData = data.agentes
           }
-          
-          console.log('🤖 [AgenteSelectionModal] Agentes processados:', agentesData)
+
           setAgentes(agentesData)
-        } else {
-          console.error('🤖 [AgenteSelectionModal] Erro na resposta:', response.status)
         }
-      } catch (error) {
-        console.error('🤖 [AgenteSelectionModal] Erro ao buscar agentes:', error)
-      } finally {
+      } catch {} finally {
         setLoading(false)
       }
     }
-    
+
     fetchAgentes()
   }, [isOpen])
-  
+
   const handleSelectAgente = () => {
     const agente = agentes.find(a => a.id === selectedAgente)
     onSelect(agente || null)
     onClose()
   }
-  
+
   const handleDesativarAgente = () => {
     onSelect(null)
     setSelectedAgente(null)
     onClose()
   }
-  
+
   if (!isOpen) return null
-  
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -101,7 +92,7 @@ export default function AgenteSelectionModal({
           onClick={onClose}
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         />
-        
+
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -130,7 +121,7 @@ export default function AgenteSelectionModal({
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {loading ? (
@@ -171,7 +162,7 @@ export default function AgenteSelectionModal({
                     </div>
                   </motion.button>
                 )}
-                
+
                 {/* Lista de agentes */}
                 {agentes.map((agente) => (
                   <motion.button
@@ -187,12 +178,12 @@ export default function AgenteSelectionModal({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="p-2 rounded-lg"
                           style={{ backgroundColor: `${agente.cor}20` }}
                         >
-                          <Sparkles 
-                            className="w-5 h-5" 
+                          <Sparkles
+                            className="w-5 h-5"
                             style={{ color: agente.cor }}
                           />
                         </div>
@@ -221,7 +212,7 @@ export default function AgenteSelectionModal({
                     </div>
                   </motion.button>
                 ))}
-                
+
                 {agentes.length === 0 && (
                   <div className="text-center py-12 text-gray-500">
                     <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -231,7 +222,7 @@ export default function AgenteSelectionModal({
               </div>
             )}
           </div>
-          
+
           {/* Footer */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-700">
             <div className="flex gap-3">

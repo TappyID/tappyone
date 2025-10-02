@@ -16,7 +16,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
   const [atendenteSelecionado, setAtendenteSelecionado] = useState('')
   const [loading, setLoading] = useState(false)
   const [busca, setBusca] = useState('')
-  
+
   // Buscar atendentes disponíveis e atuais do contato
   useEffect(() => {
     if (!isOpen || !chatId) return
@@ -25,41 +25,37 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
       try {
         setLoading(true)
         const telefone = chatId.replace('@c.us', '')
-        
-        console.log('👤 [AtendenteBottomSheet] Buscando dados para telefone:', telefone)
-        
+
         // 1. Buscar atendentes atuais do contato
         const conexaoResponse = await fetch(`/api/conexoes/contato/${telefone}`, {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
           }
         })
-        
+
         if (conexaoResponse.ok) {
           const conexaoData = await conexaoResponse.json()
           setAtendentesAtuais(conexaoData.atendentes || [])
           if (conexaoData.atendentes && conexaoData.atendentes.length > 0) {
             setAtendenteSelecionado(conexaoData.atendentes[0].id || conexaoData.atendentes[0].ID)
           }
-          console.log('👤 [AtendenteBottomSheet] Atendentes atuais:', conexaoData.atendentes)
+
         }
-        
+
         // 2. Buscar todos os atendentes disponíveis
         const atendentesResponse = await fetch('/api/atendentes', {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
           }
         })
-        
+
         if (atendentesResponse.ok) {
           const atendentesData = await atendentesResponse.json()
           setAtendentes(atendentesData.data || atendentesData || [])
-          console.log('👤 [AtendenteBottomSheet] Atendentes disponíveis:', atendentesData)
+
         }
-        
-      } catch (error) {
-        console.error('❌ [AtendenteBottomSheet] Erro ao buscar dados:', error)
-      } finally {
+
+      } catch {} finally {
         setLoading(false)
       }
     }
@@ -74,9 +70,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
     try {
       setLoading(true)
       const telefone = chatId.replace('@c.us', '')
-      
-      console.log('👤 [AtendenteBottomSheet] Atribuindo atendente:', atendenteSelecionado)
-      
+
       const response = await fetch(`/api/conexoes/contato/${telefone}/atendente`, {
         method: 'PUT',
         headers: {
@@ -85,32 +79,32 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
         },
         body: JSON.stringify({ atendenteId: atendenteSelecionado })
       })
-      
+
       if (response.ok) {
-        console.log('✅ [AtendenteBottomSheet] Atendente atribuído com sucesso!')
+
         alert(`✅ Atendente atribuído com sucesso!`)
         onClose()
-        
+
         // Disparar evento para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('atendenteChanged', { 
-          detail: { contatoId: telefone, atendenteId: atendenteSelecionado } 
+        window.dispatchEvent(new CustomEvent('atendenteChanged', {
+          detail: { contatoId: telefone, atendenteId: atendenteSelecionado }
         }))
       } else {
-        console.error('❌ [AtendenteBottomSheet] Erro ao atribuir atendente')
+
         alert('❌ Erro ao atribuir atendente')
       }
-    } catch (error) {
-      console.error('❌ [AtendenteBottomSheet] Erro:', error)
+    } catch {
+
       alert('❌ Erro ao atribuir atendente')
     } finally {
       setLoading(false)
     }
   }
-  
+
   if (!isOpen) return null
 
   // Filtrar atendentes pela busca
-  const atendentesFiltrados = atendentes.filter(atendente => 
+  const atendentesFiltrados = atendentes.filter(atendente =>
     (atendente.nome || atendente.name || '').toLowerCase().includes(busca.toLowerCase()) ||
     (atendente.email || '').toLowerCase().includes(busca.toLowerCase())
   )
@@ -152,7 +146,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
       />
-      
+
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -162,7 +156,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <UserCheck className="w-6 h-6 text-teal-600" />
@@ -175,7 +169,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4 pb-24">
@@ -208,7 +202,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
                 </div>
               </div>
             )}
-            
+
             {atendentesFiltrados.map((atendente) => (
               <motion.button
                 key={atendente.id || atendente.ID}
@@ -217,7 +211,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
                 whileTap={{ scale: 0.99 }}
                 className={`w-full p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${
                   atendenteSelecionado === (atendente.id || atendente.ID)
-                    ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' 
+                    ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
                     : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                 }`}
               >
@@ -285,7 +279,7 @@ export default function AtendenteBottomSheet({ isOpen, onClose, chatId }: Atende
           <button
             onClick={handleAtribuirAtendente}
             disabled={!atendenteSelecionado || loading}
-            className="w-full py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 
+            className="w-full py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400
                      text-white font-medium rounded-lg transition-colors mt-4"
           >
             {loading ? 'Processando...' : 'Atribuir Atendente'}

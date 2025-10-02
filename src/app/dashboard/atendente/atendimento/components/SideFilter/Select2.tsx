@@ -40,7 +40,7 @@ export default function Select2({
 }: Select2Props) {
   const { actualTheme } = useTheme()
   const isDark = actualTheme === 'dark'
-  
+
   // Converter opções para formato do react-select
   const formattedOptions: Option[] = options.map(opt => ({
     value: opt.id || opt.value || opt,
@@ -53,10 +53,10 @@ export default function Select2({
   const selectedValue = isMulti
     ? formattedOptions.filter(opt => (value as string[])?.includes(opt.value))
     : formattedOptions.find(opt => opt.value === value) || null
-  
+
   // Valores atuais para multi-select
   const currentValues = value as string[]
-  
+
   // Função para selecionar/desmarcar todos
   const handleToggleAll = () => {
     if (isMulti) {
@@ -76,7 +76,7 @@ export default function Select2({
     control: (styles, { isFocused }) => ({
       ...styles,
       backgroundColor: isDark ? '#1f2937' : '#ffffff',
-      borderColor: isFocused 
+      borderColor: isFocused
         ? iconColor === 'blue' ? '#3b82f6'
         : iconColor === 'purple' ? '#9333ea'
         : iconColor === 'green' ? '#10b981'
@@ -92,7 +92,7 @@ export default function Select2({
       minHeight: '44px',
       boxShadow: isFocused ? `0 0 0 3px ${isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)'}` : 'none',
       '&:hover': {
-        borderColor: isFocused 
+        borderColor: isFocused
           ? iconColor === 'blue' ? '#3b82f6'
           : iconColor === 'purple' ? '#9333ea'
           : iconColor === 'green' ? '#10b981'
@@ -114,22 +114,22 @@ export default function Select2({
     }),
     option: (styles, { isSelected, isFocused }) => ({
       ...styles,
-      backgroundColor: isSelected 
+      backgroundColor: isSelected
         ? iconColor === 'blue' ? '#3b82f6'
         : iconColor === 'purple' ? '#9333ea'
         : iconColor === 'green' ? '#10b981'
         : '#3b82f6'
-        : isFocused 
+        : isFocused
           ? isDark ? '#374151' : '#f3f4f6'
           : 'transparent',
-      color: isSelected 
+      color: isSelected
         ? '#ffffff'
         : isDark ? '#d1d5db' : '#111827',
       padding: '10px 12px',
       borderRadius: '8px',
       cursor: 'pointer',
       '&:active': {
-        backgroundColor: isSelected 
+        backgroundColor: isSelected
           ? iconColor === 'blue' ? '#2563eb'
           : iconColor === 'purple' ? '#7c3aed'
           : iconColor === 'green' ? '#059669'
@@ -196,7 +196,7 @@ export default function Select2({
     <div className="flex items-center gap-2">
       {option.icon && typeof option.icon === 'string' && <span>{option.icon}</span>}
       {option.color && (
-        <div 
+        <div
           className="w-3 h-3 rounded-full"
           style={{ backgroundColor: option.color }}
         />

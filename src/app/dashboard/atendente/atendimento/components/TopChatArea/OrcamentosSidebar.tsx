@@ -22,32 +22,30 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
 
   const fetchOrcamentos = async () => {
     setLoading(true)
-    console.log('💰 [OrcamentosSidebar] Buscando orçamentos do contato:', contatoId)
+
     try {
       // 1. Buscar UUID do contato
       const contatoUUID = await getContactUUID(contatoId!)
       if (!contatoUUID) {
-        console.log('💰 [OrcamentosSidebar] UUID não encontrado')
+
         setOrcamentos([])
         return
       }
-      
+
       // 2. Buscar orçamentos usando o UUID
       const token = localStorage.getItem('token')
       const response = await fetch(`http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      
+
       if (response.ok) {
         const result = await response.json()
-        console.log('💰 [OrcamentosSidebar] Orçamentos recebidos:', result)
+
         const orcamentos = result.data || result || []
         setOrcamentos(Array.isArray(orcamentos) ? orcamentos : [])
-        console.log('💰 [OrcamentosSidebar] Total de orçamentos:', orcamentos.length)
+
       }
-    } catch (error) {
-      console.error('Erro ao buscar orçamentos:', error)
-    } finally {
+    } catch {} finally {
       setLoading(false)
     }
   }
@@ -57,7 +55,7 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-      
+
       <div className="absolute top-0 right-0 h-full w-96 bg-white shadow-xl border-l">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
@@ -82,7 +80,7 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
                   R$ {orcamentos.reduce((total: number, orc: any) => {
                     let valor = orc.valorTotal || orc.valor_total || orc.valor || 0;
                     if (valor === 0 && orc.itens?.length > 0) {
-                      valor = orc.itens.reduce((sum: number, item: any) => 
+                      valor = orc.itens.reduce((sum: number, item: any) =>
                         sum + (item.valor || 0) * (item.quantidade || 1), 0
                       );
                     }
@@ -138,14 +136,14 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
                       R$ {(() => {
                         // Tentar pegar o valor de diferentes formas
                         let valor = orcamento.valorTotal || orcamento.valor_total || orcamento.valor || 0;
-                        
+
                         // Se valor for 0 e tiver itens, calcular a partir dos itens
                         if (valor === 0 && orcamento.itens?.length > 0) {
-                          valor = orcamento.itens.reduce((sum: number, item: any) => 
+                          valor = orcamento.itens.reduce((sum: number, item: any) =>
                             sum + (item.valor || 0) * (item.quantidade || 1), 0
                           );
                         }
-                        
+
                         return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                       })()}
                     </span>

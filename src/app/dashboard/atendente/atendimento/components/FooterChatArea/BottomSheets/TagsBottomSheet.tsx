@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Tag, Plus, Trash2 } from 'lucide-react'
 import { fetchApi } from '@/utils/api'
+import { normalizeTags, NormalizedTag } from '@/utils/tags'
 
 interface TagsBottomSheetProps {
   isOpen: boolean
@@ -12,75 +13,57 @@ interface TagsBottomSheetProps {
 }
 
 export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomSheetProps) {
-  const [tags, setTags] = useState<any[]>([])
+  const [tags, setTags] = useState<NormalizedTag[]>([])
   const [novaTag, setNovaTag] = useState('')
   const [corSelecionada, setCorSelecionada] = useState('#3b82f6')
   const [loading, setLoading] = useState(false)
 
-  console.log('🏷️ [TagsBottomSheet] Renderizado com chatId:', chatId)
-
   // Buscar tags do chat
   const fetchTags = useCallback(async () => {
     if (!chatId) return
-    
+
     try {
       setLoading(true)
-      console.log('🏷️ [TagsBottomSheet] Buscando tags para chatId:', chatId)
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT - USANDO BACKEND CORRETO
       const path = `/api/chats/${encodeURIComponent(chatId)}/tags`
-      console.log('🌐 [TagsBottomSheet] Path backend:', path)
-      
+
       const response = await fetchApi('backend', path)
-      
+
       if (!response.ok) {
-        console.log('🏷️ [TagsBottomSheet] Erro ao buscar tags:', response.status)
         setTags([])
         return
       }
-      
+
       const data = await response.json()
       const allTags = Array.isArray(data) ? data : (data.data || [])
-      
-      console.log('🏷️ [FRONTEND] Resposta completa da API:', data)
-      console.log('🏷️ [FRONTEND] Total de tags retornadas:', allTags.length)
-      
+
       // ⚠️ FILTRO TEMPORÁRIO NO FRONTEND (até API ser corrigida)
       const telefone = chatId.replace('@c.us', '')
-      
+
       // Debug: Ver estrutura das tags
-      console.log('🔍 [DEBUG] Primeira tag da API:', allTags[0])
-      console.log('🔍 [DEBUG] Última tag da API:', allTags[allTags.length - 1])
-      
+
       const tagsDoChat = allTags.filter(tag => {
         // Buscar tags que podem estar associadas ao chat/telefone
         const match = (
-          tag.chatId === chatId || 
+          tag.chatId === chatId ||
           tag.telefone === telefone ||
           tag.contato_telefone === telefone ||
           tag.contato_id === chatId ||
           // Para tags antigas que podem ter outros campos
-          tag.associacoes?.some((assoc: any) => 
+          tag.associacoes?.some((assoc: any) =>
             assoc.chatId === chatId || assoc.telefone === telefone
           )
         )
+
         
-        if (match) {
-          console.log('🎯 [DEBUG] Tag encontrada para chat:', tag)
-        }
-        
+
         return match
       })
-      
-      console.log('🔍 [FRONTEND] Filtro aplicado para chatId:', chatId)
-      console.log('🔍 [FRONTEND] Telefone extraído:', telefone)
-      console.log('🔍 [FRONTEND] Tags filtradas do chat:', tagsDoChat.length)
-      console.log('🔍 [FRONTEND] Tags do chat:', tagsDoChat)
-      
-      setTags(tagsDoChat)
-      
-    } catch (error) {
-      console.error('❌ Erro ao buscar tags:', error)
+
+      setTags(normalizeTags(tagsDoChat))
+
+    } catch {
       setTags([])
     } finally {
       setLoading(false)
@@ -95,13 +78,11 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
 
   const handleCriarTag = async () => {
     if (!novaTag.trim()) return
-    
-    console.log('🏷️ Nova tag:', { nome: novaTag, cor: corSelecionada, chatId })
-    
+
     try {
       // Extrair telefone do chatId para compatibilidade
       const telefone = chatId.replace('@c.us', '')
-      
+
       const tagData = {
         nome: novaTag.trim(),
         cor: corSelecionada,
@@ -110,11 +91,7 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
         contato_telefone: telefone, // Alternativa
         ativo: true
       }
-      
-      console.log('📡 [FRONTEND] Criando tag com dados:', tagData)
-      console.log('📡 [FRONTEND] ChatId original:', chatId)
-      console.log('📡 [FRONTEND] Telefone extraído:', telefone)
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT - USANDO BACKEND CORRETO
       const path = `/api/chats/${encodeURIComponent(chatId)}/tags`
       const response = await fetchApi('backend', path, {
@@ -125,61 +102,50 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
           ativo: true
         })
       })
-      
+
       if (!response.ok) {
         const error = await response.json().catch(() => null)
-        console.error('❌ Erro ao criar tag:', response.status, error)
         alert('❌ Erro ao criar tag. Tente novamente.')
         return
       }
-      
+
       const result = await response.json()
-      console.log('✅ Tag criada com sucesso:', result)
-      
-      console.log('🚨 [PROBLEMA] API não salvou associação da tag com o chat!')
-      console.log('🚨 [PROBLEMA] Tag criada:', result.data)
-      console.log('🚨 [PROBLEMA] Campos enviados mas ignorados:', { chatId, telefone })
-      
+
       alert(`✅ Tag "${novaTag}" criada com sucesso!`)
-      
+
       setNovaTag('')
       fetchTags() // Recarregar tags
-      
-      // Disparar evento para atualizar indicadores
-      window.dispatchEvent(new CustomEvent('tagCreated', { 
-        detail: { chatId, tag: result } 
+
+      // 🔥 Disparar evento global para recarregar filtros
+      window.dispatchEvent(new CustomEvent('tag-created', {
+        detail: { chatId, tag: result }
       }))
-      
-    } catch (error) {
-      console.error('❌ Erro de rede ao criar tag:', error)
+
+    } catch {
       alert('❌ Erro de conexão. Tente novamente.')
     }
   }
 
   const handleRemoverTag = async (tagId: string) => {
-    console.log('🏷️ Remover tag:', { tagId, chatId })
-    
+
     try {
       // 🚀 NOVA URL ESPECÍFICA POR CHAT - USANDO BACKEND CORRETO
       const path = `/api/chats/${encodeURIComponent(chatId || '')}/tags/${tagId}`
       const response = await fetchApi('backend', path, {
         method: 'DELETE'
       })
-      
+
       if (response.ok) {
-        console.log('✅ Tag removida com sucesso!')
         fetchTags() // Recarregar tags
-        
-        // Disparar evento para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('tagRemoved', { 
-          detail: { chatId, tagId } 
+
+        // 🔥 Disparar evento global para recarregar filtros
+        window.dispatchEvent(new CustomEvent('tag-deleted', {
+          detail: { chatId, tagId }
         }))
       } else {
-        console.error('❌ Erro ao remover tag:', response.status)
         alert('❌ Erro ao remover tag. Tente novamente.')
       }
-    } catch (error) {
-      console.error('❌ Erro de rede ao remover tag:', error)
+    } catch {
       alert('❌ Erro de conexão. Tente novamente.')
     }
   }
@@ -253,7 +219,7 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
                 Criar
               </button>
             </div>
-            
+
             {/* Seletor de Cores */}
             <div className="flex gap-2 flex-wrap">
               {coresDisponiveis.map((cor) => (
@@ -274,7 +240,7 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Tags Aplicadas ({tags.length})
             </h4>
-            
+
             {loading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -318,4 +284,4 @@ export default function TagsBottomSheet({ isOpen, onClose, chatId }: TagsBottomS
     </AnimatePresence>
   )
 }
-  
+

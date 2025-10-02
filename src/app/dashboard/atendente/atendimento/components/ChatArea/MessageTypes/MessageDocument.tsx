@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { 
-  FileText, 
-  Download, 
-  Eye, 
+import {
+  FileText,
+  Download,
+  Eye,
   File,
   FileImage,
   FileVideo,
@@ -22,24 +22,24 @@ interface MessageDocumentProps {
   caption?: string
 }
 
-export default function MessageDocument({ 
-  documentUrl, 
-  fileName, 
+export default function MessageDocument({
+  documentUrl,
+  fileName,
   fileSize = 0,
   mimeType = '',
   isFromUser,
-  caption 
+  caption
 }: MessageDocumentProps) {
-  
+
   const getFileIcon = () => {
     const iconProps = { className: "w-6 h-6" }
-    
+
     if (mimeType.includes('pdf')) return <FileText {...iconProps} className="w-6 h-6 text-red-500" />
     if (mimeType.includes('image')) return <FileImage {...iconProps} className="w-6 h-6 text-green-500" />
     if (mimeType.includes('video')) return <FileVideo {...iconProps} className="w-6 h-6 text-purple-500" />
     if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return <FileSpreadsheet {...iconProps} className="w-6 h-6 text-emerald-500" />
     if (mimeType.includes('text') || mimeType.includes('code')) return <FileCode {...iconProps} className="w-6 h-6 text-blue-500" />
-    
+
     return <File {...iconProps} className="w-6 h-6 text-gray-500" />
   }
 
@@ -70,15 +70,15 @@ export default function MessageDocument({
       <motion.div
         whileHover={{ scale: 1.02 }}
         className={`flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed transition-all ${
-          isFromUser 
-            ? 'bg-blue-600/90 border-white/20 hover:border-white/40' 
+          isFromUser
+            ? 'bg-blue-600/90 border-white/20 hover:border-white/40'
             : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
         }`}
       >
         {/* Ícone do arquivo */}
         <div className={`p-2 rounded-lg ${
-          isFromUser 
-            ? 'bg-white/20' 
+          isFromUser
+            ? 'bg-white/20'
             : 'bg-white dark:bg-gray-600'
         }`}>
           {getFileIcon()}

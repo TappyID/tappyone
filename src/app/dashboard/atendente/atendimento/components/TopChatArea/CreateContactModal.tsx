@@ -36,40 +36,38 @@ export default function CreateContactModal({ isOpen, onClose, chatId, chatName }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.nome.trim() || !formData.telefone) {
       alert('Nome e telefone são obrigatórios!')
       return
     }
 
     setLoading(true)
-    console.log('📞 [CreateContactModal] Criando contato:', formData)
 
     try {
       const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-      
+
       // 1. Buscar sessão ativa (igual ao modal que funciona)
-      console.log('🔍 Buscando sessões WhatsApp ativas...')
+
       const sessionsResponse = await fetch('/api/sessoes-whatsapp', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      
+
       if (!sessionsResponse.ok) {
         throw new Error('Erro ao buscar sessões WhatsApp')
       }
-      
+
       const sessionsData = await sessionsResponse.json()
-      console.log('✅ Sessões WhatsApp obtidas:', sessionsData)
 
       // Buscar sessão ativa
       let sessaoWhatsappId = ''
       if (Array.isArray(sessionsData) && sessionsData.length > 0) {
         const activeSession = sessionsData.find(s => s.ativo) || sessionsData[0]
         sessaoWhatsappId = activeSession.id
-        console.log('✅ Sessão ativa encontrada:', activeSession)
+
       } else if (sessionsData?.id) {
         sessaoWhatsappId = sessionsData.id
-        console.log('✅ Sessão única encontrada:', sessionsData)
+
       } else {
         throw new Error('Nenhuma sessão WhatsApp encontrada')
       }
@@ -92,8 +90,6 @@ export default function CreateContactModal({ isOpen, onClose, chatId, chatName }
         pais: formData.pais || null
       }
 
-      console.log('📦 Dados do contato sendo enviados:', contactData)
-
       const response = await fetch('/api/contatos', {
         method: 'POST',
         headers: {
@@ -105,21 +101,20 @@ export default function CreateContactModal({ isOpen, onClose, chatId, chatName }
 
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ [CreateContactModal] Contato criado:', result)
-        
-        window.dispatchEvent(new CustomEvent('contactCreated', { 
-          detail: { chatId, contato: result } 
+
+        window.dispatchEvent(new CustomEvent('contactCreated', {
+          detail: { chatId, contato: result }
         }))
-        
+
         alert('Contato criado com sucesso! Lead enviado para o kanban.')
         onClose()
       } else {
         const error = await response.text()
-        console.error('❌ [CreateContactModal] Erro ao criar contato:', error)
+
         alert('Erro ao criar contato: ' + error)
       }
-    } catch (error) {
-      console.error('❌ [CreateContactModal] Erro:', error)
+    } catch {
+
       alert('Erro ao criar contato')
     } finally {
       setLoading(false)

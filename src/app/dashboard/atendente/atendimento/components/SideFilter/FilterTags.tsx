@@ -15,11 +15,11 @@ interface FilterTagsProps {
   isLoading?: boolean
 }
 
-export default function FilterTags({ 
-  selectedTag, 
-  onTagChange, 
-  tags, 
-  isLoading = false 
+export default function FilterTags({
+  selectedTag,
+  onTagChange,
+  tags,
+  isLoading = false
 }: FilterTagsProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -32,7 +32,7 @@ export default function FilterTags({
       <motion.button
         whileHover={{ scale: 1.02 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 border border-gray-300 
+        className="w-full flex items-center justify-between p-3 border border-gray-300
                    dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800
                    hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         disabled={isLoading}
@@ -40,13 +40,13 @@ export default function FilterTags({
         <div className="flex items-center gap-2">
           <Hash className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium">
-            {isLoading ? 'Carregando...' : 
-              selectedTag === 'todas' ? 'Todas as Tags' : 
+            {isLoading ? 'Carregando...' :
+              selectedTag === 'todas' ? 'Todas as Tags' :
               selectedTagData?.nome || 'Selecionar Tag'
             }
           </span>
           {selectedTagData?.cor && (
-            <div 
+            <div
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: selectedTagData.cor }}
             />
@@ -63,8 +63,8 @@ export default function FilterTags({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 
-                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg 
+            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800
+                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg
                        z-50 max-h-60 overflow-y-auto"
           >
             {/* Opção "Todas" */}
@@ -73,7 +73,7 @@ export default function FilterTags({
                 onTagChange('todas')
                 setIsOpen(false)
               }}
-              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                          transition-colors flex items-center gap-2 ${
                 selectedTag === 'todas' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
               }`}
@@ -90,12 +90,12 @@ export default function FilterTags({
                   onTagChange(tag.id)
                   setIsOpen(false)
                 }}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                            transition-colors flex items-center gap-2 ${
                   selectedTag === tag.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                 }`}
               >
-                <div 
+                <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: tag.cor || '#6b7280' }}
                 />

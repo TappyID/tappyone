@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Smile, Send, Mic, MicOff, Zap, Bot, MessageSquare, X, Reply, 
-  GripHorizontal, Bold, Italic, Code, Strikethrough, Quote, List, 
+import {
+  Smile, Send, Mic, MicOff, Zap, Bot, MessageSquare, X, Reply,
+  GripHorizontal, Bold, Italic, Code, Strikethrough, Quote, List,
   ListOrdered, Type
 } from 'lucide-react'
 import { useMessagesData } from '@/hooks/useMessagesData'
@@ -69,7 +69,7 @@ interface MessageInputProps {
   placeholder?: string
   disabled?: boolean
   isTyping?: boolean
-  
+
   // Estado de resposta
   replyingTo?: {
     messageId: string
@@ -77,7 +77,7 @@ interface MessageInputProps {
     sender: string
   } | null
   onCancelReply?: () => void
-  
+
   // Novas funções para envio de mídia
   onSendContact?: (contacts: any[], caption: string) => Promise<void>
   onSendLocation?: (latitude: number, longitude: number, title: string, address: string) => Promise<void>
@@ -87,7 +87,7 @@ interface MessageInputProps {
   onSendMedia?: (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => Promise<void>
   // ID do chat para as APIs
   chatId?: string
-  
+
   // Contato ID extraído do chatId para vincular criações
   contatoId?: string | null
 }
@@ -200,13 +200,13 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                   value={menuTitle}
                   onChange={(e) => setMenuTitle(e.target.value)}
                   placeholder="Ex: Ver Cardápio, Escolher Serviço"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                            focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Este texto aparece no botão que o usuário clica</p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   📝 Título da Mensagem *
@@ -216,13 +216,13 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                   onChange={(e) => setMenuDescription(e.target.value)}
                   placeholder="Ex: Escolha uma das opções abaixo para continuar..."
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                            focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Texto que aparece acima do botão de opções</p>
               </div>
-              
+
               {/* Opções do Menu */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -233,7 +233,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                     onClick={addMenuOption}
                     disabled={menuOptions.length >= 10}
                     className={`text-sm font-medium px-3 py-1 rounded transition-colors ${
-                      menuOptions.length >= 10 
+                      menuOptions.length >= 10
                         ? 'text-gray-400 cursor-not-allowed'
                         : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                     }`}
@@ -241,7 +241,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                     + Adicionar opção
                   </button>
                 </div>
-                
+
                 <div className="space-y-3 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-800/50">
                   {menuOptions.map((option, index) => (
                     <div key={index} className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -253,7 +253,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                         value={option}
                         onChange={(e) => updateMenuOption(index, e.target.value)}
                         placeholder={`Ex: 🍕 Fazer pedido, 📞 Falar com atendente`}
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                                  focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
@@ -270,7 +270,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                   ))}
                 </div>
               </div>
-              
+
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                   📋 Sobre o menu interativo:
@@ -294,12 +294,12 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
                   placeholder="Ex: Reunião de Vendas às 14h"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                            focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   🕒 Data e Hora do Evento *
@@ -308,13 +308,13 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
                   type="datetime-local"
                   value={eventDateTime}
                   onChange={(e) => setEventDateTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                            focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min={new Date().toISOString().slice(0, 16)} // Não permite datas passadas
                 />
               </div>
-              
+
               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                   📋 Sobre o evento:
@@ -333,7 +333,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400
                      dark:hover:text-gray-200 transition-colors"
           >
             Cancelar
@@ -341,7 +341,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
           <button
             onClick={handleSend}
             disabled={
-              type === 'menu' 
+              type === 'menu'
                 ? !menuTitle.trim() || menuOptions.filter(opt => opt.trim()).length === 0
                 : !eventTitle.trim() || !eventDateTime
             }
@@ -360,7 +360,7 @@ const ExtendedSpecialModal = ({ isOpen, onClose, type, onSend, chatId }: Extende
   )
 }
 
-export default function MessageInput({ 
+export default function MessageInput({
   onSendMessage,
   onAttachFile,
   onSendImage,
@@ -390,36 +390,33 @@ export default function MessageInput({
   const [message, setMessage] = useState('')
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'sistema'>('whatsapp')
-  
+
   // Extrair contato_id do chatId (remover @c.us)
   const contatoId = chatId ? chatId.replace('@c.us', '') : null
-  
-  console.log('🔍 [MessageInput] chatId:', chatId)
-  console.log('🔍 [MessageInput] contatoId extraído:', contatoId)
-  
+
   // Estados para modals
   const [showSpecialModal, setShowSpecialModal] = useState<'contact' | 'location' | 'poll' | 'menu' | 'events' | null>(null)
   const [showMediaSendModal, setShowMediaSendModal] = useState(false)
   const [mediaSendType, setMediaSendType] = useState<'image' | 'video' | 'document'>('image')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  
+
   // Estados para ações rápidas (bottom sheet)
   const [showActionSheet, setShowActionSheet] = useState<'agendamento' | 'orcamento' | 'assinatura' | 'anotacoes' | 'tags' | 'ticket' | 'fila' | 'atendente' | null>(null)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
-  
+
   // Estados para agente IA
   const [showAgenteModal, setShowAgenteModal] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  
+
   // Hook para buscar agente ativo do chat
-  const { 
-    ativo: agenteAtivo, 
-    agente: agenteAtual, 
+  const {
+    ativo: agenteAtivo,
+    agente: agenteAtual,
     refetch: refetchAgente,
     activateAgent,
-    deactivateAgent 
+    deactivateAgent
   } = useChatAgente(chatId)
-  
+
   // Ref para textarea expansivo
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [textareaHeight, setTextareaHeight] = useState(48)
@@ -427,13 +424,13 @@ export default function MessageInput({
   const [showFormatting, setShowFormatting] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const [manualHeight, setManualHeight] = useState<number | null>(null)
-  
+
   // Estados para transcrição de voz
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  
+
   // Auto-resize inteligente - só expande quando necessário
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current
@@ -442,24 +439,24 @@ export default function MessageInput({
       const baseHeight = 48
       const focusBoost = isFocused ? 8 : 0 // pequeno aumento no foco
       const minHeight = baseHeight + focusBoost
-      
+
       // Calcular altura necessária para o conteúdo
       textarea.style.height = `${baseHeight}px`
       const scrollHeight = textarea.scrollHeight
-      
+
       // Se não há conteúdo que excede uma linha, manter mínimo
       const contentHeight = scrollHeight <= baseHeight + 2 ? minHeight : scrollHeight + focusBoost
-      
+
       // Usar altura manual se definida, senão usar altura do conteúdo
       const targetHeight = manualHeight || contentHeight
       const maxHeight = 300 // altura máxima
-      
+
       const newHeight = Math.max(minHeight, Math.min(targetHeight, maxHeight))
       setTextareaHeight(newHeight)
       textarea.style.height = `${newHeight}px`
     }
   }, [isFocused, isDragging, manualHeight])
-  
+
   // Ajustar altura quando mensagem muda
   useLayoutEffect(() => {
     adjustHeight()
@@ -527,7 +524,7 @@ export default function MessageInput({
 
     const newMessage = message.substring(0, start) + formattedText + message.substring(end)
     setMessage(newMessage)
-    
+
     // Reposicionar cursor
     setTimeout(() => {
       textarea.focus()
@@ -544,7 +541,7 @@ export default function MessageInput({
       setTimeout(() => adjustHeight(), 0)
     }
   }
-  
+
   // Funções de transcrição de voz
   const startVoiceRecording = async () => {
     try {
@@ -552,73 +549,67 @@ export default function MessageInput({
       const mediaRecorder = new MediaRecorder(stream)
       mediaRecorderRef.current = mediaRecorder
       audioChunksRef.current = []
-      
+
       mediaRecorder.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data)
       }
-      
+
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         await transcribeAudio(audioBlob)
-        
+
         // Parar todas as tracks do stream
         stream.getTracks().forEach(track => track.stop())
       }
-      
+
       mediaRecorder.start()
       setIsRecording(true)
-      console.log('🎙️ Gravação de voz iniciada')
-    } catch (error) {
-      console.error('❌ Erro ao iniciar gravação:', error)
+
+    } catch {
+
       alert('Não foi possível acessar o microfone. Verifique as permissões.')
     }
   }
-  
+
   const stopVoiceRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      console.log('🛑 Gravação de voz parada')
+
     }
   }
-  
+
   const transcribeAudio = async (audioBlob: Blob) => {
     try {
       setIsTranscribing(true)
-      console.log('🔄 Transcrevendo áudio...')
-      
+
       const formData = new FormData()
       formData.append('audio', audioBlob, 'recording.webm')
-      
+
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.text) {
-          console.log('✅ Transcrição recebida:', data.text)
-          
+
           // Adicionar texto transcrito ao campo
           setMessage(prevMessage => {
             const newMessage = prevMessage ? `${prevMessage} ${data.text}` : data.text
             return newMessage
           })
-          
+
           // Ajustar altura do textarea
           setTimeout(() => adjustHeight(), 0)
         }
-      } else {
-        console.error('❌ Erro na resposta da API:', response.status)
       }
-    } catch (error) {
-      console.error('❌ Erro ao transcrever áudio:', error)
-    } finally {
+    } catch {} finally {
       setIsTranscribing(false)
     }
   }
-  
+
   const toggleVoiceRecording = () => {
     if (isRecording) {
       stopVoiceRecording()
@@ -642,19 +633,14 @@ export default function MessageInput({
   }
 
   const handleMediaSend = async (file: File, caption: string, mediaType: 'image' | 'video' | 'document') => {
-    console.log('📎 Enviando mídia:', mediaType, file.name, caption)
-    
+
     if (onSendMedia) {
       try {
         await onSendMedia(file, caption, mediaType)
-        console.log('✅ Mídia enviada com sucesso!')
-      } catch (error) {
-        console.error('❌ Erro ao enviar mídia:', error)
-      }
-    } else {
-      console.warn('⚠️ onSendMedia não está definido')
+
+      } catch {}
     }
-    
+
     setShowMediaSendModal(false)
     setSelectedFile(null)
   }
@@ -662,25 +648,25 @@ export default function MessageInput({
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newMessage = e.target.value
     setMessage(newMessage)
-    
+
     // Gerenciar typing indicators
     if (newMessage.length > 0) {
       // Iniciar typing se ainda não iniciou
       if (!typingTimeout) {
         onStartTyping?.()
       }
-      
+
       // Limpar timeout anterior
       if (typingTimeout) {
         clearTimeout(typingTimeout)
       }
-      
+
       // Definir novo timeout para parar typing
       const timeout = setTimeout(() => {
         onStopTyping?.()
         setTypingTimeout(null)
       }, 3000) // Para de mostrar "digitando" após 3 segundos de inatividade
-      
+
       setTypingTimeout(timeout)
     } else {
       // Se apagou tudo, parar typing
@@ -691,7 +677,6 @@ export default function MessageInput({
       onStopTyping?.()
     }
   }
-
 
   return (
     <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
@@ -721,8 +706,8 @@ export default function MessageInput({
             <button
               onClick={() => setActiveTab('whatsapp')}
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'whatsapp' 
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                activeTab === 'whatsapp'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
               }`}
             >
@@ -731,113 +716,113 @@ export default function MessageInput({
             <button
               onClick={() => setActiveTab('sistema')}
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'sistema' 
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                activeTab === 'sistema'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
               }`}
             >
               Sistema
             </button>
           </div>
-          
+
           {/* Conteúdo das Tabs */}
           <div className="p-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
             <div className="grid grid-cols-4 gap-3">
               {activeTab === 'whatsapp' ? (
                 <>
-                <MenuButton onClick={() => { 
-                  setShowSpecialModal('menu'); 
-                  setShowAttachMenu(false) 
+                <MenuButton onClick={() => {
+                  setShowSpecialModal('menu');
+                  setShowAttachMenu(false)
                 }} />
                 <ImageButton onClick={() => {
                   setMediaSendType('image');
                   setShowMediaSendModal(true);
                   setShowAttachMenu(false);
                 }} />
-                <EnqueteButton onClick={() => { 
-                  setShowSpecialModal('poll'); 
-                  setShowAttachMenu(false) 
+                <EnqueteButton onClick={() => {
+                  setShowSpecialModal('poll');
+                  setShowAttachMenu(false)
                 }} />
-                <LocalizacaoButton onClick={() => { 
-                  setShowSpecialModal('location'); 
-                  setShowAttachMenu(false) 
+                <LocalizacaoButton onClick={() => {
+                  setShowSpecialModal('location');
+                  setShowAttachMenu(false)
                 }} />
-                <ContatoButton onClick={() => { 
-                  setShowSpecialModal('contact'); 
-                  setShowAttachMenu(false) 
+                <ContatoButton onClick={() => {
+                  setShowSpecialModal('contact');
+                  setShowAttachMenu(false)
                 }} />
                 <AnexoWhatsappButton onClick={() => handleFileSelect('document')} />
                 <VideoButton onClick={() => handleFileSelect('video')} />
                 <AudioWhatsappButton onClick={() => handleFileSelect('document')} />
-                <EventsButton onClick={() => { 
-                  setShowSpecialModal('events'); 
-                  setShowAttachMenu(false) 
+                <EventsButton onClick={() => {
+                  setShowSpecialModal('events');
+                  setShowAttachMenu(false)
                 }} />
               </>
             ) : (
               <>
-                <AgendamentoButton 
+                <AgendamentoButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log('📅 Criando agendamento para contato:', contatoId)
-                    setShowActionSheet('agendamento'); 
-                    setShowAttachMenu(false) 
-                  }} 
+                  onClick={() => {
+
+                    setShowActionSheet('agendamento');
+                    setShowAttachMenu(false)
+                  }}
                 />
-                <OrcamentoButton 
+                <OrcamentoButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log('💰 Criando orçamento para contato:', contatoId)
-                    setShowActionSheet('orcamento'); 
-                    setShowAttachMenu(false) 
-                  }} 
+                  onClick={() => {
+
+                    setShowActionSheet('orcamento');
+                    setShowAttachMenu(false)
+                  }}
                 />
-                <AssinaturaButton 
+                <AssinaturaButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log(' Criando assinatura para contato:', contatoId)
+                  onClick={() => {
+
                     setShowActionSheet('assinatura')
-                    setShowAttachMenu(false) 
-                  }} 
+                    setShowAttachMenu(false)
+                  }}
                 />
-                <AnotacoesButton 
+                <AnotacoesButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log(' Abrindo anotações para contato:', contatoId)
+                  onClick={() => {
+
                     setShowActionSheet('anotacoes')
-                    setShowAttachMenu(false) 
-                  }} 
+                    setShowAttachMenu(false)
+                  }}
                 />
-                <TagButton 
+                <TagButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log('🏷️ Criando tag para contato:', contatoId)
-                    setShowActionSheet('tags'); 
-                  setShowAttachMenu(false) 
+                  onClick={() => {
+
+                    setShowActionSheet('tags');
+                  setShowAttachMenu(false)
                 }} />
-                <TicketButton 
+                <TicketButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log('🎫 Criando ticket para contato:', contatoId)
-                    setShowActionSheet('ticket'); 
-                    setShowAttachMenu(false) 
-                  }} 
+                  onClick={() => {
+
+                    setShowActionSheet('ticket');
+                    setShowAttachMenu(false)
+                  }}
                 />
-                <FilaButton 
+                <FilaButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log('👥 Atribuindo fila para contato:', contatoId)
-                    setShowActionSheet('fila'); 
-                    setShowAttachMenu(false) 
-                  }} 
+                  onClick={() => {
+
+                    setShowActionSheet('fila');
+                    setShowAttachMenu(false)
+                  }}
                 />
-                <AtendenteButton 
+                <AtendenteButton
                   contatoId={contatoId}
-                  onClick={() => { 
-                    console.log('👤 Atribuindo atendente para contato:', contatoId)
-                    setShowActionSheet('atendente'); 
-                    setShowAttachMenu(false) 
-                  }} 
+                  onClick={() => {
+
+                    setShowActionSheet('atendente');
+                    setShowAttachMenu(false)
+                  }}
                 />
               </>
             )}
@@ -854,14 +839,14 @@ export default function MessageInput({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
-                       dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 
+            className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400
+                       dark:hover:text-gray-200 rounded-lg hover:bg-gray-100
                        dark:hover:bg-gray-800 transition-colors"
             title="Anexos & Ações"
           >
             📎
           </motion.button>
-          
+
           {/* Botões principais */}
           <RespostaRapidaButton onClick={onRespostaRapidaClick} />
           <IAButton onClick={onIAClick} />
@@ -997,7 +982,7 @@ export default function MessageInput({
               disabled={disabled}
               rows={1}
               className="w-full px-4 py-3 bg-transparent text-gray-900 dark:text-gray-100
-                         focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 
+                         focus:outline-none placeholder-gray-500 dark:placeholder-gray-400
                          resize-none transition-all duration-200 overflow-hidden"
               style={{
                 height: `${textareaHeight}px`,
@@ -1023,7 +1008,7 @@ export default function MessageInput({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowFormatting(!showFormatting)}
-            className="absolute bottom-2 right-2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 
+            className="absolute bottom-2 right-2 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500
                        dark:hover:text-gray-400 rounded transition-colors"
             title="Formatação de texto"
           >
@@ -1036,8 +1021,8 @@ export default function MessageInput({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onOpenEmojis}
-          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 
-                     dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 
+          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400
+                     dark:hover:text-gray-200 rounded-lg hover:bg-gray-100
                      dark:hover:bg-gray-800 transition-colors"
           title="Emojis"
         >
@@ -1045,25 +1030,25 @@ export default function MessageInput({
         </motion.button>
 
         {/* Botão Agente antes do enviar */}
-        <AgenteButton 
+        <AgenteButton
           onClick={() => setShowAgenteModal(true)}
           isGenerating={isGenerating}
           agenteAtivo={agenteAtivo}
           agenteNome={agenteAtual?.nome || ''}
         />
-        
+
         {/* Botão de Áudio */}
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onSendAudio}
-          className="p-3 bg-blue-500/80 hover:bg-blue-600 text-white rounded-full 
+          className="p-3 bg-blue-500/80 hover:bg-blue-600 text-white rounded-full
                      shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm"
           title="Gravar áudio"
         >
           <Mic className="w-5 h-5" />
         </motion.button>
-        
+
         {/* Botões de enviar com ícones */}
         <div className="flex items-center gap-1">
           {/* Botão Enviar */}
@@ -1103,8 +1088,7 @@ export default function MessageInput({
           type={showSpecialModal}
           chatId={chatId}
           onSend={async (data: any, caption: string) => {
-            console.log('Enviando:', showSpecialModal, data, caption)
-            
+
             try {
               if (showSpecialModal === 'contact' && onSendContact) {
                 await onSendContact(data.contacts || [], caption)
@@ -1117,12 +1101,9 @@ export default function MessageInput({
               } else if (showSpecialModal === 'events' && onSendEvent) {
                 await onSendEvent(data.title, data.dateTime)
               }
-              
-              console.log('✅ Dados especiais enviados com sucesso!')
-            } catch (error) {
-              console.error('❌ Erro ao enviar dados especiais:', error)
-            }
-            
+
+            } catch {}
+
             setShowSpecialModal(null)
           }}
         />
@@ -1136,7 +1117,7 @@ export default function MessageInput({
           chatId={chatId}
         />
       )}
-      
+
       {showActionSheet === 'tags' && (
         <TagsBottomSheet
           isOpen={showActionSheet === 'tags'}
@@ -1184,7 +1165,7 @@ export default function MessageInput({
           chatId={chatId}
         />
       )}
-      
+
       {showActionSheet === 'anotacoes' && (
         <AnotacoesBottomSheet
           isOpen={showActionSheet === 'anotacoes'}
@@ -1203,31 +1184,29 @@ export default function MessageInput({
           file={selectedFile}
         />
       )}
-      
+
       {/* Modal de Seleção de Agente */}
       <AgenteSelectionModal
         isOpen={showAgenteModal}
         onClose={() => setShowAgenteModal(false)}
         onSelect={async (agente) => {
-          console.log('🤖 Agente selecionado:', agente)
+
           try {
             if (agente) {
               // Ativar agente
               await activateAgent(agente.id)
-              console.log('✅ Agente ativado com sucesso!')
+
             } else {
               // Desativar agente
               await deactivateAgent()
-              console.log('✅ Agente desativado com sucesso!')
+
             }
             // Recarregar dados do agente após seleção
             refetchAgente()
-          } catch (error) {
-            console.error('❌ Erro ao ativar/desativar agente:', error)
-          }
+          } catch {}
         }}
-        agenteAtual={agenteAtual ? { 
-          ...agenteAtual, 
+        agenteAtual={agenteAtual ? {
+          ...agenteAtual,
           cor: '#3b82f6',
           descricao: agenteAtual.descricao || 'Agente IA'
         } : null}

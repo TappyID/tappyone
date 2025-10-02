@@ -13,15 +13,15 @@ interface MessageLocationProps {
   caption?: string
 }
 
-export default function MessageLocation({ 
-  latitude, 
-  longitude, 
+export default function MessageLocation({
+  latitude,
+  longitude,
   address,
   name,
   isFromUser,
-  caption 
+  caption
 }: MessageLocationProps) {
-  
+
   const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=15`
   const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=15&size=300x200&markers=color:red%7C${latitude},${longitude}&key=YOUR_API_KEY`
 
@@ -50,7 +50,7 @@ export default function MessageLocation({
               {latitude.toFixed(4)}, {longitude.toFixed(4)}
             </p>
           </div>
-          
+
           {/* Botão para abrir no Google Maps */}
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -70,7 +70,7 @@ export default function MessageLocation({
               {name}
             </h4>
           )}
-          
+
           {address && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               {address}
@@ -93,7 +93,7 @@ export default function MessageLocation({
               <MapPin className="w-4 h-4" />
               Ver no Mapa
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { 
+import {
   Tag,
   Star,
   Wifi,
@@ -20,52 +20,52 @@ interface ChatIndicatorsProps {
     // Conexão
     isOnline?: boolean
     connectionStatus?: 'connected' | 'disconnected' | 'connecting'
-    
+
     // Tags
     tags?: Array<{
       id: string
       nome: string
       cor?: string
     }>
-    
+
     // Agendamentos
     agendamentos?: Array<{
       id: string
       titulo: string
       status: string
     }>
-    
+
     // Orçamentos
     orcamentos?: Array<{
       id: string
       titulo: string
       status: string
     }>
-    
+
     // Tickets
     tickets?: Array<{
       id: string
       titulo: string
       status: string
     }>
-    
+
     // Rating
     rating?: number
-    
+
     // Kanban (status do atendimento)
     kanbanStatus?: {
       id: string
       nome: string
       cor?: string
     }
-    
+
     // Fila
     fila?: {
       id: string
       nome: string
       cor?: string
     }
-    
+
     // Ticket
     ticketStatus?: {
       id: string
@@ -73,7 +73,7 @@ interface ChatIndicatorsProps {
       cor?: string
     }
   }
-  
+
   // Callbacks
   onTagsClick: (e: React.MouseEvent) => void
   onAgendamentosClick?: (e: React.MouseEvent) => void
@@ -112,19 +112,19 @@ export default function ChatIndicators({
     const stars = []
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 !== 0
-    
+
     for (let i = 0; i < fullStars; i++) {
       stars.push(
         <Star key={i} className="w-2 h-2 fill-yellow-400 text-yellow-400" />
       )
     }
-    
+
     if (hasHalfStar) {
       stars.push(
         <Star key="half" className="w-2 h-2 text-yellow-400" />
       )
     }
-    
+
     return stars
   }
 
@@ -138,9 +138,9 @@ export default function ChatIndicators({
           title={`Conexão: ${chat.connectionStatus || 'online'}`}
         >
           <Wifi className="w-2.5 h-2.5" />
-          
+
           {/* Badge para Conexão */}
-          <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full 
+          <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full
                           border border-white dark:border-gray-800 ${
             chat.connectionStatus === 'connected' ? 'bg-green-500' :
             chat.connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
@@ -154,15 +154,15 @@ export default function ChatIndicators({
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={onTagsClick}
-        className="relative p-1 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-sm 
+        className="relative p-1 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-sm
                    border border-emerald-400/30 transition-colors"
         title={`Gerenciar Tags${chat.tags?.length ? ` (${chat.tags.length})` : ''}`}
       >
         <Tag className="w-2.5 h-2.5 text-emerald-600" />
-        
+
         {/* Badge de quantidade de tags */}
         {(chat.tags && chat.tags.length > 0) && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full 
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full
                           border border-white dark:border-gray-800 flex items-center justify-center">
             <span className="text-xs font-bold text-white">
               {chat.tags.length > 9 ? '9+' : chat.tags.length}
@@ -177,14 +177,14 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onAgendamentosClick}
-          className="relative p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded-sm 
+          className="relative p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded-sm
                      border border-blue-400/30 transition-colors"
           title={`Agendamentos (${chat.agendamentos.length})`}
         >
           <Calendar className="w-2.5 h-2.5 text-blue-600" />
-          
+
           {/* Badge de quantidade de agendamentos */}
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full 
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full
                           border border-white dark:border-gray-800 flex items-center justify-center">
             <span className="text-xs font-bold text-white">
               {chat.agendamentos.length > 9 ? '9+' : chat.agendamentos.length}
@@ -199,14 +199,14 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onOrcamentosClick}
-          className="relative p-1 bg-green-500/20 hover:bg-green-500/30 rounded-sm 
+          className="relative p-1 bg-green-500/20 hover:bg-green-500/30 rounded-sm
                      border border-green-400/30 transition-colors"
           title={`Orçamentos (${chat.orcamentos.length})`}
         >
           <DollarSign className="w-2.5 h-2.5 text-green-600" />
-          
+
           {/* Badge de quantidade de orçamentos */}
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full 
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full
                           border border-white dark:border-gray-800 flex items-center justify-center">
             <span className="text-xs font-bold text-white">
               {chat.orcamentos.length > 9 ? '9+' : chat.orcamentos.length}
@@ -221,14 +221,14 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onTicketsClick}
-          className="relative p-1 bg-red-500/20 hover:bg-red-500/30 rounded-sm 
+          className="relative p-1 bg-red-500/20 hover:bg-red-500/30 rounded-sm
                      border border-red-400/30 transition-colors"
           title={`Tickets (${chat.tickets.length})`}
         >
           <FileText className="w-2.5 h-2.5 text-red-600" />
-          
+
           {/* Badge de quantidade de tickets */}
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full 
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full
                           border border-white dark:border-gray-800 flex items-center justify-center">
             <span className="text-xs font-bold text-white">
               {chat.tickets.length > 9 ? '9+' : chat.tickets.length}
@@ -243,14 +243,14 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onRatingClick}
-          className="relative p-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-sm 
+          className="relative p-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-sm
                      border border-yellow-400/30 transition-colors"
           title={`Rating: ${chat.rating}/5`}
         >
           <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-          
+
           {/* Badge para Rating */}
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full 
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full
                           border border-white dark:border-gray-800">
           </div>
         </motion.button>
@@ -263,16 +263,16 @@ export default function ChatIndicators({
           whileTap={{ scale: 0.9 }}
           onClick={onKanbanClick}
           className="p-1 rounded-sm border transition-colors"
-          style={{ 
+          style={{
             backgroundColor: `${chat.kanbanStatus.cor}20`,
             borderColor: `${chat.kanbanStatus.cor}40`
           }}
           title={`Kanban: ${chat.kanbanStatus.nome}`}
         >
           <LayoutDashboard className="w-2.5 h-2.5" style={{ color: chat.kanbanStatus.cor }} />
-          
+
           {/* Badge para Kanban */}
-          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full 
+          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full
                           border border-white dark:border-gray-800"
                style={{ backgroundColor: chat.kanbanStatus.cor }}>
           </div>
@@ -285,14 +285,14 @@ export default function ChatIndicators({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onFilaClick}
-          className="p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded-sm 
+          className="p-1 bg-blue-500/20 hover:bg-blue-500/30 rounded-sm
                      border border-blue-400/30 transition-colors"
           title={`Fila: ${chat.fila.nome}`}
         >
           <Users className="w-2.5 h-2.5 text-blue-600" />
-          
+
           {/* Badge para Fila */}
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full 
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full
                           border border-white dark:border-gray-800">
           </div>
         </motion.button>
@@ -305,16 +305,16 @@ export default function ChatIndicators({
           whileTap={{ scale: 0.9 }}
           onClick={onTicketClick}
           className="p-1 rounded-sm border transition-colors"
-          style={{ 
+          style={{
             backgroundColor: `${chat.ticketStatus.cor}20`,
             borderColor: `${chat.ticketStatus.cor}40`
           }}
           title={`Status: ${chat.ticketStatus.nome}`}
         >
           <Ticket className="w-2.5 h-2.5" style={{ color: chat.ticketStatus.cor }} />
-          
+
           {/* Badge para Ticket */}
-          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full 
+          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full
                           border border-white dark:border-gray-800"
                style={{ backgroundColor: chat.ticketStatus.cor }}>
           </div>

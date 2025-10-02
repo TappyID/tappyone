@@ -25,7 +25,7 @@ export default function AssumirModal({
 
   const handleAssumirAtendimento = async () => {
     setLoading(true)
-    
+
     try {
       // Buscar dados do usuário atual
       const userResponse = await fetch('/api/auth/me', {
@@ -34,14 +34,14 @@ export default function AssumirModal({
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (!userResponse.ok) {
         throw new Error('Erro ao buscar dados do usuário')
       }
-      
+
       const userData = await userResponse.json()
       const userId = userData.data?.id || userData.id
-      
+
       if (!userId) {
         throw new Error('ID do usuário não encontrado')
       }
@@ -59,25 +59,22 @@ export default function AssumirModal({
         })
       })
 
-      console.log('📡 Status da resposta:', response.status)
-      
       if (response.ok) {
-        console.log('✅ Atendimento assumido com sucesso!')
-        
+
         // Disparar evento global para recarregar dados
         window.dispatchEvent(new CustomEvent('atendimento-assumido', {
           detail: { chatId }
         }))
-        
+
         onAssumirSuccess?.()
         onClose()
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
-        console.error('❌ Erro detalhado:', errorData)
+
         throw new Error(errorData.error || 'Erro ao assumir atendimento')
       }
-    } catch (error) {
-      console.error('❌ Erro ao assumir atendimento:', error)
+    } catch {
+
       alert('Erro ao assumir atendimento. Tente novamente.')
     } finally {
       setLoading(false)
@@ -97,15 +94,14 @@ export default function AssumirModal({
             onClick={onClose}
           />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                       bg-white dark:bg-gray-800 rounded-xl shadow-2xl z-50 
-                       w-full max-w-md mx-4"
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 pointer-events-none">
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md pointer-events-auto"
+            >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
@@ -121,10 +117,10 @@ export default function AssumirModal({
                   </p>
                 </div>
               </div>
-              
+
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
                            rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -133,7 +129,7 @@ export default function AssumirModal({
 
             {/* Content */}
             <div className="p-6">
-              <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 
+              <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20
                               rounded-lg border border-amber-200 dark:border-amber-800 mb-6">
                 <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
@@ -165,7 +161,7 @@ export default function AssumirModal({
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 
+                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300
                              bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600
                              rounded-lg transition-colors font-medium"
                 >
@@ -174,7 +170,7 @@ export default function AssumirModal({
                 <button
                   onClick={handleAssumirAtendimento}
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700
                              text-white rounded-lg transition-colors font-medium
                              disabled:opacity-50 disabled:cursor-not-allowed
                              flex items-center justify-center gap-2"
@@ -194,6 +190,7 @@ export default function AssumirModal({
               </div>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

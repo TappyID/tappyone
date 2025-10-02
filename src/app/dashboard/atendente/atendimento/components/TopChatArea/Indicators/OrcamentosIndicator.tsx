@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { DollarSign } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useIndicatorData } from './useIndicatorData'
 
 interface OrcamentosIndicatorProps {
@@ -11,21 +12,37 @@ interface OrcamentosIndicatorProps {
 
 export default function OrcamentosIndicator({ contatoId, onClick }: OrcamentosIndicatorProps) {
   const { count } = useIndicatorData(contatoId, 'orcamentos')
-  
+
   if (!contatoId) return null
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.15 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className="relative p-1 rounded-sm border transition-colors bg-green-500/20 hover:bg-green-500/30 border-green-400/30"
+      className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm border ${
+        count > 0
+          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+      }`}
       title={`${count} orçamento${count !== 1 ? 's' : ''}`}
     >
-      <DollarSign className="w-4 h-4 text-green-600" />
-      
-      {/* Badge com contador */}
-      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full border border-white flex items-center justify-center bg-green-500">
-        <span className="text-xs font-bold text-white">{count}</span>
+      <div className="relative">
+        <DollarSign className={`w-5 h-5 transition-colors ${
+          count > 0 ? 'text-green-600' : 'text-gray-400 group-hover:text-green-600'
+        }`} />
+
+        {/* Badge com contador */}
+        {count > 0 && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-green-500 border-2 border-white dark:border-gray-800"
+          >
+            <span className="text-[10px] font-bold text-white px-1">{count > 99 ? '99+' : count}</span>
+          </motion.div>
+        )}
       </div>
-    </button>
+    </motion.button>
   )
 }

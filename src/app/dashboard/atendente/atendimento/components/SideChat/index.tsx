@@ -27,6 +27,7 @@ interface SideChatProps {
     name: string
     avatar?: string
     profilePictureUrl?: string
+    sessionName?: string // 🔥 CRÍTICO: Identificador da sessão WhatsApp
     lastMessage: {
       type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'call'
       content: string
@@ -52,10 +53,10 @@ interface SideChatProps {
     isHidden?: boolean
     unreadCount?: number
   }>
-  
+
   // Chat selecionado
   selectedChatId?: string
-  
+
   // Callbacks
   onSelectChat: (chatId: string) => void
   onTagsClick: (chatId: string, e: React.MouseEvent) => void
@@ -64,12 +65,12 @@ interface SideChatProps {
   onToggleArchive?: (chatId: string) => void
   onToggleHidden?: (chatId: string) => void
   onDelete?: (chatId: string) => void
-  
+
   // Scroll infinito
   onLoadMore?: () => void
   hasMoreChats?: boolean
   isLoadingMore?: boolean
-  
+
   // Estados
   isLoading?: boolean
   isCollapsed?: boolean
@@ -102,6 +103,7 @@ export default function SideChat({
   const [loadingFilas, setLoadingFilas] = useState(false)
   const [loadingAtendentes, setLoadingAtendentes] = useState(false)
 
+  // Carregar dados compartilhados (conexões, filas e atendentes) apenas uma vez
   useEffect(() => {
     let isMounted = true
 
@@ -200,8 +202,7 @@ export default function SideChat({
         setConexoes(conexoesData)
         setFilas(filasData)
         setAtendentes(combinedAtendentes)
-      } catch (error) {
-        console.error('Erro ao carregar dados compartilhados do SideChat (atendente):', error)
+      } catch {
         if (isMounted) {
           setConexoes([])
           setFilas([])
@@ -225,46 +226,27 @@ export default function SideChat({
 
   // IntersectionObserver para scroll infinito
   useEffect(() => {
-    console.log('🔄 [SideChat] IntersectionObserver setup:', {
-      hasOnLoadMore: !!onLoadMore,
-      hasMoreChats,
-      isLoadingMore,
-      chatsLength: chats.length
-    })
 
     if (!onLoadMore || !hasMoreChats || isLoadingMore) {
-      console.log('🔄 [SideChat] Observer não criado - condições não atendidas')
       return
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
-        console.log('🔄 [SideChat] Observer triggered:', {
-          isIntersecting: entry.isIntersecting,
-          intersectionRatio: entry.intersectionRatio
-        })
-        
+
         if (entry.isIntersecting) {
-          console.log('🔄 [SideChat] Trigger do scroll infinito ativado - carregando mais chats...')
-          
+
           // Salvar posição EXATA antes de carregar mais
           if (scrollContainerRef.current) {
             const container = scrollContainerRef.current
             const currentScroll = container.scrollTop
             const scrollHeight = container.scrollHeight
             const clientHeight = container.clientHeight
-            
-            console.log('📜 Salvando posição EXATA antes de carregar mais:', {
-              scrollTop: currentScroll,
-              scrollHeight,
-              clientHeight,
-              distanceFromBottom: scrollHeight - currentScroll - clientHeight
-            })
-            
+
             setPreserveScroll(currentScroll)
           }
-          
+
           // Carregar mais chats
           onLoadMore()
         }
@@ -286,14 +268,12 @@ export default function SideChat({
   // Preservar posição do scroll durante updates - ULTRA MELHORADO
   useEffect(() => {
     if (preserveScroll !== null && scrollContainerRef.current) {
-      console.log('📜 Restaurando posição do scroll:', preserveScroll)
-      
+
       // Usar múltiplos requestAnimationFrame para garantir que tudo foi renderizado
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTop = preserveScroll
-            console.log('✅ Posição restaurada para:', preserveScroll)
             setPreserveScroll(null)
           }
         })
@@ -308,14 +288,13 @@ export default function SideChat({
 
     const preventAutoScroll = (e: Event) => {
       if (preserveScroll !== null) {
-        console.log('🚫 Impedindo scroll automático')
         e.preventDefault()
         e.stopPropagation()
       }
     }
 
     container.addEventListener('scroll', preventAutoScroll, { passive: false })
-    
+
     return () => {
       container.removeEventListener('scroll', preventAutoScroll)
     }
@@ -340,7 +319,7 @@ export default function SideChat({
   // Modo colapsado
   if (isCollapsed) {
     return (
-      <div className="w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 
+      <div className="w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
                       flex flex-col items-center py-4 space-y-2">
         <div className="space-y-2">
           {chats.slice(0, 8).map((chat) => (
@@ -348,31 +327,31 @@ export default function SideChat({
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
               className={`relative w-12 h-12 rounded-full overflow-hidden transition-all ${
-                selectedChatId === chat.id 
-                  ? 'ring-2 ring-blue-500' 
+                selectedChatId === chat.id
+                  ? 'ring-2 ring-blue-500'
                   : 'hover:ring-2 hover:ring-gray-300'
               }`}
               title={chat.name}
             >
               {/* Avatar */}
               {chat.avatar ? (
-                <img 
-                  src={chat.avatar} 
+                <img
+                  src={chat.avatar}
                   alt={chat.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500
                                flex items-center justify-center">
                   <span className="text-white font-bold text-lg">
                     {chat.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
-              
+
               {/* Badge de não lidas */}
               {(chat.unreadCount && chat.unreadCount > 0) && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full 
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full
                                flex items-center justify-center">
                   <span className="text-xs font-bold text-white">
                     {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
@@ -388,8 +367,9 @@ export default function SideChat({
 
   return (
     <div className="relative flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+
       {/* Lista de Chats com scroll */}
-      <div 
+      <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden modern-scrollbar"
         onScroll={handleScroll}
@@ -446,7 +426,7 @@ export default function SideChat({
 
         {/* Trigger do scroll infinito */}
         {hasMoreChats && (
-          <div 
+          <div
             ref={loadMoreTriggerRef}
             className="flex items-center justify-center py-4"
           >
@@ -486,10 +466,10 @@ export default function SideChat({
               initial={{ opacity: 0, scale: 0.3 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.3 }}
-              transition={{ 
+              transition={{
                 type: "spring",
                 stiffness: 260,
-                damping: 20 
+                damping: 20
               }}
               onClick={scrollToTop}
               className="absolute bottom-4 right-4 p-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 z-10"

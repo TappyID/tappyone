@@ -2,25 +2,34 @@
 
 import React from 'react'
 import { Users } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface FilaIndicatorProps {
-  nome: string
+  chatId?: string | null
   onClick: () => void
 }
 
-export default function FilaIndicator({ nome, onClick }: FilaIndicatorProps) {
+export default function FilaIndicator({ chatId, onClick }: FilaIndicatorProps) {
+  if (!chatId) return null
+
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.15 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className="relative p-1 bg-purple-500/20 hover:bg-purple-500/30 rounded-sm 
-                 border border-purple-400/30 transition-colors"
-      title={`Fila: ${nome}`}
+      className="group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shadow-sm bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800"
+      title="Gerenciar Fila"
     >
-      <Users className="w-4 h-4 text-purple-600" />
-      
-      <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full 
-                      border border-white">
+      <div className="relative">
+        <Users className="w-5 h-5 transition-colors text-indigo-600" />
+
+        {/* Indicator dot */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full border border-white dark:border-gray-800"
+        />
       </div>
-    </button>
+    </motion.button>
   )
 }

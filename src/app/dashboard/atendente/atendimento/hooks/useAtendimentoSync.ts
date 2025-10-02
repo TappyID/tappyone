@@ -16,7 +16,7 @@ export function useAtendimentoSync(activeChats: any[]) {
 
     // Buscar dados em batch
     if (contatoIds.length > 0) {
-      console.log(`🔄 Sincronizando dados de ${contatoIds.length} contatos`)
+
       batchFetchContactData(contatoIds)
     }
   }, [activeChats, batchFetchContactData])

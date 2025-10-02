@@ -17,14 +17,14 @@ interface MessageEventProps {
   }
 }
 
-export default function MessageEvent({ 
-  eventType, 
-  title, 
+export default function MessageEvent({
+  eventType,
+  title,
   description,
   timestamp,
-  metadata 
+  metadata
 }: MessageEventProps) {
-  
+
   const getEventIcon = () => {
     switch (eventType) {
       case 'calendar': return <Calendar className="w-5 h-5" />
@@ -51,7 +51,7 @@ export default function MessageEvent({
     if (!timestamp) return ''
     return new Date(timestamp).toLocaleString('pt-BR', {
       day: '2-digit',
-      month: '2-digit', 
+      month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -66,7 +66,7 @@ export default function MessageEvent({
         className="max-w-md"
       >
         <div className="rounded-2xl overflow-hidden bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600">
-          
+
           {/* Header do evento */}
           <div className={`bg-gradient-to-r ${getEventColor()} p-4 text-white`}>
             <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export default function MessageEvent({
                 )}
 
                 {metadata.url && (
-                  <a 
+                  <a
                     href={metadata.url}
                     target="_blank"
                     rel="noopener noreferrer"

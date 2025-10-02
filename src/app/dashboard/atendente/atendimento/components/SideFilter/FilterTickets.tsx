@@ -16,11 +16,11 @@ interface FilterTicketsProps {
   isLoading?: boolean
 }
 
-export default function FilterTickets({ 
-  selectedStatus, 
-  onStatusChange, 
-  ticketStatuses, 
-  isLoading = false 
+export default function FilterTickets({
+  selectedStatus,
+  onStatusChange,
+  ticketStatuses,
+  isLoading = false
 }: FilterTicketsProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -33,7 +33,7 @@ export default function FilterTickets({
       <motion.button
         whileHover={{ scale: 1.02 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 border border-gray-300 
+        className="w-full flex items-center justify-between p-3 border border-gray-300
                    dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800
                    hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         disabled={isLoading}
@@ -41,13 +41,13 @@ export default function FilterTickets({
         <div className="flex items-center gap-2">
           <Ticket className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium">
-            {isLoading ? 'Carregando...' : 
-              selectedStatus === 'todos' ? 'Todos os Tickets' : 
+            {isLoading ? 'Carregando...' :
+              selectedStatus === 'todos' ? 'Todos os Tickets' :
               selectedStatusData?.nome || 'Selecionar Status'
             }
           </span>
           {selectedStatusData?.cor && (
-            <div 
+            <div
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: selectedStatusData.cor }}
             />
@@ -64,8 +64,8 @@ export default function FilterTickets({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 
-                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg 
+            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800
+                       border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg
                        z-50 max-h-60 overflow-y-auto"
           >
             {/* Opção "Todos" */}
@@ -74,7 +74,7 @@ export default function FilterTickets({
                 onStatusChange('todos')
                 setIsOpen(false)
               }}
-              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+              className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                          transition-colors flex items-center gap-2 ${
                 selectedStatus === 'todos' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
               }`}
@@ -91,18 +91,18 @@ export default function FilterTickets({
                   onStatusChange(status.id)
                   setIsOpen(false)
                 }}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 
+                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                            transition-colors flex items-center gap-2 ${
                   selectedStatus === status.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                 }`}
               >
-                <div 
+                <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: status.cor || '#6b7280' }}
                 />
                 <span className="text-sm font-medium">{status.nome}</span>
                 {status.count && (
-                  <span className="ml-auto text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 
+                  <span className="ml-auto text-xs text-gray-500 bg-gray-100 dark:bg-gray-700
                                    px-2 py-1 rounded-full">
                     {status.count}
                   </span>

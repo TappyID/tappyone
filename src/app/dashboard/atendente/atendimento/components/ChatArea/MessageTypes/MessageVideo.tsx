@@ -12,12 +12,12 @@ interface MessageVideoProps {
   caption?: string
 }
 
-export default function MessageVideo({ 
-  videoUrl, 
-  thumbnailUrl, 
+export default function MessageVideo({
+  videoUrl,
+  thumbnailUrl,
   duration = 0,
   isFromUser,
-  caption 
+  caption
 }: MessageVideoProps) {
   const [showPlayer, setShowPlayer] = useState(false)
 
@@ -48,8 +48,8 @@ export default function MessageVideo({
             onClick={() => setShowPlayer(true)}
           >
             {thumbnailUrl ? (
-              <img 
-                src={thumbnailUrl} 
+              <img
+                src={thumbnailUrl}
                 alt="Video thumbnail"
                 className="w-full h-auto aspect-video object-cover"
               />
@@ -58,7 +58,7 @@ export default function MessageVideo({
                 <Play className="w-16 h-16 text-white opacity-80" />
               </div>
             )}
-            
+
             {/* Overlay de play */}
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
               <motion.div
@@ -91,7 +91,7 @@ export default function MessageVideo({
               >
                 <Download className="w-4 h-4" />
               </motion.button>
-              
+
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -108,8 +108,8 @@ export default function MessageVideo({
           </motion.div>
         ) : (
           /* Player de vídeo */
-          <video 
-            controls 
+          <video
+            controls
             autoPlay
             className="w-full h-auto aspect-video"
             onEnded={() => setShowPlayer(false)}

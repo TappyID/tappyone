@@ -24,39 +24,30 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
   const [novaAnotacao, setNovaAnotacao] = useState({ titulo: '', conteudo: '' })
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  
-  console.log('📝 [AnotacoesBottomSheet] Renderizado com chatId:', chatId)
 
   // 🚀 BUSCAR ANOTAÇÕES ESPECÍFICAS DO CHAT
   const fetchAnotacoes = useCallback(async () => {
     if (!chatId) return
-    
+
     try {
       setLoading(true)
-      console.log('📝 [AnotacoesBottomSheet] Buscando anotações para chatId:', chatId)
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId)}/anotacoes`
-      console.log('🌐 [AnotacoesBottomSheet] Path backend:', path)
-      
+
       const response = await fetchApi('backend', path)
-      
+
       if (!response.ok) {
-        console.log('📝 [AnotacoesBottomSheet] Erro ao buscar anotações:', response.status)
         setAnotacoes([])
         return
       }
-      
+
       const data = await response.json()
       const anotacoesData = Array.isArray(data) ? data : (data.data || [])
-      
-      console.log('📝 [AnotacoesBottomSheet] Resposta completa da API:', data)
-      console.log('📝 [AnotacoesBottomSheet] Total de anotações retornadas:', anotacoesData.length)
-      
+
       setAnotacoes(anotacoesData)
-      
-    } catch (error) {
-      console.error('❌ [AnotacoesBottomSheet] Erro ao buscar anotações:', error)
+
+    } catch {
       setAnotacoes([])
     } finally {
       setLoading(false)
@@ -73,11 +64,10 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
   // Criar nova anotação
   const handleCriarAnotacao = async () => {
     if (!novaAnotacao.titulo || !novaAnotacao.conteudo || !chatId) return
-    
+
     try {
       setLoading(true)
-      console.log('📝 [AnotacoesBottomSheet] Criando anotação para chatId:', chatId)
-      
+
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId)}/anotacoes`
       const response = await fetchApi('backend', path, {
@@ -90,27 +80,24 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
           status: 'ativa'
         })
       })
-      
+
       if (response.ok) {
-        console.log('✅ [AnotacoesBottomSheet] Anotação criada com sucesso!')
         alert(`✅ Anotação "${novaAnotacao.titulo}" criada com sucesso!`)
-        
+
         // Limpar formulário
         setNovaAnotacao({ titulo: '', conteudo: '' })
-        
+
         // Recarregar anotações
         fetchAnotacoes()
-        
+
         // Disparar evento para atualizar indicadores
-        window.dispatchEvent(new CustomEvent('anotacaoCreated', { 
-          detail: { chatId } 
+        window.dispatchEvent(new CustomEvent('anotacaoCreated', {
+          detail: { chatId }
         }))
       } else {
-        console.error('❌ [AnotacoesBottomSheet] Erro ao criar anotação')
         alert('❌ Erro ao criar anotação')
       }
-    } catch (error) {
-      console.error('❌ [AnotacoesBottomSheet] Erro:', error)
+    } catch {
       alert('❌ Erro ao criar anotação')
     } finally {
       setLoading(false)
@@ -120,23 +107,20 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
   // Deletar anotação
   const handleDeletarAnotacao = async (anotacaoId: string) => {
     if (!confirm('Deseja realmente deletar esta anotação?')) return
-    
+
     try {
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId || '')}/anotacoes/${anotacaoId}`
       const response = await fetchApi('backend', path, {
         method: 'DELETE'
       })
-      
+
       if (response.ok) {
-        console.log('✅ [AnotacoesBottomSheet] Anotação deletada com sucesso!')
         fetchAnotacoes()
       }
-    } catch (error) {
-      console.error('❌ [AnotacoesBottomSheet] Erro ao deletar anotação:', error)
-    }
+    } catch {}
   }
-  
+
   if (!isOpen) return null
 
   return (
@@ -147,7 +131,7 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
       />
-      
+
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -157,7 +141,7 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-orange-600" />
@@ -170,38 +154,38 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6 pb-24">
             {/* Criar Nova Anotação */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Nova Anotação</h3>
-              
+
               <input
                 type="text"
                 value={novaAnotacao.titulo}
                 onChange={(e) => setNovaAnotacao(prev => ({ ...prev, titulo: e.target.value }))}
                 placeholder="Título da anotação..."
-                className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
-              
+
               <textarea
                 value={novaAnotacao.conteudo}
                 onChange={(e) => setNovaAnotacao(prev => ({ ...prev, conteudo: e.target.value }))}
                 placeholder="Conteúdo da anotação..."
                 rows={3}
-                className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
               />
-              
+
               <button
                 onClick={handleCriarAnotacao}
                 disabled={!novaAnotacao.titulo || !novaAnotacao.conteudo || loading}
-                className="w-full py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 
+                className="w-full py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400
                          text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
@@ -214,7 +198,7 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                 Anotações Existentes ({anotacoes.length})
               </h3>
-              
+
               {loading && anotacoes.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
@@ -239,11 +223,11 @@ export default function AnotacoesBottomSheet({ isOpen, onClose, chatId }: Anotac
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    
+
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       {anotacao.conteudo}
                     </p>
-                    
+
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <Calendar className="w-3 h-3" />
                       <span>

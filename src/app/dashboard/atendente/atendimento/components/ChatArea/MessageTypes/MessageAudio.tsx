@@ -12,9 +12,9 @@ interface MessageAudioProps {
   onTranscribe?: (audioUrl: string) => void
 }
 
-export default function MessageAudio({ 
-  audioUrl, 
-  duration = 0, 
+export default function MessageAudio({
+  audioUrl,
+  duration = 0,
   isFromUser,
   caption,
   onTranscribe
@@ -44,11 +44,10 @@ export default function MessageAudio({
 
   const handleTranscribe = async () => {
     if (isTranscribing) return
-    
+
     setIsTranscribing(true)
     try {
-      console.log(' Iniciando transcrição do áudio:', audioUrl)
-      
+
       // Chamar API de transcrição
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -64,20 +63,14 @@ export default function MessageAudio({
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.transcription) {
-          console.log(' Transcrição recebida:', data.transcription)
+
           setTranscription(data.transcription)
-          
+
           // Chamar callback se existir
           onTranscribe?.(audioUrl)
-        } else {
-          console.error(' Erro na resposta:', data)
         }
-      } else {
-        console.error(' Erro HTTP:', response.status)
       }
-    } catch (error) {
-      console.error(' Erro ao transcrever:', error)
-    } finally {
+    } catch {} finally {
       setIsTranscribing(false)
     }
   }
@@ -97,8 +90,8 @@ export default function MessageAudio({
     <div className="space-y-2">
       {/* Player de Áudio */}
       <div className={`flex items-center gap-3 p-3 rounded-2xl ${
-        isFromUser 
-          ? 'bg-blue-600/90' 
+        isFromUser
+          ? 'bg-blue-600/90'
           : 'bg-gray-100 dark:bg-gray-700'
       }`}>
         <audio
@@ -108,7 +101,7 @@ export default function MessageAudio({
           onEnded={handleEnded}
           preload="metadata"
         />
-        
+
         {/* Botão Play/Pause */}
         <motion.button
           whileHover={{ scale: 1.1 }}
