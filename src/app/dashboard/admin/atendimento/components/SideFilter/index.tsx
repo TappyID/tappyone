@@ -967,36 +967,51 @@ export default function SideFilter({
               />
 
               {/* Filtro de Tags - React Select MULTI */}
-              <Select2
-                label="Tags (Múltipla Seleção)"
-                value={selectedTagsMulti}
-                onChange={(val) => {
-                  const valores = val as string[];
-                  onTagsMultiChange(valores);
-                }}
-                options={tags}
-                placeholder="Selecione múltiplas tags"
-                icon={Tag}
-                iconColor="blue"
-                isMulti={true}
-                isClearable
-                isSearchable
-                isLoading={isLoadingTags}
-              />
+              <div onClick={() => {
+                console.log('🏷️ [FILTRO TAGS] Options disponíveis:', tags);
+                console.log('🏷️ [FILTRO TAGS] Total:', tags.length);
+                console.log('🏷️ [FILTRO TAGS] Primeiras 3 tags:', tags.slice(0, 3).map(t => ({ id: t.id, nome: t.nome })));
+              }}>
+                <Select2
+                  label="Tags (Múltipla Seleção)"
+                  value={selectedTagsMulti}
+                  onChange={(val) => {
+                    const valores = val as string[];
+                    console.log('🏷️ [FILTRO TAGS] Selecionadas:', valores);
+                    onTagsMultiChange(valores);
+                  }}
+                  options={tags}
+                  placeholder="Selecione múltiplas tags"
+                  icon={Tag}
+                  iconColor="blue"
+                  isMulti={true}
+                  isClearable
+                  isSearchable
+                  isLoading={isLoadingTags}
+                />
+              </div>
 
               {/* Filtro de Filas - React Select MULTI */}
-              <Select2
-                label="Filas de Atendimento (Múltipla Seleção)"
-                value={selectedFilasMulti}
-                onChange={(val) => onFilasMultiChange(val as string[])}
-                options={filas}
-                placeholder="Selecione múltiplas filas"
-                icon={Users}
-                iconColor="purple"
-                isMulti={true}
-                isClearable
-                isSearchable
-              />
+              <div onClick={() => {
+                console.log('🔍 [FILTRO FILAS] Options disponíveis:', filas);
+                console.log('🔍 [FILTRO FILAS] Total:', filas.length);
+              }}>
+                <Select2
+                  label="Filas de Atendimento (Múltipla Seleção)"
+                  value={selectedFilasMulti}
+                  onChange={(val) => {
+                    console.log('🔍 [FILTRO FILAS] Selecionadas:', val);
+                    onFilasMultiChange(val as string[]);
+                  }}
+                  options={filas}
+                  placeholder="Selecione múltiplas filas"
+                  icon={Users}
+                  iconColor="purple"
+                  isMulti={true}
+                  isClearable
+                  isSearchable
+                />
+              </div>
 
               {/* Filtro de Atendentes - React Select MULTI com DADOS REAIS */}
               <Select2

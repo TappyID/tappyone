@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Criar Cards no Kanban para Todos os Chats</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .config-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .log-info {
+            color: #61dafb;
+        }
+
+        .log-success {
+            color: #4caf50;
+        }
+
+        .log-error {
+            color: #f44336;
+        }
+
+        .log-warning {
+            color: #ff9800;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Criar Cards no Kanban</h1>
+        <p class="subtitle">Cria cards automaticamente para todos os chats do WhatsApp</p>
+
+        <div class="config-section">
+            <h3>⚙️ Configurações</h3>
+            
+            <div class="input-group">
+                <label for="token">🔑 Token de Autenticação:</label>
+                <input type="text" id="token" placeholder="Cole seu token aqui..." />
+                <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                    💡 Abra o DevTools (F12) → Console → digite: <code>localStorage.getItem('token')</code>
+                </small>
+            </div>
+            
+            <div class="input-group">
+                <label for="quadro">📋 Selecione o Quadro Kanban:</label>
+                <select id="quadro" onchange="carregarColunas()">
+                    <option value="">Primeiro insira o token e clique em "Carregar Quadros"</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="coluna">📌 Selecione a Coluna Inicial:</label>
+                <select id="coluna">
+                    <option value="">Selecione um quadro primeiro</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn" onclick="carregarQuadros()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            📥 Carregar Quadros
+        </button>
+
+        <button class="btn" onclick="iniciarCriacao()">🚀 Criar Cards para Todos os Chats</button>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalChats">0</div>
+                    <div class="stat-label">Total de Chats</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="cardsCreated">0</div>
+                    <div class="stat-label">Cards Criados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="errors">0</div>
+                    <div class="stat-label">Erros</div>
+                </div>
+            </div>
+
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let totalChats = 0;
+        let cardsCreated = 0;
+        let errors = 0;
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100);
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = `${percentage}%`;
+            progressFill.textContent = `${percentage}%`;
+        }
+
+        function updateStats() {
+            document.getElementById('totalChats').textContent = totalChats;
+            document.getElementById('cardsCreated').textContent = cardsCreated;
+            document.getElementById('errors').textContent = errors;
+        }
+
+        async function buscarChatsWhatsApp(token, sessionName) {
+            log('📡 Buscando chats do WhatsApp...', 'info');
+            
+            try {
+                const url = sessionName 
+                    ? `http://localhost:3000/api/whatsapp/chats?session=${sessionName}`
+                    : 'http://localhost:3000/api/whatsapp/chats';
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao buscar chats: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const chats = data.data || data.chats || data || [];
+                
+                log(`✅ ${chats.length} chats encontrados!`, 'success');
+                return chats;
+            } catch (error) {
+                log(`❌ Erro ao buscar chats: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function criarCard(token, quadroId, colunaId, chat) {
+            try {
+                const cardData = {
+                    conversa_id: chat.id,
+                    quadro_id: quadroId,
+                    coluna_id: colunaId,
+                    titulo: chat.name || chat.id,
+                    descricao: `Card criado automaticamente para ${chat.name || chat.id}`,
+                    posicao: 0,
+                    ativo: true
+                };
+
+                const response = await fetch('http://159.65.34.199:8081/api/cards', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cardData)
+                });
+
+                if (response.ok) {
+                    cardsCreated++;
+                    log(`✅ Card criado: ${chat.name || chat.id}`, 'success');
+                    return true;
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    
+                    // Se já existe, não é erro
+                    if (response.status === 409 || errorData.error?.includes('já existe')) {
+                        log(`⚠️ Card já existe: ${chat.name || chat.id}`, 'warning');
+                        return true;
+                    }
+                    
+                    errors++;
+                    log(`❌ Erro ao criar card para ${chat.name || chat.id}: ${errorData.error || response.statusText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                errors++;
+                log(`❌ Erro de conexão ao criar card para ${chat.name || chat.id}: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function iniciarCriacao() {
+            const token = document.getElementById('token').value.trim();
+            const quadroId = document.getElementById('quadro').value;
+            const colunaId = document.getElementById('coluna').value;
+
+            if (!token) {
+                alert('❌ Por favor, insira o token de autenticação!');
+                return;
+            }
+
+            if (!quadroId) {
+                alert('❌ Por favor, selecione um quadro!');
+                return;
+            }
+
+            if (!colunaId) {
+                alert('❌ Por favor, selecione uma coluna inicial!');
+                return;
+            }
+
+            // Resetar contadores
+            totalChats = 0;
+            cardsCreated = 0;
+            errors = 0;
+            updateStats();
+
+            // Mostrar progresso
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('logContainer').innerHTML = '';
+
+            try {
+                // Buscar chats
+                const chats = await buscarChatsWhatsApp(token);
+                totalChats = chats.length;
+                updateStats();
+
+                log(`🎯 Iniciando criação de ${totalChats} cards...`, 'info');
+
+                // Criar cards em lote (5 por vez para não sobrecarregar)
+                const batchSize = 5;
+                for (let i = 0; i < chats.length; i += batchSize) {
+                    const batch = chats.slice(i, i + batchSize);
+                    await Promise.all(
+                        batch.map(chat => criarCard(token, quadroId, colunaId, chat))
+                    );
+                    
+                    updateProgress(Math.min(i + batchSize, chats.length), totalChats);
+                    updateStats();
+                    
+                    // Pequeno delay entre lotes
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                log(`🎉 Processo concluído!`, 'success');
+                log(`✅ ${cardsCreated} cards criados com sucesso`, 'success');
+                if (errors > 0) {
+                    log(`⚠️ ${errors} erros encontrados`, 'warning');
+                }
+
+            } catch (error) {
+                log(`❌ Erro fatal: ${error.message}`, 'error');
+            }
+        }
+
+        async function carregarQuadros() {
+            const token = document.getElementById('token').value.trim();
+            if (!token) {
+                alert('❌ Por favor, insira o token de autenticação!');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/kanban/quadros', {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar quadros');
+                }
+
+                const data = await response.json();
+                const quadros = data.data || data.quadros || data || [];
+
+                const select = document.getElementById('quadro');
+                select.innerHTML = '<option value="">Selecione um quadro</option>';
+                
+                quadros.forEach(quadro => {
+                    const option = document.createElement('option');
+                    option.value = quadro.id;
+                    option.textContent = quadro.nome || quadro.title;
+                    select.appendChild(option);
+                });
+
+                console.log(`✅ ${quadros.length} quadros carregados`);
+            } catch (error) {
+                console.error('❌ Erro ao carregar quadros:', error);
+                alert('❌ Erro ao carregar quadros. Verifique o console.');
+            }
+        }
+
+        async function carregarColunas() {
+            const quadroId = document.getElementById('quadro').value;
+            const colunaSelect = document.getElementById('coluna');
+
+            if (!quadroId) {
+                colunaSelect.innerHTML = '<option value="">Selecione um quadro primeiro</option>';
+                return;
+            }
+
+            const token = document.getElementById('token').value.trim();
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/kanban/quadros/${quadroId}`, {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar colunas');
+                }
+
+                const data = await response.json();
+                const quadro = data.data || data.quadro || data;
+                const colunas = quadro.colunas || quadro.columns || [];
+
+                colunaSelect.innerHTML = '<option value="">Selecione a coluna inicial</option>';
+                
+                colunas.forEach(coluna => {
+                    const option = document.createElement('option');
+                    option.value = coluna.id;
+                    option.textContent = coluna.nome || coluna.title;
+                    colunaSelect.appendChild(option);
+                });
+
+                console.log(`✅ ${colunas.length} colunas carregadas`);
+            } catch (error) {
+                console.error('❌ Erro ao carregar colunas:', error);
+                alert('❌ Erro ao carregar colunas. Verifique o console.');
+            }
+        }
+
+        async function buscarChatsWhatsApp(token) {
+            console.log('📡 Buscando chats do WhatsApp...');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/whatsapp/chats', {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao buscar chats: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const chats = data.data || data.chats || data || [];
+                
+                console.log(`✅ ${chats.length} chats encontrados!`);
+                return chats;
+            } catch (error) {
+                console.error(`❌ Erro ao buscar chats: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // Nada a carregar automaticamente - usuário precisa inserir token primeiro
+    </script>
+</body>
+</html>

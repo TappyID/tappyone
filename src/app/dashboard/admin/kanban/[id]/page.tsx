@@ -677,62 +677,107 @@ function QuadroPage() {
 
   // 🔥 SINCRONIZAR MANUALMENTE TODOS OS CARDS
   const syncAllCardsManually = async () => {
-    if (Object.keys(cardColumnMapping).length === 0) {
-      alert('Nenhum card para sincronizar!')
-      return
-    }
-    
-    setLoading(true)
-    console.log('🔄 [MANUAL] Sincronizando', Object.keys(cardColumnMapping).length, 'cards...')
-    
     const token = localStorage.getItem('token')
     if (!token) {
       alert('Token não encontrado!')
-      setLoading(false)
       return
     }
     
-    let synced = 0
-    let errors = 0
-    
-    for (const [chatId, columnId] of Object.entries(cardColumnMapping)) {
-      try {
-        const chat = whatsappChats.find((c: any) => c.id === chatId)
-        if (!chat) {
-          console.warn('⚠️ Chat não encontrado:', chatId)
-          continue
+    // 🎯 Buscar TODOS os chats do WhatsApp DIRETO do backend
+    try {
+      // Buscar direto do backend Go (mais rápido e sem problemas de proxy)
+      const backendUrl = 'http://159.65.34.199:8081'
+      const sessionName = 'user_fb8da1d7_1758158816675' // Session padrão
+      
+      const response = await fetch(`${backendUrl}/api/whatsapp/chats/cached?session=${sessionName}&limit=10000&offset=0`, {
+        headers: { 
+          'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-        
-        const response = await fetch('/api/kanban/cards/upsert', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            conversaId: chatId,
-            colunaId: columnId,
-            nome: chat.name || chat.pushName || chatId,
-            posicao: 0
-          })
-        })
-        
-        if (response.ok) {
-          synced++
-          console.log('✅', chatId, '→', columnId)
-        } else {
-          errors++
-          console.error('❌', chatId, await response.text())
-        }
-      } catch (error) {
-        errors++
-        console.error('❌', chatId, error)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Erro ao buscar chats')
       }
+      
+      const todosOsChats = await response.json()
+      
+      // Backend retorna array direto
+      if (!Array.isArray(todosOsChats)) {
+        throw new Error('Resposta inválida do backend')
+      }
+      
+      if (todosOsChats.length === 0) {
+        alert('Nenhum chat encontrado!')
+        return
+      }
+      
+      // Usar primeira coluna do quadro
+      const primeiraColuna = colunas[0]
+      if (!primeiraColuna) {
+        alert('Nenhuma coluna encontrada no quadro!')
+        return
+      }
+      
+      if (!confirm(`🎯 Criar ${todosOsChats.length} cards na coluna "${primeiraColuna.nome}"?`)) {
+        return
+      }
+      
+      setLoading(true)
+      console.log('🔄 [MANUAL] Criando', todosOsChats.length, 'cards...')
+      
+      let synced = 0
+      let errors = 0
+      
+      // Criar cards em lote (10 por vez)
+      const batchSize = 10
+      for (let i = 0; i < todosOsChats.length; i += batchSize) {
+        const batch = todosOsChats.slice(i, i + batchSize)
+        
+        await Promise.all(
+          batch.map(async (chat: any) => {
+            try {
+              const res = await fetch('/api/kanban/cards/upsert', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  conversaId: chat.id,
+                  colunaId: primeiraColuna.id,
+                  nome: chat.name || chat.pushName || chat.id,
+                  posicao: 0
+                })
+              })
+              
+              if (res.ok) {
+                synced++
+                console.log('✅', chat.id)
+              } else {
+                errors++
+                console.error('❌', chat.id, await res.text())
+              }
+            } catch (error) {
+              errors++
+              console.error('❌', chat.id, error)
+            }
+          })
+        )
+        
+        // Pequeno delay entre lotes
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      
+      setLoading(false)
+      alert(`✅ Sincronização completa!\n${synced} cards criados\n${errors} erros`)
+      refreshData()
+      
+    } catch (error) {
+      setLoading(false)
+      alert(`❌ Erro: ${error}`)
+      console.error('❌ Erro ao sincronizar cards:', error)
     }
-    
-    console.log(`✅ Sincronização completa: ${synced} salvos, ${errors} erros`)
-    alert(`Sincronização completa!\n${synced} cards salvos\n${errors} erros`)
-    setLoading(false)
   }
 
   // Funções auxiliares

@@ -406,6 +406,9 @@ function AtendimentoPage() {
   const { chatLeads, loading: loadingChatLeads } = useChatLeadBatch(
     activeChatIdsForLeads,
   );
+  
+  // 🔍 DEBUG: Ver quantos chatLeads foram carregados
+  console.log('🔍 [ATENDENTE] ChatLeads carregados:', Object.keys(chatLeads).length, 'de', activeChatIdsForLeads.length);
 
   // Estado para armazenar agentes ativos (para contagem)
   const [agentesAtivos, setAgentesAtivos] = useState<Set<string>>(new Set());
@@ -567,7 +570,9 @@ function AtendimentoPage() {
   const activeChats = useMemo(() => finalChats, [finalChats]);
 
   const activeChatIds = useMemo(() => {
+    // 🚀 OTIMIZAÇÃO: Limitar a 50 chats para evitar sobrecarga
     return activeChats
+      .slice(0, 50) // ✅ LIMITADO A 50 CHATS
       .map((chat) => {
         if (typeof chat.id === "string") {
           return chat.id;

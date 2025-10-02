@@ -384,17 +384,19 @@ export default function KanbanHeader({
               </span>
             </motion.button>
 
-            {/* 🔥 BOTÃO DE SINCRONIZAÇÃO MANUAL */}
-            <motion.button
-              onClick={syncAllCardsManually}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              title="Sincronizar todos os cards com o banco de dados"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="text-sm font-medium">💾 Salvar no Banco</span>
-            </motion.button>
+            {/* 🔥 BOTÃO DE SINCRONIZAÇÃO MANUAL - OCULTO (cards são criados automaticamente) */}
+            {false && (
+              <motion.button
+                onClick={syncAllCardsManually}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                title="Sincronizar todos os cards com o banco de dados"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="text-sm font-medium">💾 Salvar no Banco</span>
+              </motion.button>
+            )}
             
             {/* Botão de Reset (só aparece se houve mudanças manuais) */}
             {hasManualChanges && (
