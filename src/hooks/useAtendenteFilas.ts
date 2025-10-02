@@ -51,19 +51,28 @@ export function useAtendenteFilas() {
 
       const userData = await userResponse.json()
       const userId = userData.id
+      
+      console.log('👤 [useAtendenteFilas] UserID:', userId)
+      console.log('👤 [useAtendenteFilas] UserData:', userData)
 
-      // Buscar filas do atendente
-      const filasResponse = await fetch(`/api/usuarios/${userId}/filas`, {
+      // Buscar filas do atendente (usando endpoint correto)
+      console.log(`📞 [useAtendenteFilas] Buscando filas em: /api/filas/user/${userId}`)
+      const filasResponse = await fetch(`/api/filas/user/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
 
+      console.log('📡 [useAtendenteFilas] Status da resposta:', filasResponse.status)
+
       if (!filasResponse.ok) {
+        const errorText = await filasResponse.text()
+        console.error('❌ [useAtendenteFilas] Erro na resposta:', errorText)
         throw new Error('Erro ao buscar filas do atendente')
       }
 
       const filasData: FilaAtendente[] = await filasResponse.json()
+      console.log('📦 [useAtendenteFilas] Dados recebidos:', filasData)
       
       // Extrair apenas as filas que têm whatsappChats habilitado
       const filasWhatsApp = filasData

@@ -13,6 +13,7 @@ import AudioRecorderModal from "./components/FooterChatArea/modals/AudioRecorder
 import { useContatoData } from "@/hooks/useContatoData";
 import useChatsOverview from "@/hooks/useChatsOverview";
 import { useFiltersData } from "@/hooks/useFiltersData";
+import { useAtendenteFilas } from "@/hooks/useAtendenteFilas";
 import useMessagesData from "@/hooks/useMessagesData";
 import { useSearchData } from "@/hooks/useSearchData";
 import { useChatStats } from "@/hooks/useChatStats";
@@ -121,14 +122,11 @@ function AtendimentoPage() {
     kanbanStatuses: realKanbanStatuses,
     ticketStatuses: realTicketStatuses,
     priceRanges: realPriceRanges,
-    atendentes: realAtendentes,
-    isLoadingTags,
-    isLoadingFilas,
-    isLoadingKanban: isLoadingKanbanStatuses,
-    isLoadingTickets: isLoadingTicketStatuses,
-    isLoadingAtendentes,
-    refetch: refetchFilters,
   } = useFiltersData();
+
+  // 🎯 Hook para buscar filas do atendente logado
+  const { filas: minhasFilas, loading: loadingMinhasFilas } = useAtendenteFilas()
+  const minhasFilasIds = useMemo(() => minhasFilas.map(f => f.id), [minhasFilas])
 
   // 🔥 Buscar conexões para o filtro
   const [conexoesParaFiltro, setConexoesParaFiltro] = useState<any[]>([]);
@@ -1174,8 +1172,34 @@ function AtendimentoPage() {
   // Usar dados já processados do transformedChats (que inclui busca) e adicionar dados extras dos contatos
   const processedChats = useMemo(() => {
     console.log('🔍 [PROCESSED CHATS] Início - transformedChats:', transformedChats.length);
+    console.log('🎯 [FILAS ATENDENTE] Minhas filas:', minhasFilasIds);
     
-    let result = transformedChats.map((chat: any) => {
+    // 🎯 FILTRO 1: Mostrar apenas chats das filas do atendente
+    let chatsFiltradasPorFila = transformedChats
+    
+    if (minhasFilasIds.length > 0) {
+      chatsFiltradasPorFila = transformedChats.filter((chat: any) => {
+        // Buscar chat_lead do banco via chatsExtraData
+        const chatLead = chatsExtraData[chat.id]?.chatLead
+        
+        if (!chatLead || !chatLead.fila_id) {
+          console.log(`⚠️ Chat ${chat.id} sem fila atribuída - OCULTO`)
+          return false // Ocultar chats sem fila
+        }
+        
+        const pertenceAMinhaFila = minhasFilasIds.includes(chatLead.fila_id)
+        
+        if (!pertenceAMinhaFila) {
+          console.log(`🚫 Chat ${chat.id} da fila ${chatLead.fila_id} - NÃO é minha fila - OCULTO`)
+        }
+        
+        return pertenceAMinhaFila
+      })
+      
+      console.log(`✅ [FILAS ATENDENTE] Filtrados: ${chatsFiltradasPorFila.length} de ${transformedChats.length} chats`)
+    }
+    
+    let result = chatsFiltradasPorFila.map((chat: any) => {
       // ✅ ADICIONAR sessionName - sempre adicionar
       let sessionName = chat.sessionName; // Já tem do hook (esperamos que sim após fix)
 
@@ -1685,7 +1709,7 @@ function AtendimentoPage() {
     });
 
     return counts;
-  }, [transformedChats, contatosData, hiddenChats, archivedChats, chatLeads]);
+  }, [transformedChats, contatosData, hiddenChats, archivedChats, chatLeads, minhasFilasIds, chatsExtraData]);
 
   // Expor funções para testes no console (só uma vez)
   useEffect(() => {
@@ -1759,11 +1783,11 @@ function AtendimentoPage() {
               selectedTicketsMulti={selectedTicketPriorities}
               onTicketsMultiChange={setSelectedTicketPriorities}
               // Estados de loading dos filtros avançados
-              isLoadingTags={isLoadingTags}
-              isLoadingFilas={isLoadingFilas}
-              isLoadingKanban={isLoadingKanbanStatuses}
-              isLoadingTickets={isLoadingTicketStatuses}
-              isLoadingAtendentes={isLoadingAtendentes}
+              isLoadingTags={false}
+              isLoadingFilas={loadingMinhasFilas}
+              isLoadingKanban={false}
+              isLoadingTickets={false}
+              isLoadingAtendentes={false}
               // Dados dos filtros avançados
               kanbanStatuses={realKanbanStatuses}
               ticketStatuses={realTicketStatuses}
