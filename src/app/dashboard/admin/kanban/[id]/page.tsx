@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import { useKanbanColors } from './hooks/useKanbanColors'
+import useChatsOverview from '@/hooks/useChatsOverview'
 
 // Componentes componentizados
 import KanbanHeader from './components/KanbanHeader'
@@ -61,75 +62,12 @@ function QuadroPage() {
   const router = useRouter()
   const quadroId = params.id as string
 
-  // Estados para chats do WhatsApp
-  const [whatsappChats, setWhatsappChats] = useState([])
-  const [loadingChats, setLoadingChats] = useState(true)
-  const [chatsError, setChatsError] = useState(null)
-
-  // Carregar chats diretamente da API WAHA
-  const loadWhatsAppChats = useCallback(async () => {
-    try {
-      setLoadingChats(true)
-      
-      // Token fixo mais longo (1 ano) para desenvolvimento
-      const FALLBACK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-      
-      let token = localStorage.getItem('token') || FALLBACK_TOKEN
-      
-      // Se o token do localStorage expirou, usar o fallback e atualizar localStorage
-      try {
-        if (token !== FALLBACK_TOKEN) {
-          // Decodificar JWT para verificar expiração
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          const now = Math.floor(Date.now() / 1000)
-          
-          if (payload.exp && payload.exp < now) {
-            token = FALLBACK_TOKEN
-            localStorage.setItem('token', FALLBACK_TOKEN)
-          }
-        }
-      } catch (error) {
-        token = FALLBACK_TOKEN
-        localStorage.setItem('token', FALLBACK_TOKEN)
-      }
-      
-      // Buscar chats diretamente da WAHA (mesmo sistema do /atendimento)
-      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
-      const baseUrl = isProduction 
-        ? '/api/waha-proxy' 
-        : 'http://159.65.34.199:3001'
-      
-      const response = await fetch(`${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=500&offset=0`, {
-        headers: {
-          'X-Api-Key': 'tappyone-waha-2024-secretkey'
-        }
-      })
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Token de autenticação inválido ou expirado. Faça login novamente.')
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      
-      const chatsArray = data.chats || data.data || data || []
-      setWhatsappChats(chatsArray)
-      setChatsError(null)
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar chats:', error)
-      setChatsError(error.message)
-    } finally {
-      setLoadingChats(false)
-    }
-  }, [])
-
-  // Carregar chats quando componente montar
-  useEffect(() => {
-    loadWhatsAppChats()
-  }, [loadWhatsAppChats])
+  // Usar hook que busca chats de todas as sessões
+  const { 
+    chats: whatsappChats, 
+    loading: loadingChats, 
+    error: chatsError 
+  } = useChatsOverview()
   
   // 🔄 Buscar colunas do backend - DIRETO NO USEEFFECT
   useEffect(() => {
