@@ -232,6 +232,56 @@ function QuadroPage() {
   // Estado para mapeamento de cards nas colunas (armazenamento local)
   const [cardColumnMapping, setCardColumnMapping] = useState<Record<string, string>>({})
   
+  // 🔥 SINCRONIZAR TODOS OS CARDS DO LOCALSTORAGE COM O BANCO
+  useEffect(() => {
+    if (!quadroId || Object.keys(cardColumnMapping).length === 0 || whatsappChats.length === 0) return
+    
+    const syncAllCardsToDatabase = async () => {
+      console.log('🔄 Sincronizando', Object.keys(cardColumnMapping).length, 'cards com o banco...')
+      
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      let synced = 0
+      let errors = 0
+      
+      for (const [chatId, columnId] of Object.entries(cardColumnMapping)) {
+        try {
+          const chat = whatsappChats.find((c: any) => c.id === chatId)
+          if (!chat) continue
+          
+          const response = await fetch('/api/kanban/cards/upsert', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              conversaId: chatId,
+              colunaId: columnId,
+              nome: chat.name || chat.pushName || chatId,
+              posicao: 0
+            })
+          })
+          
+          if (response.ok) {
+            synced++
+          } else {
+            errors++
+          }
+        } catch (error) {
+          errors++
+        }
+      }
+      
+      console.log(`✅ Sincronização completa: ${synced} cards salvos, ${errors} erros`)
+    }
+    
+    // Executar sincronização após 2 segundos (dar tempo pros chats carregarem)
+    const timer = setTimeout(syncAllCardsToDatabase, 2000)
+    return () => clearTimeout(timer)
+  }, [quadroId, cardColumnMapping, whatsappChats])
+  
   // Estados para DragOverlay (rastro visual)
   const [activeCard, setActiveCard] = useState<any>(null)
   const [activeColumn, setActiveColumn] = useState<any>(null)
@@ -567,6 +617,42 @@ function QuadroPage() {
           ...prev,
           [activeId]: newColumnId
         }))
+        
+        // 🔥 CRIAR/ATUALIZAR CARD NO BANCO
+        const saveCardToDatabase = async () => {
+          try {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            
+            // Buscar dados do chat
+            const chat = whatsappChats.find((c: any) => c.id === activeId)
+            if (!chat) return
+            
+            const response = await fetch('/api/kanban/cards/upsert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                conversaId: activeId,
+                colunaId: newColumnId,
+                nome: chat.name || chat.pushName || activeId,
+                posicao: 0 // Sempre no topo
+              })
+            })
+            
+            if (!response.ok) {
+              console.error('❌ Erro ao salvar card no banco:', await response.text())
+            } else {
+              console.log('✅ Card salvo no banco:', activeId, '→', newColumnId)
+            }
+          } catch (error) {
+            console.error('❌ Erro ao salvar card:', error)
+          }
+        }
+        
+        saveCardToDatabase()
       }
     }
   }
