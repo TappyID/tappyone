@@ -190,6 +190,19 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
   // Buscar informações do Kanban REAL
   const { kanbanInfo: realKanbanInfo } = useKanbanInfo(chat.id)
+  
+  // DEBUG TEMPORÁRIO
+  useEffect(() => {
+    if (realKanbanInfo.board || realKanbanInfo.column) {
+      console.log('✅ KANBAN ENCONTRADO!', {
+        chatId: chat.id,
+        chatName: chat.name,
+        board: realKanbanInfo.board,
+        column: realKanbanInfo.column,
+        color: realKanbanInfo.columnColor
+      })
+    }
+  }, [realKanbanInfo, chat.id, chat.name])
 
   const applyChatLeadStatus = React.useCallback((status: any) => {
     if (!status) {
@@ -716,34 +729,23 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             })()}
 
             {/* Kanban + Coluna - DADOS REAIS DO HOOK */}
-            {(() => {
-              console.log('🎯 [KANBAN DEBUG]', {
-                chatId: chat.id,
-                realKanbanInfo,
-                hasBoard: !!realKanbanInfo.board,
-                hasColumn: !!realKanbanInfo.column
-              })
-              
-              // Sempre mostrar badge para debug
-              return (
-                <div
-                  className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full border-2"
-                  style={{
-                    backgroundColor: realKanbanInfo.columnColor 
-                      ? `${realKanbanInfo.columnColor}20` 
-                      : 'rgb(219 234 254)',
-                    color: realKanbanInfo.columnColor || 'rgb(37 99 235)',
-                    borderColor: realKanbanInfo.board ? 'green' : 'red'
-                  }}
-                  title={`DEBUG - Quadro: ${realKanbanInfo.board || 'NULL'}\nColuna: ${realKanbanInfo.column || 'NULL'}\nChatID: ${chat.id}`}
-                >
-                  <Layers className="w-1.5 h-1.5" style={{ color: realKanbanInfo.columnColor || 'rgb(59 130 246)' }} />
-                  <span className="text-[8px] font-medium truncate max-w-[54px]">
-                    {realKanbanInfo.column || 'SEM KANBAN'}
-                  </span>
-                </div>
-              )
-            })()}
+            {(realKanbanInfo.board && realKanbanInfo.column) && (
+              <div
+                className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: realKanbanInfo.columnColor 
+                    ? `${realKanbanInfo.columnColor}20` 
+                    : 'rgb(219 234 254)',
+                  color: realKanbanInfo.columnColor || 'rgb(37 99 235)'
+                }}
+                title={`Quadro: ${realKanbanInfo.board}\nColuna: ${realKanbanInfo.column}`}
+              >
+                <Layers className="w-1.5 h-1.5" style={{ color: realKanbanInfo.columnColor || 'rgb(59 130 246)' }} />
+                <span className="text-[8px] font-medium truncate max-w-[54px]">
+                  {realKanbanInfo.column}
+                </span>
+              </div>
+            )}
             </div>
           </div>
 

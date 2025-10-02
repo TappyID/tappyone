@@ -84,6 +84,7 @@ function AtendimentoPage() {
   const [selectedTag, setSelectedTag] = useState("todas");
   const [selectedFila, setSelectedFila] = useState("todas");
   const [selectedConexoes, setSelectedConexoes] = useState<string[]>([]); // ✅ Filtro de conexões
+  const [whatsappChats, setWhatsappChats] = useState<any[]>([]); // ✅ Estado para chats do WhatsApp
   const [selectedTagsMulti, setSelectedTagsMulti] = useState<string[]>([]); // ✅ Filtro de tags múltiplas
   const [selectedFilasMulti, setSelectedFilasMulti] = useState<string[]>([]);
   const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
