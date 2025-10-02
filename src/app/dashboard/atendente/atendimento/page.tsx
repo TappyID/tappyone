@@ -1203,6 +1203,7 @@ function AtendimentoPage() {
   const processedChats = useMemo(() => {
     console.log('🔍 [PROCESSED CHATS] Início - transformedChats:', transformedChats.length);
     console.log('🎯 [FILAS ATENDENTE] Minhas filas:', minhasFilasIds);
+    console.log('📦 [CHATS EXTRA DATA] Dados carregados:', Object.keys(chatsExtraData).length);
     
     // 🎯 FILTRO 1: Mostrar apenas chats das filas do atendente (excluir recusados)
     let chatsFiltradasPorFila = transformedChats
