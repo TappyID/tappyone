@@ -71,13 +71,17 @@ export function useAtendenteFilas() {
         throw new Error('Erro ao buscar filas do atendente')
       }
 
-      const filasData: FilaAtendente[] = await filasResponse.json()
-      console.log('📦 [useAtendenteFilas] Dados recebidos:', filasData)
+      const responseData = await filasResponse.json()
+      console.log('📦 [useAtendenteFilas] Dados recebidos:', responseData)
+      
+      // Extrair array de filas (pode vir como {data: [...]} ou direto [...])
+      const filasData: FilaAtendente[] = responseData.data || responseData
+      console.log('📦 [useAtendenteFilas] Array de filas:', filasData)
       
       // Extrair apenas as filas que têm whatsappChats habilitado
       const filasWhatsApp = filasData
         .map(fa => fa.fila)
-        .filter(fila => fila.ativa && fila.whatsappChats)
+        .filter(fila => fila && fila.ativa && fila.whatsappChats)
 
       console.log(`🎯 Atendente tem ${filasWhatsApp.length} filas do WhatsApp:`, filasWhatsApp.map(f => f.nome))
       

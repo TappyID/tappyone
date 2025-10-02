@@ -128,6 +128,14 @@ interface ItemSideChatProps {
       nome: string
       cor?: string
     }>
+    
+    // Chat Lead Status (dados do banco)
+    chatLeadStatus?: {
+      fila_id?: string
+      status?: string
+      responsavel?: string
+      [key: string]: any
+    }
   }
   onSelect: () => void
   onTagsClick: (e: React.MouseEvent) => void
@@ -662,8 +670,8 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
             {/* Fila do Chat (SEMPRE do chatLead.fila_id) */}
             {(() => {
-              // 🎯 PRIORIDADE 1: Buscar fila do chatLead (banco de dados)
-              const filaIdDoBanco = chatLead?.fila_id
+              // 🎯 PRIORIDADE 1: Buscar fila do chatLeadStatus (vem das props via page.tsx)
+              const filaIdDoBanco = chat.chatLeadStatus?.fila_id || chatLead?.fila_id
               
               if (filaIdDoBanco) {
                 const fila = getFilaById(filaIdDoBanco)

@@ -21,6 +21,7 @@ import { useChatLeadBatch } from "@/hooks/useChatLeadBatch";
 import AtendimentosTopBar from "../atendimentos/components/AtendimentosTopBar";
 import QuickActionsSidebar from "../atendimentos/components/QuickActionsSidebar";
 import TransferirAtendimentoModal from "../atendimentos/components/modals/TransferirAtendimentoModal";
+import ModalAceitarAtendimento from "./components/ModalAceitarAtendimento";
 import { normalizeTags } from "@/utils/tags";
 
 // Mock data para demonstração
@@ -114,6 +115,9 @@ function AtendimentoPage() {
 
   // Estados do chat
   const [selectedChatId, setSelectedChatId] = useState<string>();
+  const [showModalAceitar, setShowModalAceitar] = useState(false);
+  const [modoEspiar, setModoEspiar] = useState(false);
+  const [chatAguardando, setChatAguardando] = useState<any>(null);
 
   // Hook para filtros avançados com dados reais
   const {
@@ -390,6 +394,28 @@ function AtendimentoPage() {
   const { chatLeads, loading: loadingChatLeads } = useChatLeadBatch(
     activeChatIdsForLeads,
   );
+
+  // 🎯 Popular chatsExtraData com chatLeads
+  useEffect(() => {
+    if (chatLeads && Object.keys(chatLeads).length > 0) {
+      console.log('📦 [CHAT LEADS] Populando chatsExtraData com:', Object.keys(chatLeads).length, 'chat leads')
+      
+      setChatsExtraData(prev => {
+        const updated = { ...prev }
+        
+        Object.entries(chatLeads).forEach(([chatId, chatLead]) => {
+          if (!updated[chatId]) {
+            updated[chatId] = {}
+          }
+          updated[chatId].chatLead = chatLead
+          
+          console.log(`✅ [CHAT LEAD] Chat ${chatId} tem fila:`, chatLead?.fila_id)
+        })
+        
+        return updated
+      })
+    }
+  }, [chatLeads])
 
   // Estado para armazenar agentes ativos (para contagem)
   const [agentesAtivos, setAgentesAtivos] = useState<Set<string>>(new Set());
@@ -1845,7 +1871,22 @@ function AtendimentoPage() {
             <SideChat
               chats={processedChats}
               selectedChatId={selectedChatId}
-              onSelectChat={setSelectedChatId}
+              onSelectChat={(chatId) => {
+                // Buscar o chat clicado
+                const chat = processedChats.find(c => c.id === chatId)
+                const status = chat?.chatLeadStatus?.status
+                
+                // Se está aguardando, mostrar modal de aceitar
+                if (status === 'aguardando') {
+                  setChatAguardando(chat)
+                  setShowModalAceitar(true)
+                  setSelectedChatId(chatId) // Seleciona mas fica borrado
+                } else {
+                  // Se já está em atendimento ou finalizado, abre normalmente
+                  setSelectedChatId(chatId)
+                  setModoEspiar(false)
+                }
+              }}
               isLoading={loadingOverview && activeFilter === "all"}
               onLoadMore={handleLoadMoreChats}
               hasMoreChats={(() => {
@@ -1931,8 +1972,15 @@ function AtendimentoPage() {
           />
 
           {/* Área de Mensagens */}
-          <ChatArea
-            messages={displayMessages}
+          <div className={`relative ${
+            selectedChatId && 
+            processedChats.find(c => c.id === selectedChatId)?.chatLeadStatus?.status === 'aguardando' && 
+            !modoEspiar
+              ? 'blur-sm pointer-events-none'
+              : ''
+          }`}>
+            <ChatArea
+              messages={modoEspiar ? displayMessages.slice(-5) : displayMessages}
             isLoading={loadingMessages}
             hasMore={hasMoreMessages}
             totalMessages={totalMessages}
@@ -2025,6 +2073,7 @@ function AtendimentoPage() {
               }
             }}
           />
+          </div>
 
           {/* Debug info para mensagens */}
           {messagesError && (
@@ -2566,6 +2615,85 @@ function AtendimentoPage() {
         </svg>
         Transferir Todos
       </button>}
+
+      {/* Modal de Aceitar Atendimento */}
+      <ModalAceitarAtendimento
+        isOpen={showModalAceitar}
+        chatName={chatAguardando?.name || 'Cliente'}
+        onAceitar={async () => {
+          if (!selectedChatId) return
+          
+          const token = localStorage.getItem('token')
+          if (!token) return
+          
+          try {
+            // Aceitar atendimento (muda status para 'atendimento' e define responsavel)
+            const response = await fetch(`/api/chats/${encodeURIComponent(selectedChatId)}/aceitar`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (!response.ok) {
+              throw new Error('Erro ao aceitar atendimento')
+            }
+            
+            // Recarregar dados do chat
+            refreshMessages()
+            setModoEspiar(false)
+            
+            console.log('✅ Atendimento aceito com sucesso!')
+          } catch (error) {
+            console.error('❌ Erro ao aceitar atendimento:', error)
+            alert('Erro ao aceitar atendimento. Tente novamente.')
+          }
+        }}
+        onRecusar={async () => {
+          if (!selectedChatId) return
+          
+          const token = localStorage.getItem('token')
+          if (!token) return
+          
+          try {
+            // Recusar atendimento (chat some da lista do atendente)
+            const response = await fetch(`/api/chats/${encodeURIComponent(selectedChatId)}/recusar`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (!response.ok) {
+              throw new Error('Erro ao recusar atendimento')
+            }
+            
+            // Remover chat da lista e desselecionar
+            setSelectedChatId(undefined)
+            
+            console.log('✅ Atendimento recusado com sucesso!')
+          } catch (error) {
+            console.error('❌ Erro ao recusar atendimento:', error)
+            alert('Erro ao recusar atendimento. Tente novamente.')
+          }
+        }}
+        onEspiar={() => {
+          // Ativar modo espiar (mostra últimas 5 mensagens, bloqueia scroll)
+          setModoEspiar(true)
+          console.log('👁️ Modo espiar ativado - últimas 5 mensagens')
+        }}
+        onClose={() => {
+          setShowModalAceitar(false)
+          if (modoEspiar) {
+            // Se está espiando, mantém selecionado
+          } else {
+            // Se não aceitou nem espiou, desseleciona
+            setSelectedChatId(undefined)
+          }
+        }}
+      />
     </div>
   );
 }
