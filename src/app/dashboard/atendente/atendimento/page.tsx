@@ -11,7 +11,7 @@ import AgenteSelectionModal from "./components/FooterChatArea/modals/AgenteSelec
 import ForwardMessageModal from "@/components/ForwardMessageModal";
 import AudioRecorderModal from "./components/FooterChatArea/modals/AudioRecorderModal";
 import { useContatoData } from "@/hooks/useContatoData";
-import useChatsOverview from "@/hooks/useChatsOverview";
+import { useWhatsAppDataFiltered } from "@/hooks/useWhatsAppDataFiltered";
 import { useFiltersData } from "@/hooks/useFiltersData";
 import useMessagesData from "@/hooks/useMessagesData";
 import { useSearchData } from "@/hooks/useSearchData";
@@ -330,7 +330,7 @@ function AtendimentoPage() {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('📊 [ATENDENTE] Resposta completa da API:', data);
+          console.log('📊 [ATENDENTE] Resposta completa da API:', JSON.stringify(data, null, 2));
           
           // Extrair IDs das filas
           let filasIds: string[] = [];
@@ -338,14 +338,21 @@ function AtendimentoPage() {
           // Pode vir como { data: [...] } ou direto como array
           const filas = data.data || data.filas || data;
           
+          console.log('🔍 [ATENDENTE] Filas extraídas:', filas);
+          console.log('🔍 [ATENDENTE] É array?', Array.isArray(filas));
+          
           if (Array.isArray(filas)) {
             filasIds = filas.map((f: any) => {
+              console.log('🔍 [ATENDENTE] Processando fila:', f);
               // Pode ser { filaId: "..." } ou { id: "..." } ou { fila_id: "..." }
-              return f.filaId || f.fila_id || f.id;
+              const id = f.filaId || f.fila_id || f.id;
+              console.log('🔍 [ATENDENTE] ID extraído:', id);
+              return id;
             }).filter(Boolean);
           }
           
           console.log('✅ [ATENDENTE] Filas encontradas:', filasIds);
+          console.log('✅ [ATENDENTE] Total de filas:', filasIds.length);
           setAtendenteFilas(filasIds);
         } else {
           console.error('❌ [ATENDENTE] Erro na resposta:', response.status);
@@ -376,21 +383,23 @@ function AtendimentoPage() {
   } = useMessagesData(selectedChatId);
 
   // Hook de overview dos chats da WAHA (com paginação real)
-  const {
-    chats: overviewChats,
-    loading: loadingOverview,
-    error: errorOverview,
-    refreshChats: refreshOverviewChats,
-    loadMoreChats,
-    hasMore: hasMoreOverviewChats,
-    isLoadingMore: isLoadingMoreOverview,
-    markChatAsRead,
-    markChatAsUnread,
-    totalChatsCount,
-    unreadChatsCount,
-    readNoReplyCount,
-    groupChatsCount,
-  } = useChatsOverview();
+  // 🎯 Hook FILTRADO para atendente (apenas chats das suas filas)
+  const whatsAppFiltered = useWhatsAppDataFiltered();
+  
+  // Mapear para o formato esperado pelo resto do código
+  const overviewChats = whatsAppFiltered.chats || [];
+  const loadingOverview = whatsAppFiltered.loading;
+  const errorOverview = whatsAppFiltered.error;
+  const refreshOverview = whatsAppFiltered.refetchFilaContatos || (() => {});
+  const loadMoreOverview = whatsAppFiltered.loadMoreChats || (() => {});
+  const hasMoreOverview = whatsAppFiltered.hasMoreChats || false;
+  const isLoadingMoreOverview = false;
+  const markChatAsRead = () => {};
+  const markChatAsUnread = () => {};
+  const totalChatsCount = overviewChats.length;
+  const unreadChatsCount = overviewChats.filter((c: any) => c.unreadCount > 0).length;
+  const readNoReplyCount = 0;
+  const groupChatsCount = overviewChats.filter((c: any) => c.isGroup).length;
 
   // Hook para estatísticas de atendimento (dados reais do backend)
   const { stats: chatStats } = useChatStats();
@@ -936,7 +945,7 @@ function AtendimentoPage() {
     try {
       // Usar o hook useChatsOverview para carregar mais chats
 
-      await loadMoreChats(); // Função do hook useChatsOverview (já gerencia isLoadingMore)
+      await loadMoreOverview(); // Função do hook useWhatsAppDataFiltered
     } catch {}
   }, [
     activeFilter, // 🔥 CRÍTICO: Adicionar activeFilter para bloquear scroll em filtros de status
@@ -1956,7 +1965,7 @@ function AtendimentoPage() {
 
                 // Se não há filtros, usar paginação real da API
 
-                return hasMoreOverviewChats;
+                return hasMoreOverview;
               })()}
               isLoadingMore={isLoadingMoreChats || isLoadingMoreOverview}
               onTagsClick={(chatId, e) => {
