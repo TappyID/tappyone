@@ -13,11 +13,13 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
 export function ProfileDropdown() {
   const [showProfile, setShowProfile] = useState(false)
   const { user, logout } = useAuth()
   const router = useRouter()
+  const { colorTheme } = useColorTheme()
 
   const handleLogout = () => {
     logout()
@@ -66,7 +68,10 @@ export function ProfileDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20"
+            style={{
+              backgroundColor: colorTheme.primary
+            }}
+            className="absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] backdrop-blur-xl border-white/20"
           >
             {/* Header */}
             <div className="p-6 border-b border-white/10">

@@ -303,7 +303,7 @@ export default function AtendimentosTopBar({
                     router.push('/dashboard/admin/kanban')
                   }
                 }}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title={isKanbanPage ? 'Ir para Atendimentos' : 'CRM Kanban'}
               >
                 {isKanbanPage ? (
@@ -336,7 +336,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/fluxograma')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Fluxograma"
               >
                 <GitBranch className="w-4 h-4 text-white" />
@@ -353,7 +353,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/respostas-rapidas')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Respostas Rápidas"
               >
                 <Zap className="w-4 h-4 text-white" />
@@ -370,7 +370,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/agentes')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Agentes de IA"
               >
                 <Bot className="w-4 h-4 text-white" />
@@ -387,7 +387,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/tags')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Tags"
               >
                 <FileText className="w-4 h-4 text-white" />
@@ -404,7 +404,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/tickets')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Tickets"
               >
                 <Ticket className="w-4 h-4 text-white" />
@@ -421,7 +421,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/agendamentos')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Agendamentos"
               >
                 <Calendar className="w-4 h-4 text-white" />
@@ -438,7 +438,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/orcamentos')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Orçamentos"
               >
                 <Receipt className="w-4 h-4 text-white" />
@@ -455,7 +455,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/dashboard/admin/filas')}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Filas"
               >
                 <List className="w-4 h-4 text-white" />
@@ -472,7 +472,7 @@ export default function AtendimentosTopBar({
                 whileHover={{ scale: 1.1, rotate: 10 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowTranslation(!showTranslation)}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Tradução"
               >
                 <Languages className="w-4 h-4 text-white" />
@@ -503,7 +503,10 @@ export default function AtendimentosTopBar({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full right-0 mt-2 w-80 bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[99999]"
+                    style={{
+                      backgroundColor: colorTheme.primary
+                    }}
+                    className="absolute top-full right-0 mt-2 w-80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[99999]"
                   >
                     {/* Header */}
                     <div className="p-4 border-b border-white/10">
@@ -632,7 +635,7 @@ export default function AtendimentosTopBar({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowNotifications(!showNotifications)}
-              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
               title="Notificações"
             >
               <Bell className="w-4 h-4 text-white" />
@@ -651,7 +654,10 @@ export default function AtendimentosTopBar({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-full right-0 mt-2 w-96 bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[99999]"
+                  style={{
+                    backgroundColor: colorTheme.primary
+                  }}
+                  className="absolute top-full right-0 mt-2 w-96 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[99999]"
                 >
                   {/* Header */}
                   <div className="p-4 border-b border-white/10">
@@ -794,7 +800,7 @@ export default function AtendimentosTopBar({
               whileHover={{ scale: 1.1, rotate: actualTheme === 'dark' ? 180 : 0 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')}
-              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300 group"
+              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300 group"
               title={actualTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
             >
               <AnimatePresence mode="wait">
@@ -845,7 +851,7 @@ export default function AtendimentosTopBar({
               whileHover={{ scale: 1.1, rotate: 10 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowColorModal(true)}
-              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300 group"
+              className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300 group"
               title="Personalizar Cores"
             >
               <Palette className="w-4 h-4 text-white group-hover:text-pink-300 transition-colors" />
@@ -893,7 +899,10 @@ export default function AtendimentosTopBar({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-full right-0 mt-2 w-80 bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[99999]"
+                  style={{
+                    backgroundColor: colorTheme.primary
+                  }}
+                  className="absolute top-full right-0 mt-2 w-80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[99999]"
                 >
                   {/* Header */}
                   <div className="p-6 border-b border-white/10">

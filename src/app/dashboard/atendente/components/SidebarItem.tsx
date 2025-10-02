@@ -38,8 +38,8 @@ export function SidebarItem({
             isCollapsed ? "p-3 justify-center" : "p-3 gap-3",
             isSubmenuItem ? "ml-2 py-2 px-3 rounded-lg" : "",
             isActive 
-              ? (isCollapsed ? "bg-white text-[#273155] shadow-lg" : "bg-white/10 text-white shadow-lg")
-              : (isCollapsed ? "text-gray-600 hover:bg-white/80 hover:text-gray-900" : "text-white/70 hover:bg-white/5 hover:text-white")
+              ? (isCollapsed ? "bg-white/20 text-white shadow-lg" : "bg-white/10 text-white shadow-lg")
+              : (isCollapsed ? "bg-white/10 text-white hover:bg-white/20 shadow-sm hover:shadow-lg" : "text-white/70 hover:bg-white/5 hover:text-white")
           )}
           whileHover={!isSubmenuItem ? { x: isCollapsed ? 0 : 2 } : {}}
         >
@@ -59,13 +59,7 @@ export function SidebarItem({
 
           {/* Ícone com Background */}
           <motion.div
-            className={cn(
-              "relative flex items-center justify-center rounded-lg transition-all duration-200",
-              isCollapsed ? "p-2" : "p-2",
-              isActive 
-                ? (isCollapsed ? "bg-[#273155]/10 shadow-sm" : "bg-white/20 shadow-sm")
-                : (isCollapsed ? "bg-gray-100 group-hover:bg-gray-200" : "bg-white/10 group-hover:bg-white/15")
-            )}
+            className="relative flex items-center justify-center rounded-lg transition-all duration-200"
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, Globe, ChevronDown } from 'lucide-react'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
 interface GlassClockProps {}
 
@@ -21,6 +22,7 @@ export function GlassClock() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [selectedTimezone, setSelectedTimezone] = useState('America/Sao_Paulo')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const { colorTheme } = useColorTheme()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -132,7 +134,10 @@ export function GlassClock() {
             />
             
             <motion.div
-              className="absolute right-0 top-full mt-2 z-50 min-w-[200px] bg-gray-900/95 border border-white/20 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden"
+              style={{
+                backgroundColor: colorTheme.primary
+              }}
+              className="absolute right-0 top-full mt-2 z-50 min-w-[200px] border border-white/20 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}

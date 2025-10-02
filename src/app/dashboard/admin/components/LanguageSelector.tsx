@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { Languages, CheckCircle, Globe, X } from 'lucide-react'
 import ReactCountryFlag from 'react-country-flag'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
 export function LanguageSelector() {
   const [showTranslation, setShowTranslation] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('pt-BR')
+  const { colorTheme } = useColorTheme()
   
   // Mapeamento de idiomas para bandeiras
   const getCountryCode = (langCode: string) => {
@@ -73,7 +75,10 @@ export function LanguageSelector() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20"
+            style={{
+              backgroundColor: colorTheme.primary
+            }}
+            className="absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] backdrop-blur-xl border-white/20"
           >
             {/* Header */}
             <div className="p-4 border-b border-white/10">

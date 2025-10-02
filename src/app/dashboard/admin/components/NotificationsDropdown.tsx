@@ -12,9 +12,11 @@ import {
   Info,
   X
 } from 'lucide-react'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
 export function NotificationsDropdown() {
   const [showNotifications, setShowNotifications] = useState(false)
+  const { colorTheme } = useColorTheme()
 
   return (
     <motion.div className="relative">
@@ -41,7 +43,10 @@ export function NotificationsDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full right-0 mt-2 w-96 rounded-2xl shadow-2xl border bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20 overflow-hidden z-[99999]"
+            style={{
+              backgroundColor: colorTheme.primary
+            }}
+            className="absolute top-full right-0 mt-2 w-96 rounded-2xl shadow-2xl border backdrop-blur-xl border-white/20 overflow-hidden z-[99999]"
           >
             {/* Header */}
             <div className="p-4 border-b border-white/10">
