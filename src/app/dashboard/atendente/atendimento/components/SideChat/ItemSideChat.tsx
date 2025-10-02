@@ -280,9 +280,12 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     setLoadingLead(true)
     try {
       const status = await buscarStatusChat(chat.id)
+      console.log('📥 [FETCH LEAD] Status recebido:', status)
       applyChatLeadStatus(status)
       setLeadStatus(normalizeLeadStatus(status?.status) || null)
-    } catch {} finally {
+    } catch (error) {
+      console.error('❌ [FETCH LEAD] Erro:', error)
+    } finally {
       setLoadingLead(false)
     }
   }
@@ -357,19 +360,75 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   const { atendenteData, refetch: refetchAtendente } = useAtendenteData(chat.id)
 
   // Buscar nome do responsável usando os dados já carregados
+  const [nomeResponsavelFetched, setNomeResponsavelFetched] = React.useState<string>('')
+  
+  // Buscar nome do responsável via API quando não encontrar na lista
+  React.useEffect(() => {
+    const responsavelId = chat.chatLeadStatus?.responsavel || atendenteData?.atendente
+    if (!responsavelId) {
+      return
+    }
+    
+    // Se já encontrou na lista de atendentes, não buscar
+    const atendente = atendentes.find(a => a.id === responsavelId)
+    if (atendente?.nome) {
+      setNomeResponsavelFetched(atendente.nome)
+      return
+    }
+    
+    // Se já buscou, não buscar novamente
+    if (nomeResponsavelFetched) {
+      return
+    }
+    
+    // Buscar nome do usuário via API
+    const fetchNome = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`/api/users/${responsavelId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          // O endpoint retorna { usuario: { nome: "helio" } }
+          const nome = data.usuario?.nome || data.nome || data.name || ''
+          if (nome) {
+            setNomeResponsavelFetched(nome)
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar nome:', error)
+      }
+    }
+    fetchNome()
+  }, [chat.chatLeadStatus?.responsavel, atendenteData?.atendente, atendentes, nomeResponsavelFetched])
+  
   const nomeResponsavel = React.useMemo(() => {
-    // Usar atendenteData que vem do useAtendenteData
-    if (!atendenteData?.atendente) return ''
-
-    const atendente = atendentes.find(a => a.id === atendenteData.atendente)
-
-    return atendente?.nome || 'Rodrigo Tappy'
-  }, [atendenteData?.atendente, atendentes])
+    // 🎯 PRIORIDADE 1: Nome buscado via API
+    if (nomeResponsavelFetched) {
+      return nomeResponsavelFetched
+    }
+    
+    // 🎯 PRIORIDADE 2: chatLead.responsavelUser.nome (do backend com JOIN)
+    if (chatLead?.responsavelUser?.nome) {
+      return chatLead.responsavelUser.nome
+    }
+    
+    // Fallback: ID truncado
+    const responsavelId = chatLead?.responsavel || chat.chatLeadStatus?.responsavel || atendenteData?.atendente
+    if (!responsavelId) return ''
+    
+    return `ID:${responsavelId.slice(0, 8)}`
+  }, [nomeResponsavelFetched, chatLead, chat.chatLeadStatus?.responsavel, atendenteData?.atendente])
 
   // Estado para status do lead
   const [leadStatus, setLeadStatus] = useState<string | null>(null)
 
   const leadStatusDisplay = React.useMemo<LeadStatusType | null>(() => {
+    // Priorizar chatLeadStatus (vem das props via page.tsx)
+    if (chat.chatLeadStatus?.status) {
+      return normalizeLeadStatus(chat.chatLeadStatus.status)
+    }
     // Se tem chatLead com status definido
     if (chatLead?.status) {
       return chatLead.status as LeadStatusType
@@ -378,12 +437,13 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     if (leadStatus) {
       return normalizeLeadStatus(leadStatus)
     }
-    // Padrão: se não tem atendente, está aguardando
-    if (!atendenteData?.atendente) {
+    // Padrão: se não tem responsável, está aguardando
+    const responsavelId = chat.chatLeadStatus?.responsavel || atendenteData?.atendente
+    if (!responsavelId) {
       return 'aguardando'
     }
     return null
-  }, [chatLead?.status, leadStatus, atendenteData?.atendente])
+  }, [chat.chatLeadStatus?.status, chat.chatLeadStatus?.responsavel, chatLead?.status, leadStatus, atendenteData?.atendente])
 
   // Listener para recarregar dados quando atendimento for assumido
   React.useEffect(() => {
@@ -418,7 +478,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
         // Buscar status do lead no backend GO
         const baseUrl = 'http://159.65.34.199:8081'
-        const response = await fetch(`${baseUrl}/api/chats/${encodeURIComponent(chat.id)}/lead`, {
+        const response = await fetch(`${baseUrl}/api/chats/${encodeURIComponent(chat.id)}/leads`, {
           headers: {
             'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
           }
@@ -727,19 +787,19 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
             )}
 
             {/* Badge Atendente Responsável */}
-            {atendenteData?.atendente && (
+            {nomeResponsavel && (
               <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${
-                atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+                (chatLead?.responsavel || atendenteData?.atendente) === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
                   ? 'bg-green-100 dark:bg-green-900/20'
                   : 'bg-blue-100 dark:bg-blue-900/20'
               }`}>
                 <UserCheck className={`w-1.5 h-1.5 ${
-                  atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+                  (chatLead?.responsavel || atendenteData?.atendente) === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
                     ? 'text-green-600'
                     : 'text-blue-600'
                 }`} />
                 <span className={`text-[8px] font-medium truncate max-w-[80px] ${
-                  atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+                  (chatLead?.responsavel || atendenteData?.atendente) === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
                     ? 'text-green-600'
                     : 'text-blue-600'
                 }`}>

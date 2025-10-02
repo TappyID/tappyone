@@ -10,6 +10,7 @@ import EditTextModal from "../atendimentos/components/EditTextModal";
 import AgenteSelectionModal from "./components/FooterChatArea/modals/AgenteSelectionModal";
 import ForwardMessageModal from "@/components/ForwardMessageModal";
 import AudioRecorderModal from "./components/FooterChatArea/modals/AudioRecorderModal";
+import { useAuth } from "@/hooks/useAuth";
 import { useContatoData } from "@/hooks/useContatoData";
 import useChatsOverview from "@/hooks/useChatsOverview";
 import { useFiltersData } from "@/hooks/useFiltersData";
@@ -81,6 +82,9 @@ const mockChats = [
 ];
 
 function AtendimentoPage() {
+  // Hook de autenticação
+  const { user } = useAuth();
+  
   // Estados para busca e filtros
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("todas");
@@ -2621,18 +2625,34 @@ function AtendimentoPage() {
         isOpen={showModalAceitar}
         chatName={chatAguardando?.name || 'Cliente'}
         onAceitar={async () => {
-          if (!selectedChatId) return
+          if (!chatAguardando?.id) {
+            console.error('❌ Chat aguardando não encontrado')
+            return
+          }
+          
+          console.log('🎯 [ACEITAR] Iniciando aceitação do chat:', chatAguardando.id)
           
           const token = localStorage.getItem('token')
-          const userStr = localStorage.getItem('user')
-          if (!token || !userStr) return
+          if (!token) {
+            console.error('❌ Token não encontrado')
+            return
+          }
           
-          const user = JSON.parse(userStr)
-          const atendenteId = user.id
+          // Usar ID do usuário do hook useAuth
+          const atendenteId = user?.id
+          
+          if (!atendenteId) {
+            console.error('❌ ID do usuário não encontrado')
+            alert('Erro: Não foi possível identificar o usuário. Faça login novamente.')
+            return
+          }
+          
+          console.log('👤 [ACEITAR] Atendente ID:', atendenteId)
+          console.log('📋 [ACEITAR] Fila ID:', chatAguardando?.chatLeadStatus?.fila_id)
           
           try {
             // Aceitar atendimento (muda status para 'atendimento' e define responsavel)
-            const response = await fetch(`/api/chats/${encodeURIComponent(selectedChatId)}/aceitar`, {
+            const response = await fetch(`/api/chats/${encodeURIComponent(chatAguardando.id)}/aceitar`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2644,16 +2664,28 @@ function AtendimentoPage() {
               })
             })
             
+            console.log('📡 [ACEITAR] Response status:', response.status)
+            
             if (!response.ok) {
+              const errorData = await response.json()
+              console.error('❌ [ACEITAR] Erro do backend:', errorData)
               throw new Error('Erro ao aceitar atendimento')
             }
+            
+            const result = await response.json()
+            console.log('✅ [ACEITAR] Resposta do backend:', result)
+            
+            // Selecionar o chat para mostrar o ChatArea
+            setSelectedChatId(chatAguardando.id)
             
             // Recarregar dados do chat e atualizar lista
             refreshMessages()
             setModoEspiar(false)
             
             // Forçar reload da página para atualizar todos os dados
-            window.location.reload()
+            setTimeout(() => {
+              window.location.reload()
+            }, 500)
             
             console.log('✅ Atendimento aceito com sucesso!')
           } catch (error) {
@@ -2662,14 +2694,21 @@ function AtendimentoPage() {
           }
         }}
         onRecusar={async () => {
-          if (!selectedChatId) return
+          if (!chatAguardando?.id) {
+            console.error('❌ Chat aguardando não encontrado')
+            return
+          }
+          
+          console.log('🚫 [RECUSAR] Iniciando recusa do chat:', chatAguardando.id)
           
           const token = localStorage.getItem('token')
-          if (!token) return
+          if (!token) {
+            console.error('❌ Token não encontrado')
+            return
+          }
           
           try {
-            // Recusar atendimento (chat some da lista do atendente)
-            const response = await fetch(`/api/chats/${encodeURIComponent(selectedChatId)}/recusar`, {
+            const response = await fetch(`/api/chats/${encodeURIComponent(chatAguardando.id)}/recusar`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2677,12 +2716,22 @@ function AtendimentoPage() {
               }
             })
             
+            console.log('📡 [RECUSAR] Response status:', response.status)
+            
             if (!response.ok) {
+              const errorData = await response.json()
+              console.error('❌ [RECUSAR] Erro do backend:', errorData)
               throw new Error('Erro ao recusar atendimento')
             }
             
-            // Remover chat da lista e desselecionar
+            const result = await response.json()
+            console.log('✅ [RECUSAR] Resposta do backend:', result)
+            
             setSelectedChatId(undefined)
+            
+            setTimeout(() => {
+              window.location.reload()
+            }, 500)
             
             console.log('✅ Atendimento recusado com sucesso!')
           } catch (error) {
@@ -2691,16 +2740,19 @@ function AtendimentoPage() {
           }
         }}
         onEspiar={() => {
+          // Selecionar o chat para mostrar o ChatArea
+          setSelectedChatId(chatAguardando?.id)
+          
           // Ativar modo espiar (mostra últimas 5 mensagens, bloqueia scroll)
           setModoEspiar(true)
           console.log('👁️ Modo espiar ativado - últimas 5 mensagens')
           
-          // Após 3 segundos, borrar novamente e reabrir modal
+          // Após 5 segundos, borrar novamente e reabrir modal
           setTimeout(() => {
             setModoEspiar(false)
             setShowModalAceitar(true)
             console.log('⏰ Tempo de espiar acabou - reabrindo modal')
-          }, 3000)
+          }, 5000)
         }}
         onClose={() => {
           setShowModalAceitar(false)

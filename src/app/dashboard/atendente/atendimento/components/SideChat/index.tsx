@@ -199,6 +199,8 @@ export default function SideChat({
 
         if (!isMounted) return
 
+        console.log('🔍 [SIDECHAT] Atendentes carregados:', combinedAtendentes.map(a => ({ id: a.id, nome: a.nome })))
+
         setConexoes(conexoesData)
         setFilas(filasData)
         setAtendentes(combinedAtendentes)

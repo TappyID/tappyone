@@ -34,6 +34,12 @@ export async function POST(request: NextRequest) {
     const data = await response.json()
     console.log('✅ [BATCH LEADS] Dados recebidos:', Object.keys(data).length, 'leads')
     
+    // 🔍 DEBUG: Mostrar primeiro lead
+    const firstKey = Object.keys(data)[0]
+    if (firstKey) {
+      console.log('🔍 [BATCH LEADS] Exemplo:', JSON.stringify(data[firstKey], null, 2))
+    }
+    
     return NextResponse.json(data)
   } catch (error) {
     console.error('❌ [BATCH LEADS] Erro:', error)
