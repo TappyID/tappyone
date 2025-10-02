@@ -155,30 +155,44 @@ export function useSearchData(query: string, options: SearchOptions) {
       return
     }
 
+    console.log('🔍 [SEARCH] Iniciando busca:', {
+      query: debouncedQuery,
+      options
+    })
+
     setResults(prev => ({ ...prev, loading: true, error: null }))
 
     try {
       const searchPromises = []
       
       if (options.searchInChats) {
+        console.log('🔍 [SEARCH] Buscando em chats...')
         searchPromises.push(searchChats(debouncedQuery))
       } else {
         searchPromises.push(Promise.resolve([]))
       }
       
       if (options.searchInMessages) {
+        console.log('🔍 [SEARCH] Buscando em mensagens...')
         searchPromises.push(searchMessages(debouncedQuery))
       } else {
         searchPromises.push(Promise.resolve([]))
       }
       
       if (options.searchInContacts) {
+        console.log('🔍 [SEARCH] Buscando em contatos...')
         searchPromises.push(searchContacts(debouncedQuery))
       } else {
         searchPromises.push(Promise.resolve([]))
       }
 
       const [chats, messages, contacts] = await Promise.all(searchPromises)
+
+      console.log('✅ [SEARCH] Resultados:', {
+        chats: chats.length,
+        messages: messages.length,
+        contacts: contacts.length
+      })
 
       setResults({
         chats,
