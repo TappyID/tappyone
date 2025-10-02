@@ -256,16 +256,57 @@ function QuadroPage() {
     })
   )
 
-  // Carregar mapeamento do localStorage
+  // Carregar mapeamento DO BANCO DE DADOS (não do localStorage)
   useEffect(() => {
-    const savedMapping = localStorage.getItem(`kanban-mapping-${quadroId}`)
-    if (savedMapping) {
+    const loadMappingFromDatabase = async () => {
+      const token = localStorage.getItem('token')
+      if (!token || !quadroId) return
+      
       try {
-        setCardColumnMapping(JSON.parse(savedMapping))
-      } catch (e) {
-        console.error('Erro ao carregar mapeamento:', e)
+        console.log('📥 [KANBAN] Carregando mapeamento do banco para quadro:', quadroId)
+        
+        // Buscar todos os cards do quadro do banco
+        const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          console.error('❌ [KANBAN] Erro ao buscar quadro:', response.status)
+          return
+        }
+        
+        const data = await response.json()
+        const colunas = data.colunas || []
+        
+        // Construir mapeamento chatId -> colunaId do banco
+        const mapping: Record<string, string> = {}
+        let totalCards = 0
+        
+        colunas.forEach((coluna: any) => {
+          const cards = coluna.cards || []
+          cards.forEach((card: any) => {
+            if (card.conversa_id) {
+              mapping[card.conversa_id] = coluna.id
+              totalCards++
+            }
+          })
+        })
+        
+        console.log(`✅ [KANBAN] Mapeamento carregado do banco: ${totalCards} cards`)
+        setCardColumnMapping(mapping)
+        
+        // Salvar no localStorage como backup
+        localStorage.setItem(`kanban-mapping-${quadroId}`, JSON.stringify(mapping))
+        
+      } catch (error) {
+        console.error('❌ [KANBAN] Erro ao carregar mapeamento do banco:', error)
       }
     }
+    
+    loadMappingFromDatabase()
   }, [quadroId])
 
   // Salvar mapeamento no localStorage quando mudar

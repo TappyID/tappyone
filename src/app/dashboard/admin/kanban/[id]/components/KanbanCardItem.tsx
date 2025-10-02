@@ -96,6 +96,9 @@ export default function KanbanCardItem({
   // Pegar fila direto dos dados do card (já vem do useKanbanOptimized via batch)
   const filaNome = card.fila?.nome || card.filaNome || null
   
+  // 🔍 DEBUG VISUAL - Mostrar fila_id no card
+  const filaDebug = card.fila || null
+  
   // Hook para buscar contadores dos indicadores
   // IMPORTANTE: Passar o ID completo com @c.us para o hook
   const chatIdForIndicators = card.id?.includes('@c.us') ? card.id : 
@@ -274,6 +277,17 @@ export default function KanbanCardItem({
           }}
         />
         
+        {/* 🔍 DEBUG VISUAL GRANDE - FILA */}
+        {filaDebug && (
+          <div className="mb-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <div className="text-[9px] font-mono text-blue-400">
+              <div className="font-bold mb-1">🔍 DEBUG FILA:</div>
+              <div>Nome: <span className="text-green-400">{filaDebug.nome}</span></div>
+              <div>ID: <span className="text-yellow-400 text-[7px]">{filaDebug.id?.slice(0, 20)}...</span></div>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-start gap-2.5 mb-2">
           {/* Profile Picture - IGUAL ItemSideChat */}
           <div className="relative flex-shrink-0">
@@ -323,15 +337,15 @@ export default function KanbanCardItem({
               
               {/* Badges: Fila e Tag */}
               <div className="flex items-center gap-1">
-                {/* 🔍 DEBUG FILA - SEMPRE VISÍVEL */}
-                <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
-                  filaNome 
-                    ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700')
-                    : 'bg-red-500 text-white animate-pulse'
-                }`}
-                title={`DEBUG: card.fila=${JSON.stringify(card.fila)} | card.filaNome=${card.filaNome} | filaNome=${filaNome}`}>
-                  {filaNome || '🚨 SEM FILA'}
-                </span>
+                {/* Badge de Fila - SÓ MOSTRA SE TIVER FILA */}
+                {filaNome && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
+                    theme === 'dark' ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'
+                  }`}
+                  title={`Fila: ${filaNome}`}>
+                    {filaNome}
+                  </span>
+                )}
                 
                 {/* Badge de Tag */}
                 {(counts.tags > 0 || Math.random() > 0.7) && (
