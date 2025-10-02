@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import { useKanbanColors } from './hooks/useKanbanColors'
 import useChatsOverview from '@/hooks/useChatsOverview'
+import { useTags } from '@/hooks/useTags'
+import { useFilas } from '@/hooks/useFilas'
 
 // Componentes componentizados
 import KanbanHeader from './components/KanbanHeader'
@@ -59,23 +61,22 @@ const MAX_VISIBLE_CARDS = 100 // Máximo de cards visíveis por coluna
 
 function QuadroPage() {
   const { theme } = useTheme()
-  const kanbanColors = useKanbanColors()
   const { user } = useAuth()
   const params = useParams()
   const router = useRouter()
   const quadroId = params.id as string
 
-  // Usar hook que busca chats de todas as sessões
-  const { 
-    chats: whatsappChats, 
-    loading: loadingChats, 
-    error: chatsError 
-  } = useChatsOverview()
+  // Hooks para buscar chats do WhatsApp e filtros avançados
+  const { chats: whatsappChats, loading: loadingChats, error: errorChats } = useChatsOverview()
+  const { tags, loading: loadingTags } = useTags()
+  const { filas, loading: loadingFilas } = useFilas()
+  
+  // Hook para cores do Kanban
+  const kanbanColors = useKanbanColors()
   
   // 🔄 Buscar colunas do backend - DIRETO NO USEEFFECT
   useEffect(() => {
     if (!quadroId) return
-    
     const fetchColunas = async () => {
       try {
         setColunasLoading(true)
@@ -128,7 +129,50 @@ function QuadroPage() {
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showFiltersSection, setShowFiltersSection] = useState(false)
+  const [activeFilter, setActiveFilter] = useState('all') // Filtro ativo (all, unread, favorites, etc)
   const [showMetrics, setShowMetrics] = useState(false)
+  const [sortBy, setSortBy] = useState<'name' | 'date'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  // Calcular contadores dos filtros
+  const chatCounters = useMemo(() => {
+    const counters = {
+      total: whatsappChats.length,
+      unread: whatsappChats.filter(chat => (chat.unreadCount || 0) > 0).length,
+      read: whatsappChats.filter(chat => (chat.unreadCount || 0) === 0).length,
+      groups: whatsappChats.filter(chat => chat.id?.includes('@g.us')).length,
+      emAtendimento: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const status = kanbanData?.status?.toLowerCase()
+        const hasResponsavel = !!kanbanData?.responsavel
+        return status === 'em_atendimento' || status === 'atendimento' || (hasResponsavel && !status)
+      }).length,
+      aguardando: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const status = kanbanData?.status?.toLowerCase()
+        const hasResponsavel = !!kanbanData?.responsavel
+        return status === 'aguardando' || status === 'pendente' || (!hasResponsavel && !status)
+      }).length,
+      finalizado: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const status = kanbanData?.status?.toLowerCase()
+        return status === 'finalizado' || status === 'concluido'
+      }).length,
+      agentesIA: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        return kanbanData?.agentes && kanbanData.agentes.length > 0
+      }).length,
+      leadsQuentes: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        return (
+          (kanbanData?.tags && kanbanData.tags.length > 0) ||
+          (kanbanData?.agendamentos && kanbanData.agendamentos.length > 0) ||
+          (kanbanData?.orcamentos && kanbanData.orcamentos.length > 0)
+        )
+      }).length
+    }
+    return counters
+  }, [whatsappChats, kanbanOptimized.cards])
   
   // Estados das colunas do Kanban - carregadas do backend
   const [colunas, setColunas] = useState<any[]>([])
@@ -400,6 +444,103 @@ function QuadroPage() {
       )
     }
 
+    // Aplicar ordenação
+    if (sortBy === 'date') {
+      filteredChats = filteredChats.sort((a, b) => {
+        const timestampA = a.lastMessage?.timestamp || 0
+        const timestampB = b.lastMessage?.timestamp || 0
+        return sortOrder === 'desc' ? timestampB - timestampA : timestampA - timestampB
+      })
+    } else if (sortBy === 'name') {
+      filteredChats = filteredChats.sort((a, b) => {
+        const nameA = (a.name || a.id || '').toLowerCase()
+        const nameB = (b.name || b.id || '').toLowerCase()
+        return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA)
+      })
+    }
+
+    // Aplicar filtros baseados no activeFilter (igual ao Atendimento)
+    switch (activeFilter) {
+      case 'unread':
+        filteredChats = filteredChats.filter(chat => (chat.unreadCount || 0) > 0)
+        break
+      case 'read':
+        filteredChats = filteredChats.filter(chat => (chat.unreadCount || 0) === 0)
+        break
+      case 'read-no-reply':
+        filteredChats = filteredChats.filter(chat => 
+          (chat.unreadCount || 0) === 0 && !chat.lastMessage?.fromMe
+        )
+        break
+      case 'groups':
+        filteredChats = filteredChats.filter(chat => chat.id?.includes('@g.us'))
+        break
+      case 'favorites':
+        // TODO: Implementar favoritos
+        break
+      case 'archived':
+        // TODO: Implementar arquivados
+        break
+      case 'hidden':
+        // TODO: Implementar ocultos
+        break
+      case 'em_atendimento':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          const status = kanbanData?.status?.toLowerCase()
+          const hasResponsavel = !!kanbanData?.responsavel
+          
+          if (status === 'em_atendimento' || status === 'atendimento') {
+            return true
+          } else if (hasResponsavel && !status) {
+            return true
+          }
+          return false
+        })
+        break
+      case 'aguardando':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          const status = kanbanData?.status?.toLowerCase()
+          const hasResponsavel = !!kanbanData?.responsavel
+          
+          if (status === 'aguardando' || status === 'pendente') {
+            return true
+          } else if (!hasResponsavel && !status) {
+            return true
+          }
+          return false
+        })
+        break
+      case 'finalizado':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          const status = kanbanData?.status?.toLowerCase()
+          return status === 'finalizado' || status === 'concluido'
+        })
+        break
+      case 'agentes_ia':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          return kanbanData?.agentes && kanbanData.agentes.length > 0
+        })
+        break
+      case 'leads_quentes':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          return (
+            (kanbanData?.tags && kanbanData.tags.length > 0) ||
+            (kanbanData?.agendamentos && kanbanData.agendamentos.length > 0) ||
+            (kanbanData?.orcamentos && kanbanData.orcamentos.length > 0)
+          )
+        })
+        break
+      case 'all':
+      default:
+        // Mostrar todos (sem filtro adicional)
+        break
+    }
+
     // Mapear chats para colunas
     const columnasComCards = colunas.map(coluna => {
       // Pegar apenas os chats que estão mapeados para esta coluna
@@ -447,7 +588,7 @@ function QuadroPage() {
     })
 
     return columnasComCards
-  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded, kanbanOptimized.cards])
+  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded, kanbanOptimized.cards, activeFilter, sortBy, sortOrder])
 
   // Handlers de edição do quadro
   const handleDoubleClickQuadroTitle = () => {
@@ -887,28 +1028,28 @@ function QuadroPage() {
   }
 
   // Mostrar erro se houver
-  if (chatsError) {
+  if (errorChats) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
-          : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
+          ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+          : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'
       }`}>
-        <div className="text-center">
-          <div className="text-red-500 mb-4">❌</div>
-          <p className={`text-sm mb-2 ${
-            theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+        <div className="text-center p-8 max-w-md">
+          <div className="text-6xl mb-4">❌</div>
+          <h2 className={`text-2xl font-bold mb-2 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
-            Erro ao carregar chats do WhatsApp
-          </p>
+            Erro ao Carregar Chats
+          </h2>
           <p className={`text-xs mb-4 opacity-50 ${
             theme === 'dark' ? 'text-red-400' : 'text-red-600'
           }`}>
-            {chatsError}
+            {errorChats}
           </p>
           <div className="flex gap-3">
             <button
-              onClick={loadWhatsAppChats}
+              onClick={() => window.location.reload()}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 theme === 'dark'
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -918,7 +1059,7 @@ function QuadroPage() {
               Tentar Novamente
             </button>
             
-            {chatsError?.includes('Token') && (
+            {errorChats?.includes('Token') && (
               <button
                 onClick={() => router.push('/login')}
                 className={`px-4 py-2 rounded-lg transition-colors ${
@@ -998,10 +1139,10 @@ function QuadroPage() {
           onSearchChange={setSearchQuery}
         selectedTag=""
         onTagChange={() => {}}
-        tags={[]}
+        tags={tags || []}
         selectedFila=""
         onFilaChange={() => {}}
-        filas={[]}
+        filas={filas || []}
         kanbanStatuses={[]}
         ticketStatuses={[]}
         priceRanges={[]}
@@ -1010,30 +1151,33 @@ function QuadroPage() {
         selectedPriceRange=""
         selectedStatusFilter="all"
         onStatusFilterChange={() => {}}
-        isLoadingTags={false}
-        isLoadingFilas={false}
+        isLoadingTags={loadingTags}
+        isLoadingFilas={loadingFilas}
         isLoadingKanban={false}
         isLoadingTickets={false}
         isLoadingAtendentes={false}
-        totalChats={whatsappChats.length}
-        unreadChats={0}
-        readChats={0}
+        totalChats={chatCounters.total}
+        unreadChats={chatCounters.unread}
+        readChats={chatCounters.read}
         archivedChats={0}
-        groupChats={0}
+        groupChats={chatCounters.groups}
         favoriteChats={0}
         hiddenChats={0}
-        emAtendimentoChats={0}
-        aguardandoChats={0}
-        finalizadoChats={0}
-        agentesIAChats={0}
-        leadsQuentesChats={0}
-        activeFilter="all"
-        onFilterChange={() => {}}
+        emAtendimentoChats={chatCounters.emAtendimento}
+        aguardandoChats={chatCounters.aguardando}
+        finalizadoChats={chatCounters.finalizado}
+        agentesIAChats={chatCounters.agentesIA}
+        leadsQuentesChats={chatCounters.leadsQuentes}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
         searchOptions={{ searchInChats: true, searchInMessages: false, searchInContacts: false }}
         onSearchOptionsChange={() => {}}
-        sortBy="date"
-        sortOrder="desc"
-        onSortChange={() => {}}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(newSortBy, newSortOrder) => {
+          setSortBy(newSortBy)
+          setSortOrder(newSortOrder)
+        }}
         />
       )}
 
