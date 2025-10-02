@@ -232,20 +232,38 @@ function QuadroPage() {
   // Estado para mapeamento de cards nas colunas (armazenamento local)
   const [cardColumnMapping, setCardColumnMapping] = useState<Record<string, string>>({})
   
-  // 🔥 SINCRONIZAR TODOS OS CARDS DO LOCALSTORAGE COM O BANCO
+  // 🔥 SINCRONIZAR TODOS OS QUADROS DO LOCALSTORAGE COM O BANCO
   useEffect(() => {
-    if (!quadroId || Object.keys(cardColumnMapping).length === 0 || whatsappChats.length === 0) return
+    if (whatsappChats.length === 0) return
     
-    const syncAllCardsToDatabase = async () => {
-      console.log('🔄 Sincronizando', Object.keys(cardColumnMapping).length, 'cards com o banco...')
-      
+    const syncAllQuadrosToDatabase = async () => {
       const token = localStorage.getItem('token')
       if (!token) return
+      
+      // Buscar TODOS os mapeamentos de TODOS os quadros no localStorage
+      const allMappings: Record<string, string> = {}
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('kanban-mapping-')) {
+          try {
+            const mapping = JSON.parse(localStorage.getItem(key) || '{}')
+            Object.assign(allMappings, mapping)
+          } catch (e) {
+            console.error('Erro ao parsear mapping:', key)
+          }
+        }
+      }
+      
+      const totalCards = Object.keys(allMappings).length
+      if (totalCards === 0) return
+      
+      console.log('🔄 Sincronizando', totalCards, 'cards de TODOS os quadros...')
       
       let synced = 0
       let errors = 0
       
-      for (const [chatId, columnId] of Object.entries(cardColumnMapping)) {
+      for (const [chatId, columnId] of Object.entries(allMappings)) {
         try {
           const chat = whatsappChats.find((c: any) => c.id === chatId)
           if (!chat) continue
@@ -277,10 +295,10 @@ function QuadroPage() {
       console.log(`✅ Sincronização completa: ${synced} cards salvos, ${errors} erros`)
     }
     
-    // Executar sincronização após 2 segundos (dar tempo pros chats carregarem)
-    const timer = setTimeout(syncAllCardsToDatabase, 2000)
+    // Executar sincronização após 3 segundos (dar tempo pros chats carregarem)
+    const timer = setTimeout(syncAllQuadrosToDatabase, 3000)
     return () => clearTimeout(timer)
-  }, [quadroId, cardColumnMapping, whatsappChats])
+  }, [whatsappChats])
   
   // Estados para DragOverlay (rastro visual)
   const [activeCard, setActiveCard] = useState<any>(null)
@@ -657,6 +675,66 @@ function QuadroPage() {
     }
   }
 
+  // 🔥 SINCRONIZAR MANUALMENTE TODOS OS CARDS
+  const syncAllCardsManually = async () => {
+    if (Object.keys(cardColumnMapping).length === 0) {
+      alert('Nenhum card para sincronizar!')
+      return
+    }
+    
+    setLoading(true)
+    console.log('🔄 [MANUAL] Sincronizando', Object.keys(cardColumnMapping).length, 'cards...')
+    
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('Token não encontrado!')
+      setLoading(false)
+      return
+    }
+    
+    let synced = 0
+    let errors = 0
+    
+    for (const [chatId, columnId] of Object.entries(cardColumnMapping)) {
+      try {
+        const chat = whatsappChats.find((c: any) => c.id === chatId)
+        if (!chat) {
+          console.warn('⚠️ Chat não encontrado:', chatId)
+          continue
+        }
+        
+        const response = await fetch('/api/kanban/cards/upsert', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            conversaId: chatId,
+            colunaId: columnId,
+            nome: chat.name || chat.pushName || chatId,
+            posicao: 0
+          })
+        })
+        
+        if (response.ok) {
+          synced++
+          console.log('✅', chatId, '→', columnId)
+        } else {
+          errors++
+          console.error('❌', chatId, await response.text())
+        }
+      } catch (error) {
+        errors++
+        console.error('❌', chatId, error)
+      }
+    }
+    
+    console.log(`✅ Sincronização completa: ${synced} salvos, ${errors} erros`)
+    alert(`Sincronização completa!\n${synced} cards salvos\n${errors} erros`)
+    setLoading(false)
+  }
+
   // Funções auxiliares
   const refreshData = async () => {
     setLoading(true)
@@ -826,6 +904,7 @@ function QuadroPage() {
         mapearConversasParaColunas={mapearConversasParaColunas}
         refreshData={refreshData}
         resetAndRemap={resetAndRemap}
+        syncAllCardsManually={syncAllCardsManually}
         setShowShortcuts={setShowShortcuts}
         handleDoubleClickQuadroTitle={handleDoubleClickQuadroTitle}
         handleDoubleClickQuadroDescription={handleDoubleClickQuadroDescription}

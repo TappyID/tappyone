@@ -36,8 +36,6 @@ export function useKanbanInfo(chatId: string | null) {
         const token = localStorage.getItem('token')
         if (!token) return
 
-        console.log('🔍 [useKanbanInfo] Buscando para chatId:', chatId)
-
         // Buscar status do Kanban pelo chatId
         const response = await fetch(`/api/chats/${chatId}/kanban-status`, {
           headers: {
@@ -45,11 +43,8 @@ export function useKanbanInfo(chatId: string | null) {
           }
         })
 
-        console.log('📡 [useKanbanInfo] Response status:', response.status)
-
         if (!response.ok) {
           // Chat não está em nenhum Kanban
-          console.log('❌ [useKanbanInfo] Chat não está no Kanban')
           setKanbanInfo({
             board: null,
             boardId: null,
@@ -61,7 +56,6 @@ export function useKanbanInfo(chatId: string | null) {
         }
 
         const data = await response.json()
-        console.log('✅ [useKanbanInfo] Dados recebidos:', data)
         
         setKanbanInfo({
           board: data.quadro || null,
@@ -71,7 +65,6 @@ export function useKanbanInfo(chatId: string | null) {
           columnColor: data.cor || null
         })
       } catch (error) {
-        console.error('💥 [useKanbanInfo] Erro ao buscar info do Kanban:', error)
         setKanbanInfo({
           board: null,
           boardId: null,

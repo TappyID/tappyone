@@ -190,19 +190,6 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
   // Buscar informações do Kanban REAL
   const { kanbanInfo: realKanbanInfo } = useKanbanInfo(chat.id)
-  
-  // DEBUG TEMPORÁRIO
-  useEffect(() => {
-    if (realKanbanInfo.board || realKanbanInfo.column) {
-      console.log('✅ KANBAN ENCONTRADO!', {
-        chatId: chat.id,
-        chatName: chat.name,
-        board: realKanbanInfo.board,
-        column: realKanbanInfo.column,
-        color: realKanbanInfo.columnColor
-      })
-    }
-  }, [realKanbanInfo, chat.id, chat.name])
 
   const applyChatLeadStatus = React.useCallback((status: any) => {
     if (!status) {
@@ -728,21 +715,43 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               )
             })()}
 
-            {/* Kanban + Coluna - DADOS REAIS DO HOOK */}
+            {/* Kanban Badge */}
             {(realKanbanInfo.board && realKanbanInfo.column) && (
               <div
-                className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
                 style={{
                   backgroundColor: realKanbanInfo.columnColor 
-                    ? `${realKanbanInfo.columnColor}20` 
+                    ? `${realKanbanInfo.columnColor}15` 
                     : 'rgb(219 234 254)',
                   color: realKanbanInfo.columnColor || 'rgb(37 99 235)'
                 }}
-                title={`Quadro: ${realKanbanInfo.board}\nColuna: ${realKanbanInfo.column}`}
+                title={`${realKanbanInfo.board} → ${realKanbanInfo.column}`}
               >
                 <Layers className="w-1.5 h-1.5" style={{ color: realKanbanInfo.columnColor || 'rgb(59 130 246)' }} />
-                <span className="text-[8px] font-medium truncate max-w-[54px]">
-                  {realKanbanInfo.column}
+                <span className="text-[8px] font-medium truncate max-w-[120px]">
+                  {realKanbanInfo.board} → {realKanbanInfo.column}
+                </span>
+              </div>
+            )}
+
+            {/* Badge Atendente Responsável */}
+            {atendenteData?.atendente && (
+              <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${
+                atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+                  ? 'bg-green-100 dark:bg-green-900/20'
+                  : 'bg-blue-100 dark:bg-blue-900/20'
+              }`}>
+                <UserCheck className={`w-1.5 h-1.5 ${
+                  atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+                    ? 'text-green-600'
+                    : 'text-blue-600'
+                }`} />
+                <span className={`text-[8px] font-medium truncate max-w-[80px] ${
+                  atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
+                    ? 'text-green-600'
+                    : 'text-blue-600'
+                }`}>
+                  {nomeResponsavel}
                 </span>
               </div>
             )}
@@ -751,32 +760,8 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
       </div>
 
-      {/* Badges do Atendente, Status e Tags */}
-      <div className="absolute top-1.5 right-[70px] flex items-center gap-1.5">
-        <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
-          atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
-            ? 'bg-green-100 dark:bg-green-900/20' // Verde se você é o atendente
-            : atendenteData?.atendente
-            ? 'bg-blue-100 dark:bg-blue-900/20' // Azul se tem outro atendente
-            : 'bg-gray-100 dark:bg-gray-900/20' // Cinza se não tem atendente
-        }`}>
-          <UserCheck className={`w-2 h-2 ${
-            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
-              ? 'text-green-600' // Verde se você é o atendente
-              : atendenteData?.atendente
-              ? 'text-blue-600' // Azul se tem outro atendente
-              : 'text-gray-600' // Cinza se não tem atendente
-          }`} />
-          <span className={`text-[8px] font-medium truncate max-w-[56px] ${
-            atendenteData?.atendente === 'fb8da1d7-d28f-4ef9-b8b0-e01f7466f578'
-              ? 'text-green-600' // Verde se você é o atendente
-              : atendenteData?.atendente
-              ? 'text-blue-600' // Azul se tem outro atendente
-              : 'text-gray-600' // Cinza se não tem atendente
-          }`}>
-            {nomeResponsavel || 'Sem atendentes'}
-          </span>
-        </div>
+      {/* Badges do Status e Tags */}
+      <div className="absolute top-1.5 right-[80px] flex items-center gap-1.5">
 
         {leadStatusDisplay && (
           <div className="relative">
@@ -1052,10 +1037,21 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               const status = await buscarStatusChat(chat.id)
               applyChatLeadStatus(status)
 
+              // Invalidar cache do React Query para forçar reload
+              if (typeof window !== 'undefined') {
+                // @ts-ignore
+                window.__REACT_QUERY_CACHE_INVALIDATE?.()
+              }
+
               // Disparar evento global para atualizar toda a lista
               window.dispatchEvent(new CustomEvent('chatTransferred', {
                 detail: { chatId: chat.id }
               }))
+
+              // Forçar reload da página após 500ms para garantir atualização
+              setTimeout(() => {
+                window.location.reload()
+              }, 500)
 
             } catch {}
           }
