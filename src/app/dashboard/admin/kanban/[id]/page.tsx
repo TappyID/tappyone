@@ -169,6 +169,7 @@ function QuadroPage() {
   
   // Estado para mapeamento de cards nas colunas (armazenamento local)
   const [cardColumnMapping, setCardColumnMapping] = useState<Record<string, string>>({})
+  const [mappingLoaded, setMappingLoaded] = useState(false)
   
   // 🔥 SINCRONIZAR TODOS OS QUADROS DO LOCALSTORAGE COM O BANCO
   useEffect(() => {
@@ -203,6 +204,12 @@ function QuadroPage() {
       
       for (const [chatId, columnId] of Object.entries(allMappings)) {
         try {
+          // Ignorar chats inválidos (status, broadcast, etc)
+          if (chatId.includes('status@broadcast') || chatId.includes('broadcast')) {
+            console.log('⏭️ Ignorando chat inválido:', chatId)
+            continue
+          }
+          
           const chat = whatsappChats.find((c: any) => c.id === chatId)
           if (!chat) continue
           
@@ -281,28 +288,52 @@ function QuadroPage() {
         const data = await response.json()
         const colunas = data.colunas || []
         
+        console.log('🔍 [KANBAN] Dados do banco:', {
+          totalColunas: colunas.length,
+          colunas: colunas.map((c: any) => ({
+            id: c.id,
+            nome: c.nome,
+            totalCards: c.cards?.length || 0
+          }))
+        })
+        
         // Construir mapeamento chatId -> colunaId do banco
         const mapping: Record<string, string> = {}
         let totalCards = 0
         
         colunas.forEach((coluna: any) => {
           const cards = coluna.cards || []
+          console.log(`📋 [KANBAN] Coluna "${coluna.nome}" (${coluna.id}): ${cards.length} cards`)
+          
           cards.forEach((card: any) => {
-            if (card.conversa_id) {
-              mapping[card.conversa_id] = coluna.id
+            // Backend retorna como conversaId (camelCase), não conversa_id (snake_case)
+            const chatId = card.conversaId || card.conversa_id
+            
+            if (chatId) {
+              mapping[chatId] = coluna.id
               totalCards++
+              console.log(`  ✅ Card: ${chatId.slice(0, 20)} → ${coluna.nome}`)
+            } else {
+              console.log(`  ❌ Card SEM chatId:`, {
+                id: card.id,
+                nome: card.nome,
+                conversaId: card.conversaId,
+                conversa_id: card.conversa_id
+              })
             }
           })
         })
         
         console.log(`✅ [KANBAN] Mapeamento carregado do banco: ${totalCards} cards`)
         setCardColumnMapping(mapping)
+        setMappingLoaded(true)
         
         // Salvar no localStorage como backup
         localStorage.setItem(`kanban-mapping-${quadroId}`, JSON.stringify(mapping))
         
       } catch (error) {
         console.error('❌ [KANBAN] Erro ao carregar mapeamento do banco:', error)
+        setMappingLoaded(true) // Marcar como carregado mesmo com erro
       }
     }
     
@@ -373,7 +404,13 @@ function QuadroPage() {
       // Pegar apenas os chats que estão mapeados para esta coluna
       const cardsNaColuna = filteredChats.filter(chat => {
         const colunaId = cardColumnMapping[chat.id]
-        // Se não tem mapeamento, vai para primeira coluna por padrão
+        
+        // 🔥 IMPORTANTE: Se mapeamento ainda não foi carregado, NÃO mostrar cards
+        if (!mappingLoaded) {
+          return false
+        }
+        
+        // Se não tem mapeamento E já carregou, vai para primeira coluna por padrão
         if (!colunaId) {
           return coluna.ordem === 0 || coluna.id === colunas[0].id
         }
@@ -402,7 +439,7 @@ function QuadroPage() {
     })
 
     return columnasComCards
-  }, [colunas, whatsappChats, cardColumnMapping, searchQuery])
+  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded])
 
   // Handlers de edição do quadro
   const handleDoubleClickQuadroTitle = () => {
