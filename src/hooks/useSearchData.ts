@@ -17,7 +17,7 @@ interface SearchResults {
   error: string | null
 }
 
-export function useSearchData(query: string, options: SearchOptions) {
+export function useSearchData(query: string, options: SearchOptions, availableChats: any[] = []) {
   const [results, setResults] = useState<SearchResults>({
     chats: [],
     messages: [],
@@ -29,86 +29,56 @@ export function useSearchData(query: string, options: SearchOptions) {
   // Debounce da query para evitar muitas requisições
   const debouncedQuery = useDebounce(query, 300)
 
-  const searchChats = useCallback(async (searchQuery: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/whatsapp/chats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+  console.log('🔍 [SEARCH HOOK] Hook chamado:', {
+    query,
+    debouncedQuery,
+    options,
+    availableChats: availableChats.length
+  })
 
-      if (response.ok) {
-        const chats = await response.json()
-        
-        // Filtrar chats por nome no frontend
-        const filteredChats = chats.filter((chat: any) => 
-          chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          chat.id?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        
-        return filteredChats
-      }
-      return []
-    } catch (error) {
-      console.error('Erro ao buscar chats:', error)
-      return []
-    }
-  }, [])
+  const searchChats = useCallback(async (searchQuery: string) => {
+    // Buscar localmente nos chats disponíveis
+    console.log('🔍 [SEARCH CHATS] Buscando em', availableChats.length, 'chats')
+    
+    const filtered = availableChats.filter((chat: any) => 
+      chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      chat.id?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    
+    console.log('✅ [SEARCH CHATS] Encontrados:', filtered.length)
+    return filtered
+  }, [availableChats])
 
   const searchMessages = useCallback(async (searchQuery: string) => {
     try {
       const token = localStorage.getItem('token')
+      console.log('🔍 [SEARCH MESSAGES] Buscando mensagens com:', searchQuery)
       
-      // Primeiro buscar todos os chats para depois buscar mensagens
-      const chatsResponse = await fetch('/api/whatsapp/chats', {
+      // Buscar mensagens usando o endpoint global
+      const response = await fetch(`/api/whatsapp/messages?search=${encodeURIComponent(searchQuery)}&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
 
-      if (!chatsResponse.ok) return []
-      
-      const chats = await chatsResponse.json()
-      const messagesResults = []
+      console.log('🔍 [SEARCH MESSAGES] Response status:', response.status)
 
-      // Buscar mensagens em cada chat (limitado aos primeiros 10 chats para performance)
-      const limitedChats = chats.slice(0, 10)
-      
-      for (const chat of limitedChats) {
-        try {
-          const messagesResponse = await fetch(`/api/whatsapp/chats/${chat.id}/messages?limit=20`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          if (messagesResponse.ok) {
-            const messages = await messagesResponse.json()
-            
-            // Filtrar mensagens por conteúdo
-            const filteredMessages = messages.filter((msg: any) => 
-              msg.body?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              msg.text?.toLowerCase().includes(searchQuery.toLowerCase())
-            ).map((msg: any) => ({
-              ...msg,
-              chatId: chat.id,
-              chatName: chat.name
-            }))
-            
-            messagesResults.push(...filteredMessages)
-          }
-        } catch (error) {
-          console.warn(`Erro ao buscar mensagens do chat ${chat.id}:`, error)
-        }
+      if (response.ok) {
+        const messages = await response.json()
+        console.log('✅ [SEARCH MESSAGES] Mensagens encontradas:', messages.length)
+        
+        // Retornar mensagens com chatId para poder filtrar chats
+        return messages.map((msg: any) => ({
+          ...msg,
+          chatId: msg.chatId || msg.from || msg.chat_id
+        }))
       }
       
-      return messagesResults
+      console.warn('⚠️ [SEARCH MESSAGES] Response não OK:', response.status)
+      return []
     } catch (error) {
-      console.error('Erro ao buscar mensagens:', error)
+      console.error('❌ [SEARCH MESSAGES] Erro:', error)
       return []
     }
   }, [])
@@ -144,7 +114,13 @@ export function useSearchData(query: string, options: SearchOptions) {
   }, [])
 
   const performSearch = useCallback(async () => {
+    console.log('🔍 [PERFORM SEARCH] Função chamada!', {
+      debouncedQuery,
+      hasQuery: !!debouncedQuery.trim()
+    })
+
     if (!debouncedQuery.trim()) {
+      console.log('⚠️ [PERFORM SEARCH] Query vazia, limpando resultados')
       setResults({
         chats: [],
         messages: [],

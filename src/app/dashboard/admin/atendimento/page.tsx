@@ -346,8 +346,8 @@ function AtendimentoPage() {
   //   // Buscar agentes ativos - DESABILITADO para performance
   // }, [])
 
-  // Hook para busca avançada
-  const searchResults = useSearchData(searchQuery, searchOptions);
+  // Hook para busca avançada (passar overviewChats para busca local)
+  const searchResults = useSearchData(searchQuery, searchOptions, overviewChats);
 
   // Reset displayedChatsCount quando há filtros
   useEffect(() => {
@@ -1587,7 +1587,6 @@ function AtendimentoPage() {
 
   // Calcular contadores para os novos filtros (baseado em dados visíveis)
   const chatCounters = useMemo(() => {
-    console.log('🔢 [CONTADOR] Recalculando contadores...')
     
     const counts = {
       emAtendimento: 0,
@@ -1602,8 +1601,6 @@ function AtendimentoPage() {
       (chat) => !hiddenChats.has(chat.id) && !archivedChats.has(chat.id),
     );
     
-    console.log('🔢 [CONTADOR] Chats para contar:', chatsToCount.length)
-    console.log('🔢 [CONTADOR] chatLeads disponível:', Object.keys(chatLeads).length)
 
     chatsToCount.forEach((chat: any) => {
       // 🔥 BUSCAR DIRETO DO chatLeads ao invés de chat.chatLeadStatus
@@ -1656,7 +1653,6 @@ function AtendimentoPage() {
       }
     });
 
-    console.log('🔢 [CONTADOR] Resultado final:', counts)
     return counts;
   }, [transformedChats, contatosData, hiddenChats, archivedChats, chatLeads]);
 
