@@ -19,15 +19,8 @@ export async function GET(
 
     const token = authHeader.substring(7)
     
-    // Verificar se o token é válido
-    try {
-      jwt.verify(token, process.env.JWT_SECRET!)
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Token inválido' },
-        { status: 401 }
-      )
-    }
+    // O backend Go já valida o token, não precisamos validar aqui
+    console.log('🔍 [USUARIOS/FILAS] Buscando filas para usuário:', params.id)
 
     // Fazer requisição para o backend
     const response = await fetch(`${BACKEND_URL}/usuarios/${params.id}/filas`, {

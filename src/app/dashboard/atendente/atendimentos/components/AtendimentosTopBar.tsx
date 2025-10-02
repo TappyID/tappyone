@@ -39,7 +39,7 @@ import ReactCountryFlag from 'react-country-flag'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useColorTheme } from '@/contexts/ColorThemeContext'
-import { ColorThemeModal } from '@/app/dashboard/admin/components/ColorThemeModal'
+import { ColorThemeModal } from '../../../admin/components/ColorThemeModal'
 import { useAtendentes } from '@/hooks/useAtendentes'
 import { useTickets } from '@/hooks/useTickets'
 // Removidos hooks do WhatsApp para evitar ERR_INSUFFICIENT_RESOURCES

@@ -12,19 +12,34 @@ interface FilaContato {
   criadoEm: string
 }
 
-export function useWhatsAppDataFiltered() {
+interface UseWhatsAppDataFilteredProps {
+  filasIds?: string[] // IDs das filas do atendente
+}
+
+export function useWhatsAppDataFiltered(props?: UseWhatsAppDataFilteredProps) {
   const [filaContatos, setFilaContatos] = useState<FilaContato[]>([])
   const [loadingFilaContatos, setLoadingFilaContatos] = useState(true)
   
   // Hook original do WhatsApp
   const whatsAppData = useWhatsAppData()
   
-  // Hook das filas do atendente
-  const { filas, loading: loadingFilas } = useAtendenteFilas()
+  console.log('🔍 [useWhatsAppDataFiltered] whatsAppData.chats:', whatsAppData.chats?.length || 0)
+  console.log('🔍 [useWhatsAppDataFiltered] whatsAppData.loading:', whatsAppData.loading)
+  console.log('🔍 [useWhatsAppDataFiltered] filasIds recebidas:', props?.filasIds?.length || 0)
+  
+  // Usar filas passadas como prop (não buscar novamente)
+  const filasIds = props?.filasIds || []
+  const loadingFilas = false // Não estamos carregando, já recebemos as filas
 
   // Buscar mapeamento de contatos para filas
   const fetchFilaContatos = useCallback(async () => {
-    if (!filas.length) return
+    if (!filasIds.length) {
+      console.log('⚠️ [useWhatsAppDataFiltered] Sem filas para buscar contatos')
+      setLoadingFilaContatos(false)
+      return
+    }
+    
+    console.log('🔍 [useWhatsAppDataFiltered] Buscando contatos para', filasIds.length, 'filas')
     
     try {
       setLoadingFilaContatos(true)
@@ -36,9 +51,9 @@ export function useWhatsAppDataFiltered() {
       }
 
       // Buscar contatos de todas as filas do atendente
-      const promises = filas.map(async (fila) => {
+      const promises = filasIds.map(async (filaId) => {
         try {
-          const response = await fetch(`/api/filas/${fila.id}/contatos`, {
+          const response = await fetch(`/api/filas/${filaId}/contatos`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -55,7 +70,7 @@ export function useWhatsAppDataFiltered() {
           }
           return []
         } catch (error) {
-          console.error(`Erro ao buscar contatos da fila ${fila.nome}:`, error)
+          console.error(`Erro ao buscar contatos da fila ${filaId}:`, error)
           return []
         }
       })
@@ -73,59 +88,42 @@ export function useWhatsAppDataFiltered() {
     } finally {
       setLoadingFilaContatos(false)
     }
-  }, [filas])
+  }, [filasIds])
 
   // Executar busca quando filas carregarem
   useEffect(() => {
-    if (!loadingFilas && filas.length > 0) {
+    if (filasIds.length > 0) {
       fetchFilaContatos()
-    } else if (!loadingFilas && filas.length === 0) {
+    } else {
       setLoadingFilaContatos(false)
       setFilaContatos([])
     }
-  }, [filas, loadingFilas, fetchFilaContatos])
+  }, [filasIds, fetchFilaContatos])
 
-  // Filtrar chats baseado nas filas do atendente
+  // 🔥 NOVA LÓGICA: Não filtrar por contatos, retornar TODOS os chats
+  // O filtro por fila será feito no page.tsx usando chat_leads.fila_id
   const filteredChats = useMemo(() => {
-    if (!whatsAppData.chats || !filaContatos.length) {
-      return []
-    }
-
-    // Criar set dos contatos permitidos para o atendente
-    const allowedContactIds = new Set(filaContatos.map(fc => fc.contatoId))
+    console.log('🔍 [filteredChats] whatsAppData.chats:', whatsAppData.chats?.length || 0)
+    console.log('🔍 [filteredChats] filasIds:', filasIds.length)
+    console.log('✅ [filteredChats] Retornando TODOS os chats (filtro será feito via chat_leads)')
     
-    // Filtrar chats onde o contato ID está nas filas do atendente
-    const filtered = whatsAppData.chats.filter(chat => {
-      // Extrair número do telefone do chat ID
-      let contactNumber = ''
-      
-      if (typeof chat.id === 'string') {
-        contactNumber = chat.id.replace('@c.us', '')
-      } else if (chat.id && (chat.id as any)._serialized) {
-        contactNumber = (chat.id as any)._serialized.replace('@c.us', '')
-      }
-      
-      // Verificar se o contato está em alguma fila do atendente
-      const isAllowed = allowedContactIds.has(contactNumber)
-      
-      if (isAllowed) {
-        console.log(`✅ Chat permitido: ${chat.name || contactNumber} (fila: ${filaContatos.find(fc => fc.contatoId === contactNumber)?.filaId})`)
-      }
-      
-      return isAllowed
-    })
+    // Retornar todos os chats - o filtro por fila será feito no componente
+    return whatsAppData.chats || []
+  }, [whatsAppData.chats, filasIds])
 
-    console.log(`🔍 Filtrados ${filtered.length} de ${whatsAppData.chats.length} chats para o atendente`)
-    
-    return filtered
-  }, [whatsAppData.chats, filaContatos])
-
+  // 🔥 FORÇAR loading = false se já temos chats
+  const hasChats = filteredChats.length > 0
+  const forceLoading = hasChats ? false : (whatsAppData.loading || loadingFilaContatos)
+  
+  console.log('🔍 [useWhatsAppDataFiltered] hasChats:', hasChats)
+  console.log('🔍 [useWhatsAppDataFiltered] forceLoading:', forceLoading)
+  
   // Retornar dados filtrados
   return {
     ...whatsAppData,
     chats: filteredChats,
-    loading: whatsAppData.loading || loadingFilas || loadingFilaContatos,
-    filas,
+    loading: forceLoading,
+    filasIds,
     filaContatos,
     refetchFilaContatos: fetchFilaContatos,
     // Wrapper para loadChatMessages com debug

@@ -190,6 +190,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
   // Buscar informações do Kanban REAL
   const { kanbanInfo: realKanbanInfo } = useKanbanInfo(chat.id)
+  
+  // 🔍 DEBUG: Ver dados do Kanban
+  React.useEffect(() => {
+    if (chat.name && chat.name.includes('Jorge')) {
+      console.log('📊 [KANBAN DEBUG] Chat Jorge:', {
+        chatId: chat.id,
+        realKanbanInfo,
+        hasBoard: !!realKanbanInfo.board,
+        hasColumn: !!realKanbanInfo.column
+      });
+    }
+  }, [chat.id, chat.name, realKanbanInfo]);
 
   const applyChatLeadStatus = React.useCallback((status: any) => {
     if (!status) {
@@ -648,60 +660,32 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               )
             })()}
 
-            {/* Filas da Conexão */}
+            {/* Fila do Chat (SEMPRE do chatLead.fila_id) */}
             {(() => {
-              const conexaoInfo = getConexaoInfo()
-              const filasConexao = conexaoInfo?.filas || []
-
-              // Se tem fila do chat, mostrar ela primeiro
-              if (chat.fila && typeof chat.fila === 'object') {
-                return (
-                  <div
-                    className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full relative"
-                    style={{
-                      backgroundColor: `${chat.fila.cor || '#9333ea'}20`,
-                      color: chat.fila.cor || '#9333ea'
-                    }}
-                    title={`🔍 DEBUG CHAT.FILA: ${chat.fila.nome} | ID: ${chat.fila.id} | ChatLead: ${chatLead?.fila_id || 'NONE'} | Fonte: CHAT_LEAD`}
-                  >
-                    <Users className="w-1.5 h-1.5" />
-                    <span className="text-[8px] font-medium truncate max-w-[46px]">{chat.fila.nome}</span>
-                    {/* DEBUG VISUAL - FILA DO CHAT LEAD */}
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 text-white text-[6px] rounded-full flex items-center justify-center">
-                      L
-                    </div>
-                  </div>
-                )
-              }
-
-              // Senão, mostrar filas da conexão
-              if (filasConexao.length > 0) {
-                return filasConexao.slice(0, 2).map((filaId, index) => {
-                  const fila = getFilaById(filaId)
-                  if (!fila) return null
-
+              // 🎯 PRIORIDADE 1: Buscar fila do chatLead (banco de dados)
+              const filaIdDoBanco = chatLead?.fila_id
+              
+              if (filaIdDoBanco) {
+                const fila = getFilaById(filaIdDoBanco)
+                
+                if (fila) {
                   return (
                     <div
-                      key={filaId}
-                      className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full relative"
+                      className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full"
                       style={{
                         backgroundColor: `${fila.cor || '#9333ea'}20`,
                         color: fila.cor || '#9333ea'
                       }}
-                      title={`🔍 DEBUG FILA: ${fila.nome} | ID: ${filaId} | ChatLead: ${chatLead?.fila_id || 'NONE'} | Conexão: ${filasConexao.length} filas`}
+                      title={`Fila: ${fila.nome} (ID: ${filaIdDoBanco})`}
                     >
                       <Users className="w-1.5 h-1.5" />
                       <span className="text-[8px] font-medium truncate max-w-[46px]">{fila.nome}</span>
-                      {/* DEBUG VISUAL */}
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 text-white text-[6px] rounded-full flex items-center justify-center">
-                        {index + 1}
-                      </div>
                     </div>
                   )
-                })
+                }
               }
 
-              // Se não tem fila, mostrar "Sem fila"
+              // Se não tem fila no banco, mostrar "Sem fila"
               return (
                 <div
                   className="flex items-center gap-0.5 px-1 py-0.5 bg-gray-100 dark:bg-gray-800/40 rounded-full"
@@ -1066,26 +1050,25 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         chatId={chat.id}
         chatName={chat.name}
         currentAtendente={nomeResponsavel || 'Sem atendente'}
-        onAssumirSuccess={() => {
-          // Recarregar status do chat após assumir
-          // Disparar evento global para atualizar toda a lista
-          window.dispatchEvent(new CustomEvent('chatTransferred', {
-            detail: { chatId: chat.id }
-          }))
-
+        onAssumirSuccess={async () => {
+          // Buscar status atualizado
           const fetchStatus = async () => {
             try {
-
               const status = await buscarStatusChat(chat.id)
+              if (status) {
+                applyChatLeadStatus(status)
+              }
 
-              applyChatLeadStatus(status)
-              setLeadStatus(normalizeLeadStatus(status?.status) || null)
-
-              // Disparar evento global para atualizar outros componentes
-              const event = new CustomEvent('chatStatusUpdated', {
-                detail: { chatId: chat.id, status: status }
+              // Disparar evento para atualizar ChatHeader
+              const event = new CustomEvent('atendimento-assumido', {
+                detail: { chatId: chat.id }
               })
               window.dispatchEvent(event)
+
+              // Disparar evento para atualizar lista de chats
+              window.dispatchEvent(new CustomEvent('chatStatusUpdated', {
+                detail: { chatId: chat.id }
+              }))
 
               // Forçar re-render do componente
               setShowAssumirModal(false)

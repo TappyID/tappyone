@@ -16,13 +16,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    // Extrair userID do token JWT
+    // Extrair userID e tipo do token JWT
     const token = authHeader.replace('Bearer ', '')
     let userID: string
+    let userType: string
     
     try {
       const decoded = jwt.decode(token) as any
       userID = decoded?.user_id
+      userType = decoded?.tipo || decoded?.type || 'admin'
+      
+      console.log('🔍 [WHATSAPP CHATS] UserID:', userID)
+      console.log('🔍 [WHATSAPP CHATS] UserType:', userType)
+      
       if (!userID) {
         return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
       }
@@ -30,7 +36,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
     }
 
-    // Buscar conexão ativa do usuário no backend
+    // Buscar TODAS as conexões ativas (não apenas do usuário)
     const connectionsResponse = await fetch(`${backendUrl}/api/connections/`, {
       headers: {
         'Authorization': authHeader,
@@ -39,21 +45,25 @@ export async function GET(request: NextRequest) {
     })
 
     if (!connectionsResponse.ok) {
+      console.error('❌ [WHATSAPP CHATS] Erro ao buscar conexões:', connectionsResponse.status)
       return NextResponse.json({ error: 'Erro ao buscar conexões' }, { status: 500 })
     }
 
     const connectionsData = await connectionsResponse.json()
+    console.log('📊 [WHATSAPP CHATS] Conexões encontradas:', connectionsData?.connections?.length || 0)
     
-    // Buscar conexão ativa do WhatsApp
+    // Buscar primeira conexão ativa do WhatsApp (da empresa)
     const whatsappConnection = connectionsData?.connections?.find(
-      (conn: any) => conn.platform === 'whatsapp' && conn.status === 'connected'
+      (conn: any) => conn.platform === 'whatsapp' && (conn.status === 'connected' || conn.status === 'WORKING')
     )
     
     if (!whatsappConnection) {
+      console.log('⚠️ [WHATSAPP CHATS] Nenhuma conexão WhatsApp ativa encontrada')
       return NextResponse.json([], { status: 200 })
     }
 
     const sessionName = whatsappConnection.session_name
+    console.log('✅ [WHATSAPP CHATS] Usando sessão:', sessionName)
 
     // 🚀 OTIMIZAÇÃO: Adicionar suporte a paginação e sessionName específico
     const url = new URL(request.url)

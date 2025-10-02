@@ -11,13 +11,12 @@ import AgenteSelectionModal from "./components/FooterChatArea/modals/AgenteSelec
 import ForwardMessageModal from "@/components/ForwardMessageModal";
 import AudioRecorderModal from "./components/FooterChatArea/modals/AudioRecorderModal";
 import { useContatoData } from "@/hooks/useContatoData";
-import { useWhatsAppDataFiltered } from "@/hooks/useWhatsAppDataFiltered";
+import useChatsOverview from "@/hooks/useChatsOverview";
 import { useFiltersData } from "@/hooks/useFiltersData";
 import useMessagesData from "@/hooks/useMessagesData";
 import { useSearchData } from "@/hooks/useSearchData";
 import { useChatStats } from "@/hooks/useChatStats";
 import { useChatLeadBatch } from "@/hooks/useChatLeadBatch";
-import { useAuth } from "@/hooks/useAuth";
 import AtendimentosTopBar from "../atendimentos/components/AtendimentosTopBar";
 import QuickActionsSidebar from "../atendimentos/components/QuickActionsSidebar";
 import TransferirAtendimentoModal from "../atendimentos/components/modals/TransferirAtendimentoModal";
@@ -80,13 +79,6 @@ const mockChats = [
 ];
 
 function AtendimentoPage() {
-  // 🔐 Hook de autenticação para pegar dados do atendente
-  const { user } = useAuth();
-  
-  // 🎯 Estado para filas do atendente
-  const [atendenteFilas, setAtendenteFilas] = useState<string[]>([]);
-  const [loadingFilas, setLoadingFilas] = useState(true); // Flag para evitar loop
-  
   // Estados para busca e filtros
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("todas");
@@ -253,6 +245,64 @@ function AtendimentoPage() {
     }
   };
 
+  // 🔥 Escutar eventos de tags criadas/deletadas para atualizar em tempo real
+  useEffect(() => {
+    const handleTagCreated = (event: any) => {
+      console.log('🏷️ [TAG CREATED] Evento recebido:', event.detail);
+      // Forçar reload dos chats extra data
+      setChatsExtraData(prev => {
+        const chatId = event.detail?.chatId;
+        if (chatId && prev[chatId]) {
+          // Remover do cache para forçar reload
+          const newData = { ...prev };
+          delete newData[chatId];
+          return newData;
+        }
+        return prev;
+      });
+    };
+
+    const handleTagDeleted = (event: any) => {
+      console.log('🏷️ [TAG DELETED] Evento recebido:', event.detail);
+      // Forçar reload dos chats extra data
+      setChatsExtraData(prev => {
+        const chatId = event.detail?.chatId;
+        if (chatId && prev[chatId]) {
+          // Remover do cache para forçar reload
+          const newData = { ...prev };
+          delete newData[chatId];
+          return newData;
+        }
+        return prev;
+      });
+    };
+
+    // Listener para atualização de status de chat
+    const handleChatStatusUpdated = (event: CustomEvent) => {
+      const { chatId } = event.detail;
+      console.log('🔄 [STATUS UPDATE] Chat status updated:', chatId);
+      
+      // Limpar cache do chat específico
+      const cacheKey = `chat-lead-${chatId}`;
+      sessionStorage.removeItem(cacheKey);
+      
+      // Forçar reload dos chats após 500ms
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    };
+
+    window.addEventListener('tag-created', handleTagCreated);
+    window.addEventListener('tag-deleted', handleTagDeleted);
+    window.addEventListener('chatStatusUpdated', handleChatStatusUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener('tag-created', handleTagCreated);
+      window.removeEventListener('tag-deleted', handleTagDeleted);
+      window.removeEventListener('chatStatusUpdated', handleChatStatusUpdated as EventListener);
+    };
+  }, []);
+
   // Carregar estados do localStorage
   useEffect(() => {
     try {
@@ -300,77 +350,6 @@ function AtendimentoPage() {
     );
   }, [hiddenChats]);
 
-  // 🎯 Buscar filas do atendente logado
-  useEffect(() => {
-    const fetchAtendenteFilas = async () => {
-      if (!user?.id) {
-        console.log('⚠️ [ATENDENTE] Sem user.id, aguardando...');
-        setLoadingFilas(true);
-        return;
-      }
-      
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.log('⚠️ [ATENDENTE] Sem token, não buscar filas');
-        setLoadingFilas(false);
-        return;
-      }
-
-      setLoadingFilas(true);
-      
-      try {
-        console.log('🔍 [ATENDENTE] Buscando filas do atendente:', user.id);
-        
-        // Buscar filas do usuário via endpoint específico
-        const response = await fetch(`/api/users/${user.id}/filas`, {
-          headers: {
-            Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📊 [ATENDENTE] Resposta completa da API:', JSON.stringify(data, null, 2));
-          
-          // Extrair IDs das filas
-          let filasIds: string[] = [];
-          
-          // Pode vir como { data: [...] } ou direto como array
-          const filas = data.data || data.filas || data;
-          
-          console.log('🔍 [ATENDENTE] Filas extraídas:', filas);
-          console.log('🔍 [ATENDENTE] É array?', Array.isArray(filas));
-          
-          if (Array.isArray(filas)) {
-            filasIds = filas.map((f: any) => {
-              console.log('🔍 [ATENDENTE] Processando fila:', f);
-              // Pode ser { filaId: "..." } ou { id: "..." } ou { fila_id: "..." }
-              const id = f.filaId || f.fila_id || f.id;
-              console.log('🔍 [ATENDENTE] ID extraído:', id);
-              return id;
-            }).filter(Boolean);
-          }
-          
-          console.log('✅ [ATENDENTE] Filas encontradas:', filasIds);
-          console.log('✅ [ATENDENTE] Total de filas:', filasIds.length);
-          setAtendenteFilas(filasIds);
-        } else {
-          console.error('❌ [ATENDENTE] Erro na resposta:', response.status);
-          const errorText = await response.text();
-          console.error('❌ [ATENDENTE] Erro detalhado:', errorText);
-          setAtendenteFilas([]);
-        }
-      } catch (error) {
-        console.error('❌ [ATENDENTE] Erro ao buscar filas:', error);
-        setAtendenteFilas([]);
-      } finally {
-        setLoadingFilas(false);
-      }
-    };
-
-    fetchAtendenteFilas();
-  }, [user?.id]);
-
   // Hook de mensagens com dados reais da WAHA
   const {
     messages: realMessages,
@@ -383,23 +362,21 @@ function AtendimentoPage() {
   } = useMessagesData(selectedChatId);
 
   // Hook de overview dos chats da WAHA (com paginação real)
-  // 🎯 Hook FILTRADO para atendente (apenas chats das suas filas)
-  const whatsAppFiltered = useWhatsAppDataFiltered();
-  
-  // Mapear para o formato esperado pelo resto do código
-  const overviewChats = whatsAppFiltered.chats || [];
-  const loadingOverview = whatsAppFiltered.loading;
-  const errorOverview = whatsAppFiltered.error;
-  const refreshOverview = whatsAppFiltered.refetchFilaContatos || (() => {});
-  const loadMoreOverview = whatsAppFiltered.loadMoreChats || (() => {});
-  const hasMoreOverview = whatsAppFiltered.hasMoreChats || false;
-  const isLoadingMoreOverview = false;
-  const markChatAsRead = () => {};
-  const markChatAsUnread = () => {};
-  const totalChatsCount = overviewChats.length;
-  const unreadChatsCount = overviewChats.filter((c: any) => c.unreadCount > 0).length;
-  const readNoReplyCount = 0;
-  const groupChatsCount = overviewChats.filter((c: any) => c.isGroup).length;
+  const {
+    chats: overviewChats,
+    loading: loadingOverview,
+    error: errorOverview,
+    refreshChats: refreshOverviewChats,
+    loadMoreChats,
+    hasMore: hasMoreOverviewChats,
+    isLoadingMore: isLoadingMoreOverview,
+    markChatAsRead,
+    markChatAsUnread,
+    totalChatsCount,
+    unreadChatsCount,
+    readNoReplyCount,
+    groupChatsCount,
+  } = useChatsOverview();
 
   // Hook para estatísticas de atendimento (dados reais do backend)
   const { stats: chatStats } = useChatStats();
@@ -415,9 +392,6 @@ function AtendimentoPage() {
   const { chatLeads, loading: loadingChatLeads } = useChatLeadBatch(
     activeChatIdsForLeads,
   );
-  
-  // 🔍 DEBUG: Ver quantos chatLeads foram carregados
-  console.log('🔍 [ATENDENTE] ChatLeads carregados:', Object.keys(chatLeads).length, 'de', activeChatIdsForLeads.length);
 
   // Estado para armazenar agentes ativos (para contagem)
   const [agentesAtivos, setAgentesAtivos] = useState<Set<string>>(new Set());
@@ -579,9 +553,7 @@ function AtendimentoPage() {
   const activeChats = useMemo(() => finalChats, [finalChats]);
 
   const activeChatIds = useMemo(() => {
-    // 🚀 OTIMIZAÇÃO: Limitar a 50 chats para evitar sobrecarga
     return activeChats
-      .slice(0, 50) // ✅ LIMITADO A 50 CHATS
       .map((chat) => {
         if (typeof chat.id === "string") {
           return chat.id;
@@ -606,56 +578,6 @@ function AtendimentoPage() {
     // 🔥 DEBUG CRÍTICO: Ver sessionName
 
     let filteredChats = overviewChats;
-
-    // 🎯 FILTRO DO ATENDENTE: Mostrar apenas chats das filas atribuídas
-    // SEMPRE aplicar filtro se for atendente (mesmo se filas ainda não carregaram)
-    const isAtendente = user?.tipo?.toUpperCase().includes('ATENDENTE');
-    
-    if (isAtendente) {
-      console.log('🔍 [ATENDENTE] Aplicando filtro de filas');
-      console.log('🔍 [ATENDENTE] Loading filas:', loadingFilas);
-      console.log('🔍 [ATENDENTE] Filas do atendente:', atendenteFilas);
-      console.log('🔍 [ATENDENTE] Total de chats antes do filtro:', filteredChats.length);
-      
-      // Se ainda está carregando as filas, mostrar chats normalmente (evitar loop)
-      if (loadingFilas) {
-        console.log('⏳ [ATENDENTE] Carregando filas, mostrando todos os chats temporariamente...');
-        // Não filtrar ainda, aguardar carregar
-      } else if (atendenteFilas.length === 0) {
-        console.log('⚠️ [ATENDENTE] Atendente sem filas atribuídas! Não mostrar chats.');
-        filteredChats = []; // Atendente sem filas = sem chats
-      } else {
-        filteredChats = filteredChats.filter((chat) => {
-          const extraData = contatosData[chat.id] || chatsExtraData[chat.id] || {};
-          const leadData = chatLeads[chat.id];
-          
-          // Buscar fila em múltiplas fontes (prioridade: chatLeads > extraData > chat)
-          const chatFilaId = 
-            leadData?.fila_id || 
-            extraData.fila?.id || 
-            (chat as any).fila?.id;
-          
-          // Se o chat não tem fila, não mostrar para o atendente
-          if (!chatFilaId) {
-            console.log('⚠️ [ATENDENTE] Chat SEM fila bloqueado:', chat.name);
-            return false;
-          }
-          
-          // Verificar se a fila do chat está nas filas do atendente
-          const pertenceAFila = atendenteFilas.includes(chatFilaId);
-          
-          if (pertenceAFila) {
-            console.log('✅ [ATENDENTE] Chat permitido:', chat.name, 'Fila:', chatFilaId);
-          } else {
-            console.log('❌ [ATENDENTE] Chat de OUTRA fila bloqueado:', chat.name, 'Fila:', chatFilaId, 'não está em', atendenteFilas);
-          }
-          
-          return pertenceAFila;
-        });
-        
-        console.log('✅ [ATENDENTE] Total de chats após filtro:', filteredChats.length);
-      }
-    }
 
     // Aplicar filtro de busca avançada
     if (searchQuery.trim()) {
@@ -713,34 +635,8 @@ function AtendimentoPage() {
       }
     }
 
-    // Aplicar filtro de tags (múltipla seleção)
-    if (selectedTagsMulti && selectedTagsMulti.length > 0) {
-      filteredChats = filteredChats.filter((chat) => {
-        const extraData =
-          contatosData[chat.id] || chatsExtraData[chat.id] || {};
-        const chatTags = extraData.tags || [];
-
-        return chatTags.some((tag: any) => selectedTagsMulti.includes(tag.id));
-      });
-    }
-
-    // Fallback: Aplicar filtro de tag single (compatibilidade com filtro antigo)
-    else if (selectedTag !== "todas") {
-      filteredChats = filteredChats.filter((chat) => {
-        const extraData =
-          contatosData[chat.id] || chatsExtraData[chat.id] || {};
-        return extraData.tags?.some((tag: any) => tag.id === selectedTag);
-      });
-    }
-
-    // Aplicar filtro de fila
-    if (selectedFila !== "todas") {
-      filteredChats = filteredChats.filter((chat) => {
-        const extraData =
-          contatosData[chat.id] || chatsExtraData[chat.id] || {};
-        return extraData.fila?.id === selectedFila;
-      });
-    }
+    // ❌ REMOVIDO: Filtros de tags e filas duplicados
+    // Esses filtros são aplicados DEPOIS no processedChats (após carregar dados extras)
 
     // ✅ Aplicar filtro de conexões (múltipla seleção) - CORRIGIDO para usar sessionName
     if (
@@ -891,10 +787,6 @@ function AtendimentoPage() {
     sortBy,
     sortOrder,
     chatLeads, // 🔥 CRÍTICO: Adicionar chatLeads para atualizar quando os dados chegarem
-    atendenteFilas, // 🎯 ATENDENTE: Filtrar por filas do atendente
-    contatosData, // 🎯 ATENDENTE: Dados dos contatos para verificar fila
-    user, // 🎯 ATENDENTE: Verificar tipo de usuário
-    loadingFilas, // 🎯 ATENDENTE: Flag de loading para evitar loop
   ]);
 
   // Função para carregar mais chats (agora usa paginação real da API)
@@ -945,7 +837,7 @@ function AtendimentoPage() {
     try {
       // Usar o hook useChatsOverview para carregar mais chats
 
-      await loadMoreOverview(); // Função do hook useWhatsAppDataFiltered
+      await loadMoreChats(); // Função do hook useChatsOverview (já gerencia isLoadingMore)
     } catch {}
   }, [
     activeFilter, // 🔥 CRÍTICO: Adicionar activeFilter para bloquear scroll em filtros de status
@@ -1271,43 +1163,16 @@ function AtendimentoPage() {
 
   // Usar dados já processados do transformedChats (que inclui busca) e adicionar dados extras dos contatos
   const processedChats = useMemo(() => {
+    console.log('🔍 [PROCESSED CHATS] Início - transformedChats:', transformedChats.length);
+    
     let result = transformedChats.map((chat: any) => {
       // ✅ ADICIONAR sessionName - sempre adicionar
       let sessionName = chat.sessionName; // Já tem do hook (esperamos que sim após fix)
 
       const contatoData: any = contatosData[chat.id] || {};
 
-      // Adicionar dados de exemplo para demonstração das badges
-      const hasDataExample = Math.random() > 0.3; // 70% chance de ter dados
-      // Usar tags reais do sistema quando disponíveis
-      const tagsExample =
-        hasDataExample && Math.random() > 0.4 && realTags.length > 0
-          ? [
-              realTags[Math.floor(Math.random() * realTags.length)],
-              ...(realTags.length > 1 && Math.random() > 0.7
-                ? [realTags[Math.floor(Math.random() * realTags.length)]]
-                : []),
-            ].filter(
-              (tag, index, arr) =>
-                arr.findIndex((t) => t.id === tag.id) === index,
-            )
-          : [];
-
-      const agendamentosExample =
-        hasDataExample && Math.random() > 0.6
-          ? [
-              { id: "1", titulo: "Reunião", status: "AGENDADO" },
-              { id: "2", titulo: "Follow-up", status: "PENDENTE" },
-            ]
-          : [];
-
-      const ticketsExample =
-        hasDataExample && Math.random() > 0.5
-          ? [
-              { id: "1", titulo: "Suporte", status: "ABERTO" },
-              { id: "2", titulo: "Bug Report", status: "ANDAMENTO" },
-            ]
-          : [];
+      // ❌ REMOVIDO: Dados de exemplo (causavam conflito com filtros)
+      // Agora usa APENAS dados reais do banco de dados
 
       const kanbanStatusFromContato = contatoData.kanbanStatus
         ? {
@@ -1342,17 +1207,27 @@ function AtendimentoPage() {
           sender: "user" as const,
           isRead: true,
         },
-        // Dados reais dos contatos + exemplos para demonstração
-        tags: contatoData.tags?.length > 0 ? contatoData.tags : tagsExample,
-        agendamentos:
-          contatoData.agendamentos?.length > 0
-            ? contatoData.agendamentos
-            : agendamentosExample,
+        // Dados reais dos contatos (SEM exemplos mockados)
+        // 🎯 Buscar tags do chatsExtraData (carregado por loadExtraData)
+        tags: (() => {
+          const extraTags = chatsExtraData[chat.id]?.tags || [];
+          const contatoTags = contatoData.tags || [];
+          const finalTags = extraTags.length > 0 ? extraTags : contatoTags;
+          
+          if (chat.name && chat.name.includes('Jorge')) {
+            console.log('🏷️ [TAGS DEBUG] Chat Jorge:', {
+              chatId: chat.id,
+              extraTags,
+              contatoTags,
+              finalTags
+            });
+          }
+          
+          return finalTags;
+        })(),
+        agendamentos: contatoData.agendamentos || [],
         orcamentos: contatoData.orcamentos || [],
-        tickets:
-          contatoData.tickets?.length > 0
-            ? contatoData.tickets
-            : ticketsExample,
+        tickets: contatoData.tickets || [],
         atendente: contatoData.atendente
           ? typeof contatoData.atendente === "string"
             ? {
@@ -1396,29 +1271,19 @@ function AtendimentoPage() {
           contatoData.rating ||
           (Math.random() > 0.7 ? Math.floor(Math.random() * 2) + 4 : undefined), // 4-5 estrelas às vezes
 
-        // Kanban - buscar dados reais do contato ou exemplo usando quadros reais
-        kanbanStatus:
-          kanbanStatusFromContato ||
-          (hasDataExample &&
-          Math.random() > 0.4 &&
-          realKanbanStatuses.length > 0
-            ? realKanbanStatuses[
-                Math.floor(Math.random() * realKanbanStatuses.length)
-              ]
-            : undefined),
+        // Kanban - buscar dados reais do contato
+        kanbanStatus: kanbanStatusFromContato || undefined,
 
-        // Fila - buscar dados reais do contato ou exemplo usando filas reais
+        // Fila - buscar dados reais do contato
         fila: contatoData.fila
           ? {
               id: contatoData.fila.id,
               nome: contatoData.fila.nome,
               cor: contatoData.fila.cor || "#9333ea",
             }
-          : hasDataExample && Math.random() > 0.6 && realFilas.length > 0
-            ? realFilas[Math.floor(Math.random() * realFilas.length)]
-            : undefined,
+          : undefined,
 
-        // Ticket Status - buscar do primeiro ticket ativo ou exemplo
+        // Ticket Status - buscar do primeiro ticket ativo
         ticketStatus:
           contatoData.tickets?.length > 0
             ? {
@@ -1436,19 +1301,7 @@ function AtendimentoPage() {
                       ? "#3B82F6"
                       : "#10B981",
               }
-            : ticketsExample.length > 0
-              ? {
-                  id: ticketsExample[0].status,
-                  nome:
-                    ticketsExample[0].status === "ABERTO"
-                      ? "Aberto"
-                      : "Em Andamento",
-                  cor:
-                    ticketsExample[0].status === "ABERTO"
-                      ? "#F59E0B"
-                      : "#3B82F6",
-                }
-              : undefined,
+            : undefined,
 
         // Estados de conexão (mock por enquanto)
         isOnline: Math.random() > 0.7,
@@ -1483,6 +1336,8 @@ function AtendimentoPage() {
     });
 
     // Aplicar filtros baseados no activeFilter
+    console.log('🔍 [ACTIVE FILTER] Filtro ativo:', activeFilter, '| Total de chats:', result.length);
+    
     switch (activeFilter) {
       case "unread":
         result = result.filter((chat) => (chat.unreadCount || 0) > 0);
@@ -1584,11 +1439,32 @@ function AtendimentoPage() {
 
     // Filtro por tags (múltipla seleção tem prioridade sobre seleção única)
     if (selectedTagsMulti.length > 0) {
-      result = result.filter(
-        (chat) =>
-          Array.isArray(chat.tags) &&
-          chat.tags.some((tag: any) => selectedTagsMulti.includes(tag.id)),
-      );
+      console.log('🏷️ [FILTRO TAGS] Filtrando por tags:', selectedTagsMulti);
+      console.log('🏷️ [FILTRO TAGS] Total de chats antes:', result.length);
+      
+      // 🔍 DEBUG: Ver tags de TODOS os chats
+      result.forEach((chat, index) => {
+        if (index < 3) { // Mostrar apenas os 3 primeiros
+          const chatTags = chat.tags || [];
+          console.log(`🔍 [FILTRO TAGS] Chat ${index + 1}: "${chat.name}"`);
+          console.log('  Tags do chat:', chatTags);
+          console.log('  IDs das tags:', chatTags.map((t: any) => t.id));
+          console.log('  Tag procurada:', selectedTagsMulti[0]);
+        }
+      });
+      
+      result = result.filter((chat) => {
+        const chatTags = chat.tags || [];
+        const hasTag = Array.isArray(chatTags) && chatTags.some((tag: any) => selectedTagsMulti.includes(tag.id));
+        
+        if (hasTag) {
+          console.log('✅ [FILTRO TAGS] Chat permitido:', chat.name, 'Tags:', chatTags.map((t: any) => t.nome));
+        }
+        
+        return hasTag;
+      });
+      
+      console.log('🏷️ [FILTRO TAGS] Total de chats após:', result.length);
     } else if (selectedTag && selectedTag !== "todas") {
       result = result.filter((chat) => {
         const hasTag = chat.tags?.some((tag: any) => tag.id === selectedTag);
@@ -1599,11 +1475,16 @@ function AtendimentoPage() {
     // Filtro por filas (múltipla seleção)
     if (selectedFilasMulti.length > 0) {
       result = result.filter((chat) => {
-        const filaId = chat.fila?.id || chat.chatLeadStatus?.fila_id;
+        // 🎯 BUSCAR FILA DO CHAT_LEAD (banco de dados)
+        const filaId = chatLeads[chat.id]?.fila_id;
         return filaId ? selectedFilasMulti.includes(filaId) : false;
       });
     } else if (selectedFila && selectedFila !== "todas") {
-      result = result.filter((chat) => chat.fila?.id === selectedFila);
+      result = result.filter((chat) => {
+        // 🎯 BUSCAR FILA DO CHAT_LEAD (banco de dados)
+        const filaId = chatLeads[chat.id]?.fila_id;
+        return filaId === selectedFila;
+      });
     }
 
     // Filtro por atendentes associados
@@ -1965,7 +1846,7 @@ function AtendimentoPage() {
 
                 // Se não há filtros, usar paginação real da API
 
-                return hasMoreOverview;
+                return hasMoreOverviewChats;
               })()}
               isLoadingMore={isLoadingMoreChats || isLoadingMoreOverview}
               onTagsClick={(chatId, e) => {
@@ -2587,6 +2468,76 @@ function AtendimentoPage() {
           telefone: selectedChatForTransfer?.replace("@c.us", "") || "",
         }}
       />
+
+      {/* 🚀 Botão Flutuante: Transferir Todos para "Sem Fila" - OCULTO (filas são atribuídas automaticamente) */}
+      {false && <button
+        onClick={async () => {
+          const token = localStorage.getItem('token');
+          
+          // 1. Buscar a fila "Sem fila"
+          const filasResponse = await fetch('/api/filas', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const filasData = await filasResponse.json();
+          const filas = filasData.data || filasData;
+          const filaSemFila = filas.find((f: any) => f.nome.toLowerCase().includes('sem fila'));
+          
+          if (!filaSemFila) {
+            alert('❌ Fila "Sem fila" não encontrada! Crie a fila primeiro.');
+            return;
+          }
+          
+          if (!confirm(`⚠️ Isso vai transferir TODOS os chats para a fila "${filaSemFila.nome}". Continuar?`)) return;
+          
+          const filaId = filaSemFila.id;
+          
+          try {
+            // Buscar todos os chats
+            const response = await fetch('/api/whatsapp/chats', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const data = await response.json();
+            const chats = data.data || data.chats || data;
+            
+            let count = 0;
+            for (const chat of chats) {
+              const chatId = chat.id?._serialized || chat.id;
+              
+              // Transferir para a fila
+              await fetch(`/api/chats/${encodeURIComponent(chatId)}/transferir`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  novoResponsavelId: '',
+                  novaFilaId: filaId,
+                  motivo: 'Transferência automática para Sem Fila'
+                })
+              });
+              
+              count++;
+              if (count % 10 === 0) {
+                console.log(`✅ ${count}/${chats.length} chats transferidos...`);
+              }
+            }
+            
+            alert(`✅ ${count} chats transferidos com sucesso!`);
+            window.location.reload();
+          } catch (error) {
+            alert(`❌ Erro: ${error}`);
+          }
+        }}
+        className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-full shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 flex items-center gap-2 z-50 font-semibold"
+        title="Transferir todos os chats sem fila para a fila Suporte"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        Transferir Todos
+      </button>}
     </div>
   );
 }

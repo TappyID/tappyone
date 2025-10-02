@@ -294,6 +294,8 @@ export function useWhatsAppData() {
         return
       }
 
+      console.log('🔍 [useWhatsAppData] Buscando contatos...')
+      
       // Buscar contatos usando API do Next.js
       const contactsResponse = await fetch(`/api/whatsapp/contacts`, {
         headers: {
@@ -302,15 +304,22 @@ export function useWhatsAppData() {
         }
       })
 
+      console.log('🔍 [useWhatsAppData] Resposta de contatos:', contactsResponse.status)
+
       if (contactsResponse.ok) {
         const contactsData = await contactsResponse.json()
         setContacts(contactsData)
+        console.log('✅ [useWhatsAppData] Contatos carregados:', contactsData.length)
       }
 
+      console.log('✅ [useWhatsAppData] Dados carregados com sucesso!')
+
     } catch (err) {
+      console.error('❌ [useWhatsAppData] Erro no catch:', err)
       setRetryCount(prev => prev + 1)
       setError('Erro ao carregar dados do WhatsApp')
     } finally {
+      console.log('✅ [useWhatsAppData] Finalizando carregamento - setLoading(false)')
       setLoading(false)
     }
   }, [user])

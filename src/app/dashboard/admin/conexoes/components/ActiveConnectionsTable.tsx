@@ -299,14 +299,28 @@ export function ActiveConnectionsTable({
   }
 
   const handleDeleteConnection = async (connection: ActiveConnection) => {
-    if (!connection?.sessionName) {
-      console.warn('❌ [DELETE CONNECTION] SessionName ausente na conexão selecionada.', connection)
-      window.alert('Não foi possível identificar a sessão dessa conexão.')
+    console.log('🗑️ [DELETE] Dados da conexão:', {
+      id: connection.id,
+      sessionName: connection.sessionName,
+      displayName: connection.displayName,
+      status: connection.status
+    })
+
+    if (!connection?.sessionName && !connection?.id) {
+      console.warn('❌ [DELETE CONNECTION] Sem sessionName nem ID!', connection)
+      window.alert('❌ Não foi possível identificar essa conexão.')
       return
     }
 
     const confirmed = window.confirm(
-      `Tem certeza que deseja remover a conexão "${connection.modulation?.connectionName || connection.displayName || connection.sessionName}"?`
+      `⚠️ ATENÇÃO: Isso vai remover COMPLETAMENTE a conexão!\n\n` +
+      `Nome: ${connection.modulation?.connectionName || connection.displayName || connection.sessionName}\n` +
+      `Session: ${connection.sessionName || 'N/A'}\n` +
+      `ID: ${connection.id}\n\n` +
+      `Isso vai:\n` +
+      `✅ Remover do banco de dados\n` +
+      `✅ Desconectar do WAHA\n\n` +
+      `Deseja continuar?`
     )
 
     if (!confirmed) return
@@ -320,9 +334,39 @@ export function ActiveConnectionsTable({
         return
       }
 
-      setDeletingSession(connection.sessionName)
+      setDeletingSession(connection.sessionName || connection.id)
 
-      const response = await fetch(`/api/connections/whatsapp/${connection.sessionName}`, {
+      // Tentar deletar pelo sessionName primeiro
+      if (connection.sessionName) {
+        console.log('🗑️ [DELETE] Tentando deletar via sessionName:', connection.sessionName)
+        
+        const response = await fetch(`/api/connections/whatsapp/${connection.sessionName}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        console.log('🗑️ [DELETE] Resposta:', response.status)
+
+        if (response.ok) {
+          setConnections(prev => prev.filter(item => item.id !== connection.id))
+          onConnectionDeleted?.()
+          console.log('✅ [DELETE] Conexão removida com sucesso!')
+          window.alert('✅ Conexão removida com sucesso!')
+          return
+        } else {
+          const errorText = await response.text().catch(() => '')
+          console.error('❌ [DELETE] Erro:', response.status, errorText)
+        }
+      }
+
+      // Se falhou ou não tem sessionName, tentar pelo ID direto no backend
+      console.log('🗑️ [DELETE] Tentando deletar via ID:', connection.id)
+      
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:8081'
+      const responseById = await fetch(`${backendUrl}/api/connections/${connection.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -330,19 +374,22 @@ export function ActiveConnectionsTable({
         }
       })
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '')
-        console.error('❌ [DELETE CONNECTION] Falha ao remover conexão:', response.status, errorText)
-        window.alert('Não foi possível remover essa conexão. Tente novamente mais tarde.')
-        return
+      console.log('🗑️ [DELETE] Resposta via ID:', responseById.status)
+
+      if (responseById.ok) {
+        setConnections(prev => prev.filter(item => item.id !== connection.id))
+        onConnectionDeleted?.()
+        console.log('✅ [DELETE] Conexão removida via ID!')
+        window.alert('✅ Conexão removida com sucesso!')
+      } else {
+        const errorText = await responseById.text().catch(() => '')
+        console.error('❌ [DELETE] Falha final:', responseById.status, errorText)
+        window.alert(`❌ Não foi possível remover.\n\nErro: ${responseById.status}`)
       }
 
-      setConnections(prev => prev.filter(item => item.id !== connection.id && item.sessionName !== connection.sessionName))
-      onConnectionDeleted?.()
-      console.log('🗑️ [DELETE CONNECTION] Conexão removida com sucesso:', connection.sessionName)
     } catch (error) {
-      console.error('❌ [DELETE CONNECTION] Erro inesperado:', error)
-      window.alert('Ocorreu um erro ao remover a conexão.')
+      console.error('❌ [DELETE] Erro inesperado:', error)
+      window.alert(`❌ Erro ao remover conexão:\n\n${error}`)
     } finally {
       setDeletingSession(null)
     }
