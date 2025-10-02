@@ -29,12 +29,7 @@ export function useSearchData(query: string, options: SearchOptions, availableCh
   // Debounce da query para evitar muitas requisições
   const debouncedQuery = useDebounce(query, 300)
 
-  console.log('🔍 [SEARCH HOOK] Hook chamado:', {
-    query,
-    debouncedQuery,
-    options,
-    availableChats: availableChats.length
-  })
+  
 
   const searchChats = useCallback(async (searchQuery: string) => {
     // Buscar localmente nos chats disponíveis

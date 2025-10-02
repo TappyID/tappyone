@@ -67,7 +67,7 @@ export default function ModalAceitarAtendimento({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]"
           />
 
           {/* Modal */}
@@ -75,9 +75,9 @@ export default function ModalAceitarAtendimento({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-full max-w-md"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
           >
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mx-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
               {/* Header */}
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -92,14 +92,14 @@ export default function ModalAceitarAtendimento({
               </div>
 
               {/* Botões */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {/* Aceitar */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleAceitar}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading && action === 'aceitar' ? (
                     <>
@@ -120,10 +120,10 @@ export default function ModalAceitarAtendimento({
                   whileTap={{ scale: 0.98 }}
                   onClick={handleEspiar}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Eye className="w-5 h-5" />
-                  <span>Espiar Mensagens (últimas 5)</span>
+                  <span>Espiar Mensagens</span>
                 </motion.button>
 
                 {/* Recusar */}
@@ -132,7 +132,7 @@ export default function ModalAceitarAtendimento({
                   whileTap={{ scale: 0.98 }}
                   onClick={handleRecusar}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading && action === 'recusar' ? (
                     <>

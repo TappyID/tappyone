@@ -1204,7 +1204,7 @@ function AtendimentoPage() {
     console.log('🔍 [PROCESSED CHATS] Início - transformedChats:', transformedChats.length);
     console.log('🎯 [FILAS ATENDENTE] Minhas filas:', minhasFilasIds);
     
-    // 🎯 FILTRO 1: Mostrar apenas chats das filas do atendente
+    // 🎯 FILTRO 1: Mostrar apenas chats das filas do atendente (excluir recusados)
     let chatsFiltradasPorFila = transformedChats
     
     if (minhasFilasIds.length > 0) {
@@ -1217,10 +1217,16 @@ function AtendimentoPage() {
           return false // Ocultar chats sem fila
         }
         
+        // 🚫 OCULTAR chats recusados
+        if (chatLead.status === 'recusado') {
+          console.log(`🚫 Chat ${chat.id} foi recusado - OCULTO`)
+          return false
+        }
+        
         const pertenceAMinhaFila = minhasFilasIds.includes(chatLead.fila_id)
         
         if (!pertenceAMinhaFila) {
-          console.log(`🚫 Chat ${chat.id} da fila ${chatLead.fila_id} - NÃO é minha fila - OCULTO`)
+          console.log(`🚫 Chat ${chat.id} da fila ${chatLead.fila_id} - NÃO é uma fila - OCULTO`)
         }
         
         return pertenceAMinhaFila
@@ -1386,6 +1392,12 @@ function AtendimentoPage() {
             });
           }
           return leadData;
+        })(),
+        
+        // Nome do responsável (buscar do chatLeadStatus)
+        nomeResponsavel: (() => {
+          const leadData = chatLeads[chat.id] || contatoData.chatLead;
+          return leadData?.responsavelUser?.nome || '';
         })(),
 
         // Agente IA ativo (usar do chatLeads que já busca isso)
@@ -1965,6 +1977,8 @@ function AtendimentoPage() {
                       isOnline: foundChat?.isOnline || false,
                       lastSeen: foundChat?.lastMessage?.timestamp || Date.now(),
                       unreadCount: foundChat?.unreadCount,
+                      chatLeadStatus: foundChat?.chatLeadStatus, // Passar dados do chat lead
+                      nomeResponsavel: foundChat?.nomeResponsavel, // Passar nome do responsável já calculado
                     };
                   })()
                 : undefined

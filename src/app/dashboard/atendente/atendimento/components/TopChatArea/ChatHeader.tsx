@@ -8,7 +8,8 @@ import {
   MoreVertical,
   User,
   Clock,
-  MapPin
+  MapPin,
+  CheckCircle
 } from 'lucide-react'
 
 import CreateContactModal from './CreateContactModal'
@@ -43,6 +44,16 @@ interface ChatHeaderProps {
     lastSeen?: number
     location?: string
     unreadCount?: number // Adicionar contador de não lidas
+    nomeResponsavel?: string // Nome do responsável já calculado
+    chatLeadStatus?: {
+      fila_id?: string
+      status?: string
+      responsavel?: string
+      responsavelUser?: {
+        nome: string
+      }
+      [key: string]: any
+    }
   }
   selectedChatId?: string // Chat ID selecionado para integração com módulos
   onCallClick?: () => void
@@ -69,6 +80,8 @@ export default function ChatHeader({
   const [createContactModalOpen, setCreateContactModalOpen] = useState(false)
   const [profileSidebarOpen, setProfileSidebarOpen] = useState(false)
   const [leadEditSidebarOpen, setLeadEditSidebarOpen] = useState(false)
+  const [showFinalizarModal, setShowFinalizarModal] = useState(false)
+  const [isFinalizando, setIsFinalizando] = useState(false)
 
   // Extrair contato_id do chatId (remover @c.us)
   const contatoId = selectedChatId ? selectedChatId.replace('@c.us', '') : null
@@ -87,13 +100,64 @@ export default function ChatHeader({
   // Buscar atendente responsável pelo chat
   const { atendenteData, refetch: refetchAtendente } = useAtendenteData(chat?.id || null)
 
-  // Buscar nome do responsável usando os dados já carregados
+  // Buscar nome do responsável usando os dados já carregados (MESMA LÓGICA DO ItemSideChat)
+  const [nomeResponsavelFetched, setNomeResponsavelFetched] = React.useState<string>('')
+  
+  // Buscar nome do responsável via API quando não encontrar na lista
+  React.useEffect(() => {
+    const responsavelId = chat?.chatLeadStatus?.responsavel || atendenteData?.atendente
+    if (!responsavelId) {
+      return
+    }
+    
+    // Se já encontrou na lista de atendentes, não buscar
+    const atendente = atendentes.find(a => a.id === responsavelId)
+    if (atendente?.nome) {
+      setNomeResponsavelFetched(atendente.nome)
+      return
+    }
+    
+    // Se já buscou, não buscar novamente
+    if (nomeResponsavelFetched) {
+      return
+    }
+    
+    // Buscar nome do usuário via API
+    const fetchNome = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`/api/users/${responsavelId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          // O endpoint retorna { usuario: { nome: "helio" } }
+          const nome = data.usuario?.nome || data.nome || data.name || ''
+          if (nome) {
+            setNomeResponsavelFetched(nome)
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar nome:', error)
+      }
+    }
+    fetchNome()
+  }, [chat?.chatLeadStatus?.responsavel, atendenteData?.atendente, atendentes, nomeResponsavelFetched, chat?.id])
+  
   const nomeResponsavel = React.useMemo(() => {
-    if (!atendenteData?.atendente) return ''
-
-    const atendente = atendentes.find(a => a.id === atendenteData.atendente)
-    return atendente?.nome || 'Rodrigo Tappy'
-  }, [atendenteData?.atendente, atendentes])
+    // 🎯 PRIORIDADE 1: Nome buscado via API
+    if (nomeResponsavelFetched) {
+      return nomeResponsavelFetched
+    }
+    
+    // 🎯 PRIORIDADE 2: chatLead.responsavelUser.nome (do backend com JOIN)
+    if (chat?.chatLeadStatus?.responsavelUser?.nome) {
+      return chat.chatLeadStatus.responsavelUser.nome
+    }
+    
+    // Fallback: vazio
+    return ''
+  }, [nomeResponsavelFetched, chat?.chatLeadStatus])
 
   // Listener para recarregar dados quando atendimento for assumido
   React.useEffect(() => {
@@ -184,17 +248,42 @@ export default function ChatHeader({
             <User className="w-3 h-3" />
             <span>Atendido por: {nomeResponsavel || 'Sem atendente'}</span>
             <span className="text-gray-400">•</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-              atendenteData?.status === 'em_atendimento'
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                : atendenteData?.status === 'aguardando'
-                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400'
-            }`}>
-              {atendenteData?.status === 'em_atendimento' ? 'Em Atendimento' :
-               atendenteData?.status === 'aguardando' ? 'Aguardando' :
-               atendenteData?.status ? 'Finalizado' : 'Aguardando'}
-            </span>
+            <button
+              onClick={() => {
+                const currentStatus = chat?.chatLeadStatus?.status || atendenteData?.status
+                if (currentStatus === 'em_atendimento' || currentStatus === 'atendimento') {
+                  setShowFinalizarModal(true)
+                }
+              }}
+              disabled={(() => {
+                const currentStatus = chat?.chatLeadStatus?.status || atendenteData?.status
+                return currentStatus !== 'em_atendimento' && currentStatus !== 'atendimento'
+              })()}
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                (() => {
+                  const currentStatus = chat?.chatLeadStatus?.status || atendenteData?.status
+                  if (currentStatus === 'em_atendimento' || currentStatus === 'atendimento') {
+                    return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 hover:ring-2 hover:ring-green-300 cursor-pointer'
+                  } else if (currentStatus === 'aguardando') {
+                    return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 cursor-not-allowed'
+                  } else {
+                    return 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 cursor-not-allowed'
+                  }
+                })()
+              }`}
+              title={(() => {
+                const currentStatus = chat?.chatLeadStatus?.status || atendenteData?.status
+                return (currentStatus === 'em_atendimento' || currentStatus === 'atendimento') ? 'Clique para finalizar atendimento' : ''
+              })()}
+            >
+              {(() => {
+                const currentStatus = chat?.chatLeadStatus?.status || atendenteData?.status
+                if (currentStatus === 'em_atendimento' || currentStatus === 'atendimento') return 'Em Atendimento'
+                if (currentStatus === 'aguardando') return 'Aguardando'
+                if (currentStatus === 'finalizado') return 'Finalizado'
+                return 'Aguardando'
+              })()}
+            </button>
             <span className="text-gray-400">•</span>
             <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400" />
             <span className="text-gray-500 dark:text-gray-400">{formatLastSeen(chat.lastSeen)}</span>
@@ -367,6 +456,104 @@ export default function ChatHeader({
             />
           </motion.div>
         </>
+      )}
+
+      {/* Modal de Finalizar Atendimento */}
+      {showFinalizarModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowFinalizarModal(false)}
+          />
+          <div className="relative w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Finalizar atendimento?</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  O chat será marcado como finalizado e sairá da fila de atendimentos ativos.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowFinalizarModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors"
+                disabled={isFinalizando}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedChatId) {
+                    console.error('❌ [FINALIZAR] Sem chat selecionado')
+                    return
+                  }
+                  
+                  console.log('🎯 [FINALIZAR] Iniciando finalização:', selectedChatId)
+                  
+                  setIsFinalizando(true)
+                  try {
+                    const token = localStorage.getItem('token')
+                    const response = await fetch(`/api/chats/${encodeURIComponent(selectedChatId)}/finalizar`, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                      }
+                    })
+                    
+                    console.log('📡 [FINALIZAR] Response status:', response.status)
+                    
+                    if (response.ok) {
+                      const result = await response.json()
+                      console.log('✅ [FINALIZAR] Sucesso:', result)
+                      
+                      // Recarregar dados
+                      refetchAtendente()
+                      setShowFinalizarModal(false)
+                      
+                      // Disparar evento global
+                      window.dispatchEvent(new CustomEvent('chatStatusUpdated', {
+                        detail: { chatId: selectedChatId }
+                      }))
+                      
+                      // Reload após 500ms
+                      setTimeout(() => {
+                        window.location.reload()
+                      }, 500)
+                    } else {
+                      const errorData = await response.json()
+                      console.error('❌ [FINALIZAR] Erro do backend:', errorData)
+                      alert(`Erro ao finalizar: ${errorData.error || 'Erro desconhecido'}`)
+                    }
+                  } catch (error) {
+                    console.error('❌ [FINALIZAR] Erro:', error)
+                    alert('Erro ao finalizar atendimento')
+                  } finally {
+                    setIsFinalizando(false)
+                  }
+                }}
+                disabled={isFinalizando}
+                className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isFinalizando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Finalizando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Confirmar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   )

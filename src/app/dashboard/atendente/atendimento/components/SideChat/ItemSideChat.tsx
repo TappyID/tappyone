@@ -817,15 +817,22 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
         {leadStatusDisplay && (
           <div className="relative">
-            <div
-              className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (leadStatusDisplay === 'atendimento') {
+                  setShowFinalizarModal(true)
+                }
+              }}
+              disabled={leadStatusDisplay !== 'atendimento'}
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full transition-all ${
                 leadStatusDisplay === 'aguardando'
-                  ? 'bg-yellow-100 dark:bg-yellow-900/20 hover:ring-yellow-300'
+                  ? 'bg-yellow-100 dark:bg-yellow-900/20 cursor-not-allowed'
                   : leadStatusDisplay === 'atendimento'
-                  ? 'bg-green-100 dark:bg-green-900/20 hover:ring-green-300'
-                  : 'bg-gray-100 dark:bg-gray-900/20 hover:ring-gray-300'
+                  ? 'bg-green-100 dark:bg-green-900/20 hover:ring-2 hover:ring-green-300 cursor-pointer'
+                  : 'bg-gray-100 dark:bg-gray-900/20 cursor-not-allowed'
               }`}
-              title="Clique para alterar status"
+              title={leadStatusDisplay === 'atendimento' ? 'Clique para finalizar atendimento' : ''}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${
                 leadStatusDisplay === 'aguardando'
@@ -847,7 +854,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                   ? 'Em Atendimento'
                   : 'Finalizado'}
               </span>
-            </div>
+            </button>
 
             {/* Mini Modal de Status - REMOVIDO para atendente (só visualização) */}
             {false && showStatusModal && (
