@@ -675,6 +675,12 @@ function QuadroPage() {
         await Promise.all(
           batch.map(async (chat: any) => {
             try {
+              // Validar se chat tem ID
+              if (!chat?.id) {
+                console.warn('⚠️ Chat sem ID:', chat)
+                return
+              }
+
               const res = await fetch('/api/kanban/cards/upsert', {
                 method: 'POST',
                 headers: {
@@ -684,7 +690,7 @@ function QuadroPage() {
                 body: JSON.stringify({
                   conversaId: chat.id,
                   colunaId: primeiraColuna.id,
-                  nome: chat.name || chat.pushName || chat.id,
+                  nome: chat.name || (chat.id ? chat.id.split('@')[0] : 'Sem nome'), // Usar número do telefone como nome
                   posicao: 0
                 })
               })
@@ -721,7 +727,6 @@ function QuadroPage() {
   // Funções auxiliares
   const refreshData = async () => {
     setLoading(true)
-    await loadWhatsAppChats()
     if (forceRefresh) {
       await forceRefresh()
     }
