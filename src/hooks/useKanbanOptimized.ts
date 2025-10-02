@@ -32,6 +32,11 @@ export interface CardData {
     cor?: string
   } | null
   filaNome?: string | null
+  // Dados do chatLead para badges
+  chatLead?: any | null
+  status?: string | null
+  responsavel?: string | null
+  responsavelNome?: string | null
 }
 
 export interface OptimizedKanbanData {
@@ -117,8 +122,6 @@ export function useKanbanOptimized(quadroId: string) {
       // Limpar cache para forçar reload dos dados reais
       const cacheKey = `kanban-${quadroId}`
       kanbanCache.delete(cacheKey) // Força reload
-      console.log('🗑️ CACHE LIMPO para:', cacheKey)
-      console.log('🚀 [DEBUG] useKanbanOptimized INICIANDO fetchData para quadro:', quadroId)
 
       if (!background) {
         setData(prev => ({ ...prev, loading: true, error: null }))
@@ -141,24 +144,28 @@ export function useKanbanOptimized(quadroId: string) {
 
       const quadroData = await quadroResponse.json()
       
-      // Buscar contatos reais da API
-      const contatosResponse = await fetch('/api/contatos', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      // 🔥 EXTRAIR IDs dos cards do banco (não buscar contatos)
+      const cardIds: string[] = []
+      quadroData.colunas?.forEach((coluna: any) => {
+        coluna.cards?.forEach((card: any) => {
+          if (card.conversaId) {
+            cardIds.push(card.conversaId)
+          }
+        })
       })
       
-      if (!contatosResponse.ok) {
-        throw new Error(`Erro ao buscar contatos: ${contatosResponse.status}`)
-      }
+      console.log('📋 [useKanbanOptimized] IDs dos cards do banco:', cardIds)
       
-      const contatosData = await contatosResponse.json()
+      // Converter IDs em formato de cards
+      const cardsData: any[] = cardIds.map(chatId => ({
+        id: chatId,
+        numeroTelefone: chatId.replace('@c.us', '').replace('@g.us', ''),
+        nome: chatId
+      }))
       
-      // Converter contatos em cards - filtrar contatos inválidos
-      const cardsData: any[] = contatosData
-        .filter((contato: any) => {
-          const numero = contato.numeroTelefone
+      // Filtrar cards inválidos
+      const validCards = cardsData.filter((card: any) => {
+          const numero = card.numeroTelefone
           const isValid = numero && 
                          numero !== 'undefined' && 
                          numero !== '0' && 
@@ -166,10 +173,9 @@ export function useKanbanOptimized(quadroId: string) {
                          /^\d+$/.test(numero)
           
           if (!isValid) {
-            console.log('❌ CONTATO INVÁLIDO FILTRADO:', {
-              id: contato.id,
-              numeroTelefone: numero,
-              nome: contato.nome
+            console.log('❌ CARD INVÁLIDO FILTRADO:', {
+              id: card.id,
+              numeroTelefone: numero
             })
           }
           
@@ -177,10 +183,11 @@ export function useKanbanOptimized(quadroId: string) {
         })
         .map((contato: any) => {
           const numeroTelefone = contato.numeroTelefone
-       
+          const chatId = contato.id // Manter o ID original
           
           return {
-            conversa_id: `${numeroTelefone}@c.us`,
+            id: chatId, // ✅ ADICIONAR O ID!
+            conversa_id: chatId,
             contato_id: numeroTelefone,
             nome: contato.nome || `Contato ${numeroTelefone}`,
             ultima_mensagem: 'Conversa WhatsApp',
@@ -192,23 +199,24 @@ export function useKanbanOptimized(quadroId: string) {
       const allCardIds: string[] = []
       const cardContactMapping: { [cardId: string]: string } = {}
       
-      cardsData.forEach((card: any) => {
-        allCardIds.push(card.conversa_id)
+      validCards.forEach((card: any) => {
+        const chatId = card.id
+        allCardIds.push(chatId)
         if (card.contato_id) {
-          cardContactMapping[card.conversa_id] = card.contato_id
+          cardContactMapping[chatId] = card.contato_id
         } else {
-          const phoneNumber = card.conversa_id.replace('@c.us', '')
-          cardContactMapping[card.conversa_id] = phoneNumber
+          const phoneNumber = card.numeroTelefone
+          cardContactMapping[chatId] = phoneNumber
         }
       })
       
       // Adicionar cards às colunas - distribuir contatos na primeira coluna
       if (quadroData.colunas && quadroData.colunas.length > 0) {
         // Colocar todos os contatos na primeira coluna por padrão
-        quadroData.colunas[0].cards = cardsData.map((card: any) => ({
-          id: card.conversa_id,
+        quadroData.colunas[0].cards = validCards.map((card: any) => ({
+          id: card.id,
           nome: card.nome,
-          conversa_id: card.conversa_id,
+          conversa_id: card.id,
           contato_id: card.contato_id || null
         }))
         
@@ -471,9 +479,20 @@ export function useKanbanOptimized(quadroId: string) {
         }
       } catch {}
       
+      console.log('🎯 [KANBAN] allCardIds para montar cards:', allCardIds)
+      console.log('🎯 [KANBAN] chatLeadsMap:', chatLeadsMap)
+      
       allCardIds.forEach(cardId => {
+        // Pular se cardId for undefined
+        if (!cardId) {
+          console.log('⚠️ [KANBAN] cardId undefined, pulando...')
+          return
+        }
+        
         const contatoInfo = contatosBatchData[cardId] || {}
         const chatLead = chatLeadsMap[cardId]
+        
+        console.log(`🔍 [CARD ${cardId.slice(0,15)}] chatLead:`, chatLead)
         
         // Buscar fila do chatLead.fila_id (backend retorna snake_case)
         let filaInfo = null
@@ -500,7 +519,12 @@ export function useKanbanOptimized(quadroId: string) {
           contato: contatoInfo,
           // Fila do chat_lead (batch)
           fila: filaInfo,
-          filaNome: filaInfo?.nome || null
+          filaNome: filaInfo?.nome || null,
+          // Dados do chatLead para badges
+          chatLead: chatLead || null,
+          status: chatLead?.status || null,
+          responsavel: chatLead?.responsavel || null,
+          responsavelNome: chatLead?.responsavelUser?.nome || null
         }
       })
       
@@ -570,6 +594,13 @@ export function useKanbanOptimized(quadroId: string) {
       }
     }
   }, [quadroId]) // FIXME: Removendo dependências que causam loop
+
+  // useEffect para carregar dados na montagem
+  useEffect(() => {
+    fetchOptimizedData().then(result => {
+      setData(result)
+    })
+  }, [quadroId])
 
   // Função para refresh forçado (limpa cache)
   const forceRefresh = useCallback(async () => {

@@ -71,6 +71,8 @@ interface KanbanHeaderProps {
   setEditingQuadroDescricao: (desc: string) => void
   activeView?: 'kanban' | 'funnel' | 'ncs'
   onViewChange?: (view: 'kanban' | 'funnel' | 'ncs') => void
+  showFiltersSection?: boolean
+  setShowFiltersSection?: (show: boolean) => void
 }
 
 export default function KanbanHeader({
@@ -101,7 +103,9 @@ export default function KanbanHeader({
   setEditingQuadroName,
   setEditingQuadroDescricao,
   activeView = 'kanban',
-  onViewChange
+  onViewChange,
+  showFiltersSection: showFiltersSectionProp,
+  setShowFiltersSection: setShowFiltersSectionProp
 }: KanbanHeaderProps) {
   const router = useRouter()
   
@@ -113,7 +117,10 @@ export default function KanbanHeader({
   })
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
-  const [showFiltersSection, setShowFiltersSection] = useState(false)
+  
+  // Usar props se fornecidas, senão usar estado local
+  const showFiltersSection = showFiltersSectionProp !== undefined ? showFiltersSectionProp : false
+  const setShowFiltersSection = setShowFiltersSectionProp || (() => {})
   // 🔄 Estado para modal de confirmação de remapeamento
   const [showRemapModal, setShowRemapModal] = useState(false)
   // 🎨 Estado para modal de customização de cores
@@ -527,270 +534,8 @@ export default function KanbanHeader({
         </div>
       </div>
       
-      {/* Segunda linha - Filtros igual SideChat - Só aparece se showFiltersSection for true */}
-      {showFiltersSection && (
-        <motion.div 
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="px-6 py-3 border-t border-gray-200/20 overflow-hidden"
-        >
-        <div className="flex items-center gap-4">
-          {/* Input de busca com ícones DENTRO */}
-          <div className={`flex-1 flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-            theme === 'dark' 
-              ? 'bg-slate-800/50 border border-slate-700/50' 
-              : 'bg-white border border-gray-200'
-          }`}>
-            <Search className="w-4 h-4 opacity-50" />
-            
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Buscar chats..."
-              className={`flex-1 bg-transparent outline-none text-sm ${
-                theme === 'dark' ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'
-              }`}
-            />
-
-            {/* Ícones de Opções de Busca */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => toggleSearchOption('searchInChats')}
-                className={`p-1 rounded transition-colors ${
-                  searchOptions.searchInChats
-                    ? 'text-blue-500'
-                    : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                }`}
-                title="Buscar em nomes"
-              >
-                <Users className="w-3.5 h-3.5" />
-              </button>
-              
-              <button
-                onClick={() => toggleSearchOption('searchInMessages')}
-                className={`p-1 rounded transition-colors ${
-                  searchOptions.searchInMessages
-                    ? 'text-blue-500'
-                    : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                }`}
-                title="Buscar em mensagens"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-              </button>
-              
-              <button
-                onClick={() => toggleSearchOption('searchInContacts')}
-                className={`p-1 rounded transition-colors ${
-                  searchOptions.searchInContacts
-                    ? 'text-blue-500'
-                    : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                }`}
-                title="Buscar em contatos"
-              >
-                <User className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {searchQuery && (
-              <button
-                onClick={() => onSearchChange('')}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Botão de Filtros Avançados */}
-          <button
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`p-2 rounded-xl transition-all ${
-              showAdvancedFilters
-                ? theme === 'dark' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-blue-500 text-white'
-                : theme === 'dark'
-                  ? 'bg-slate-800/50 text-gray-400 hover:bg-slate-700/50'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
-            } border ${
-              theme === 'dark' ? 'border-slate-700/50' : 'border-gray-200'
-            }`}
-          >
-            <Filter className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Tabs de Filtro - com scroll horizontal */}
-        <div className="mt-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide"
-               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {[
-              { id: 'all', label: 'Todas', count: chats.length },
-              { id: 'unread', label: 'Não lidas', count: chats.filter(c => c.unreadCount > 0).length },
-              { id: 'read', label: 'Lidas', count: chats.filter(c => !c.unreadCount).length },
-              { id: 'archived', label: 'Arquivados', count: 0 },
-              { id: 'groups', label: 'Grupos', count: chats.filter(c => c.isGroup).length },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? theme === 'dark'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-500 text-white'
-                    : theme === 'dark'
-                      ? 'bg-slate-800/50 text-gray-400 hover:bg-slate-700/50'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded text-xs ${
-                    activeTab === tab.id
-                      ? 'bg-white/20 text-white'
-                      : theme === 'dark'
-                        ? 'bg-slate-700 text-gray-300'
-                        : 'bg-gray-200 text-gray-700'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-        </motion.div>
-      )}
-
-      {/* Sidebar de Filtros Avançados - FORA do container */}
-      {showAdvancedFilters && (
-        <div className="fixed inset-0 z-[9999]">
-          {/* Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowAdvancedFilters(false)}
-            className="absolute inset-0 bg-black/50"
-          />
-
-          {/* Sidebar */}
-          <motion.div
-            initial={{ x: -300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            className={`absolute left-0 top-0 h-full w-80 shadow-xl ${
-              theme === 'dark' 
-                ? 'bg-slate-900 border-r border-slate-700' 
-                : 'bg-white border-r border-gray-200'
-            }`}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className={`text-lg font-semibold ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Filtros Avançados
-                </h3>
-                <button
-                  onClick={() => setShowAdvancedFilters(false)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === 'dark'
-                      ? 'hover:bg-slate-800 text-gray-400'
-                      : 'hover:bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
-              {/* Seção de Tags */}
-              <div>
-                <h4 className={`text-sm font-medium mb-3 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  🏷️ Tags
-                </h4>
-                <div className="space-y-2">
-                  {['Cliente VIP', 'Urgente', 'Em Negociação', 'Aguardando'].map(tag => (
-                    <label key={tag} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded" />
-                      <span className={`text-sm ${
-                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }`}>{tag}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Seção de Filas */}
-              <div>
-                <h4 className={`text-sm font-medium mb-3 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  👥 Filas de Atendimento
-                </h4>
-                <div className="space-y-2">
-                  {['Vendas', 'Suporte', 'Financeiro', 'Geral'].map(fila => (
-                    <label key={fila} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded" />
-                      <span className={`text-sm ${
-                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }`}>{fila}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Filtros Especiais */}
-              <div>
-                <h4 className={`text-sm font-medium mb-3 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  ⭐ Filtros Especiais
-                </h4>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="rounded" />
-                    <span className={`text-sm ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>Favoritos</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="rounded" />
-                    <span className={`text-sm ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>Com Anexos</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="rounded" />
-                    <span className={`text-sm ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>Ocultos</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Botão Limpar Filtros */}
-              <button
-                className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                  theme === 'dark'
-                    ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
-                    : 'bg-red-50 text-red-600 hover:bg-red-100'
-                }`}
-              >
-                Limpar Filtros
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+     
+     
 
       {/* 🔄 Modal de Confirmação de Remapeamento - RENDERIZADO NO BODY */}
       {typeof window !== 'undefined' && createPortal(

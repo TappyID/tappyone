@@ -33,6 +33,9 @@ import TagsBottomSheet from '../../atendimento/components/FooterChatArea/BottomS
 import AnotacoesBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 import TicketBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
 import ChatModalKanban from './components/ChatModalKanban'
+
+// SideFilter do Atendimento (reutilizando)
+import SideFilter from '../../atendimento/components/SideFilter'
 // DnD Kit
 import {
   DndContext,
@@ -111,10 +114,7 @@ function QuadroPage() {
     fetchColunas()
   }, [quadroId])
 
-  const {
-    loading: loadingKanban,
-    forceRefresh
-  } = useKanbanOptimized(quadroId)
+  const kanbanOptimized = useKanbanOptimized(quadroId)
 
   const quadro = { 
     id: quadroId, 
@@ -127,6 +127,7 @@ function QuadroPage() {
   const [loading, setLoading] = useState(false)
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showFiltersSection, setShowFiltersSection] = useState(false)
   const [showMetrics, setShowMetrics] = useState(false)
   
   // Estados das colunas do Kanban - carregadas do backend
@@ -421,15 +422,22 @@ function QuadroPage() {
       const cardsVisiveis = cardsNaColuna.slice(0, MAX_VISIBLE_CARDS)
 
 
-      // Adicionar os dados corretos do chat (nome, telefone, etc)
-      const cardsFormatados = cardsVisiveis.map((chat, index) => ({
-        ...chat,
-        // Priorizar nome do pushName, depois name, depois extrair do ID
-        nome: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
-        name: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
-        phone: chat.id?.replace('@c.us', '').replace('@g.us', ''), // Extrair número do ID
-        chatId: chat.id, // Manter o ID original do chat
-      }))
+      // Adicionar os dados corretos do chat (nome, telefone, etc) + dados do useKanbanOptimized
+      const cardsFormatados = cardsVisiveis.map((chat, index) => {
+        // Buscar dados do useKanbanOptimized para este chat
+        const kanbanData = kanbanOptimized.cards?.[chat.id] || {}
+        
+        return {
+          ...chat,
+          // Priorizar nome do pushName, depois name, depois extrair do ID
+          nome: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
+          name: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
+          phone: chat.id?.replace('@c.us', '').replace('@g.us', ''), // Extrair número do ID
+          chatId: chat.id, // Manter o ID original do chat
+          // 🔥 ADICIONAR dados do useKanbanOptimized (fila, status, atendente, etc)
+          ...kanbanData
+        }
+      })
 
       return {
         ...coluna,
@@ -439,7 +447,7 @@ function QuadroPage() {
     })
 
     return columnasComCards
-  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded])
+  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded, kanbanOptimized.cards])
 
   // Handlers de edição do quadro
   const handleDoubleClickQuadroTitle = () => {
@@ -805,12 +813,11 @@ function QuadroPage() {
   // Funções auxiliares
   const refreshData = async () => {
     setLoading(true)
-    if (forceRefresh) {
-      await forceRefresh()
+    if (kanbanOptimized.forceRefresh) {
+      await kanbanOptimized.forceRefresh()
     }
     setLoading(false)
   }
-
   const resetAndRemap = () => {
     setCardColumnMapping({})
     localStorage.removeItem(`kanban-mapping-${quadroId}`)
@@ -980,10 +987,55 @@ function QuadroPage() {
         setEditingQuadroDescricao={setEditingQuadroDescricao}
         activeView={activeView}
         onViewChange={setActiveView}
+        showFiltersSection={showFiltersSection}
+        setShowFiltersSection={setShowFiltersSection}
       />
 
-      {/* Seção de Filtros - Controlada pelo botão no header */}
-      {/* Esta seção será implementada futuramente com SideFilter do atendimento */}
+      {/* Seção de Filtros - Importado do Atendimento - Controlado pelo botão no header */}
+      {showFiltersSection && (
+        <SideFilter
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        selectedTag=""
+        onTagChange={() => {}}
+        tags={[]}
+        selectedFila=""
+        onFilaChange={() => {}}
+        filas={[]}
+        kanbanStatuses={[]}
+        ticketStatuses={[]}
+        priceRanges={[]}
+        selectedKanbanStatus=""
+        selectedTicketStatus=""
+        selectedPriceRange=""
+        selectedStatusFilter="all"
+        onStatusFilterChange={() => {}}
+        isLoadingTags={false}
+        isLoadingFilas={false}
+        isLoadingKanban={false}
+        isLoadingTickets={false}
+        isLoadingAtendentes={false}
+        totalChats={whatsappChats.length}
+        unreadChats={0}
+        readChats={0}
+        archivedChats={0}
+        groupChats={0}
+        favoriteChats={0}
+        hiddenChats={0}
+        emAtendimentoChats={0}
+        aguardandoChats={0}
+        finalizadoChats={0}
+        agentesIAChats={0}
+        leadsQuentesChats={0}
+        activeFilter="all"
+        onFilterChange={() => {}}
+        searchOptions={{ searchInChats: true, searchInMessages: false, searchInContacts: false }}
+        onSearchOptionsChange={() => {}}
+        sortBy="date"
+        sortOrder="desc"
+        onSortChange={() => {}}
+        />
+      )}
 
       {/* Renderização condicional baseada na view ativa */}
       {activeView === 'funnel' && (

@@ -46,6 +46,10 @@ interface KanbanCardItemProps {
       cor?: string
     }
     filaNome?: string
+    // Dados do chatLead para badges
+    status?: string
+    responsavel?: string
+    responsavelNome?: string
   }
   theme: string
   columnColor: string
@@ -95,9 +99,6 @@ export default function KanbanCardItem({
   
   // Pegar fila direto dos dados do card (já vem do useKanbanOptimized via batch)
   const filaNome = card.fila?.nome || card.filaNome || null
-  
-  // 🔍 DEBUG VISUAL - Mostrar fila_id no card
-  const filaDebug = card.fila || null
   
   // Hook para buscar contadores dos indicadores
   // IMPORTANTE: Passar o ID completo com @c.us para o hook
@@ -277,17 +278,6 @@ export default function KanbanCardItem({
           }}
         />
         
-        {/* 🔍 DEBUG VISUAL GRANDE - FILA */}
-        {filaDebug && (
-          <div className="mb-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <div className="text-[9px] font-mono text-blue-400">
-              <div className="font-bold mb-1">🔍 DEBUG FILA:</div>
-              <div>Nome: <span className="text-green-400">{filaDebug.nome}</span></div>
-              <div>ID: <span className="text-yellow-400 text-[7px]">{filaDebug.id?.slice(0, 20)}...</span></div>
-            </div>
-          </div>
-        )}
-        
         <div className="flex items-start gap-2.5 mb-2">
           {/* Profile Picture - IGUAL ItemSideChat */}
           <div className="relative flex-shrink-0">
@@ -369,7 +359,55 @@ export default function KanbanCardItem({
               </span>
             </div>
             
-            {/* Última Mensagem - usando componente do atendimento */}
+            {/* Badges de Status, Atendente e Fila - IGUAL ItemSideChat */}
+            <div className="flex flex-wrap items-center gap-1 mt-1.5">
+              {/* Badge de Status */}
+              {card.status && (
+                <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
+                  card.status === 'aguardando'
+                    ? 'bg-yellow-100 dark:bg-yellow-900/20'
+                    : card.status === 'atendimento' || card.status === 'em_atendimento'
+                    ? 'bg-green-100 dark:bg-green-900/20'
+                    : 'bg-gray-100 dark:bg-gray-900/20'
+                }`}>
+                  <span className={`text-[8px] font-medium ${
+                    card.status === 'aguardando'
+                      ? 'text-yellow-600'
+                      : card.status === 'atendimento' || card.status === 'em_atendimento'
+                      ? 'text-green-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {card.status === 'aguardando' ? '⏳ Aguardando' : 
+                     card.status === 'atendimento' || card.status === 'em_atendimento' ? '✅ Em Atendimento' : 
+                     '✓ Finalizado'}
+                  </span>
+                </div>
+              )}
+
+              {/* Badge de Atendente */}
+              {card.responsavelNome && (
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                  <span className="text-[8px] font-medium text-blue-600 truncate max-w-[80px]">
+                    👤 {card.responsavelNome}
+                  </span>
+                </div>
+              )}
+
+              {/* Badge de Fila com cor */}
+              {card.fila && (
+                <div
+                  className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: `${card.fila.cor || '#9333ea'}20`,
+                    color: card.fila.cor || '#9333ea'
+                  }}
+                >
+                  <span className="text-[8px] font-medium truncate max-w-[60px]">
+                    📋 {card.fila.nome}
+                  </span>
+                </div>
+              )}
+            </div>
            
           </div>
         </div>
