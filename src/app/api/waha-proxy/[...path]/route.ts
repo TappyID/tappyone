@@ -45,10 +45,36 @@ export async function POST(
 ) {
   try {
     const path = params.path.join('/')
-    const body = await request.text()
+    const bodyText = await request.text()
+    const bodyJson = bodyText ? JSON.parse(bodyText) : {}
+    
+    console.log(`🔄 [WAHA Proxy POST] Path: ${path}`)
+    console.log(`📦 [WAHA Proxy POST] Body:`, bodyJson)
+    
+    // Buscar sessão ativa do banco
+    const { getActiveSession } = await import('@/utils/getActiveSession')
+    const authHeader = request.headers.get('authorization') || ''
+    console.log(`🔑 [WAHA Proxy POST] Auth header:`, authHeader ? 'Presente' : 'AUSENTE')
+    
+    const sessionName = await getActiveSession(authHeader)
+    console.log(`📋 [WAHA Proxy POST] Sessão encontrada:`, sessionName || 'NENHUMA')
+    
+    if (!sessionName) {
+      console.error('❌ [WAHA Proxy] Nenhuma sessão ativa encontrada')
+      return NextResponse.json(
+        { error: 'No active session found' },
+        { status: 422 }
+      )
+    }
+    
+    // Substituir session no body se existir
+    if (bodyJson.session) {
+      bodyJson.session = sessionName
+    }
+    
     const wahaUrl = `http://159.65.34.199:3001/${path}`
     
-    console.log(`🔄 [WAHA Proxy] POST ${wahaUrl}`)
+    console.log(`🔄 [WAHA Proxy] POST ${wahaUrl} com sessão: ${sessionName}`)
     
     const response = await fetch(wahaUrl, {
       method: 'POST',
@@ -56,7 +82,7 @@ export async function POST(
         'X-API-Key': 'tappyone-waha-2024-secretkey',
         'Content-Type': 'application/json',
       },
-      body,
+      body: JSON.stringify(bodyJson),
     })
     
     const data = await response.json()

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getActiveSession } from '@/utils/getActiveSession'
 
 // Forçar rota dinâmica
 export const dynamic = 'force-dynamic'
 
-const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:8081'
+const WAHA_URL = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
 
 export async function GET(
   request: NextRequest,
@@ -12,29 +13,38 @@ export async function GET(
   try {
     const { chatId } = params
     
+    console.log('📸 [PICTURE] Requisição recebida para chat:', chatId)
+    
     if (!chatId || chatId === 'undefined') {
       return NextResponse.json({ error: 'ChatId inválido' }, { status: 400 })
     }
     
-    // Obter sessionId dinamicamente do header ou usar o que está ativo
-    const authHeader = request.headers.get('authorization')
-    let sessionId = 'user_d505e5c3-b965-4ec4-a21c-a024ae603f60' // Use o ID atual do usuário
+    // Buscar authorization header completo
+    const authHeader = request.headers.get('authorization') || ''
+    console.log('🔑 [PICTURE] Token:', authHeader ? 'Encontrado' : 'NÃO encontrado')
     
-    // Primeiro tentar listar sessões ativas
-    const sessionsUrl = `${WAHA_URL}/api/sessions`
-    const sessionsResponse = await fetch(sessionsUrl, {
-      headers: {
-        'X-Api-Key': process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
-      }
-    })
-    
-    if (sessionsResponse.ok) {
-      const sessions = await sessionsResponse.json()
-      const activeSession = sessions.find((s: any) => s.status === 'WORKING')
-      if (activeSession) {
-        sessionId = activeSession.name
-      }
+    if (!authHeader) {
+      console.error('❌ [PICTURE] Token não encontrado')
+      return NextResponse.json({ 
+        url: null,
+        error: 'Token não encontrado' 
+      }, { status: 200 }) // Retorna 200 com url null ao invés de 401
     }
+
+    // Buscar sessão ativa do banco (passa o header completo com "Bearer ")
+    console.log('🔍 [PICTURE] Chamando getActiveSession...')
+    const sessionId = await getActiveSession(authHeader)
+    console.log('📋 [PICTURE] Sessão retornada:', sessionId)
+    
+    if (!sessionId) {
+      console.error('❌ [PICTURE] Nenhuma sessão ativa encontrada')
+      return NextResponse.json({ 
+        url: null,
+        error: 'Nenhuma sessão ativa' 
+      }, { status: 200 }) // Retorna 200 com url null ao invés de 404
+    }
+
+    console.log('📸 [PICTURE] Buscando foto do chat:', chatId, 'na sessão:', sessionId)
     
     const wahaUrl = `${WAHA_URL}/api/${sessionId}/chats/${encodeURIComponent(chatId)}/picture`
 

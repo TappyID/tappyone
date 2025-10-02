@@ -109,25 +109,23 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       if (!append) setLoading(true)
       setError(null)
 
+      // Buscar sessão ativa
+      const { getActiveSessionClient } = await import('@/utils/getActiveSession')
+      const sessionName = await getActiveSessionClient()
+      
+      if (!sessionName) {
+        throw new Error('Nenhuma sessão ativa encontrada')
+      }
+
       // Buscar mensagens com paginação otimizada (5 iniciais, depois 20)
       const limit = offset === 0 ? INITIAL_LIMIT : LOAD_MORE_LIMIT
       
-      
-      // CRITICAL: Force HTTPS proxy for production
-      const isProduction = typeof window !== 'undefined' && (
-        window.location.protocol === 'https:' || 
-        window.location.hostname === 'crm.tappy.id' ||
-        window.location.hostname.includes('vercel')
-      )
-      
-      // ALWAYS use proxy in production
+      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
       const baseUrl = isProduction 
         ? '/api/waha-proxy' 
         : 'http://159.65.34.199:3001'
       
-      // Critical debug log
-      
-      const url = `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=${limit}&offset=${offset}`
+      const url = `${baseUrl}/api/${sessionName}/chats/${chatId}/messages?limit=${limit}&offset=${offset}`
       
       const response = await fetch(url, {
         headers: {
@@ -356,20 +354,24 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
       clearInterval(pollingRef.current)
     }
 
-    pollingRef.current = setInterval(() => {
+    // Função async para polling
+    const setupPolling = async () => {
       // CRITICAL: Force HTTPS proxy for production
       const isProduction = typeof window !== 'undefined' && (
         window.location.protocol === 'https:' || 
-        window.location.hostname === 'crm.tappy.id' ||
-        window.location.hostname.includes('vercel')
+        window.location.hostname === 'crm.tappy.id'
       )
       
+      // Buscar sessão ativa para polling
+      const { getActiveSessionClient } = await import('@/utils/getActiveSession')
+      const sessionName = await getActiveSessionClient()
+      
+      if (!sessionName) return // Silenciosamente falha se não houver sessão
+
       const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
       
-      // Debug log para polling
-      
       // Buscar apenas as 5 mensagens mais recentes para verificar mudanças de status
-      const pollingUrl = `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/${chatId}/messages?limit=5&offset=0`
+      const pollingUrl = `${baseUrl}/api/${sessionName}/chats/${chatId}/messages?limit=5&offset=0`
       
       fetch(pollingUrl, {
         headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
@@ -423,7 +425,11 @@ export function useMessagesData(chatId: string | null): UseMessagesDataReturn {
           return updatedExisting
         })
       })
-    }, 5000)
+    }
+
+    // Chamar setupPolling e configurar interval
+    setupPolling()
+    pollingRef.current = setInterval(setupPolling, 5000)
 
     // Cleanup
     return () => {

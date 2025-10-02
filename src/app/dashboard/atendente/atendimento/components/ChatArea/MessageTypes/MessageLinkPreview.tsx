@@ -34,7 +34,7 @@ export default function MessageLinkPreview({
       {/* Texto da mensagem */}
       {content && (
         <p className={`text-sm leading-relaxed ${
-          isFromUser ? 'text-white' : 'text-gray-900 dark:text-gray-100'
+          isFromUser ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-gray-100'
         }`}>
           {content}
         </p>

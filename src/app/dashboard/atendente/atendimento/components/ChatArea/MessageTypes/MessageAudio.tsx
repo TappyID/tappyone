@@ -138,7 +138,7 @@ export default function MessageAudio({
 
         {/* Duração */}
         <div className={`text-xs ${
-          isFromUser ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'
+          isFromUser ? 'text-gray-700 dark:text-white/80' : 'text-gray-600 dark:text-gray-400'
         }`}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
@@ -189,7 +189,7 @@ export default function MessageAudio({
       {/* Caption opcional */}
       {caption && (
         <p className={`text-sm ${
-          isFromUser ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'
+          isFromUser ? 'text-gray-900 dark:text-white/90' : 'text-gray-700 dark:text-gray-300'
         }`}>
           {caption}
         </p>

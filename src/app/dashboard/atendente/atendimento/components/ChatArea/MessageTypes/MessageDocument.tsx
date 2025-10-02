@@ -87,13 +87,13 @@ export default function MessageDocument({
         {/* Informações do arquivo */}
         <div className="flex-1 min-w-0">
           <h4 className={`font-medium truncate text-sm ${
-            isFromUser ? 'text-white' : 'text-gray-900 dark:text-gray-100'
+            isFromUser ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-gray-100'
           }`}>
             {fileName}
           </h4>
           {fileSize > 0 && (
             <p className={`text-xs mt-1 ${
-              isFromUser ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'
+              isFromUser ? 'text-gray-600 dark:text-white/70' : 'text-gray-500 dark:text-gray-400'
             }`}>
               {formatFileSize(fileSize)} • {mimeType.split('/')[1]?.toUpperCase() || 'Arquivo'}
             </p>
@@ -115,7 +115,7 @@ export default function MessageDocument({
             title="Visualizar"
           >
             <Eye className={`w-4 h-4 ${
-              isFromUser ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+              isFromUser ? 'text-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-400'
             }`} />
           </motion.button>
 
@@ -132,7 +132,7 @@ export default function MessageDocument({
             title="Download"
           >
             <Download className={`w-4 h-4 ${
-              isFromUser ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+              isFromUser ? 'text-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-400'
             }`} />
           </motion.button>
         </div>
@@ -141,7 +141,7 @@ export default function MessageDocument({
       {/* Caption opcional */}
       {caption && (
         <p className={`text-sm ${
-          isFromUser ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'
+          isFromUser ? 'text-gray-900 dark:text-white/90' : 'text-gray-700 dark:text-gray-300'
         }`}>
           {caption}
         </p>

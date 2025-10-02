@@ -862,27 +862,37 @@ function AtendimentoPage() {
   ]);
 
   // Função helper para obter URL base
+  // SEMPRE usar /api/waha-proxy para passar pela nossa API que busca a sessão
   const getWahaUrl = useCallback((path: string = "") => {
-    const isProduction =
-      typeof window !== "undefined" && window.location.protocol === "https:";
-    const baseUrl = isProduction
-      ? "/api/waha-proxy"
-      : "http://159.65.34.199:3001";
-    return `${baseUrl}${path}`;
+    return `/api/waha-proxy${path}`;
+  }, []);
+
+  // Função helper para buscar sessão ativa
+  const getActiveSessionName = useCallback(async () => {
+    const { getActiveSessionClient } = await import('@/utils/getActiveSession')
+    return await getActiveSessionClient()
+  }, []);
+
+  // Função helper para obter headers com Authorization
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('token')
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    }
   }, []);
 
   // Função para votar em enquete
   const handlePollVote = useCallback(
     async (messageId: string, chatId: string, votes: string[]) => {
       try {
+        const sessionName = await getActiveSessionName();
+        if (!sessionName) return;
         const response = await fetch(getWahaUrl("/api/sendPollVote"), {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Api-Key": "tappyone-waha-2024-secretkey",
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
-            session: "user_fb8da1d7_1758158816675",
+            session: sessionName,
             chatId,
             pollMessageId: messageId,
             votes,
@@ -1931,20 +1941,19 @@ function AtendimentoPage() {
               setForwardingMessage(messageId);
               setShowForwardModal(true);
             }}
-            onReaction={(messageId, emoji) => {
+            onReaction={async (messageId, emoji) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
 
               // API correta da WAHA para reações!
               fetch(getWahaUrl("/api/reaction"), {
                 method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   messageId: messageId,
                   reaction: emoji,
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                 }),
               })
                 .then(async (response) => {
@@ -2004,47 +2013,44 @@ function AtendimentoPage() {
 
           {/* Footer - Input de Mensagem */}
           <FooterChatArea
-            onStartTyping={() => {
+            onStartTyping={async () => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para mostrar "digitando..."
               fetch(getWahaUrl("/api/startTyping"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                 }),
               }).then(() => undefined);
             }}
-            onStopTyping={() => {
+            onStopTyping={async () => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para parar "digitando..."
               fetch(getWahaUrl("/api/stopTyping"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                 }),
               }).then(() => undefined);
             }}
-            onMarkAsSeen={(messageId) => {
+            onMarkAsSeen={async (messageId) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para marcar como vista (✓✓ azul)
               fetch(getWahaUrl("/api/sendSeen"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   messageId: messageId,
                 }),
@@ -2058,17 +2064,16 @@ function AtendimentoPage() {
             onSendAudio={() => setShowAudioModal(true)}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
-            onSendMessage={(content) => {
+            onSendMessage={async (content) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para enviar texto
               fetch(getWahaUrl("/api/sendText"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   text: content,
                   reply_to: replyingTo?.messageId || null,
@@ -2091,35 +2096,33 @@ function AtendimentoPage() {
                 })
                 .catch((error) => undefined);
             }}
-            onSendPoll={(pollData) => {
+            onSendPoll={async (pollData) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para enviar enquete
               fetch(getWahaUrl("/api/sendPoll"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   poll: pollData,
                 }),
               }).then(() => undefined);
             }}
-            onSendList={(listData) => {
+            onSendList={async (listData) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
 
               // Usar API WAHA para enviar lista/menu - formato correto da documentação
               fetch(getWahaUrl("/api/sendList"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   chatId: selectedChatId,
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   message: listData, // Envolver em 'message' como a API espera
                   reply_to: null,
                 }),
@@ -2135,10 +2138,12 @@ function AtendimentoPage() {
                 })
                 .catch(() => undefined);
             }}
-            onSendEvent={(eventData) => {
+            onSendEvent={async (eventData) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para enviar evento
-              fetch(getWahaUrl("/api/user_fb8da1d7_1758158816675/events"), {
+              fetch(getWahaUrl(`/api/${sessionName}/events`), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -2172,9 +2177,12 @@ function AtendimentoPage() {
                 // Determinar mimetype
                 let mimetype = file.type || "application/octet-stream";
 
+                const sessionName = await getActiveSessionName();
+                if (!sessionName) return;
+
                 // Preparar payload JSON
                 const payload = {
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   file: {
                     data: base64Data,
@@ -2197,10 +2205,7 @@ function AtendimentoPage() {
 
                 const response = await fetch(getWahaUrl(endpoint), {
                   method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "X-Api-Key": "tappyone-waha-2024-secretkey",
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify(payload),
                 });
 
@@ -2213,17 +2218,16 @@ function AtendimentoPage() {
                 }
               } catch {}
             }}
-            onSendContact={(contactsData) => {
+            onSendContact={async (contactsData) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para enviar contato
               fetch(getWahaUrl("/api/sendContactVcard"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   contacts: contactsData.contacts || [],
                 }),
@@ -2237,17 +2241,16 @@ function AtendimentoPage() {
                 })
                 .catch((error) => undefined);
             }}
-            onSendLocation={(locationData) => {
+            onSendLocation={async (locationData) => {
               if (!selectedChatId) return;
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               // Usar API WAHA para enviar localização
               fetch(getWahaUrl("/api/sendLocation"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   latitude: locationData.latitude,
                   longitude: locationData.longitude,
@@ -2310,17 +2313,16 @@ function AtendimentoPage() {
             "Usuário"
           }
           actionTitle="Gerar com IA"
-          onSend={(message) => {
+          onSend={async (message) => {
             // Enviar mensagem gerada pela IA
             if (selectedChatId) {
+              const sessionName = await getActiveSessionName();
+              if (!sessionName) return;
               fetch(getWahaUrl("/api/sendText"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: "user_fb8da1d7_1758158816675",
+                  session: sessionName,
                   chatId: selectedChatId,
                   text: message,
                 }),
@@ -2363,9 +2365,12 @@ function AtendimentoPage() {
             reader.readAsDataURL(audioBlob);
             const base64Data = await base64Promise;
 
+            const sessionName = await getActiveSessionName();
+            if (!sessionName) return;
+
             // Preparar payload JSON para áudio
             const payload = {
-              session: "user_fb8da1d7_1758158816675",
+              session: sessionName,
               chatId: selectedChatId,
               file: {
                 data: base64Data,
@@ -2416,17 +2421,16 @@ function AtendimentoPage() {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (forwardingMessage && selectedChatId) {
+                    const sessionName = await getActiveSessionName();
+                    if (!sessionName) return;
                     // Implementar encaminhamento via WAHA
                     fetch(getWahaUrl("/api/forwardMessage"), {
                       method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        "X-Api-Key": "tappyone-waha-2024-secretkey",
-                      },
+                      headers: getAuthHeaders(),
                       body: JSON.stringify({
-                        session: "user_fb8da1d7_1758158816675",
+                        session: sessionName,
                         messageId: forwardingMessage,
                         to: selectedChatId, // Por enquanto encaminha para o mesmo chat
                       }),

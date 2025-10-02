@@ -214,6 +214,32 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
   // Função para buscar totais de chats (total e não lidos)
   const fetchTotalChatsCount = async () => {
     try {
+      // Buscar sessão ativa via nossa API de conexões
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('❌ Token não encontrado')
+        return
+      }
+
+      const connectionsResponse = await fetch('/api/connections', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!connectionsResponse.ok) {
+        throw new Error('Erro ao buscar conexões')
+      }
+
+      const connectionsData = await connectionsResponse.json()
+      const activeConnection = connectionsData.connections?.find((c: any) => c.status === 'WORKING')
+      
+      if (!activeConnection) {
+        console.error('❌ Nenhuma sessão ativa encontrada')
+        return
+      }
+
+      const sessionName = activeConnection.sessionName
+      console.log('✅ [useChatsOverview] Usando sessão:', sessionName)
+
       const isProduction =
         typeof window !== "undefined" && window.location.protocol === "https:";
       const baseUrl = isProduction
@@ -222,7 +248,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
       // Buscar com limit muito alto para pegar o total real
       const response = await fetch(
-        `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=9999&offset=0`,
+        `${baseUrl}/api/${sessionName}/chats/overview?limit=9999&offset=0`,
         {
           headers: {
             "X-Api-Key": "tappyone-waha-2024-secretkey",

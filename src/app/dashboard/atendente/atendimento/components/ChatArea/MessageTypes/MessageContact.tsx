@@ -158,7 +158,7 @@ END:VCARD`
       {/* Caption opcional */}
       {caption && (
         <p className={`text-sm ${
-          isFromUser ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'
+          isFromUser ? 'text-gray-900 dark:text-white/90' : 'text-gray-700 dark:text-gray-300'
         }`}>
           {caption}
         </p>

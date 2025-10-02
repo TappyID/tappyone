@@ -2,6 +2,7 @@
 
 import React from 'react'
 import MessageInput from './MessageInput'
+import { useAuth } from '@/hooks/useAuth'
 
 interface FooterChatAreaProps {
   onSendMessage: (content: string, type?: 'text') => void
@@ -74,13 +75,19 @@ export default function FooterChatArea({
   onCancelReply
 }: FooterChatAreaProps) {
 
+  // Buscar dados do usuário logado
+  const { user } = useAuth()
+
   // Não mostrar se não há chat selecionado
   if (!selectedChat) {
     return null
   }
 
-  // Função para obter nome do admin logado
-  const getAdminName = () => {
+  // Função para obter nome do ATENDENTE logado
+  const getAtendenteName = () => {
+    // Usar nome do useAuth (mesma fonte da TopBar)
+    if (user?.nome) return user.nome
+    
     // Tentar pegar do localStorage (diferentes possibilidades)
     const userName = localStorage.getItem('userName') ||
                     localStorage.getItem('user_name') ||
@@ -94,20 +101,33 @@ export default function FooterChatArea({
 
     if (sessionName) return sessionName
 
-    // Fallback para um nome padrão
-    return 'Rodrigo TappyOne'
+    // Tentar pegar do token JWT decodificado
+    try {
+      const token = localStorage.getItem('token')
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        if (payload.name || payload.userName) {
+          return payload.name || payload.userName
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao decodificar token:', error)
+    }
+
+    // Fallback para um nome padrão de ATENDENTE
+    return 'Atendente'
   }
 
-  // Função para adicionar assinatura do admin na mensagem
+  // Função para adicionar assinatura do ATENDENTE na mensagem
   const handleSendMessageWithSignature = (content: string, type?: 'text') => {
     let finalMessage = content
 
     // Só adicionar assinatura se estiver habilitada
     if (enableSignature) {
-      const adminName = getAdminName()
+      const atendenteName = getAtendenteName()
 
       // Adicionar assinatura no início com formatação de citação + negrito do WhatsApp
-      finalMessage = `> *${adminName}*\n\n${content}`
+      finalMessage = `> *${atendenteName}*\n\n${content}`
 
     }
 

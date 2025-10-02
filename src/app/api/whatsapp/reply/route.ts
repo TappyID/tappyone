@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getActiveSession } from '@/utils/getActiveSession'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,17 @@ export async function POST(request: NextRequest) {
 
     console.log('💬 REPLY - Dados recebidos:', { chatId, text, replyTo })
 
+    // Buscar token e sessão ativa
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
+    }
+
+    const sessionName = await getActiveSession(token)
+    if (!sessionName) {
+      return NextResponse.json({ error: 'Nenhuma sessão ativa encontrada' }, { status: 404 })
+    }
+
     // Usar WAHA API diretamente (igual às outras APIs)
     const wahaUrl = process.env.NEXT_PUBLIC_WAHA_API_URL || 'http://159.65.34.199:3001'
     const wahaApiKey = process.env.NEXT_PUBLIC_WAHA_API_KEY || 'tappyone-waha-2024-secretkey'
@@ -23,7 +35,7 @@ export async function POST(request: NextRequest) {
       chatId,
       text,
       reply_to: replyTo, // WAHA usa reply_to ao invés de replyTo
-      session: 'user_fb8da1d7_1758158816675'
+      session: sessionName
     }
     
     console.log('💬 REPLY - Enviando para WAHA:', wahaUrl, payload)

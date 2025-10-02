@@ -2,6 +2,7 @@
 
 import React from 'react'
 import MessageInput from './MessageInput'
+import { useAuth } from '@/hooks/useAuth'
 
 interface FooterChatAreaProps {
   onSendMessage: (content: string, type?: 'text') => void
@@ -74,6 +75,9 @@ export default function FooterChatArea({
   onCancelReply
 }: FooterChatAreaProps) {
 
+  // Buscar dados do usuário logado
+  const { user } = useAuth()
+
   // Não mostrar se não há chat selecionado
   if (!selectedChat) {
     return null
@@ -81,6 +85,9 @@ export default function FooterChatArea({
 
   // Função para obter nome do admin logado
   const getAdminName = () => {
+    // Usar nome do useAuth (mesma fonte da TopBar)
+    if (user?.nome) return user.nome
+    
     // Tentar pegar do localStorage (diferentes possibilidades)
     const userName = localStorage.getItem('userName') ||
                     localStorage.getItem('user_name') ||
@@ -95,7 +102,7 @@ export default function FooterChatArea({
     if (sessionName) return sessionName
 
     // Fallback para um nome padrão
-    return 'Rodrigo TappyOne'
+    return 'Admin'
   }
 
   // Função para adicionar assinatura do admin na mensagem
