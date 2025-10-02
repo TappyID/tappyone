@@ -2624,7 +2624,11 @@ function AtendimentoPage() {
           if (!selectedChatId) return
           
           const token = localStorage.getItem('token')
-          if (!token) return
+          const userStr = localStorage.getItem('user')
+          if (!token || !userStr) return
+          
+          const user = JSON.parse(userStr)
+          const atendenteId = user.id
           
           try {
             // Aceitar atendimento (muda status para 'atendimento' e define responsavel)
@@ -2633,16 +2637,23 @@ function AtendimentoPage() {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-              }
+              },
+              body: JSON.stringify({
+                responsavelId: atendenteId,
+                filaId: chatAguardando?.chatLeadStatus?.fila_id || ''
+              })
             })
             
             if (!response.ok) {
               throw new Error('Erro ao aceitar atendimento')
             }
             
-            // Recarregar dados do chat
+            // Recarregar dados do chat e atualizar lista
             refreshMessages()
             setModoEspiar(false)
+            
+            // Forçar reload da página para atualizar todos os dados
+            window.location.reload()
             
             console.log('✅ Atendimento aceito com sucesso!')
           } catch (error) {
@@ -2683,6 +2694,13 @@ function AtendimentoPage() {
           // Ativar modo espiar (mostra últimas 5 mensagens, bloqueia scroll)
           setModoEspiar(true)
           console.log('👁️ Modo espiar ativado - últimas 5 mensagens')
+          
+          // Após 3 segundos, borrar novamente e reabrir modal
+          setTimeout(() => {
+            setModoEspiar(false)
+            setShowModalAceitar(true)
+            console.log('⏰ Tempo de espiar acabou - reabrindo modal')
+          }, 3000)
         }}
         onClose={() => {
           setShowModalAceitar(false)

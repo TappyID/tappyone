@@ -757,12 +757,8 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
         {leadStatusDisplay && (
           <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowStatusModal(!showStatusModal)
-              }}
-              className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full cursor-pointer transition-all hover:ring-2 ${
+            <div
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
                 leadStatusDisplay === 'aguardando'
                   ? 'bg-yellow-100 dark:bg-yellow-900/20 hover:ring-yellow-300'
                   : leadStatusDisplay === 'atendimento'
@@ -791,10 +787,10 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                   ? 'Em Atendimento'
                   : 'Finalizado'}
               </span>
-            </button>
+            </div>
 
-            {/* Mini Modal de Status */}
-            {showStatusModal && (
+            {/* Mini Modal de Status - REMOVIDO para atendente (só visualização) */}
+            {false && showStatusModal && (
               <>
                 {/* Overlay para fechar ao clicar fora */}
                 <div
