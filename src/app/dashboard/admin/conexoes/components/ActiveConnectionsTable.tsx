@@ -152,40 +152,9 @@ export function ActiveConnectionsTable({
             }
           })
           
-          // Se não há conexões reais, mostrar dados de exemplo para desenvolvimento
-          if (connections.length === 0) {
-            console.log('📝 [CONNECTIONS] Usando dados de exemplo')
-            setConnections([
-              {
-                id: 'example-1',
-                platform: 'whatsapp' as const,
-                sessionName: 'user_example_123456789',
-                displayName: 'WhatsApp Principal',
-                status: 'connected' as const,
-                stats: {
-                  chats: 45,
-                  contacts: 45,
-                  groups: 8,
-                  messages: 1250
-                },
-                assignedQueues: ['Comercial', 'Suporte'],
-                lastActivity: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                wahaSession: {
-                  name: 'user_example_123456789',
-                  status: 'WORKING' as const,
-                  me: {
-                    id: 'example@c.us',
-                    pushName: 'TappyOne Bot'
-                  }
-                },
-                isActive: true
-              }
-            ])
-          } else {
-            console.log('✅ [CONNECTIONS] Usando dados reais:', connections.length)
-            setConnections(connections)
-          }
+          // Usar apenas dados reais - SEM MOCK
+          console.log('✅ [CONNECTIONS] Total de conexões:', connections.length)
+          setConnections(connections)
         } else if (response.status === 401) {
           console.warn('⚠️ Token inválido ou expirado - redirecionando para login')
           setAuthError(true)

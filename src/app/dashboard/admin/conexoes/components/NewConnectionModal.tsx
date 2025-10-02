@@ -193,12 +193,43 @@ export function NewConnectionModal({ isOpen, onClose, onSuccess }: NewConnection
   const checkConnectionStatus = async (sessionName: string) => {
     try {
       const response = await fetch(`/api/whatsapp/sessions/${sessionName}`)
-      
       if (response.ok) {
         const session = await response.json()
         
         if (session.status === 'WORKING') {
           setStatus('connected')
+          
+          // 🔥 SALVAR CONEXÃO NO BANCO QUANDO CONECTAR
+          console.log('✅ WhatsApp conectado! Salvando no banco...')
+          const token = localStorage.getItem('token')
+          
+          try {
+            const saveResponse = await fetch(`/api/connections/whatsapp/${sessionName}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                modulation: {
+                  connectionName: `WhatsApp ${new Date().toLocaleDateString()}`,
+                  selectedChats: [],
+                  selectedGroups: [],
+                  selectedContacts: [],
+                  selectedFilas: []
+                }
+              })
+            })
+            
+            if (saveResponse.ok) {
+              console.log('✅ Conexão salva no banco!')
+            } else {
+              console.error('❌ Erro ao salvar conexão no banco')
+            }
+          } catch (saveError) {
+            console.error('❌ Erro ao salvar:', saveError)
+          }
+          
           setTimeout(() => {
             onSuccess()
             handleClose()
