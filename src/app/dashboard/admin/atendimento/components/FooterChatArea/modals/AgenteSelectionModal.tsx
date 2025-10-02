@@ -34,6 +34,11 @@ export default function AgenteSelectionModal({
   const [loading, setLoading] = useState(false)
   const [selectedAgente, setSelectedAgente] = useState<string | null>(agenteAtual?.id || null)
 
+  // Atualizar selectedAgente quando agenteAtual mudar
+  useEffect(() => {
+    setSelectedAgente(agenteAtual?.id || null)
+  }, [agenteAtual])
+
   // Buscar agentes disponíveis
   useEffect(() => {
     if (!isOpen) return

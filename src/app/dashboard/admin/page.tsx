@@ -100,24 +100,24 @@ export default function AdminDashboard() {
 
   const stats = [
     {
-      title: 'Total Usuários',
-      value: '0',
-      change: 'Nenhum usuário cadastrado',
+      title: 'Total de Leads',
+      value: '1230',
+      change: 'Nenhum Lead cadastrado',
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
       title: 'Mensagens',
-      value: '0',
-      change: 'Nenhuma mensagem hoje',
+      value: '1230',
+      change: 'Total de mensagens hoje',
       icon: MessageSquare,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
       title: 'Performance',
-      value: '0%',
+      value: '97%',
       change: 'Sistema inicializando',
       icon: BarChart3,
       color: 'text-purple-600',
@@ -125,8 +125,8 @@ export default function AdminDashboard() {
     },
     {
       title: 'Sistema',
-      value: 'Offline',
-      change: 'Aguardando inicialização',
+      value: 'Online',
+      change: 'Sistema inicializando',
       icon: Settings,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100'

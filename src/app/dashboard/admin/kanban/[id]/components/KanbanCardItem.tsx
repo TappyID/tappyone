@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -24,6 +24,7 @@ import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import AgenteSelectionModal from '../../../atendimento/components/FooterChatArea/modals/AgenteSelectionModal'
 import { useKanbanColors } from '../hooks/useKanbanColors'
+import { fetchApi } from '@/utils/api'
 
 interface KanbanCardItemProps {
   card: {
@@ -39,6 +40,12 @@ interface KanbanCardItemProps {
     }
     profilePictureUrl?: string
     unreadCount?: number
+    fila?: {
+      id: string
+      nome: string
+      cor?: string
+    }
+    filaNome?: string
   }
   theme: string
   columnColor: string
@@ -85,6 +92,9 @@ export default function KanbanCardItem({
   // Estados locais
   const [isHovered, setIsHovered] = useState(false)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  
+  // Pegar fila direto dos dados do card (já vem do useKanbanOptimized via batch)
+  const filaNome = card.fila?.nome || card.filaNome || null
   
   // Hook para buscar contadores dos indicadores
   // IMPORTANTE: Passar o ID completo com @c.us para o hook
@@ -311,16 +321,29 @@ export default function KanbanCardItem({
                 }
               </h3>
               
-              {/* Badge de Tag no lado direito - TESTE + REAL */}
-              {(counts.tags > 0 || Math.random() > 0.7) && (
+              {/* Badges: Fila e Tag */}
+              <div className="flex items-center gap-1">
+                {/* 🔍 DEBUG FILA - SEMPRE VISÍVEL */}
                 <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
-                  theme === 'dark' 
-                    ? 'bg-purple-500/20 text-purple-300' 
-                    : 'bg-purple-100 text-purple-700'
-                }`}>
-                  {(counts as any).tagNames?.[0] || ['VIP', 'Cliente', 'Suporte'][Math.floor(Math.random() * 3)]}
+                  filaNome 
+                    ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700')
+                    : 'bg-red-500 text-white animate-pulse'
+                }`}
+                title={`DEBUG: card.fila=${JSON.stringify(card.fila)} | card.filaNome=${card.filaNome} | filaNome=${filaNome}`}>
+                  {filaNome || '🚨 SEM FILA'}
                 </span>
-              )}
+                
+                {/* Badge de Tag */}
+                {(counts.tags > 0 || Math.random() > 0.7) && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
+                    theme === 'dark' 
+                      ? 'bg-purple-500/20 text-purple-300' 
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {(counts as any).tagNames?.[0] || ['VIP', 'Cliente', 'Suporte'][Math.floor(Math.random() * 3)]}
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Telefone/Chat ID */}

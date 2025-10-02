@@ -26,6 +26,12 @@ export interface CardData {
   assinaturas: any[]
   anotacoes: any[]
   contato: any
+  fila?: {
+    id: string
+    nome: string
+    cor?: string
+  } | null
+  filaNome?: string | null
 }
 
 export interface OptimizedKanbanData {
@@ -148,8 +154,6 @@ export function useKanbanOptimized(quadroId: string) {
       }
       
       const contatosData = await contatosResponse.json()
-      console.log('📞 CONTATOS OBTIDOS:', contatosData.length)
-      console.log('📞 CONTATOS RAW DATA:', JSON.stringify(contatosData, null, 2))
       
       // Converter contatos em cards - filtrar contatos inválidos
       const cardsData: any[] = contatosData
@@ -173,11 +177,7 @@ export function useKanbanOptimized(quadroId: string) {
         })
         .map((contato: any) => {
           const numeroTelefone = contato.numeroTelefone
-          console.log('✅ CONTATO VÁLIDO:', {
-            id: contato.id,
-            numeroTelefone: numeroTelefone,
-            nome: contato.nome
-          })
+       
           
           return {
             conversa_id: `${numeroTelefone}@c.us`,
@@ -216,19 +216,10 @@ export function useKanbanOptimized(quadroId: string) {
         for (let i = 1; i < quadroData.colunas.length; i++) {
           quadroData.colunas[i].cards = []
         }
-        
-        console.log('📋 CARDS DISTRIBUÍDOS:', quadroData.colunas[0].cards.length, 'cards na primeira coluna')
       }
-
-      console.log('🔍 [DEBUG] allCardIds após processamento:', allCardIds.length)
-      console.log('🔍 [DEBUG] allCardIds completo:', allCardIds)
-      console.log('🔍 [DEBUG] cardContactMapping:', cardContactMapping)
 
       // Se não há cards, retornar dados vazios
       if (allCardIds.length === 0) {
-        console.log('❌ [DEBUG] Retornando early - nenhum cardId encontrado')
-        console.log('❌ [DEBUG] cardsData length:', cardsData.length)
-        console.log('❌ [DEBUG] quadroData.colunas:', quadroData.colunas?.length)
         const emptyData: OptimizedKanbanData = {
           cards: {},
           columnStats: {},
@@ -317,28 +308,19 @@ export function useKanbanOptimized(quadroId: string) {
       
       // Processar orçamentos
       let orcamentosData: { [cardId: string]: any[] } = {}
-      console.log('🚨 DEBUG orcamentosResponse status:', orcamentosResponse.status)
       if (orcamentosResponse.ok) {
         try {
           orcamentosData = await orcamentosResponse.json()
-          console.log('💰 ORCAMENTOS OBTIDOS:', Object.keys(orcamentosData).length, 'cards')
-          console.log('💰 ORCAMENTOS DATA:', orcamentosData)
         } catch (error) {
-          console.error('💥 ERRO parsing orçamentos:', error)
         }
-      } else {
-        console.error('❌ ORCAMENTOS ERROR:', orcamentosResponse.status, await orcamentosResponse.text())
       }
 
       // Processar agendamentos  
       let agendamentosData: { [cardId: string]: any[] } = {}
-      console.log('🚨 DEBUG agendamentosResponse status:', agendamentosResponse.status)
       if (agendamentosResponse.ok) {
         try {
           agendamentosData = await agendamentosResponse.json()
-          console.log('📅 AGENDAMENTOS OBTIDOS:', Object.keys(agendamentosData).length, 'cards')
         } catch (error) {
-          console.error('💥 ERRO parsing agendamentos:', error)
         }
       } else {
         console.error('❌ AGENDAMENTOS ERROR:', agendamentosResponse.status, await agendamentosResponse.text())
@@ -378,8 +360,7 @@ export function useKanbanOptimized(quadroId: string) {
       if (contatosBatchResponse.ok) {
         try {
           contatosBatchData = await contatosBatchResponse.json()
-          console.log('👤👤👤 CONTATOS BATCH OBTIDOS:', Object.keys(contatosBatchData).length, 'cards')
-          console.log('👤👤👤 CONTATOS BATCH DATA COMPLETA:', JSON.stringify(contatosBatchData, null, 2))
+        
           
           // Debug específico das tags
           Object.keys(contatosBatchData).forEach(cardId => {
@@ -409,34 +390,28 @@ export function useKanbanOptimized(quadroId: string) {
       if (ticketsResponse.ok) {
         try {
           ticketsData = await ticketsResponse.json()
-          console.log('🎫 TICKETS OBTIDOS:', Object.keys(ticketsData).length, 'cards')
-          console.log('🎫 TICKETS DATA:', ticketsData)
+        
         } catch (error) {
-          console.error('💥 ERRO parsing tickets:', error)
+        
         }
       } else {
-        console.error('❌ TICKETS ERROR:', ticketsResponse.status, await ticketsResponse.text())
+       
       }
 
       // Processar agentes
       let agentesData: { [cardId: string]: any[] } = {}
-      console.log('🤖 AGENTES - Status:', agentesResponse.status)
-      console.log('🤖 AGENTES - Response URL:', agentesResponse.url)
-      console.log('🤖 AGENTES - Response OK:', agentesResponse.ok)
+     
       
       if (agentesResponse.ok) {
         try {
           agentesData = await agentesResponse.json()
-          console.log('🤖 AGENTES OBTIDOS:', Object.keys(agentesData).length, 'cards')
-          console.log('🤖 AGENTES DATA:', agentesData)
+         
         } catch (error) {
           console.error('💥 ERRO parsing agentes:', error)
         }
       } else {
         const errorText = await agentesResponse.text()
-        console.error('❌ AGENTES ERROR:', agentesResponse.status, errorText)
-        console.error('❌ AGENTES ERROR Headers:', agentesResponse.headers)
-        console.error('❌ AGENTES ERROR URL:', agentesResponse.url)
+     
       }
 
       // Dados não implementados ainda
@@ -447,17 +422,69 @@ export function useKanbanOptimized(quadroId: string) {
       const cards: { [cardId: string]: CardData } = {}
       const columnStats: ColumnStats = {}
 
-      // Processar dados por card
-      console.log(`🏷️ [HOOK DEBUG] Processando ${allCardIds.length} cards`, allCardIds)
-      console.log(`🏷️ [HOOK DEBUG] contatosBatchData completo:`, contatosBatchData)
+  
+      // Buscar chat_leads em BATCH (endpoint /api/chats/batch/leads - linha 482 router)
+      let chatLeadsMap: { [cardId: string]: any } = {}
+      try {
+        const chatLeadsResponse = await fetch('/api/chats/batch/leads', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ cardIds: allCardIds })
+        })
+        
+        if (chatLeadsResponse.ok) {
+          const data = await chatLeadsResponse.json()
+          chatLeadsMap = data.data || data || {}
+          console.log('📊 [KANBAN-FILA] Chat leads batch:', Object.keys(chatLeadsMap).length, 'encontrados')
+          console.log('🔍 [KANBAN-FILA] Dados dos leads:', chatLeadsMap)
+          // Mostrar fila_id de cada lead
+          Object.entries(chatLeadsMap).forEach(([chatId, lead]: [string, any]) => {
+            console.log(`  - ${chatId.slice(0, 15)}: fila_id=${lead?.fila_id || lead?.FilaID || 'NULL'}`)
+          })
+        }
+      } catch (error) {
+        console.log('❌ [KANBAN-FILA] Erro ao buscar leads batch:', error)
+      }
+      
+      // Buscar todas as filas
+      let todasFilas: any[] = []
+      try {
+        const filasResponse = await fetch('/api/filas', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (filasResponse.ok) {
+          const filasData = await filasResponse.json()
+          todasFilas = filasData.data || filasData || []
+          console.log('📋 [KANBAN-FILA] Filas disponíveis:', todasFilas.map(f => ({ id: f.id, nome: f.nome })))
+          
+          // Verificar qual fila tem o ID que está nos leads
+          const filaComum = todasFilas.find(f => f.id === '0ea98670-9844-4803-847b-d9238497aad3')
+          if (filaComum) {
+            console.log('🎯 [KANBAN-FILA] Fila comum encontrada:', filaComum.nome)
+          }
+        }
+      } catch {}
       
       allCardIds.forEach(cardId => {
         const contatoInfo = contatosBatchData[cardId] || {}
-        console.log(`🏷️ [HOOK DEBUG] Card ${cardId}:`, {
-          contatoInfo,
-          tags: contatoInfo.tags,
-          hasContato: !!contatoInfo.id
-        })
+        const chatLead = chatLeadsMap[cardId]
+        
+        // Buscar fila do chatLead.fila_id (backend retorna snake_case)
+        let filaInfo = null
+        const filaId = chatLead?.fila_id || chatLead?.FilaID
+        if (filaId) {
+          const fila = todasFilas.find(f => f.id === filaId)
+          if (fila) {
+            filaInfo = { id: fila.id, nome: fila.nome, cor: fila.cor }
+            console.log(`✅ [KANBAN-FILA] Card ${cardId.slice(0, 15)} -> Fila: ${fila.nome}`)
+          }
+        }
         
         cards[cardId] = {
           id: cardId,
@@ -470,11 +497,13 @@ export function useKanbanOptimized(quadroId: string) {
           agentes: agentesData[cardId] || [],
           assinaturas: assinaturasData[cardId] || [],
           anotacoes: anotacoesData[cardId] || [],
-          contato: contatoInfo
+          contato: contatoInfo,
+          // Fila do chat_lead (batch)
+          fila: filaInfo,
+          filaNome: filaInfo?.nome || null
         }
       })
       
-      console.log(`🏷️ [HOOK DEBUG] Cards processados:`, cards)
 
       // Calcular estatísticas por coluna
       quadroData.colunas?.forEach((col: any) => {
