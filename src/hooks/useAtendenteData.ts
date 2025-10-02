@@ -33,8 +33,9 @@ export function useAtendenteData(
     setError(null);
 
     try {
+      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.tappyone.com.br'
       const response = await fetch(
-        `http://159.65.34.199:8081/api/chats/${chatId}/atendente`,
+        `${baseUrl}/api/chats/${chatId}/atendente`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
