@@ -33,8 +33,9 @@ export default function OrcamentosSidebar({ isOpen, onClose, contatoId }: Orcame
       }
 
       // 2. Buscar orçamentos usando o UUID
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/orcamentos?contato_id=${contatoUUID}`, {
+      const response = await fetch(`/api/orcamentos?contato_id=${contatoUUID}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 

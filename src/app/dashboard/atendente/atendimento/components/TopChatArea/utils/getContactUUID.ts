@@ -4,7 +4,8 @@ export async function getContactUUID(telefone: string): Promise<string | null> {
     const token = localStorage.getItem('token')
     if (!token) return null
 
-    const response = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${telefone}`, {
+    // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+    const response = await fetch(`/api/contatos?telefone=${telefone}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
 

@@ -38,8 +38,9 @@ export default function TagsSidebar({ isOpen, onClose, contatoId }: TagsSidebarP
       }
 
       // 2. Buscar tags usando o UUID
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/contatos/${contatoUUID}/tags`, {
+      const response = await fetch(`/api/contatos/${contatoUUID}/tags`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

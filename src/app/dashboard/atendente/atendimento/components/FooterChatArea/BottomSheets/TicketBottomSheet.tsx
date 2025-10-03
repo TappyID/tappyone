@@ -141,8 +141,9 @@ export default function TicketBottomSheet({ isOpen, onClose, chatId }: TicketBot
     if (!confirm('Deseja realmente deletar este ticket?')) return
 
     try {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://159.65.34.199:8081/api/tickets/${ticketId}`, {
+      const response = await fetch(`/api/tickets/${ticketId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

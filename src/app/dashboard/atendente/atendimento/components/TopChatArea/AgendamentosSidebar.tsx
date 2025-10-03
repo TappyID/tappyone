@@ -26,7 +26,8 @@ export default function AgendamentosSidebar({ isOpen, onClose, contatoId }: Agen
       const token = localStorage.getItem('token')
 
       // 1. PRIMEIRO: Buscar o UUID do contato pelo telefone
-      const contactResponse = await fetch(`http://159.65.34.199:8081/api/contatos?telefone=${contatoId}`, {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+      const contactResponse = await fetch(`/api/contatos?telefone=${contatoId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
@@ -60,7 +61,8 @@ export default function AgendamentosSidebar({ isOpen, onClose, contatoId }: Agen
       }
 
       // 2. AGORA: Buscar agendamentos usando o UUID
-      const response = await fetch(`http://159.65.34.199:8081/api/agendamentos?contato_id=${contatoUUID}`, {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+      const response = await fetch(`/api/agendamentos?contato_id=${contatoUUID}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
