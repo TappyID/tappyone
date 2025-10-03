@@ -392,7 +392,7 @@ export default function KanbanHeader({
             </motion.button>
 
             {/* 🔥 BOTÃO DE SINCRONIZAÇÃO MANUAL - Processar leads antigos sem quadro/coluna */}
-            <motion.button
+          {/*   <motion.button
               onClick={syncAllCardsManually}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
               whileHover={{ scale: 1.02 }}
