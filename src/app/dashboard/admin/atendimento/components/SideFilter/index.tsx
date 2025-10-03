@@ -68,6 +68,12 @@ interface SideFilterProps {
   // ✅ Tags Filter (múltipla seleção)
   selectedTagsMulti?: string[];
   onTagsMultiChange?: (tags: string[]) => void;
+  
+  // ✅ Ocultar filtro de quadros (quando já está em um quadro específico)
+  hideQuadrosFilter?: boolean;
+  
+  // ✅ Colunas pré-carregadas (quando já está em um quadro)
+  preloadedColunas?: any[];
 
   // Filas Filter
   selectedFila: string;
@@ -163,6 +169,8 @@ export default function SideFilter({
   tags,
   selectedTagsMulti = [],
   onTagsMultiChange = () => {},
+  hideQuadrosFilter = false,
+  preloadedColunas = [],
   selectedFila,
   onFilaChange,
   filas,
@@ -1031,22 +1039,24 @@ export default function SideFilter({
               />
 
               {/* Filtro de Kanban - React Select MULTI com DADOS REAIS */}
-              <Select2
-                label="Quadros Kanban (Múltipla Seleção)"
-                value={selectedQuadrosMulti}
-                onChange={(val) => {
-                  const valores = val as string[];
-                  onQuadrosMultiChange(valores);
-                  onKanbanColunasChange([]); // Reset colunas quando mudar quadro
-                }}
-                options={kanbanQuadros}
-                placeholder="Selecione múltiplos quadros"
-                icon={Settings}
-                iconColor="green"
-                isMulti={true}
-                isClearable
-                isSearchable
-              />
+              {!hideQuadrosFilter && (
+                <Select2
+                  label="Quadros Kanban (Múltipla Seleção)"
+                  value={selectedQuadrosMulti}
+                  onChange={(val) => {
+                    const valores = val as string[];
+                    onQuadrosMultiChange(valores);
+                    onKanbanColunasChange([]); // Reset colunas quando mudar quadro
+                  }}
+                  options={kanbanQuadros}
+                  placeholder="Selecione múltiplos quadros"
+                  icon={Settings}
+                  iconColor="green"
+                  isMulti={true}
+                  isClearable
+                  isSearchable
+                />
+              )}
 
               {/* Filtro de Colunas do Kanban - React Select MULTI com DADOS REAIS */}
               <Select2

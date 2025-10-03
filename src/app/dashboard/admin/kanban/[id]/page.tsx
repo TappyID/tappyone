@@ -122,6 +122,36 @@ function QuadroPage() {
     nome: 'Kanban WhatsApp', 
     descricao: 'Gestão de Chats do WhatsApp' 
   }
+  
+  // Extrair tags únicas dos cards para usar no filtro (fallback se useTags falhar)
+  const tagsFromCards = useMemo(() => {
+    // Aguardar kanbanOptimized carregar
+    if (!kanbanOptimized.cards || Object.keys(kanbanOptimized.cards).length === 0) {
+      console.log('🏷️ [KANBAN] Aguardando kanbanOptimized carregar...')
+      return []
+    }
+    
+    const tagsMap = new Map<string, { id: string; nome: string; cor?: string }>()
+    Object.values(kanbanOptimized.cards).forEach((card: any) => {
+      if (card.tags && Array.isArray(card.tags)) {
+        card.tags.forEach((tag: any) => {
+          if (tag.id && !tagsMap.has(tag.id)) {
+            tagsMap.set(tag.id, {
+              id: tag.id,
+              nome: tag.nome || tag.name || 'Tag',
+              cor: tag.cor || tag.color
+            })
+          }
+        })
+      }
+    })
+    const tagsArray = Array.from(tagsMap.values())
+    console.log('🏷️ [KANBAN] Tags extraídas dos cards:', tagsArray.length, tagsArray)
+    return tagsArray
+  }, [kanbanOptimized.cards, kanbanOptimized.loading])
+  
+  // Usar tags do hook se disponível, senão usar tags dos cards
+  const tagsParaFiltro = tags && tags.length > 0 ? tags : tagsFromCards
 
   // Estados principais
   const [searchQuery, setSearchQuery] = useState('')
@@ -133,6 +163,15 @@ function QuadroPage() {
   const [showMetrics, setShowMetrics] = useState(false)
   const [sortBy, setSortBy] = useState<'name' | 'date'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  // Estados para filtros avançados (múltipla seleção)
+  const [selectedTagsMulti, setSelectedTagsMulti] = useState<string[]>([])
+  const [selectedFilasMulti, setSelectedFilasMulti] = useState<string[]>([])
+  const [selectedConexoes, setSelectedConexoes] = useState<string[]>([])
+  const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([])
+  const [selectedQuadrosMulti, setSelectedQuadrosMulti] = useState<string[]>([])
+  const [selectedKanbanColunas, setSelectedKanbanColunas] = useState<string[]>([])
+  const [selectedTicketsMulti, setSelectedTicketsMulti] = useState<string[]>([])
   
   // Calcular contadores dos filtros
   const chatCounters = useMemo(() => {
@@ -444,6 +483,72 @@ function QuadroPage() {
       )
     }
 
+    // 🔥 APLICAR FILTROS AVANÇADOS (múltipla seleção)
+    
+    // Filtro por Tags (múltipla seleção)
+    if (selectedTagsMulti.length > 0) {
+      console.log('🏷️ [FILTRO TAGS] Selecionadas:', selectedTagsMulti)
+      filteredChats = filteredChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const chatTags = kanbanData?.tags || []
+        const chatTagIds = chatTags.map((tag: any) => tag.id || tag)
+        console.log(`🏷️ [FILTRO TAGS] Chat ${chat.id} - tags:`, chatTags, 'IDs:', chatTagIds)
+        return selectedTagsMulti.some(tagId => chatTagIds.includes(tagId))
+      })
+      console.log(`🔍 [FILTRO] Tags selecionadas: ${selectedTagsMulti.length}, Cards filtrados: ${filteredChats.length}`)
+    }
+
+    // Filtro por Filas (múltipla seleção)
+    if (selectedFilasMulti.length > 0) {
+      console.log('📋 [FILTRO FILAS] Selecionadas:', selectedFilasMulti)
+      filteredChats = filteredChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const filaId = kanbanData?.fila?.id
+        console.log(`📋 [FILTRO FILAS] Chat ${chat.id} - fila:`, kanbanData?.fila, 'fila.id:', filaId)
+        return filaId && selectedFilasMulti.includes(filaId)
+      })
+      console.log(`🔍 [FILTRO] Filas selecionadas: ${selectedFilasMulti.length}, Cards filtrados: ${filteredChats.length}`)
+    }
+
+    // Filtro por Conexões (múltipla seleção)
+    if (selectedConexoes.length > 0) {
+      filteredChats = filteredChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id] as any
+        const conexaoId = kanbanData?.conexao_id || kanbanData?.session_id
+        return conexaoId && selectedConexoes.includes(conexaoId)
+      })
+      console.log(`🔍 [FILTRO] Conexões selecionadas: ${selectedConexoes.length}, Cards filtrados: ${filteredChats.length}`)
+    }
+
+    // Filtro por Atendentes (múltipla seleção)
+    if (selectedAtendentes.length > 0) {
+      filteredChats = filteredChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const responsavel = kanbanData?.responsavel
+        return responsavel && selectedAtendentes.includes(responsavel)
+      })
+      console.log(`🔍 [FILTRO] Atendentes selecionados: ${selectedAtendentes.length}, Cards filtrados: ${filteredChats.length}`)
+    }
+
+    // Filtro por Colunas do Kanban (múltipla seleção)
+    if (selectedKanbanColunas.length > 0) {
+      filteredChats = filteredChats.filter(chat => {
+        const colunaId = cardColumnMapping[chat.id]
+        return colunaId && selectedKanbanColunas.includes(colunaId)
+      })
+      console.log(`🔍 [FILTRO] Colunas selecionadas: ${selectedKanbanColunas.length}, Cards filtrados: ${filteredChats.length}`)
+    }
+
+    // Filtro por Tickets/Prioridades (múltipla seleção)
+    if (selectedTicketsMulti.length > 0) {
+      filteredChats = filteredChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id] as any
+        const prioridade = kanbanData?.prioridade || kanbanData?.ticket_prioridade
+        return prioridade && selectedTicketsMulti.includes(prioridade)
+      })
+      console.log(`🔍 [FILTRO] Tickets selecionados: ${selectedTicketsMulti.length}, Cards filtrados: ${filteredChats.length}`)
+    }
+
     // Aplicar ordenação
     if (sortBy === 'date') {
       filteredChats = filteredChats.sort((a, b) => {
@@ -588,7 +693,23 @@ function QuadroPage() {
     })
 
     return columnasComCards
-  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded, kanbanOptimized.cards, activeFilter, sortBy, sortOrder])
+  }, [
+    colunas, 
+    whatsappChats, 
+    cardColumnMapping, 
+    searchQuery, 
+    mappingLoaded, 
+    kanbanOptimized.cards, 
+    activeFilter, 
+    sortBy, 
+    sortOrder,
+    selectedTagsMulti,
+    selectedFilasMulti,
+    selectedConexoes,
+    selectedAtendentes,
+    selectedKanbanColunas,
+    selectedTicketsMulti
+  ])
 
   // Handlers de edição do quadro
   const handleDoubleClickQuadroTitle = () => {
@@ -1136,47 +1257,62 @@ function QuadroPage() {
         <SideFilter
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-        selectedTag=""
-        onTagChange={() => {}}
-        tags={tags || []}
-        selectedFila=""
-        onFilaChange={() => {}}
-        filas={filas || []}
-        kanbanStatuses={[]}
-        ticketStatuses={[]}
-        priceRanges={[]}
-        selectedKanbanStatus=""
-        selectedTicketStatus=""
-        selectedPriceRange=""
-        selectedStatusFilter="all"
-        onStatusFilterChange={() => {}}
-        isLoadingTags={loadingTags}
-        isLoadingFilas={loadingFilas}
-        isLoadingKanban={false}
-        isLoadingTickets={false}
-        isLoadingAtendentes={false}
-        totalChats={chatCounters.total}
-        unreadChats={chatCounters.unread}
-        readChats={chatCounters.read}
-        archivedChats={0}
-        groupChats={chatCounters.groups}
-        favoriteChats={0}
-        hiddenChats={0}
-        emAtendimentoChats={chatCounters.emAtendimento}
-        aguardandoChats={chatCounters.aguardando}
-        finalizadoChats={chatCounters.finalizado}
-        agentesIAChats={chatCounters.agentesIA}
-        leadsQuentesChats={chatCounters.leadsQuentes}
-        activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-        searchOptions={{ searchInChats: true, searchInMessages: false, searchInContacts: false }}
-        onSearchOptionsChange={() => {}}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={(newSortBy, newSortOrder) => {
-          setSortBy(newSortBy)
-          setSortOrder(newSortOrder)
-        }}
+          selectedTag=""
+          onTagChange={() => {}}
+          tags={tagsParaFiltro}
+          selectedTagsMulti={selectedTagsMulti}
+          onTagsMultiChange={setSelectedTagsMulti}
+          hideQuadrosFilter={true}
+          selectedFila=""
+          onFilaChange={() => {}}
+          filas={filas || []}
+          selectedFilasMulti={selectedFilasMulti}
+          onFilasMultiChange={setSelectedFilasMulti}
+          selectedConexoes={selectedConexoes}
+          onConexoesChange={setSelectedConexoes}
+          selectedAtendentes={selectedAtendentes}
+          onAtendentesChange={setSelectedAtendentes}
+          selectedQuadrosMulti={selectedQuadrosMulti}
+          onQuadrosMultiChange={setSelectedQuadrosMulti}
+          selectedKanbanColunas={selectedKanbanColunas}
+          onKanbanColunasChange={setSelectedKanbanColunas}
+          selectedTicketsMulti={selectedTicketsMulti}
+          onTicketsMultiChange={setSelectedTicketsMulti}
+          kanbanStatuses={[]}
+          ticketStatuses={[]}
+          priceRanges={[]}
+          selectedKanbanStatus=""
+          selectedTicketStatus=""
+          selectedPriceRange=""
+          selectedStatusFilter="all"
+          onStatusFilterChange={() => {}}
+          isLoadingTags={loadingTags}
+          isLoadingFilas={loadingFilas}
+          isLoadingKanban={false}
+          isLoadingTickets={false}
+          isLoadingAtendentes={false}
+          totalChats={chatCounters.total}
+          unreadChats={chatCounters.unread}
+          readChats={chatCounters.read}
+          archivedChats={0}
+          groupChats={chatCounters.groups}
+          favoriteChats={0}
+          hiddenChats={0}
+          emAtendimentoChats={chatCounters.emAtendimento}
+          aguardandoChats={chatCounters.aguardando}
+          finalizadoChats={chatCounters.finalizado}
+          agentesIAChats={chatCounters.agentesIA}
+          leadsQuentesChats={chatCounters.leadsQuentes}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          searchOptions={{ searchInChats: true, searchInMessages: false, searchInContacts: false }}
+          onSearchOptionsChange={() => {}}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={(newSortBy, newSortOrder) => {
+            setSortBy(newSortBy)
+            setSortOrder(newSortOrder)
+          }}
         />
       )}
 

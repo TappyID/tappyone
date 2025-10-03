@@ -29,15 +29,15 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
           >
           <div className="w-10 h-10 bg-gradient-to-br from-[#273155] to-[#1e2442] rounded-xl flex items-center justify-center shadow-lg">
             <motion.div
-              initial={{ scale: 1 }}
-              whileHover={{ scale: 1.1 }}
+              initial={{ scale: 1.05 }}
+              whileHover={{ scale: 1.15 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
               <Image
                 src="/favicon-white.svg"
                 alt="TappyOne Icon"
-                width={24}
-                height={24}
+                width={25}
+                height={25}
                 className="object-contain"
               />
             </motion.div>
@@ -65,14 +65,14 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
         >
           <motion.div
             className="relative"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
             <Image
               src="/logo-branca.svg"
               alt="TappyOne Logo"
-              width={140}
-              height={36}
+              width={147}
+              height={38}
               className="object-contain"
               priority
             />
