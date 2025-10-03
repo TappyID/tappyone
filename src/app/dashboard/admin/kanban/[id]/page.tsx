@@ -1614,7 +1614,10 @@ function QuadroPage() {
       {showAgendamentoSheet && selectedChat && (
         <AgendamentoBottomSheet 
           isOpen={showAgendamentoSheet}
-          onClose={() => setShowAgendamentoSheet(false)}
+          onClose={() => {
+            setShowAgendamentoSheet(false)
+            kanbanOptimized.forceRefresh() // ✅ Atualizar Kanban
+          }}
           chatId={selectedChat.id}
         />
       )}
@@ -1623,7 +1626,10 @@ function QuadroPage() {
       {showOrcamentoSheet && selectedChat && (
         <OrcamentoBottomSheet 
           isOpen={showOrcamentoSheet}
-          onClose={() => setShowOrcamentoSheet(false)}
+          onClose={() => {
+            setShowOrcamentoSheet(false)
+            kanbanOptimized.forceRefresh() // ✅ Atualizar Kanban
+          }}
           chatId={selectedChat.id}
         />
       )}
@@ -1632,7 +1638,10 @@ function QuadroPage() {
       {showTagsSheet && selectedChat && (
         <TagsBottomSheet 
           isOpen={showTagsSheet}
-          onClose={() => setShowTagsSheet(false)}
+          onClose={() => {
+            setShowTagsSheet(false)
+            kanbanOptimized.forceRefresh() // ✅ Atualizar Kanban
+          }}
           chatId={selectedChat.id}
         />
       )}
@@ -1641,7 +1650,10 @@ function QuadroPage() {
       {showAnotacoesSheet && selectedChat && (
         <AnotacoesBottomSheet 
           isOpen={showAnotacoesSheet}
-          onClose={() => setShowAnotacoesSheet(false)}
+          onClose={() => {
+            setShowAnotacoesSheet(false)
+            kanbanOptimized.forceRefresh() // ✅ Atualizar Kanban
+          }}
           chatId={selectedChat.id}
         />
       )}
@@ -1660,7 +1672,10 @@ function QuadroPage() {
       {showTicketsSheet && selectedChat && (
         <TicketBottomSheet 
           isOpen={showTicketsSheet}
-          onClose={() => setShowTicketsSheet(false)}
+          onClose={() => {
+            setShowTicketsSheet(false)
+            kanbanOptimized.forceRefresh() // ✅ Atualizar Kanban
+          }}
           chatId={selectedChat.id}
         />
       )}
