@@ -120,11 +120,28 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
       const allChatsArrays = await Promise.all(allChatsPromises);
       const allChats = allChatsArrays.flat();
 
+      // 🔥 REMOVER DUPLICATAS POR TELEFONE - Manter apenas o chat mais recente
+      const uniqueChatsMap = new Map<string, any>();
+      
+      allChats.forEach((chat: any) => {
+        // Extrair telefone do ID (formato: 5518997200106@c.us)
+        const phoneNumber = chat.id?.split('@')[0] || chat.id;
+        
+        // Se já existe um chat deste telefone, manter o mais recente
+        const existing = uniqueChatsMap.get(phoneNumber);
+        if (!existing || (chat.lastMessage?.timestamp || 0) > (existing.lastMessage?.timestamp || 0)) {
+          uniqueChatsMap.set(phoneNumber, chat);
+        }
+      });
+      
+      // Converter Map de volta para array
+      const uniqueChats = Array.from(uniqueChatsMap.values());
+
       // Se retornou menos que o limit, não há mais páginas
-      const noMorePages = allChats.length < limit;
+      const noMorePages = uniqueChats.length < limit;
       setHasMore(!noMorePages);
       // Transformar dados da WAHA para formato interno
-      const transformedChats: ChatOverview[] = allChats.map((chat: any) => {
+      const transformedChats: ChatOverview[] = uniqueChats.map((chat: any) => {
         return {
           id: chat.id,
           name:

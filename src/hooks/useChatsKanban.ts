@@ -112,26 +112,27 @@ export function useChatsKanban() {
 
         console.log(`📊 [useChatsKanban] Total bruto: ${allChats.length} chats`)
         
-        // 🔥 DEDUPLICAR chats que existem em múltiplas sessões
+        // 🔥 DEDUPLICAR POR TELEFONE - não por ID completo (pode ser diferente em cada sessão)
         const chatMap = new Map<string, any>()
         
         for (const chat of allChats) {
-          const chatId = chat.id
+          // Extrair telefone do ID (formato: 5518997200106@c.us ou @g.us)
+          const phoneNumber = chat.id?.split('@')[0] || chat.id
           
-          if (chatMap.has(chatId)) {
+          if (chatMap.has(phoneNumber)) {
             // Chat duplicado - manter o com última mensagem mais recente
-            const existing = chatMap.get(chatId)
+            const existing = chatMap.get(phoneNumber)
             const existingTime = existing.lastMessage?.timestamp || 0
             const newTime = chat.lastMessage?.timestamp || 0
             
             if (newTime > existingTime) {
-              console.log(`   🔄 Substituindo ${chatId}: sessão ${existing.sessionName} → ${chat.sessionName}`)
-              chatMap.set(chatId, chat)
+              console.log(`   🔄 [DEDUP] Substituindo telefone ${phoneNumber}: sessão ${existing.sessionName} → ${chat.sessionName}`)
+              chatMap.set(phoneNumber, chat)
             } else {
-              console.log(`   ⏭️ Ignorando duplicata de ${chatId} (sessão ${chat.sessionName})`)
+              console.log(`   ⏭️ [DEDUP] Ignorando duplicata de ${phoneNumber} (sessão ${chat.sessionName})`)
             }
           } else {
-            chatMap.set(chatId, chat)
+            chatMap.set(phoneNumber, chat)
           }
         }
         
