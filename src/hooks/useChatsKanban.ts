@@ -100,8 +100,40 @@ export function useChatsKanban() {
           }
         }
 
-        console.log(`✅ [useChatsKanban] Total carregado: ${allChats.length} chats`)
-        setChats(allChats)
+        console.log(`📊 [useChatsKanban] Total bruto: ${allChats.length} chats`)
+        
+        // 🔥 DEDUPLICAR chats que existem em múltiplas sessões
+        const chatMap = new Map<string, any>()
+        
+        for (const chat of allChats) {
+          const chatId = chat.id
+          
+          if (chatMap.has(chatId)) {
+            // Chat duplicado - manter o com última mensagem mais recente
+            const existing = chatMap.get(chatId)
+            const existingTime = existing.lastMessage?.timestamp || 0
+            const newTime = chat.lastMessage?.timestamp || 0
+            
+            if (newTime > existingTime) {
+              console.log(`   🔄 Substituindo ${chatId}: sessão ${existing.sessionName} → ${chat.sessionName}`)
+              chatMap.set(chatId, chat)
+            } else {
+              console.log(`   ⏭️ Ignorando duplicata de ${chatId} (sessão ${chat.sessionName})`)
+            }
+          } else {
+            chatMap.set(chatId, chat)
+          }
+        }
+        
+        const uniqueChats = Array.from(chatMap.values())
+        const duplicatesRemoved = allChats.length - uniqueChats.length
+        
+        if (duplicatesRemoved > 0) {
+          console.log(`🔥 [useChatsKanban] Removidas ${duplicatesRemoved} duplicatas`)
+        }
+        
+        console.log(`✅ [useChatsKanban] Total único: ${uniqueChats.length} chats`)
+        setChats(uniqueChats)
         setLoading(false)
       } catch (err: any) {
         console.error('❌ [useChatsKanban] Erro:', err)
