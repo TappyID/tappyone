@@ -51,91 +51,130 @@ const menuItems = [
     title: 'Dashboard',
     icon: LayoutDashboard,
     href: '/dashboard/admin',
-    color: 'text-blue-600'
+    color: 'text-blue-600',
+    badge: null
   },
   {
     title: 'Atendimentos',
     icon: MessageSquare,
     href: '/dashboard/admin/atendimento',
-    color: 'text-green-600'
+    color: 'text-green-600',
+    badge: 28,
+    badgeColor: 'from-green-400 to-green-600'
   },
-  {
-    title: 'Respostas Rápidas',
-    icon: Zap,
-    href: '/dashboard/admin/respostas-rapidas',
-    color: 'text-yellow-600'
-  },
+  
   {
     title: 'Kanban',
     icon: Kanban,
     href: '/dashboard/admin/kanban',
-    color: 'text-purple-600'
-  },
-  {
-    title: 'Atendentes',
-    icon: Users,
-    href: '/dashboard/admin/atendentes',
-    color: 'text-teal-600'
-   
-  },
-  {
-    title: 'Contatos',
-    icon: Users,
-    href: '/dashboard/admin/contatos',
-    color: 'text-indigo-600'
-  },
-  {
-    title: 'Agendamentos',
-    icon: Calendar,
-    href: '/dashboard/admin/agendamentos',
-    color: 'text-pink-600'
-  },
-  {
-    title: 'Orçamentos',
-    icon: FileText,
-    href: '/dashboard/admin/orcamentos',
-    color: 'text-orange-600'
-  },
-  {
-    title: 'Assinaturas',
-    icon: CreditCard,
-    href: '/dashboard/admin/assinaturas',
-    color: 'text-emerald-600'
-  },
-  {
-    title: 'Tags',
-    icon: Tag,
-    href: '/dashboard/admin/tags',
-    color: 'text-red-600'
-  },
-  {
-    title: 'Alertas',
-    icon: Bell,
-    href: '/dashboard/admin/alertas',
-    color: 'text-amber-600'
+    color: 'text-purple-600',
+    badge: 15,
+    badgeColor: 'from-purple-400 to-purple-600'
   },
   {
     title: 'Filas',
     icon: List,
     href: '/dashboard/admin/filas',
-    color: 'text-slate-600'
+    color: 'text-slate-600',
+    badge: 6,
+    badgeColor: 'from-slate-400 to-slate-600'
   },
+  
+  {
+    title: 'Atendentes',
+    icon: Users,
+    href: '/dashboard/admin/atendentes',
+    color: 'text-teal-600',
+    badge: 8,
+    badgeColor: 'from-teal-400 to-teal-600'
+  },
+  {
+    title: 'Agentes',
+    icon: Bot,
+    href: '/dashboard/admin/agentes',
+    color: 'text-cyan-600',
+    badge: 6,
+    badgeColor: 'from-cyan-400 to-cyan-600'
+  },
+  {
+    title: 'Respostas Rápidas',
+    icon: Zap,
+    href: '/dashboard/admin/respostas-rapidas',
+    color: 'text-yellow-600',
+    badge: 45,
+    badgeColor: 'from-yellow-400 to-yellow-600'
+  },
+  {
+    title: 'Contatos',
+    icon: Users,
+    href: '/dashboard/admin/contatos',
+    color: 'text-indigo-600',
+    badge: 342,
+    badgeColor: 'from-indigo-400 to-indigo-600'
+  },
+  {
+    title: 'Agendamentos',
+    icon: Calendar,
+    href: '/dashboard/admin/agendamentos',
+    color: 'text-pink-600',
+    badge: 12,
+    badgeColor: 'from-pink-400 to-pink-600'
+  },
+  {
+    title: 'Orçamentos',
+    icon: FileText,
+    href: '/dashboard/admin/orcamentos',
+    color: 'text-orange-600',
+    badge: 7,
+    badgeColor: 'from-orange-400 to-orange-600'
+  },
+  {
+    title: 'Assinaturas',
+    icon: CreditCard,
+    href: '/dashboard/admin/assinaturas',
+    color: 'text-emerald-600',
+    badge: 23,
+    badgeColor: 'from-emerald-400 to-emerald-600'
+  },
+  {
+    title: 'Tags',
+    icon: Tag,
+    href: '/dashboard/admin/tags',
+    color: 'text-red-600',
+    badge: 18,
+    badgeColor: 'from-red-400 to-red-600'
+  },
+  {
+    title: 'Alertas',
+    icon: Bell,
+    href: '/dashboard/admin/alertas',
+    color: 'text-amber-600',
+    badge: 4,
+    badgeColor: 'from-amber-400 to-amber-600'
+  },
+  
   {
     title: 'Tickets',
     icon: Ticket,
     href: '/dashboard/admin/tickets',
-    color: 'text-blue-600'
+    color: 'text-blue-600',
+    badge: 9,
+    badgeColor: 'from-blue-400 to-blue-600'
   },
   {
     title: 'Chat Interno',
     icon: MessageCircle,
     href: '/dashboard/admin/chat-interno',
-    color: 'text-cyan-600'
+    color: 'text-cyan-600',
+    badge: 5,
+    badgeColor: 'from-cyan-400 to-cyan-600'
   },
   {
     title: 'Fluxos',
     icon: Workflow,
     color: 'text-teal-600',
+    badge: 3,
+    badgeColor: 'from-teal-400 to-teal-600',
     isSubmenu: true,
     children: [
       {
@@ -162,6 +201,8 @@ const menuItems = [
     title: 'Usuários',
     icon: UsersIcon,
     color: 'text-teal-600',
+    badge: 47,
+    badgeColor: 'from-violet-400 to-violet-600',
     isSubmenu: true,
     children: [
       {
@@ -195,6 +236,8 @@ const menuItems = [
     title: 'Relatórios',
     icon: BarChart3,
     color: 'text-teal-600',
+    badge: 12,
+    badgeColor: 'from-blue-400 to-blue-600',
     isSubmenu: true,
     children: [
       {
@@ -326,10 +369,10 @@ export function Sidebar() {
                       onClick={() => toggleSubmenu(item.title)}
                       className={`w-full flex items-center backdrop-blur-sm transition-all duration-300 ease-out group relative overflow-hidden ${
                         !isHovered 
-                          ? `p-3 justify-center rounded-lg border ${
+                          ? `p-3 justify-center rounded-lg ${
                               isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
-                                ? 'bg-white/20 border-white/30 text-white shadow-lg'
-                                : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30'
+                                ? 'bg-white/20 text-white shadow-lg'
+                                : 'bg-white/10 text-white hover:bg-white/20'
                             }`
                           : `p-3 justify-between rounded-xl ${
                               isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
@@ -351,18 +394,34 @@ export function Sidebar() {
                       
                       <div className="flex items-center gap-3">
                         <motion.div 
-                          className="p-2 rounded-lg transition-all duration-200 relative bg-white/20"
+                          className="relative"
                           whileHover={{ scale: 1.1 }}
                           transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         >
-                          <item.icon className="w-5 h-5 text-white transition-all duration-300 drop-shadow-sm" strokeWidth={isSubmenuItemActive(item.children) || isSubmenuOpen(item.title) ? 2.5 : 2} />
-                          
-                          {/* Glow effect */}
-                          <motion.div
-                            className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${item.color.replace('text-', 'bg-')}`}
-                            initial={{ scale: 0.8 }}
-                            whileHover={{ scale: 1.2 }}
-                          />
+                          <div className="p-2 rounded-lg transition-all duration-200 relative bg-white/20">
+                            <item.icon className="w-5 h-5 text-white transition-all duration-300 drop-shadow-sm" strokeWidth={isSubmenuItemActive(item.children) || isSubmenuOpen(item.title) ? 2.5 : 2} />
+                            
+                            {/* Badge no submenu */}
+                            {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                whileHover={{ scale: 1.1 }}
+                                className={`absolute ${!isHovered ? '-top-1.5 -right-1.5' : '-top-2 -right-2'} min-w-[16px] h-[16px] px-0.5 bg-gradient-to-br ${item.badgeColor || 'from-red-400 to-red-600'} rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-white/30`}
+                              >
+                                <span className="text-[8px] font-bold text-white drop-shadow-sm">
+                                  {item.badge > 99 ? '99+' : item.badge}
+                                </span>
+                              </motion.div>
+                            )}
+                            
+                            {/* Glow effect */}
+                            <motion.div
+                              className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${item.color.replace('text-', 'bg-')}`}
+                              initial={{ scale: 0.8 }}
+                              whileHover={{ scale: 1.2 }}
+                            />
+                          </div>
                         </motion.div>
                         
                         {!!isHovered && (
@@ -519,6 +578,8 @@ export function Sidebar() {
                   isActive={pathname === item.href}
                   isCollapsed={!isHovered}
                   color={item.color}
+                  badge={item.badge}
+                  badgeColor={item.badgeColor}
                 />
               )}
             </motion.div>

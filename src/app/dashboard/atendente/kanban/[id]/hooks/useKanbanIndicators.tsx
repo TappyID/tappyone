@@ -21,8 +21,6 @@ export function useKanbanIndicators(contatoId: string | null) {
   })
   const [loading, setLoading] = useState(false)
 
-  console.log('📊 [useKanbanIndicators] Hook chamado para contatoId:', contatoId)
-
   const fetchAllCounts = useCallback(async () => {
     if (!contatoId) {
       setCounts({
@@ -38,65 +36,31 @@ export function useKanbanIndicators(contatoId: string | null) {
     try {
       setLoading(true)
       let token = localStorage.getItem('token')
-      console.log('📊 [useKanbanIndicators] Token:', token ? 'existe' : 'NÃO EXISTE!')
       
       if (!token) {
-        console.error('❌ [useKanbanIndicators] Token não encontrado no localStorage!')
-        // FIXME: Usar token fixo temporariamente (igual AnotacoesIndicator)
         token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-        console.log('📊 [useKanbanIndicators] Usando token fixo temporariamente...')
       }
       
-      console.log('📊 [useKanbanIndicators] Buscando dados para:', contatoId)
-      
-      // Garantir que temos o chatId completo com @c.us
       const chatId = contatoId.includes('@c.us') ? contatoId : `${contatoId}@c.us`
-      console.log('📊 [useKanbanIndicators] ChatId formatado:', chatId)
-      console.log('📊 [useKanbanIndicators] Iniciando fetch dos endpoints...')
       
       // ✅ USAR ROTAS PROXY PARA FUNCIONAR EM PRODUÇÃO
       const promises = [
-        // Orçamentos - BACKEND GO
         fetch(`/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        // Agendamentos - BACKEND GO
         fetch(`/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        // Anotações - BACKEND GO
         fetch(`/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
-        }).then(res => {
-          console.log('📝 [useKanbanIndicators] Response anotações status:', res.status)
-          console.log('📝 [useKanbanIndicators] Response URL:', res.url)
-          if (res.ok) {
-            return res.json().then(data => {
-              console.log('📝 [useKanbanIndicators] Anotações recebidas para', chatId, ':', data)
-              console.log('📝 [useKanbanIndicators] Tipo dos dados:', typeof data, 'É array?', Array.isArray(data))
-              if (Array.isArray(data)) {
-                console.log('📝 [useKanbanIndicators] Length do array:', data.length)
-              }
-              return data
-            })
-          } else {
-            console.error('📝 [useKanbanIndicators] Erro na API de anotações:', res.status, res.statusText)
-            return []
-          }
-        }).catch(err => {
-          console.error('📝 [useKanbanIndicators] Erro no fetch de anotações:', err)
-          return []
-        }),
+        }).then(res => res.ok ? res.json() : []).catch(() => []),
         
-        // Tickets - BACKEND GO
         fetch(`/api/chats/${encodeURIComponent(chatId)}/tickets`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        // Tags - BACKEND GO
-        // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
         fetch(`/api/chats/${encodeURIComponent(chatId)}/tags`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : [])
@@ -109,22 +73,12 @@ export function useKanbanIndicators(contatoId: string | null) {
         ticketsData,
         tagsData
       ] = await Promise.all(promises)
-      
-      // Debug de cada endpoint
-      console.log('📊 [useKanbanIndicators] Dados recebidos:')
-      console.log('  💰 Orçamentos:', orcamentosData)
-      console.log('  📅 Agendamentos:', agendamentosData)
-      console.log('  📝 Anotações:', anotacoesData)
-      console.log('  🎫 Tickets:', ticketsData)
-      console.log('  🏷️ Tags:', tagsData)
 
-      // Extrair nomes das tags
       const tagsList = Array.isArray(tagsData) ? tagsData : 
                       Array.isArray(tagsData?.data) ? tagsData.data : []
       const tagNames = tagsList.map((tag: any) => tag.nome || tag.name || 'Tag')
       
       const newCounts = {
-        // Para endpoints DIRETOS - dados vêm como array ou {data: array}
         orcamentos: Array.isArray(orcamentosData) ? orcamentosData.length : 
                    Array.isArray(orcamentosData?.data) ? orcamentosData.data.length : 0,
         agendamentos: Array.isArray(agendamentosData) ? agendamentosData.length :
@@ -138,19 +92,15 @@ export function useKanbanIndicators(contatoId: string | null) {
         tagNames: tagNames
       }
       
-      console.log('📊 [useKanbanIndicators] Contadores atualizados:', newCounts)
       setCounts(newCounts)
       
     } catch (error) {
-      console.error('❌ [useKanbanIndicators] Erro ao buscar contadores:', error)
     } finally {
       setLoading(false)
     }
   }, [contatoId])
 
-  // Carregar contadores quando contatoId mudar
   useEffect(() => {
-    console.log('🚀 [useKanbanIndicators] useEffect executado! contatoId:', contatoId)
     fetchAllCounts()
   }, [fetchAllCounts])
 

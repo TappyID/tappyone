@@ -7,6 +7,10 @@ import { Plus } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
+import { useKanbanColors } from './hooks/useKanbanColors'
+import useChatsOverview from '@/hooks/useChatsOverview'
+import { useTags } from '@/hooks/useTags'
+import { useFilas } from '@/hooks/useFilas'
 
 // Componentes componentizados
 import KanbanHeader from './components/KanbanHeader'
@@ -17,7 +21,7 @@ import ColumnConfigModal from './components/ColumnConfigModal'
 import FunnelView from './components/FunnelView'
 
 // TopBar
-import AtendimentosTopBar from '../../components/AtendimentosTopBar'
+import AtendimentosTopBar from '../../atendimentos/components/AtendimentosTopBar'
 
 // Modais
 import CriarCardModal from '../components/CriarCardModal'
@@ -31,6 +35,9 @@ import TagsBottomSheet from '../../atendimento/components/FooterChatArea/BottomS
 import AnotacoesBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/AnotacoesBottomSheet'
 import TicketBottomSheet from '../../atendimento/components/FooterChatArea/BottomSheets/TicketBottomSheet'
 import ChatModalKanban from './components/ChatModalKanban'
+
+// SideFilter do Atendimento (reutilizando)
+import SideFilter from '../../atendimento/components/SideFilter'
 // DnD Kit
 import {
   DndContext,
@@ -59,98 +66,57 @@ function QuadroPage() {
   const router = useRouter()
   const quadroId = params.id as string
 
-  // Estados para chats do WhatsApp
-  const [whatsappChats, setWhatsappChats] = useState([])
-  const [loadingChats, setLoadingChats] = useState(true)
-  const [chatsError, setChatsError] = useState(null)
-
-  // Carregar chats diretamente da API WAHA
-  const loadWhatsAppChats = useCallback(async () => {
-    try {
-      setLoadingChats(true)
-      console.log('🔍 Carregando chats da API WAHA...')
-      
-      // Token fixo mais longo (1 ano) para desenvolvimento
-      const FALLBACK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-      
-      let token = localStorage.getItem('token') || FALLBACK_TOKEN
-      
-      // Se o token do localStorage expirou, usar o fallback e atualizar localStorage
+  // Hooks para buscar chats do WhatsApp e filtros avançados
+  const { chats: whatsappChats, loading: loadingChats, error: errorChats } = useChatsOverview()
+  const { tags, loading: loadingTags } = useTags()
+  const { filas, loading: loadingFilas } = useFilas()
+  
+  // Hook para cores do Kanban
+  const kanbanColors = useKanbanColors()
+  
+  // 🔄 Buscar colunas do backend - DIRETO NO USEEFFECT
+  useEffect(() => {
+    if (!quadroId) return
+    const fetchColunas = async () => {
       try {
-        if (token !== FALLBACK_TOKEN) {
-          // Decodificar JWT para verificar expiração
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          const now = Math.floor(Date.now() / 1000)
+        setColunasLoading(true)
+        const token = localStorage.getItem('token')
+        
+        const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
           
-          if (payload.exp && payload.exp < now) {
-            console.log('🔄 Token expirado, usando fallback')
-            token = FALLBACK_TOKEN
-            localStorage.setItem('token', FALLBACK_TOKEN)
+          if (data.colunas && data.colunas.length > 0) {
+            const colunasFormatadas = data.colunas
+              .sort((a: any, b: any) => a.posicao - b.posicao)
+              .map((col: any) => ({
+                id: col.id,
+                nome: col.nome,
+                cor: col.cor || '#3B82F6',
+                ordem: col.posicao
+              }))
+            
+            setColunas(colunasFormatadas)
           }
         }
       } catch (error) {
-        console.log('⚠️ Erro ao verificar token, usando fallback')
-        token = FALLBACK_TOKEN
-        localStorage.setItem('token', FALLBACK_TOKEN)
+        console.error('Erro ao buscar colunas:', error)
+      } finally {
+        setColunasLoading(false)
       }
-      
-      const response = await fetch('/api/whatsapp/chats', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      })
-      
-      console.log('🔍 Response status:', response.status)
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Token de autenticação inválido ou expirado. Faça login novamente.')
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      console.log('🔍 Dados recebidos da API:', data)
-      console.log('🔍 Tipo dos dados:', typeof data)
-      console.log('🔍 É array?', Array.isArray(data))
-      
-      // A API pode retornar diferentes estruturas
-      const chatsArray = data.data || data.chats || data || []
-      
-      console.log('🔍 Chats extraídos:', chatsArray.length)
-      console.log('🔍 Primeiro chat (se existir):', chatsArray[0])
-      setWhatsappChats(chatsArray)
-      setChatsError(null)
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar chats:', error)
-      setChatsError(error.message)
-    } finally {
-      setLoadingChats(false)
     }
-  }, [])
+    
+    fetchColunas()
+  }, [quadroId])
 
-  // Carregar chats quando componente montar
-  useEffect(() => {
-    loadWhatsAppChats()
-  }, [loadWhatsAppChats])
+  const kanbanOptimized = useKanbanOptimized(quadroId)
 
-  // Hook do Kanban
-  const {
-    loading: loadingKanban,
-    forceRefresh
-  } = useKanbanOptimized(quadroId)
-
-  // Estados para simular dados do Kanban (temporário até hooks estarem prontos)
-  const [colunas, setColunas] = useState([
-    { id: '1', nome: 'Novos Chats', cor: '#3B82F6', ordem: 0 },
-    { id: '2', nome: 'Em Atendimento', cor: '#10B981', ordem: 1 },
-    { id: '3', nome: 'Aguardando', cor: '#F59E0B', ordem: 2 },
-    { id: '4', nome: 'Finalizados', cor: '#EF4444', ordem: 3 }
-  ])
-  
   const quadro = { 
     id: quadroId, 
     nome: 'Kanban WhatsApp', 
@@ -162,7 +128,55 @@ function QuadroPage() {
   const [loading, setLoading] = useState(false)
   const [hasManualChanges, setHasManualChanges] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showFiltersSection, setShowFiltersSection] = useState(false)
+  const [activeFilter, setActiveFilter] = useState('all') // Filtro ativo (all, unread, favorites, etc)
   const [showMetrics, setShowMetrics] = useState(false)
+  const [sortBy, setSortBy] = useState<'name' | 'date'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  // Calcular contadores dos filtros
+  const chatCounters = useMemo(() => {
+    const counters = {
+      total: whatsappChats.length,
+      unread: whatsappChats.filter(chat => (chat.unreadCount || 0) > 0).length,
+      read: whatsappChats.filter(chat => (chat.unreadCount || 0) === 0).length,
+      groups: whatsappChats.filter(chat => chat.id?.includes('@g.us')).length,
+      emAtendimento: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const status = kanbanData?.status?.toLowerCase()
+        const hasResponsavel = !!kanbanData?.responsavel
+        return status === 'em_atendimento' || status === 'atendimento' || (hasResponsavel && !status)
+      }).length,
+      aguardando: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const status = kanbanData?.status?.toLowerCase()
+        const hasResponsavel = !!kanbanData?.responsavel
+        return status === 'aguardando' || status === 'pendente' || (!hasResponsavel && !status)
+      }).length,
+      finalizado: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        const status = kanbanData?.status?.toLowerCase()
+        return status === 'finalizado' || status === 'concluido'
+      }).length,
+      agentesIA: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        return kanbanData?.agentes && kanbanData.agentes.length > 0
+      }).length,
+      leadsQuentes: whatsappChats.filter(chat => {
+        const kanbanData = kanbanOptimized.cards?.[chat.id]
+        return (
+          (kanbanData?.tags && kanbanData.tags.length > 0) ||
+          (kanbanData?.agendamentos && kanbanData.agendamentos.length > 0) ||
+          (kanbanData?.orcamentos && kanbanData.orcamentos.length > 0)
+        )
+      }).length
+    }
+    return counters
+  }, [whatsappChats, kanbanOptimized.cards])
+  
+  // Estados das colunas do Kanban - carregadas do backend
+  const [colunas, setColunas] = useState<any[]>([])
+  const [colunasLoading, setColunasLoading] = useState(true)
   
   // Estados de edição
   const [editingQuadroTitle, setEditingQuadroTitle] = useState(false)
@@ -180,6 +194,11 @@ function QuadroPage() {
   const [conexaoFilaModal, setConexaoFilaModal] = useState({ isOpen: false, card: null })
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [selectedColumnForConfig, setSelectedColumnForConfig] = useState<any>(null)
+  const [showAddColunaModal, setShowAddColunaModal] = useState(false)
+  const [novaColunaData, setNovaColunaData] = useState({ nome: '', cor: '#3B82F6' })
+  const [colunaLoading, setColunaLoading] = useState(false)
+  const [colunaError, setColunaError] = useState('')
+  const [colunaSuccess, setColunaSuccess] = useState(false)
   
   // Estado para controlar a visualização ativa (kanban, funil, ncs)
   const [activeView, setActiveView] = useState<'kanban' | 'funnel' | 'ncs'>('kanban')
@@ -195,6 +214,81 @@ function QuadroPage() {
   
   // Estado para mapeamento de cards nas colunas (armazenamento local)
   const [cardColumnMapping, setCardColumnMapping] = useState<Record<string, string>>({})
+  const [mappingLoaded, setMappingLoaded] = useState(false)
+  
+  // 🔥 SINCRONIZAR TODOS OS QUADROS DO LOCALSTORAGE COM O BANCO
+  useEffect(() => {
+    if (whatsappChats.length === 0) return
+    
+    const syncAllQuadrosToDatabase = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      // Buscar TODOS os mapeamentos de TODOS os quadros no localStorage
+      const allMappings: Record<string, string> = {}
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('kanban-mapping-')) {
+          try {
+            const mapping = JSON.parse(localStorage.getItem(key) || '{}')
+            Object.assign(allMappings, mapping)
+          } catch (e) {
+            console.error('Erro ao parsear mapping:', key)
+          }
+        }
+      }
+      
+      const totalCards = Object.keys(allMappings).length
+      if (totalCards === 0) return
+      
+      console.log('🔄 Sincronizando', totalCards, 'cards de TODOS os quadros...')
+      
+      let synced = 0
+      let errors = 0
+      
+      for (const [chatId, columnId] of Object.entries(allMappings)) {
+        try {
+          // Ignorar chats inválidos (status, broadcast, etc)
+          if (chatId.includes('status@broadcast') || chatId.includes('broadcast')) {
+            console.log('⏭️ Ignorando chat inválido:', chatId)
+            continue
+          }
+          
+          const chat = whatsappChats.find((c: any) => c.id === chatId)
+          if (!chat) continue
+          
+          const response = await fetch('/api/kanban/cards/upsert', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              conversaId: chatId,
+              colunaId: columnId,
+              nome: chat.name || chat.pushName || chatId,
+              posicao: 0
+            })
+          })
+          
+          if (response.ok) {
+            synced++
+          } else {
+            errors++
+          }
+        } catch (error) {
+          errors++
+        }
+      }
+      
+      console.log(`✅ Sincronização completa: ${synced} cards salvos, ${errors} erros`)
+    }
+    
+    // Executar sincronização após 3 segundos (dar tempo pros chats carregarem)
+    const timer = setTimeout(syncAllQuadrosToDatabase, 3000)
+    return () => clearTimeout(timer)
+  }, [whatsappChats])
   
   // Estados para DragOverlay (rastro visual)
   const [activeCard, setActiveCard] = useState<any>(null)
@@ -214,16 +308,81 @@ function QuadroPage() {
     })
   )
 
-  // Carregar mapeamento do localStorage
+  // Carregar mapeamento DO BANCO DE DADOS (não do localStorage)
   useEffect(() => {
-    const savedMapping = localStorage.getItem(`kanban-mapping-${quadroId}`)
-    if (savedMapping) {
+    const loadMappingFromDatabase = async () => {
+      const token = localStorage.getItem('token')
+      if (!token || !quadroId) return
+      
       try {
-        setCardColumnMapping(JSON.parse(savedMapping))
-      } catch (e) {
-        console.error('Erro ao carregar mapeamento:', e)
+        console.log('📥 [KANBAN] Carregando mapeamento do banco para quadro:', quadroId)
+        
+        // Buscar todos os cards do quadro do banco
+        const response = await fetch(`/api/kanban/quadros/${quadroId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          console.error('❌ [KANBAN] Erro ao buscar quadro:', response.status)
+          return
+        }
+        
+        const data = await response.json()
+        const colunas = data.colunas || []
+        
+        console.log('🔍 [KANBAN] Dados do banco:', {
+          totalColunas: colunas.length,
+          colunas: colunas.map((c: any) => ({
+            id: c.id,
+            nome: c.nome,
+            totalCards: c.cards?.length || 0
+          }))
+        })
+        
+        // Construir mapeamento chatId -> colunaId do banco
+        const mapping: Record<string, string> = {}
+        let totalCards = 0
+        
+        colunas.forEach((coluna: any) => {
+          const cards = coluna.cards || []
+          console.log(`📋 [KANBAN] Coluna "${coluna.nome}" (${coluna.id}): ${cards.length} cards`)
+          
+          cards.forEach((card: any) => {
+            // Backend retorna como conversaId (camelCase), não conversa_id (snake_case)
+            const chatId = card.conversaId || card.conversa_id
+            
+            if (chatId) {
+              mapping[chatId] = coluna.id
+              totalCards++
+              console.log(`  ✅ Card: ${chatId.slice(0, 20)} → ${coluna.nome}`)
+            } else {
+              console.log(`  ❌ Card SEM chatId:`, {
+                id: card.id,
+                nome: card.nome,
+                conversaId: card.conversaId,
+                conversa_id: card.conversa_id
+              })
+            }
+          })
+        })
+        
+        console.log(`✅ [KANBAN] Mapeamento carregado do banco: ${totalCards} cards`)
+        setCardColumnMapping(mapping)
+        setMappingLoaded(true)
+        
+        // Salvar no localStorage como backup
+        localStorage.setItem(`kanban-mapping-${quadroId}`, JSON.stringify(mapping))
+        
+      } catch (error) {
+        console.error('❌ [KANBAN] Erro ao carregar mapeamento do banco:', error)
+        setMappingLoaded(true) // Marcar como carregado mesmo com erro
       }
     }
+    
+    loadMappingFromDatabase()
   }, [quadroId])
 
   // Salvar mapeamento no localStorage quando mudar
@@ -234,15 +393,26 @@ function QuadroPage() {
     }
   }, [cardColumnMapping, quadroId])
 
-  // Funções mock para CRUD (temporário)
+  // Função REAL para criar coluna no backend
   const createColuna = async (data: any) => {
-    const newColuna = {
-      id: Date.now().toString(),
-      nome: data.nome,
-      cor: data.cor,
-      ordem: colunas.length
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token não encontrado')
+    
+    const response = await fetch('/api/kanban/column-create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Erro ao criar coluna')
     }
-    setColunas(prev => [...prev, newColuna])
+    
+    return await response.json()
   }
 
   const updateColuna = async (id: string, data: any) => {
@@ -256,23 +426,12 @@ function QuadroPage() {
   }
 
   const updateQuadro = async (id: string, data: any) => {
-    console.log('Update quadro:', id, data)
   }
 
   // Mapear chats do WhatsApp para as colunas
   const mapearConversasParaColunas = useCallback(() => {
-    console.log('🔄 mapearConversasParaColunas chamado')
-    console.log('🔄 colunas:', colunas?.length || 0)
-    console.log('🔄 whatsappChats:', whatsappChats?.length || 0)
-    
-    if (!colunas || colunas.length === 0) {
-      console.log('❌ Sem colunas disponíveis')
-      return []
-    }
-    if (!whatsappChats || whatsappChats.length === 0) {
-      console.log('❌ Sem chats disponíveis')
-      return colunas.map(col => ({ ...col, cards: [], totalCards: 0 }))
-    }
+    if (!colunas || colunas.length === 0) return []
+    if (!whatsappChats || whatsappChats.length === 0) return colunas.map(col => ({ ...col, cards: [], totalCards: 0 }))
     
     // Filtrar chats baseado na busca
     let filteredChats = whatsappChats
@@ -285,12 +444,115 @@ function QuadroPage() {
       )
     }
 
+    // Aplicar ordenação
+    if (sortBy === 'date') {
+      filteredChats = filteredChats.sort((a, b) => {
+        const timestampA = a.lastMessage?.timestamp || 0
+        const timestampB = b.lastMessage?.timestamp || 0
+        return sortOrder === 'desc' ? timestampB - timestampA : timestampA - timestampB
+      })
+    } else if (sortBy === 'name') {
+      filteredChats = filteredChats.sort((a, b) => {
+        const nameA = (a.name || a.id || '').toLowerCase()
+        const nameB = (b.name || b.id || '').toLowerCase()
+        return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA)
+      })
+    }
+
+    // Aplicar filtros baseados no activeFilter (igual ao Atendimento)
+    switch (activeFilter) {
+      case 'unread':
+        filteredChats = filteredChats.filter(chat => (chat.unreadCount || 0) > 0)
+        break
+      case 'read':
+        filteredChats = filteredChats.filter(chat => (chat.unreadCount || 0) === 0)
+        break
+      case 'read-no-reply':
+        filteredChats = filteredChats.filter(chat => 
+          (chat.unreadCount || 0) === 0 && !chat.lastMessage?.fromMe
+        )
+        break
+      case 'groups':
+        filteredChats = filteredChats.filter(chat => chat.id?.includes('@g.us'))
+        break
+      case 'favorites':
+        // TODO: Implementar favoritos
+        break
+      case 'archived':
+        // TODO: Implementar arquivados
+        break
+      case 'hidden':
+        // TODO: Implementar ocultos
+        break
+      case 'em_atendimento':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          const status = kanbanData?.status?.toLowerCase()
+          const hasResponsavel = !!kanbanData?.responsavel
+          
+          if (status === 'em_atendimento' || status === 'atendimento') {
+            return true
+          } else if (hasResponsavel && !status) {
+            return true
+          }
+          return false
+        })
+        break
+      case 'aguardando':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          const status = kanbanData?.status?.toLowerCase()
+          const hasResponsavel = !!kanbanData?.responsavel
+          
+          if (status === 'aguardando' || status === 'pendente') {
+            return true
+          } else if (!hasResponsavel && !status) {
+            return true
+          }
+          return false
+        })
+        break
+      case 'finalizado':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          const status = kanbanData?.status?.toLowerCase()
+          return status === 'finalizado' || status === 'concluido'
+        })
+        break
+      case 'agentes_ia':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          return kanbanData?.agentes && kanbanData.agentes.length > 0
+        })
+        break
+      case 'leads_quentes':
+        filteredChats = filteredChats.filter(chat => {
+          const kanbanData = kanbanOptimized.cards?.[chat.id]
+          return (
+            (kanbanData?.tags && kanbanData.tags.length > 0) ||
+            (kanbanData?.agendamentos && kanbanData.agendamentos.length > 0) ||
+            (kanbanData?.orcamentos && kanbanData.orcamentos.length > 0)
+          )
+        })
+        break
+      case 'all':
+      default:
+        // Mostrar todos (sem filtro adicional)
+        break
+    }
+
     // Mapear chats para colunas
     const columnasComCards = colunas.map(coluna => {
       // Pegar apenas os chats que estão mapeados para esta coluna
       const cardsNaColuna = filteredChats.filter(chat => {
         const colunaId = cardColumnMapping[chat.id]
-        // Se não tem mapeamento, vai para primeira coluna por padrão
+        
+        // 🔥 IMPORTANTE: Se mapeamento ainda não foi carregado, NÃO mostrar cards
+        if (!mappingLoaded) {
+          return false
+        }
+        
+        // Se não tem mapeamento E já carregou, vai para primeira coluna por padrão
         if (!colunaId) {
           return coluna.ordem === 0 || coluna.id === colunas[0].id
         }
@@ -300,25 +562,23 @@ function QuadroPage() {
       // Limitar quantidade de cards visíveis para performance
       const cardsVisiveis = cardsNaColuna.slice(0, MAX_VISIBLE_CARDS)
 
-      // Debug para ver estrutura dos dados
-      if (cardsVisiveis.length > 0) {
-        console.log('📋 Estrutura do primeiro chat:', {
-          id: cardsVisiveis[0].id,
-          name: cardsVisiveis[0].name,
-          pushName: cardsVisiveis[0].pushName,
-          allProps: Object.keys(cardsVisiveis[0])
-        })
-      }
 
-      // Adicionar os dados corretos do chat (nome, telefone, etc)
-      const cardsFormatados = cardsVisiveis.map((chat, index) => ({
-        ...chat,
-        // Priorizar nome do pushName, depois name, depois extrair do ID
-        nome: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
-        name: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
-        phone: chat.id?.replace('@c.us', '').replace('@g.us', ''), // Extrair número do ID
-        chatId: chat.id, // Manter o ID original do chat
-      }))
+      // Adicionar os dados corretos do chat (nome, telefone, etc) + dados do useKanbanOptimized
+      const cardsFormatados = cardsVisiveis.map((chat, index) => {
+        // Buscar dados do useKanbanOptimized para este chat
+        const kanbanData = kanbanOptimized.cards?.[chat.id] || {}
+        
+        return {
+          ...chat,
+          // Priorizar nome do pushName, depois name, depois extrair do ID
+          nome: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
+          name: chat.pushName || chat.name || chat.id?.replace('@c.us', '').replace('@g.us', '') || 'Sem nome',
+          phone: chat.id?.replace('@c.us', '').replace('@g.us', ''), // Extrair número do ID
+          chatId: chat.id, // Manter o ID original do chat
+          // 🔥 ADICIONAR dados do useKanbanOptimized (fila, status, atendente, etc)
+          ...kanbanData
+        }
+      })
 
       return {
         ...coluna,
@@ -328,7 +588,7 @@ function QuadroPage() {
     })
 
     return columnasComCards
-  }, [colunas, whatsappChats, cardColumnMapping, searchQuery])
+  }, [colunas, whatsappChats, cardColumnMapping, searchQuery, mappingLoaded, kanbanOptimized.cards, activeFilter, sortBy, sortOrder])
 
   // Handlers de edição do quadro
   const handleDoubleClickQuadroTitle = () => {
@@ -377,7 +637,6 @@ function QuadroPage() {
   // 🗑️ Função para deletar coluna com realocação de contatos
   const handleDeleteWithReallocation = async (columnId: string, targetColumnId: string) => {
     try {
-      console.log('🗑️ Realocando contatos da coluna', columnId, 'para', targetColumnId)
       
       // 1. Encontrar a coluna que será deletada
       const sourceColumn = colunasComCards.find(col => col.id === columnId)
@@ -390,14 +649,11 @@ function QuadroPage() {
       // TODO: Implementar API para mover cards em lote
       // Por enquanto, vamos simular movendo um por um
       for (const card of sourceColumn.cards) {
-        console.log('📦 Movendo card', card.id, 'para coluna', targetColumnId)
         // await moveCardToColumn(card.id, targetColumnId)
       }
 
       // 3. Deletar a coluna vazia
       await deleteColuna(columnId)
-      
-      console.log('✅ Coluna deletada e contatos realocados com sucesso!')
     } catch (error) {
       console.error('❌ Erro ao realocar contatos:', error)
       alert('Erro ao realocar contatos. Tente novamente.')
@@ -409,15 +665,54 @@ function QuadroPage() {
     setShowCriarCardModal(true)
   }
 
-  const handleAddColuna = async () => {
-    const nome = prompt('Nome da nova coluna:')
-    if (nome) {
-      await createColuna({
-        nome,
-        cor: '#' + Math.floor(Math.random()*16777215).toString(16),
-        ordem: colunas.length,
+  // Abre o modal para adicionar coluna
+  const handleAddColuna = () => {
+    setNovaColunaData({ nome: '', cor: '#3B82F6' })
+    setColunaError('')
+    setColunaSuccess(false)
+    setShowAddColunaModal(true)
+  }
+
+  // Salva a nova coluna no backend
+  const handleSaveColuna = async () => {
+    if (!novaColunaData.nome.trim()) {
+      setColunaError('Digite um nome para a coluna')
+      return
+    }
+    
+    if (novaColunaData.nome.length > 50) {
+      setColunaError('O nome da coluna deve ter no máximo 50 caracteres')
+      return
+    }
+    
+    setColunaLoading(true)
+    setColunaError('')
+    
+    try {
+      const payload = {
+        nome: novaColunaData.nome,
+        cor: novaColunaData.cor,
+        posicao: colunas.length,
         quadroId: quadroId
+      }
+      
+      await createColuna(payload)
+      
+      setColunaSuccess(true)
+      
+      // Recarregar página inteira para garantir que vê a nova coluna
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
+    } catch (error: any) {
+      console.error('❌ ERRO COMPLETO:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
       })
+      setColunaError(`Erro: ${error.message || 'Falha ao criar coluna'}`)
+    } finally {
+      setColunaLoading(false)
     }
   }
 
@@ -433,7 +728,6 @@ function QuadroPage() {
     
     if (cardArrastado) {
       setActiveCard(cardArrastado)
-      console.log('🎯 Iniciando drag do card:', cardArrastado.name)
       return
     }
 
@@ -441,7 +735,6 @@ function QuadroPage() {
     const colunaArrastada = colunas.find(col => col.id === active.id)
     if (colunaArrastada) {
       setActiveColumn(colunaArrastada)
-      console.log('🎯 Iniciando drag da coluna:', colunaArrastada.nome)
     }
   }
 
@@ -453,23 +746,13 @@ function QuadroPage() {
     setActiveColumn(null)
     
     if (!over) return
-
     const activeId = active.id as string
     const overId = over.id as string
 
     // 🔄 Verificar se está reordenando colunas
     const isColumnDrag = colunas.some(col => col.id === activeId)
     
-    console.log('🔄 Debug DragEnd:', {
-      activeId,
-      overId,
-      isColumnDrag,
-      activeType: active.data.current?.type,
-      overType: over.data.current?.type
-    })
-    
-    if (isColumnDrag) {
-      // NOVA LÓGICA: Aceitar qualquer coluna como destino
+    if (isColumnDrag && over.data.current?.type === 'column') {
       let targetColumnId = overId
       
       // Se o overId é de um card, pegar a coluna do card
@@ -488,14 +771,11 @@ function QuadroPage() {
         // Reordenar colunas
         const oldIndex = colunas.findIndex(col => col.id === activeId)
         const newIndex = colunas.findIndex(col => col.id === targetColumnId)
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const newColunas = arrayMove(colunas, oldIndex, newIndex)
-        setColunas(newColunas)
         
-        // Opcional: Salvar nova ordem no backend
-        console.log('🔄 Nova ordem das colunas:', newColunas.map(c => c.nome))
-      }
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const newColunas = arrayMove(colunas, oldIndex, newIndex)
+          setColunas(newColunas)
+        }
       }
     } else if (!isColumnDrag) {
       // Lógica para mover cards
@@ -521,21 +801,163 @@ function QuadroPage() {
           [activeId]: newColumnId
         }))
         
-        console.log(`🔄 Card ${activeId} movido para coluna ${newColumnId}`)
+        // 🔥 CRIAR/ATUALIZAR CARD NO BANCO
+        const saveCardToDatabase = async () => {
+          try {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            
+            // Buscar dados do chat
+            const chat = whatsappChats.find((c: any) => c.id === activeId)
+            if (!chat) return
+            
+            const response = await fetch('/api/kanban/cards/upsert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                conversaId: activeId,
+                colunaId: newColumnId,
+                nome: chat.name || chat.pushName || activeId,
+                posicao: 0 // Sempre no topo
+              })
+            })
+            
+            if (!response.ok) {
+              console.error('❌ Erro ao salvar card no banco:', await response.text())
+            } else {
+              console.log('✅ Card salvo no banco:', activeId, '→', newColumnId)
+            }
+          } catch (error) {
+            console.error('❌ Erro ao salvar card:', error)
+          }
+        }
+        
+        saveCardToDatabase()
       }
+    }
+  }
+
+  // 🔥 SINCRONIZAR MANUALMENTE TODOS OS CARDS
+  const syncAllCardsManually = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('Token não encontrado!')
+      return
+    }
+    
+    // 🎯 Buscar TODOS os chats do WhatsApp DIRETO do backend
+    try {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+      const sessionName = 'user_fb8da1d7_1758158816675' // Session padrão
+      
+      const response = await fetch(`/api/whatsapp/chats/cached?session=${sessionName}&limit=10000&offset=0`, {
+        headers: { 
+          'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Erro ao buscar chats')
+      }
+      
+      const todosOsChats = await response.json()
+      
+      // Backend retorna array direto
+      if (!Array.isArray(todosOsChats)) {
+        throw new Error('Resposta inválida do backend')
+      }
+      
+      if (todosOsChats.length === 0) {
+        alert('Nenhum chat encontrado!')
+        return
+      }
+      
+      // Usar primeira coluna do quadro
+      const primeiraColuna = colunas[0]
+      if (!primeiraColuna) {
+        alert('Nenhuma coluna encontrada no quadro!')
+        return
+      }
+      
+      if (!confirm(`🎯 Criar ${todosOsChats.length} cards na coluna "${primeiraColuna.nome}"?`)) {
+        return
+      }
+      
+      setLoading(true)
+      console.log('🔄 [MANUAL] Criando', todosOsChats.length, 'cards...')
+      
+      let synced = 0
+      let errors = 0
+      
+      // Criar cards em lote (10 por vez)
+      const batchSize = 10
+      for (let i = 0; i < todosOsChats.length; i += batchSize) {
+        const batch = todosOsChats.slice(i, i + batchSize)
+        
+        await Promise.all(
+          batch.map(async (chat: any) => {
+            try {
+              // Validar se chat tem ID
+              if (!chat?.id) {
+                console.warn('⚠️ Chat sem ID:', chat)
+                return
+              }
+
+              const res = await fetch('/api/kanban/cards/upsert', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  conversaId: chat.id,
+                  colunaId: primeiraColuna.id,
+                  nome: chat.name || (chat.id ? chat.id.split('@')[0] : 'Sem nome'), // Usar número do telefone como nome
+                  posicao: 0
+                })
+              })
+              
+              if (res.ok) {
+                synced++
+                console.log('✅', chat.id)
+              } else {
+                errors++
+                console.error('❌', chat.id, await res.text())
+              }
+            } catch (error) {
+              errors++
+              console.error('❌', chat.id, error)
+            }
+          })
+        )
+        
+        // Pequeno delay entre lotes
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      
+      setLoading(false)
+      alert(`✅ Sincronização completa!\n${synced} cards criados\n${errors} erros`)
+      refreshData()
+      
+    } catch (error) {
+      setLoading(false)
+      alert(`❌ Erro: ${error}`)
+      console.error('❌ Erro ao sincronizar cards:', error)
     }
   }
 
   // Funções auxiliares
   const refreshData = async () => {
     setLoading(true)
-    await loadWhatsAppChats()
-    if (forceRefresh) {
-      await forceRefresh()
+    if (kanbanOptimized.forceRefresh) {
+      await kanbanOptimized.forceRefresh()
     }
     setLoading(false)
   }
-
   const resetAndRemap = () => {
     setCardColumnMapping({})
     localStorage.removeItem(`kanban-mapping-${quadroId}`)
@@ -553,37 +975,31 @@ function QuadroPage() {
   const onOpenChat = (card: any) => {
     setSelectedChat(card)
     setShowChatModal(true)
-    console.log('Abrindo chat modal para:', card.name)
   }
   
   const onOpenOrcamento = (card: any) => {
     setSelectedChat(card)
     setShowOrcamentoSheet(true)
-    console.log('Abrindo orçamento sheet para:', card.name)
   }
   
   const onOpenAgendamento = (card: any) => {
     setSelectedChat(card)
     setShowAgendamentoSheet(true)
-    console.log('Abrindo agendamento sheet para:', card.name)
   }
   
   const onOpenTags = (card: any) => {
     setSelectedChat(card)
     setShowTagsSheet(true)
-    console.log('Abrindo tags sheet para:', card.name)
   }
   
   const onOpenAnotacoes = (card: any) => {
     setSelectedChat(card)
     setShowAnotacoesSheet(true)
-    console.log('Abrindo anotações sheet para:', card.name)
   }
   
   const onOpenTickets = (card: any) => {
     setSelectedChat(card)
     setShowTicketsSheet(true)
-    console.log('Abrindo tickets sheet para:', card.name)
   }
 
   if (loadingChats) {
@@ -611,28 +1027,28 @@ function QuadroPage() {
   }
 
   // Mostrar erro se houver
-  if (chatsError) {
+  if (errorChats) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
-          : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
+          ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+          : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'
       }`}>
-        <div className="text-center">
-          <div className="text-red-500 mb-4">❌</div>
-          <p className={`text-sm mb-2 ${
-            theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+        <div className="text-center p-8 max-w-md">
+          <div className="text-6xl mb-4">❌</div>
+          <h2 className={`text-2xl font-bold mb-2 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
-            Erro ao carregar chats do WhatsApp
-          </p>
+            Erro ao Carregar Chats
+          </h2>
           <p className={`text-xs mb-4 opacity-50 ${
             theme === 'dark' ? 'text-red-400' : 'text-red-600'
           }`}>
-            {chatsError}
+            {errorChats}
           </p>
           <div className="flex gap-3">
             <button
-              onClick={loadWhatsAppChats}
+              onClick={() => window.location.reload()}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 theme === 'dark'
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -642,7 +1058,7 @@ function QuadroPage() {
               Tentar Novamente
             </button>
             
-            {chatsError?.includes('Token') && (
+            {errorChats?.includes('Token') && (
               <button
                 onClick={() => router.push('/login')}
                 className={`px-4 py-2 rounded-lg transition-colors ${
@@ -663,11 +1079,17 @@ function QuadroPage() {
   const colunasComCards = mapearConversasParaColunas()
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${
-      theme === 'dark' 
-        ? 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155]' 
-        : 'bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100'
-    }`}>
+    <div 
+      className="min-h-screen transition-all duration-500"
+      style={{
+        background: kanbanColors.board.bgImage 
+          ? `linear-gradient(to bottom right, ${kanbanColors.board.bgPrimary}dd, ${kanbanColors.board.bgSecondary}dd), url(${kanbanColors.board.bgImage})`
+          : `linear-gradient(to bottom right, ${kanbanColors.board.bgPrimary}, ${kanbanColors.board.bgSecondary})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       
       {/* TopBar Original */}
       <AtendimentosTopBar 
@@ -695,6 +1117,7 @@ function QuadroPage() {
         mapearConversasParaColunas={mapearConversasParaColunas}
         refreshData={refreshData}
         resetAndRemap={resetAndRemap}
+        syncAllCardsManually={syncAllCardsManually}
         setShowShortcuts={setShowShortcuts}
         handleDoubleClickQuadroTitle={handleDoubleClickQuadroTitle}
         handleDoubleClickQuadroDescription={handleDoubleClickQuadroDescription}
@@ -704,10 +1127,58 @@ function QuadroPage() {
         setEditingQuadroDescricao={setEditingQuadroDescricao}
         activeView={activeView}
         onViewChange={setActiveView}
+        showFiltersSection={showFiltersSection}
+        setShowFiltersSection={setShowFiltersSection}
       />
 
-      {/* Seção de Filtros - Controlada pelo botão no header */}
-      {/* Esta seção será implementada futuramente com SideFilter do atendimento */}
+      {/* Seção de Filtros - Importado do Atendimento - Controlado pelo botão no header */}
+      {showFiltersSection && (
+        <SideFilter
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        selectedTag=""
+        onTagChange={() => {}}
+        tags={tags || []}
+        selectedFila=""
+        onFilaChange={() => {}}
+        filas={filas || []}
+        kanbanStatuses={[]}
+        ticketStatuses={[]}
+        priceRanges={[]}
+        selectedKanbanStatus=""
+        selectedTicketStatus=""
+        selectedPriceRange=""
+        selectedStatusFilter="all"
+        onStatusFilterChange={() => {}}
+        isLoadingTags={loadingTags}
+        isLoadingFilas={loadingFilas}
+        isLoadingKanban={false}
+        isLoadingTickets={false}
+        isLoadingAtendentes={false}
+        totalChats={chatCounters.total}
+        unreadChats={chatCounters.unread}
+        readChats={chatCounters.read}
+        archivedChats={0}
+        groupChats={chatCounters.groups}
+        favoriteChats={0}
+        hiddenChats={0}
+        emAtendimentoChats={chatCounters.emAtendimento}
+        aguardandoChats={chatCounters.aguardando}
+        finalizadoChats={chatCounters.finalizado}
+        agentesIAChats={chatCounters.agentesIA}
+        leadsQuentesChats={chatCounters.leadsQuentes}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        searchOptions={{ searchInChats: true, searchInMessages: false, searchInContacts: false }}
+        onSearchOptionsChange={() => {}}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(newSortBy, newSortOrder) => {
+          setSortBy(newSortBy)
+          setSortOrder(newSortOrder)
+        }}
+        />
+      )}
 
       {/* Renderização condicional baseada na view ativa */}
       {activeView === 'funnel' && (
@@ -869,6 +1340,97 @@ function QuadroPage() {
       )}
 
       {/* MODAIS REAIS DA OLDPAGE */}
+
+      {/* Modal Adicionar Coluna */}
+      {showAddColunaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 shadow-xl"
+          >
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Nova Coluna
+            </h3>
+            
+            {/* Mensagens de Status */}
+            {colunaError && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+                <p className="text-sm text-red-700 dark:text-red-300">❌ {colunaError}</p>
+              </div>
+            )}
+            
+            {colunaSuccess && (
+              <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300">✅ Coluna criada com sucesso!</p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nome da Coluna
+                </label>
+                <input
+                  type="text"
+                  value={novaColunaData.nome}
+                  onChange={(e) => setNovaColunaData({ ...novaColunaData, nome: e.target.value })}
+                  disabled={colunaLoading}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  placeholder="Ex: Em Progresso"
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cor
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={novaColunaData.cor}
+                    onChange={(e) => setNovaColunaData({ ...novaColunaData, cor: e.target.value })}
+                    disabled={colunaLoading}
+                    className="w-20 h-10 rounded cursor-pointer disabled:opacity-50"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {novaColunaData.cor}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setShowAddColunaModal(false)}
+                disabled={colunaLoading}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                         text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveColuna}
+                disabled={colunaLoading}
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600
+                         disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {colunaLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar Coluna'
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
       
       {/* Agendamento Bottom Sheet */}
       {showAgendamentoSheet && selectedChat && (

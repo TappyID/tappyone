@@ -13,6 +13,8 @@ interface SidebarItemProps {
   isCollapsed: boolean
   color: string
   isSubmenuItem?: boolean
+  badge?: number | null
+  badgeColor?: string
 }
 
 export function SidebarItem({ 
@@ -22,7 +24,9 @@ export function SidebarItem({
   isActive, 
   isCollapsed, 
   color,
-  isSubmenuItem = false
+  isSubmenuItem = false,
+  badge,
+  badgeColor
 }: SidebarItemProps) {
   return (
     <motion.div
@@ -33,23 +37,20 @@ export function SidebarItem({
       <Link href={href}>
         <motion.div
           className={cn(
-            "group relative flex items-center rounded-xl transition-all duration-300 ease-out overflow-hidden",
+            "group relative flex items-center rounded-lg transition-all duration-300 ease-out overflow-hidden",
             "active:scale-[0.98]",
             isCollapsed ? "p-3 justify-center" : "p-3 gap-3",
             isSubmenuItem ? "ml-2 py-2 px-3 rounded-lg" : "",
             isActive 
-              ? (isCollapsed ? "bg-white/20 text-white shadow-lg" : "bg-white/10 text-white shadow-lg")
-              : (isCollapsed ? "bg-white/10 text-white hover:bg-white/20 shadow-sm hover:shadow-lg" : "text-white/70 hover:bg-white/5 hover:text-white")
+              ? (!isCollapsed && "bg-white/10 text-white shadow-lg")
+              : (!isCollapsed && "text-white/70 hover:bg-white/5 hover:text-white")
           )}
-          whileHover={!isSubmenuItem ? { x: isCollapsed ? 0 : 2 } : {}}
+          whileHover={!isSubmenuItem ? { x: isCollapsed ? 0 : 2, scale: isCollapsed ? 1.05 : 1 } : {}}
         >
           {/* Indicador ativo */}
           {isActive && (
             <motion.div
-              className={cn(
-                "absolute left-0 top-1/2 h-6 w-1 rounded-r-full",
-                isCollapsed ? "bg-[#273155]" : "bg-white"
-              )}
+              className="absolute left-0 top-1/2 h-6 w-1 rounded-r-full bg-white"
               layoutId={isSubmenuItem ? `submenu-indicator-${title}` : "activeIndicator"}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -57,32 +58,42 @@ export function SidebarItem({
             />
           )}
 
-          {/* Ícone com Background */}
+          {/* Ícone com Background - Estilo Submenu */}
           <motion.div
-            className="relative flex items-center justify-center rounded-lg transition-all duration-200"
+            className="relative"
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
-            <Icon
-              className={cn(
-                "transition-all duration-300",
-                isActive 
-                  ? (isCollapsed ? `${color} drop-shadow-sm` : "text-white drop-shadow-sm")
-                  : (isCollapsed ? "text-gray-600 group-hover:text-gray-900" : "text-white/70 group-hover:text-white")
+            <div className="p-2 rounded-lg transition-all duration-200 relative bg-white/20">
+              <Icon
+                className="w-5 h-5 text-white transition-all duration-300 drop-shadow-sm"
+                strokeWidth={isActive ? 2.5 : 2}
+              />
+              
+              {/* Badge */}
+              {badge !== null && badge !== undefined && badge > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  className={`absolute ${isCollapsed ? '-top-1.5 -right-1.5' : '-top-2 -right-2'} min-w-[16px] h-[16px] px-0.5 bg-gradient-to-br ${badgeColor || 'from-red-400 to-red-600'} rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-white/30`}
+                >
+                  <span className="text-[8px] font-bold text-white drop-shadow-sm">
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                </motion.div>
               )}
-              size={isCollapsed ? 20 : 18}
-              strokeWidth={isActive ? 2.5 : 2}
-            />
-            
-            {/* Glow effect no hover */}
-            <motion.div
-              className={cn(
-                "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300",
-                isActive ? color.replace('text-', 'bg-') : "bg-gray-400"
-              )}
-              initial={{ scale: 0.8 }}
-              whileHover={{ scale: 1.2 }}
-            />
+              
+              {/* Glow effect no hover */}
+              <motion.div
+                className={cn(
+                  "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300",
+                  color.replace('text-', 'bg-')
+                )}
+                initial={{ scale: 0.8 }}
+                whileHover={{ scale: 1.2 }}
+              />
+            </div>
           </motion.div>
 
           {/* Título */}

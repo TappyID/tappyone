@@ -39,7 +39,7 @@ import ReactCountryFlag from 'react-country-flag'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useColorTheme } from '@/contexts/ColorThemeContext'
-import { ColorThemeModal } from '../../../admin/components/ColorThemeModal'
+import { ColorThemeModal } from '../../components/ColorThemeModal'
 import { useAtendentes } from '@/hooks/useAtendentes'
 import { useTickets } from '@/hooks/useTickets'
 // Removidos hooks do WhatsApp para evitar ERR_INSUFFICIENT_RESOURCES
@@ -89,8 +89,8 @@ export default function AtendimentosTopBar({
 
   const handleMenuClick = (action: string) => {
     setShowProfile(false)
-    // Todos os links direcionam para configurações
-    router.push('/dashboard/admin/configuracoes')
+    // Todos os links direcionam para configurações do atendente
+    router.push('/dashboard/atendente/configuracoes')
   }
   
   // Mapeamento de idiomas para bandeiras
@@ -125,8 +125,8 @@ export default function AtendimentosTopBar({
   const isKanbanPage = pathname?.includes('/kanban')
   
   // Contadores baseados no banco de dados
-  const totalTickets = tickets?.length || 0
-  const totalLeads = 0 // Placeholder - dados vêm do Kanban otimizado agora
+  const totalTickets = tickets?.length || 10
+  const totalLeads = 1240 // Placeholder - dados vêm do Kanban otimizado agora
   const atendentesAtivos = atendentes?.filter(a => a.ativo)?.length || 0
   
   const loading = atendentesLoading || ticketsLoading
@@ -298,9 +298,9 @@ export default function AtendimentosTopBar({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (isKanbanPage) {
-                    router.push('/dashboard/admin/atendimento')
+                    router.push('/dashboard/atendente/atendimento')
                   } else {
-                    router.push('/dashboard/admin/kanban')
+                    router.push('/dashboard/atendente/kanban')
                   }
                 }}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
@@ -331,7 +331,8 @@ export default function AtendimentosTopBar({
               )}
             </motion.div>
             
-            <motion.div className="relative">
+            {/* FLUXOGRAMA - COMENTADO PARA ATENDENTE */}
+            {/* <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
@@ -342,17 +343,16 @@ export default function AtendimentosTopBar({
                 <GitBranch className="w-4 h-4 text-white" />
               </motion.button>
               
-              {/* Badge Fluxograma - Roxo */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
                 <GitBranch className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
-            </motion.div>
+            </motion.div> */}
 
             <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/respostas-rapidas')}
+                onClick={() => router.push('/dashboard/atendente/respostas-rapidas')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Respostas Rápidas"
               >
@@ -365,7 +365,8 @@ export default function AtendimentosTopBar({
               </div>
             </motion.div>
             
-            <motion.div className="relative">
+            {/* AGENTES IA - COMENTADO PARA ATENDENTE */}
+            {/* <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
@@ -376,13 +377,13 @@ export default function AtendimentosTopBar({
                 <Bot className="w-4 h-4 text-white" />
               </motion.button>
               
-              {/* Badge IA - Ciano */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-cyan-300/30">
                 <span className="text-[10px] font-bold text-white drop-shadow-sm">🤖</span>
               </div>
-            </motion.div>
+            </motion.div> */}
             
-            <motion.div className="relative">
+            {/* TAGS - COMENTADO PARA ATENDENTE */}
+            {/* <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
@@ -393,13 +394,13 @@ export default function AtendimentosTopBar({
                 <FileText className="w-4 h-4 text-white" />
               </motion.button>
               
-              {/* Badge Tags - Rosa */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-pink-300/30">
                 <FileText className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
-            </motion.div>
+            </motion.div> */}
             
-            <motion.div className="relative">
+            {/* TICKETS - COMENTADO PARA ATENDENTE */}
+            {/* <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
@@ -410,17 +411,16 @@ export default function AtendimentosTopBar({
                 <Ticket className="w-4 h-4 text-white" />
               </motion.button>
               
-              {/* Badge Tickets - Violeta */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-purple-300/30">
                 <Ticket className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
-            </motion.div>
+            </motion.div> */}
             
             <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/agendamentos')}
+                onClick={() => router.push('/dashboard/atendente/agendamentos')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Agendamentos"
               >
@@ -437,7 +437,7 @@ export default function AtendimentosTopBar({
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/dashboard/admin/orcamentos')}
+                onClick={() => router.push('/dashboard/atendente/orcamentos')}
                 className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/20 shadow-sm hover:shadow-lg transition-all duration-300"
                 title="Orçamentos"
               >
@@ -450,7 +450,8 @@ export default function AtendimentosTopBar({
               </div>
             </motion.div>
             
-            <motion.div className="relative">
+            {/* FILAS - COMENTADO PARA ATENDENTE */}
+            {/* <motion.div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -461,11 +462,10 @@ export default function AtendimentosTopBar({
                 <List className="w-4 h-4 text-white" />
               </motion.button>
               
-              {/* Badge Filas - Laranja */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm border border-orange-300/30">
                 <List className="w-3 h-3 text-white drop-shadow-sm" />
               </div>
-            </motion.div>
+            </motion.div> */}
             
             <motion.div className="relative">
               <motion.button

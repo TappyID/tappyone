@@ -6,10 +6,11 @@ import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Tic
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
-import EditTextModal from '../../../../admin/atendimentos/components/EditTextModal'
-import QuickActionsSidebar from '../../../../admin/atendimentos/components/QuickActionsSidebar'
+import EditTextModal from '../../../atendimentos/components/EditTextModal'
+import QuickActionsSidebar from '../../../atendimentos/components/QuickActionsSidebar'
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatPicture } from '@/hooks/useChatPicture'
+import { useAuth } from '@/hooks/useAuth'
 
 // Bottom Sheets
 import AgendamentoBottomSheet from '../../../atendimento/components/FooterChatArea/BottomSheets/AgendamentoBottomSheet'
@@ -633,11 +634,43 @@ interface ChatModalKanbanProps {
   columnColor?: string // 🎨 Cor da coluna para scroll customizada
 }
 
-// Função para obter URL da WAHA - IGUAL DO ATENDIMENTO!
+// Função para obter URL da WAHA - SEMPRE usar proxy!
 const getWahaUrl = (path: string = '') => {
-  const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
-  const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
-  return `${baseUrl}${path}`
+  return `/api/waha-proxy${path}`
+}
+
+// Função helper para obter headers com Authorization
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token')
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : '',
+  }
+}
+
+// Função para obter sessão ativa do usuário
+const getActiveSessionName = async (): Promise<string | null> => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('/api/connections', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!response.ok) return null
+    
+    const data = await response.json()
+    const activeConnection = data.connections?.find((conn: any) => 
+      conn.status === 'WORKING' || conn.status === 'connected'
+    )
+    
+    return activeConnection?.sessionName || null
+  } catch (error) {
+    console.error('❌ Erro ao buscar sessão ativa:', error)
+    return null
+  }
 }
 
 export default function ChatModalKanban({ isOpen, onClose, card, theme, columnColor = '#3B82F6' }: ChatModalKanbanProps) {
@@ -645,6 +678,14 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   const [loading, setLoading] = useState(true)
   const [selectedChat, setSelectedChat] = useState<any>(null)
   const [profilePhoto, setProfilePhoto] = useState<string>('')
+  
+  // Buscar dados do usuário logado
+  const { user } = useAuth()
+  
+  // Função helper para obter nome do usuário
+  const getUserName = () => {
+    return user?.nome || localStorage.getItem('userName') || localStorage.getItem('user_name') || 'Admin'
+  }
   
   // Estados para os modais - IGUAL AO ATENDIMENTO
   const [showEditTextModal, setShowEditTextModal] = useState(false)
@@ -753,7 +794,15 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             metadata.menuTitle = msg.list?.title || msg.listTitle
             metadata.menuDescription = msg.list?.description || msg.listDescription
             metadata.menuItems = msg.list?.sections?.[0]?.rows || msg.listItems || []
+          } else if (msg.type === 'event' || msg.event) {
+            messageType = 'event'
+            metadata.eventType = msg.event?.type || 'info'
+            metadata.eventTitle = msg.event?.name || msg.eventName
+            metadata.eventDescription = msg.event?.description
+            metadata.eventDate = msg.event?.startTime ? new Date(msg.event.startTime * 1000).toISOString() : null
           }
+          
+          console.log('🔍 [fetchMessages] Mensagem transformada:', { type: messageType, metadata })
           
           return {
             id: msg.id || msg.messageId || `msg_${Date.now()}_${Math.random()}`,
@@ -788,21 +837,26 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   
   const handleSendMessage = async (message: string, attachments?: any[]) => {
     try {
-      const token = localStorage.getItem('token')
+      const sessionName = await getActiveSessionName()
+      if (!sessionName) {
+        console.error('❌ Nenhuma sessão ativa encontrada')
+        return
+      }
       
-      console.log('📤 Enviando mensagem:', { chatId, message, attachments })
+      // Adicionar assinatura do admin (igual ao atendimento)
+      const userName = getUserName()
+      const textWithSignature = `> *${userName}*\n\n${message}`
+      
+      console.log('📤 Enviando mensagem:', { chatId, message: textWithSignature, sessionName })
       
       // Usar o mesmo endpoint do atendimento - CORRETO!
       const response = await fetch(getWahaUrl('/api/sendText'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Api-Key': 'tappyone-waha-2024-secretkey'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          session: 'user_fb8da1d7_1758158816675',
+          session: sessionName,
           chatId: chatId,
-          text: message
+          text: textWithSignature
         })
       })
       
@@ -1089,14 +1143,25 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             chatId={chatId}
             onSendMessage={handleSendMessage}
             disabled={loading}
-            onSendPoll={(pollData) => {
+            onSendPoll={async (name: string, options: string[], multipleAnswers: boolean) => {
               if (!chatId) return
+              const sessionName = await getActiveSessionName()
+              if (!sessionName) return
+              
+              // Adicionar assinatura na enquete
+              const userName = getUserName()
+              const pollData = {
+                name: `> *${userName}*\n\n${name}`,
+                options,
+                multipleAnswers
+              }
+              
               // Usar API WAHA para enviar enquete
               fetch(getWahaUrl('/api/sendPoll'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: 'user_fb8da1d7_1758158816675',
+                  session: sessionName,
                   chatId: chatId,
                   poll: pollData
                 })
@@ -1105,17 +1170,37 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
                 setTimeout(() => fetchMessages(), 500)
               })
             }}
-            onSendList={(listData) => {
+            onSendMenu={async (title: string, description: string, options: string[]) => {
               if (!chatId) return
+              const sessionName = await getActiveSessionName()
+              if (!sessionName) return
+              
+              // Adicionar assinatura na lista
+              const userName = getUserName()
+              const listData = {
+                title: title || 'Menu Interativo',
+                description: `> *${userName}*\n\n${description || 'Escolha uma das op\u00e7\u00f5es abaixo'}`,
+                footer: 'TappyOne CRM',
+                button: 'Ver Op\u00e7\u00f5es',
+                sections: [{
+                  title: 'Principais',
+                  rows: options.map((option, index) => ({
+                    rowId: `option_${index + 1}`,
+                    title: option,
+                    description: null
+                  }))
+                }]
+              }
+              
               console.log('🔗 Enviando lista/menu:', listData)
               
               // Usar API WAHA para enviar lista/menu
               fetch(getWahaUrl('/api/sendList'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   chatId: chatId,
-                  session: 'user_fb8da1d7_1758158816675',
+                  session: sessionName,
                   message: listData,
                   reply_to: null
                 })
@@ -1124,12 +1209,25 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
                 setTimeout(() => fetchMessages(), 500)
               })
             }}
-            onSendEvent={(eventData) => {
+            onSendEvent={async (title: string, dateTime: string) => {
               if (!chatId) return
+              const sessionName = await getActiveSessionName()
+              if (!sessionName) return
+              
+              // Adicionar assinatura no evento
+              const userName = getUserName()
+              const startTime = dateTime ? Math.floor(new Date(dateTime).getTime() / 1000) : Math.floor(Date.now() / 1000)
+              const eventData = {
+                name: `> *${userName}*\n\n${title || 'Evento sem t\u00edtulo'}`,
+                startTime: startTime,
+                isCanceled: false,
+                extraGuestsAllowed: true
+              }
+              
               // Usar API WAHA para enviar evento
-              fetch(getWahaUrl('/api/user_fb8da1d7_1758158816675/events'), {
+              fetch(getWahaUrl(`/api/${sessionName}/events`), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Key': 'tappyone-waha-2024-secretkey' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   chatId: chatId,
                   event: eventData
@@ -1139,17 +1237,16 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
                 setTimeout(() => fetchMessages(), 500)
               })
             }}
-            onSendContact={(contactsData) => {
+            onSendContact={async (contactsData) => {
               if (!chatId) return
+              const sessionName = await getActiveSessionName()
+              if (!sessionName) return
               // Usar API WAHA para enviar contato
               fetch(getWahaUrl('/api/sendContactVcard'), {
                 method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'X-Api-Key': 'tappyone-waha-2024-secretkey' 
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: 'user_fb8da1d7_1758158816675',
+                  session: sessionName,
                   chatId: chatId,
                   contacts: contactsData
                 })
@@ -1158,17 +1255,16 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
                 setTimeout(() => fetchMessages(), 500)
               })
             }}
-            onSendLocation={(locationData) => {
+            onSendLocation={async (locationData) => {
               if (!chatId) return
+              const sessionName = await getActiveSessionName()
+              if (!sessionName) return
               // Usar API WAHA para enviar localização
               fetch(getWahaUrl('/api/sendLocation'), {
                 method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'X-Api-Key': 'tappyone-waha-2024-secretkey' 
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                  session: 'user_fb8da1d7_1758158816675',
+                  session: sessionName,
                   chatId: chatId,
                   latitude: locationData.latitude,
                   longitude: locationData.longitude,
@@ -1184,6 +1280,9 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
               console.log('📎 Enviando mídia:', { fileName: file.name, mediaType, caption })
               
               try {
+                const sessionName = await getActiveSessionName()
+                if (!sessionName) return
+                
                 // Converter arquivo para base64
                 const reader = new FileReader()
                 const base64Promise = new Promise<string>((resolve) => {
@@ -1205,12 +1304,9 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
                 
                 const response = await fetch(getWahaUrl(endpoint), {
                   method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Api-Key': 'tappyone-waha-2024-secretkey'
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify({
-                    session: 'user_fb8da1d7_1758158816675',
+                    session: sessionName,
                     chatId: chatId,
                     file: {
                       mimetype: file.type,
@@ -1244,14 +1340,14 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
                 reader.readAsDataURL(audioBlob)
                 const base64Data = await base64Promise
                 
+                const sessionName = await getActiveSessionName()
+                if (!sessionName) return
+                
                 const response = await fetch(getWahaUrl('/api/sendVoice'), {
                   method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Api-Key': 'tappyone-waha-2024-secretkey'
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify({
-                    session: 'user_fb8da1d7_1758158816675',
+                    session: sessionName,
                     chatId: chatId,
                     file: {
                       mimetype: 'audio/ogg; codecs=opus',
@@ -1296,17 +1392,16 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             initialText=""
             contactName={contactName}
             actionTitle="Gerar com IA"
-            onSend={(message) => {
+            onSend={async (message) => {
               // Enviar mensagem gerada pela IA
               if (chatId) {
+                const sessionName = await getActiveSessionName()
+                if (!sessionName) return
                 fetch(getWahaUrl('/api/sendText'), {
                   method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Api-Key': 'tappyone-waha-2024-secretkey' 
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify({
-                    session: 'user_fb8da1d7_1758158816675',
+                    session: sessionName,
                     chatId: chatId,
                     text: message
                   })

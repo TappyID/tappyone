@@ -35,7 +35,7 @@ import {
   Settings,
   Archive
 } from 'lucide-react'
-import AtendimentosTopBar from '../components/AtendimentosTopBar'
+import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import { useKanban } from '@/hooks/useKanban'
 import { useTags } from '@/hooks/useTags'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -218,7 +218,7 @@ export default function KanbanPage() {
   const handleViewQuadro = (quadroId: string) => {
     console.log('Visualizar quadro:', quadroId)
     setSelectedQuadro(quadroId)
-    router.push(`/dashboard/atendente/kanban/${quadroId}`)
+    router.push(`/dashboard/admin/kanban/${quadroId}`)
   }
 
   const handleDeleteQuadro = async (quadroId: string) => {
@@ -946,7 +946,7 @@ export default function KanbanPage() {
                            0 0 0 1px rgba(0, 0, 0, 0.05),
                            inset 0 1px 0 rgba(255, 255, 255, 0.9)`
                     }}
-                    onClick={() => router.push(`/dashboard/atendente/kanban/${quadro.id}`)}
+                    onClick={() => router.push(`/dashboard/admin/kanban/${quadro.id}`)}
                   >
                     
                     {/* Elementos Decorativos Animados */}

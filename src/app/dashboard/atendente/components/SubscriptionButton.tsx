@@ -4,11 +4,7 @@ import { useRouter } from 'next/navigation'
 import { CreditCard } from 'lucide-react'
 import { TopBarButton } from './TopBarButton'
 
-interface SubscriptionButtonProps {
-  sidebarCollapsed?: boolean
-}
-
-export function SubscriptionButton({ sidebarCollapsed = true }: SubscriptionButtonProps) {
+export function SubscriptionButton() {
   const router = useRouter()
 
   const handleClick = () => {
@@ -22,7 +18,6 @@ export function SubscriptionButton({ sidebarCollapsed = true }: SubscriptionButt
     <TopBarButton
       icon={CreditCard}
       onClick={handleClick}
-      sidebarCollapsed={sidebarCollapsed}
       badge={expiredSubscriptions > 0 ? expiredSubscriptions : false}
       badgeColor="bg-red-500"
       tooltip="Assinaturas"

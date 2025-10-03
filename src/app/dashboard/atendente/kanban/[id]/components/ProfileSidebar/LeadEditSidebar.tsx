@@ -199,9 +199,9 @@ export default function LeadEditSidebar({
 
   return (
     <div className={`w-[800px] h-full flex flex-col transition-all duration-300 ${
-      theme === 'dark' ? 'bg-slate-800' : 'bg-gray-50'
-    } border-l rounded-r-2xl ${
-      theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
+      theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-50'
+    } border-l ${
+      theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
     }`}>
       {/* Header */}
       <div className={`p-4 border-b ${

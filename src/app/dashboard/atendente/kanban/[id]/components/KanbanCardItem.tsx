@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -23,6 +23,8 @@ import LastMessageSideChat from '../../../atendimento/components/SideChat/LastMe
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatAgente } from '@/hooks/useChatAgente'
 import AgenteSelectionModal from '../../../atendimento/components/FooterChatArea/modals/AgenteSelectionModal'
+import { useKanbanColors } from '../hooks/useKanbanColors'
+import { fetchApi } from '@/utils/api'
 
 interface KanbanCardItemProps {
   card: {
@@ -38,6 +40,16 @@ interface KanbanCardItemProps {
     }
     profilePictureUrl?: string
     unreadCount?: number
+    fila?: {
+      id: string
+      nome: string
+      cor?: string
+    }
+    filaNome?: string
+    // Dados do chatLead para badges
+    status?: string
+    responsavel?: string
+    responsavelNome?: string
   }
   theme: string
   columnColor: string
@@ -75,6 +87,8 @@ export default function KanbanCardItem({
   tagsCount
 }: KanbanCardItemProps) {
   
+  const kanbanColors = useKanbanColors()
+  
   // Buscar foto de perfil do WAHA - igual ItemSideChat
   const { pictureUrl, isLoading: isLoadingPicture } = useChatPicture(card.id)
   const profileImage = card.profilePictureUrl || pictureUrl
@@ -83,21 +97,15 @@ export default function KanbanCardItem({
   const [isHovered, setIsHovered] = useState(false)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   
+  // Pegar fila direto dos dados do card (já vem do useKanbanOptimized via batch)
+  const filaNome = card.fila?.nome || card.filaNome || null
+  
   // Hook para buscar contadores dos indicadores
   // IMPORTANTE: Passar o ID completo com @c.us para o hook
   const chatIdForIndicators = card.id?.includes('@c.us') ? card.id : 
                               card.phone ? `${card.phone}@c.us` : 
                               card.id
-  console.log('🎯 [KanbanCardItem] ChatId para indicadores:', chatIdForIndicators)
   const { counts, loading: loadingIndicators } = useKanbanIndicators(chatIdForIndicators)
-  
-  // Debug: Mostrar os dados do card e counts
-  console.log('🔍 [KanbanCardItem] Card:', {
-    id: card.id,
-    phone: card.phone,
-    name: card.nome || card.name
-  })
-  console.log('🔍 [KanbanCardItem] Counts:', counts)
 
   // Hook para status do agente IA
   const { 
@@ -192,7 +200,7 @@ export default function KanbanCardItem({
       ref={setNodeRef}
       {...attributes}
       className={`relative group select-none ${
-        isDragging ? 'z-50' : ''
+        isDragging ? 'z-40' : ''
       }`}
       style={{
         ...style, // Estilo do sortable
@@ -250,13 +258,14 @@ export default function KanbanCardItem({
       <div
         {...listeners}
         className={`relative p-3 rounded-2xl overflow-hidden transition-all duration-150 ease-out cursor-grab active:cursor-grabbing ${
-          theme === 'dark'
-            ? 'bg-slate-800/60 hover:bg-slate-800/80'
-            : 'bg-white hover:bg-white'
-        } ${isDragging ? 'rotate-2 scale-95 opacity-60' : 'hover:scale-[1.02]'}`}
+          isDragging ? 'rotate-2 scale-95 opacity-60' : 'hover:scale-[1.02]'
+        }`}
         style={{
-         
+          background: isHovered 
+            ? `linear-gradient(to bottom, ${kanbanColors.cards.hoverBg}, ${kanbanColors.cards.bgPrimary})`
+            : `linear-gradient(to bottom, ${kanbanColors.cards.bgPrimary}, ${kanbanColors.cards.bgSecondary})`,
           borderRadius: '20px',
+          border: `1px solid ${kanbanColors.cards.border}`,
           filter: !isDragging && !isHovered ? `drop-shadow(0 4px 15px rgba(0,0,0,0.05))` : 'none'
         }}
       >
@@ -316,16 +325,29 @@ export default function KanbanCardItem({
                 }
               </h3>
               
-              {/* Badge de Tag no lado direito - TESTE + REAL */}
-              {(counts.tags > 0 || Math.random() > 0.7) && (
-                <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
-                  theme === 'dark' 
-                    ? 'bg-purple-500/20 text-purple-300' 
-                    : 'bg-purple-100 text-purple-700'
-                }`}>
-                  {(counts as any).tagNames?.[0] || ['VIP', 'Cliente', 'Suporte'][Math.floor(Math.random() * 3)]}
-                </span>
-              )}
+              {/* Badges: Fila e Tag */}
+              <div className="flex items-center gap-1">
+                {/* Badge de Fila - SÓ MOSTRA SE TIVER FILA */}
+                {filaNome && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
+                    theme === 'dark' ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'
+                  }`}
+                  title={`Fila: ${filaNome}`}>
+                    {filaNome}
+                  </span>
+                )}
+                
+                {/* Badge de Tag */}
+                {(counts.tags > 0 || Math.random() > 0.7) && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-medium max-w-[60px] truncate ${
+                    theme === 'dark' 
+                      ? 'bg-purple-500/20 text-purple-300' 
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {(counts as any).tagNames?.[0] || ['VIP', 'Cliente', 'Suporte'][Math.floor(Math.random() * 3)]}
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Telefone/Chat ID */}
@@ -337,7 +359,55 @@ export default function KanbanCardItem({
               </span>
             </div>
             
-            {/* Última Mensagem - usando componente do atendimento */}
+            {/* Badges de Status, Atendente e Fila - IGUAL ItemSideChat */}
+            <div className="flex flex-wrap items-center gap-1 mt-1.5">
+              {/* Badge de Status */}
+              {card.status && (
+                <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-full ${
+                  card.status === 'aguardando'
+                    ? 'bg-yellow-100 dark:bg-yellow-900/20'
+                    : card.status === 'atendimento' || card.status === 'em_atendimento'
+                    ? 'bg-green-100 dark:bg-green-900/20'
+                    : 'bg-gray-100 dark:bg-gray-900/20'
+                }`}>
+                  <span className={`text-[8px] font-medium ${
+                    card.status === 'aguardando'
+                      ? 'text-yellow-600'
+                      : card.status === 'atendimento' || card.status === 'em_atendimento'
+                      ? 'text-green-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {card.status === 'aguardando' ? '⏳ Aguardando' : 
+                     card.status === 'atendimento' || card.status === 'em_atendimento' ? '✅ Em Atendimento' : 
+                     '✓ Finalizado'}
+                  </span>
+                </div>
+              )}
+
+              {/* Badge de Atendente */}
+              {card.responsavelNome && (
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                  <span className="text-[8px] font-medium text-blue-600 truncate max-w-[80px]">
+                    👤 {card.responsavelNome}
+                  </span>
+                </div>
+              )}
+
+              {/* Badge de Fila com cor */}
+              {card.fila && (
+                <div
+                  className="flex items-center gap-0.5 px-1 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: `${card.fila.cor || '#9333ea'}20`,
+                    color: card.fila.cor || '#9333ea'
+                  }}
+                >
+                  <span className="text-[8px] font-medium truncate max-w-[60px]">
+                    📋 {card.fila.nome}
+                  </span>
+                </div>
+              )}
+            </div>
            
           </div>
         </div>

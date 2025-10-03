@@ -4,11 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Search, X, Command } from 'lucide-react'
 
-interface SearchBarProps {
-  sidebarCollapsed?: boolean
-}
-
-export function SearchBar({ sidebarCollapsed = true }: SearchBarProps) {
+export function SearchBar() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [searchValue, setSearchValue] = useState('')
 
@@ -38,11 +34,7 @@ export function SearchBar({ sidebarCollapsed = true }: SearchBarProps) {
           onChange={(e) => setSearchValue(e.target.value)}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className={`w-full h-10 pl-10 pr-12 rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 ${
-            sidebarCollapsed 
-              ? 'bg-white border border-gray-200 text-gray-900 placeholder-gray-500 focus:ring-[#273155]/20 focus:border-[#273155]'
-              : 'bg-white/10 border border-white/20 text-white placeholder-white/70 focus:ring-white/30 focus:border-white'
-          }`}
+          className="w-full h-10 pl-10 pr-12 rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 bg-white/10 border border-white/20 text-white placeholder-white/70 focus:ring-white/30 focus:border-white"
           whileFocus={{ scale: 1.01 }}
         />
 
@@ -57,9 +49,7 @@ export function SearchBar({ sidebarCollapsed = true }: SearchBarProps) {
             <Search 
               size={16} 
               className={`transition-colors duration-200 ${
-                sidebarCollapsed 
-                  ? (isExpanded ? 'text-[#273155]' : 'text-gray-500')
-                  : (isExpanded ? 'text-white' : 'text-white/70')
+                isExpanded ? 'text-white' : 'text-white/70'
               }`} 
             />
           </motion.div>

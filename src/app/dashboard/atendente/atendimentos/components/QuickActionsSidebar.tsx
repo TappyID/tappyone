@@ -643,80 +643,102 @@ export default function QuickActionsSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 ${
+          className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 backdrop-blur-xl ${
             actualTheme === 'dark'
-              ? 'bg-gradient-to-br from-[#1a1a1a] via-gray-900 to-[#1a1a1a] border-blue-500/20'
-              : 'bg-gradient-to-br from-white via-blue-50/30 to-white border-blue-200'
+              ? 'bg-gradient-to-br from-gray-950/95 via-gray-900/95 to-gray-950/95 border-purple-500/20'
+              : 'bg-gradient-to-br from-white/95 via-purple-50/40 to-white/95 border-purple-200/50'
           } ${isOpen ? 'translate-x-0' : '-translate-x-full'
       } z-50 pt-20`}
         >
           {/* Header */}
-          <div className="p-3 border-b border-border bg-muted/30">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-sm text-foreground">Respostas Rápidas</h3>
-              <button
+          <div className="p-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-foreground">Respostas Rápidas</h3>
+                  <p className="text-xs text-muted-foreground">Envie mensagens instantâneas</p>
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="p-1.5 hover:bg-accent rounded-md transition-colors"
+                className="p-2 hover:bg-red-500/10 rounded-xl transition-all duration-300 group"
               >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
+                <X className="w-4 h-4 text-muted-foreground group-hover:text-red-500 transition-colors" />
+              </motion.button>
             </div>
             
          
 
             {/* Search */}
-            <div className="relative mb-2">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-purple-500" />
               <Input
-                placeholder="Buscar..."
+                placeholder="Buscar respostas rápidas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-xs"
+                className="pl-10 h-10 text-sm bg-background/50 border-purple-200/50 dark:border-purple-500/20 focus:border-purple-500 focus:ring-purple-500/20 rounded-xl shadow-sm"
               />
             </div>
 
             {/* Category Filter */}
-            <div className="flex gap-1 overflow-x-auto pb-1">
-              <Button
-                variant={selectedCategory === 'all' ? "default" : "outline"}
-                size="sm"
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory('all')}
-                className="whitespace-nowrap text-xs h-7 px-2"
+                className={`whitespace-nowrap text-xs h-8 px-4 rounded-full font-medium transition-all duration-300 ${
+                  selectedCategory === 'all'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+                    : 'bg-background/50 text-muted-foreground hover:bg-purple-500/10 border border-border/50'
+                }`}
               >
-                Todas
-              </Button>
+                ✨ Todas
+              </motion.button>
               {categorias.map(categoria => (
-                <Button
+                <motion.button
                   key={categoria.id}
-                  variant={selectedCategory === categoria.nome ? "default" : "outline"}
-                  size="sm"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedCategory(categoria.nome)}
-                  className="whitespace-nowrap text-xs h-7 px-2"
+                  className={`whitespace-nowrap text-xs h-8 px-4 rounded-full font-medium transition-all duration-300 ${
+                    selectedCategory === categoria.nome
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+                      : 'bg-background/50 text-muted-foreground hover:bg-purple-500/10 border border-border/50'
+                  }`}
                 >
                   {categoria.nome}
-                </Button>
+                </motion.button>
               ))}
             </div>
           </div>
 
           {/* Actions List */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto p-4">
             {Object.entries(groupedActions).map(([category, actions]) => (
-              <div key={category} className="mb-3">
-                <button
+              <div key={category} className="mb-4">
+                <motion.button
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => toggleCategory(category)}
-                  className="flex items-center gap-1.5 w-full text-left p-1.5 hover:bg-accent/50 rounded-md transition-colors"
+                  className="flex items-center gap-2 w-full text-left p-3 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 rounded-xl transition-all duration-300 group border border-transparent hover:border-purple-500/20"
                 >
-                  {expandedCategories.has(category) ? (
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                  )}
-                  <span className="font-medium text-sm text-foreground">{category}</span>
-                  <Badge variant="secondary" className="ml-auto text-xs px-1.5 py-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {expandedCategories.has(category) ? (
+                      <ChevronDown className="w-4 h-4 text-purple-500" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-purple-500" />
+                    )}
+                  </div>
+                  <span className="font-semibold text-sm text-foreground flex-1">{category}</span>
+                  <div className="px-2.5 py-1 rounded-full bg-gradient-to-r from-purple-500 to-blue-600 text-white text-xs font-bold shadow-sm">
                     {actions.length}
-                  </Badge>
-                </button>
+                  </div>
+                </motion.button>
 
                 <AnimatePresence>
                   {expandedCategories.has(category) && (
@@ -727,24 +749,24 @@ export default function QuickActionsSidebar({
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="ml-4 space-y-1.5 mt-1.5">
+                      <div className="ml-4 space-y-2 mt-2">
                         {actions.map(action => {
                           const isExpanded = expandedActions.has(action.id)
                           return (
                           <motion.div
                             key={action.id}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            className="p-2.5 border border-border rounded-lg hover:border-primary hover:bg-accent/50 cursor-pointer transition-all group bg-card shadow-sm"
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="p-3 border border-border/50 rounded-xl hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 cursor-pointer transition-all duration-300 group bg-gradient-to-br from-background to-background/50 backdrop-blur-sm"
                           >
                             <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <div className={`p-1.5 rounded-md ${getTypeColor(action.type)}`}>
+                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                <div className={`p-2 rounded-xl shadow-sm ${getTypeColor(action.type)}`}>
                                   {getTypeIcon(action.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-medium text-foreground text-xs block truncate">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-foreground text-sm block truncate">
                                       {action.title}
                                     </span>
                                     <button
@@ -758,47 +780,54 @@ export default function QuickActionsSidebar({
                                       {isExpanded ? <EyeOff className="w-3 h-3 text-muted-foreground" /> : <Eye className="w-3 h-3 text-muted-foreground" />}
                                     </button>
                                   </div>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                  <div className="flex items-center gap-2 mt-1">
                                     {/* Status Badge */}
                                     {action.isAutomatic && (
-                                      <Badge className="text-xs px-1.5 py-0 bg-green-500/20 text-green-600 dark:bg-green-500/30 dark:text-green-400">
-                                        <Zap className="w-2.5 h-2.5 mr-0.5" />
-                                        Auto
-                                      </Badge>
+                                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30">
+                                        <Zap className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                        <span className="text-xs font-medium text-green-600 dark:text-green-400">Auto</span>
+                                      </div>
                                     )}
                                     {action.isPaused && (
-                                      <Badge className="text-xs px-1.5 py-0 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-500/30 dark:text-yellow-400">
-                                        <Clock className="w-2.5 h-2.5 mr-0.5" />
-                                        Pausada
-                                      </Badge>
+                                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
+                                        <Clock className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                                        <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400">Pausada</span>
+                                      </div>
                                     )}
-                                    <span className="text-xs text-muted-foreground">
-                                      {action.usageCount}
-                                    </span>
+                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                      <Star className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                      <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{action.usageCount}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               
                               {/* Action Buttons */}
-                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     toggleActionExpansion(action.id)
                                   }}
-                                  className="p-1 bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 dark:bg-blue-500/30 dark:text-blue-400 rounded-md transition-colors"
+                                  className="p-1.5 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-blue-600 hover:from-blue-500/30 hover:to-cyan-500/30 dark:text-blue-400 rounded-lg transition-all shadow-sm"
                                   title={isExpanded ? 'Recolher edição' : 'Expandir para editar'}
                                 >
-                                  <Edit className="w-2.5 h-2.5" />
-                                </button>
-                                <button
+                                  <Edit className="w-3 h-3" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
                                   onClick={(e) => handleScheduleAction(action, e)}
-                                  className="p-1 bg-purple-500/20 text-purple-600 hover:bg-purple-500/30 dark:bg-purple-500/30 dark:text-purple-400 rounded-md transition-colors"
+                                  className="p-1.5 bg-gradient-to-br from-purple-500/20 to-pink-500/20 text-purple-600 hover:from-purple-500/30 hover:to-pink-500/30 dark:text-purple-400 rounded-lg transition-all shadow-sm"
                                   title="Agendar resposta"
                                 >
-                                  <Calendar className="w-2.5 h-2.5" />
-                                </button>
-                                <button
+                                  <Calendar className="w-3 h-3" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
                                   onClick={async (e) => {
                                     e.stopPropagation()
                                     if (window.confirm(`Tem certeza que deseja excluir "${action.title}"?`)) {
@@ -823,24 +852,26 @@ export default function QuickActionsSidebar({
                                       }
                                     }
                                   }}
-                                  className="p-1 bg-red-500/20 text-red-600 hover:bg-red-500/30 dark:bg-red-500/30 dark:text-red-400 rounded-md transition-colors"
+                                  className="p-1.5 bg-gradient-to-br from-red-500/20 to-rose-500/20 text-red-600 hover:from-red-500/30 hover:to-rose-500/30 dark:text-red-400 rounded-lg transition-all shadow-sm"
                                   title="Excluir"
                                 >
-                                  <Trash2 className="w-2.5 h-2.5" />
-                                </button>
-                                <button
+                                  <Trash2 className="w-3 h-3" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
                                   onClick={(e) => handleToggleAutomatic(action, e)}
-                                  className={`p-1 rounded-md transition-colors ${
+                                  className={`p-1.5 rounded-lg transition-all shadow-sm ${
                                     action.isAutomatic 
-                                      ? 'bg-yellow-500/30 text-yellow-600 hover:bg-yellow-500/40 dark:bg-yellow-500/40 dark:text-yellow-400' 
+                                      ? 'bg-gradient-to-br from-yellow-500/30 to-orange-500/30 text-yellow-600 hover:from-yellow-500/40 hover:to-orange-500/40 dark:text-yellow-400' 
                                       : action.isPaused 
-                                      ? 'bg-red-500/20 text-red-600 hover:bg-red-500/30 dark:bg-red-500/30 dark:text-red-400'
-                                      : 'bg-muted text-muted-foreground hover:bg-muted hover:text-foreground'
+                                      ? 'bg-gradient-to-br from-red-500/20 to-rose-500/20 text-red-600 hover:from-red-500/30 hover:to-rose-500/30 dark:text-red-400'
+                                      : 'bg-gradient-to-br from-gray-500/10 to-slate-500/10 text-muted-foreground hover:from-gray-500/20 hover:to-slate-500/20 hover:text-foreground'
                                   }`}
                                   title={action.isAutomatic ? 'Automático ATIVO (clique para desativar)' : action.isPaused ? 'Pausado' : 'Ativar automático'}
                                 >
-                                  <Zap className={`w-2.5 h-2.5 ${action.isAutomatic ? 'text-yellow-600' : ''}`} />
-                                </button>
+                                  <Zap className={`w-3 h-3 ${action.isAutomatic ? 'text-yellow-600' : ''}`} />
+                                </motion.button>
                               </div>
                             </div>
 

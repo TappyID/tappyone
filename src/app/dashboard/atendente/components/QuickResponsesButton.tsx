@@ -4,11 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Zap } from 'lucide-react'
 import { TopBarButton } from './TopBarButton'
 
-interface QuickResponsesButtonProps {
-  sidebarCollapsed?: boolean
-}
-
-export function QuickResponsesButton({ sidebarCollapsed = true }: QuickResponsesButtonProps) {
+export function QuickResponsesButton() {
   const router = useRouter()
 
   const handleClick = () => {
@@ -19,7 +15,6 @@ export function QuickResponsesButton({ sidebarCollapsed = true }: QuickResponses
     <TopBarButton
       icon={Zap}
       onClick={handleClick}
-      sidebarCollapsed={sidebarCollapsed}
       tooltip="Respostas Rápidas"
     />
   )

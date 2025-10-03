@@ -27,7 +27,7 @@ import {
   AlertTriangle,
   RefreshCcw
 } from 'lucide-react'
-import AtendimentosTopBar from '../components/AtendimentosTopBar'
+import AtendimentosTopBar from '../atendimentos/components/AtendimentosTopBar'
 import AtendentesLista from './components/AtendentesLista'
 import ChatInternoArea from './components/ChatInternoArea'
 

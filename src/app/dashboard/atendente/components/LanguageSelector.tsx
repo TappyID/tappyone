@@ -4,14 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { Languages, CheckCircle, Globe, X } from 'lucide-react'
 import ReactCountryFlag from 'react-country-flag'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
-interface LanguageSelectorProps {
-  sidebarCollapsed?: boolean
-}
-
-export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorProps) {
+export function LanguageSelector() {
   const [showTranslation, setShowTranslation] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('pt-BR')
+  const { colorTheme } = useColorTheme()
   
   // Mapeamento de idiomas para bandeiras
   const getCountryCode = (langCode: string) => {
@@ -47,11 +45,7 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
         whileHover={{ scale: 1.1, rotate: 10 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setShowTranslation(!showTranslation)}
-        className={`w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 ${
-          sidebarCollapsed
-            ? 'bg-white/70 border-white/20 hover:bg-white/90 hover:shadow-md text-gray-600'
-            : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
-        } shadow-sm hover:shadow-lg`}
+        className="w-10 h-10 flex items-center justify-center rounded-lg backdrop-blur-sm border transition-all duration-300 bg-white/10 border-white/20 hover:bg-white/20 text-white shadow-sm hover:shadow-lg"
         title="Tradução"
       >
         <Languages className="w-4 h-4" />
@@ -81,40 +75,25 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] ${
-              sidebarCollapsed
-                ? 'bg-white border-gray-200'
-                : 'bg-gradient-to-br from-[#273155] via-[#2a3660] to-[#273155] backdrop-blur-xl border-white/20'
-            }`}
+            style={{
+              backgroundColor: colorTheme.primary
+            }}
+            className="absolute top-full right-0 mt-2 w-80 rounded-2xl shadow-2xl border overflow-hidden z-[99999] backdrop-blur-xl border-white/20"
           >
             {/* Header */}
-            <div className={`p-4 border-b ${
-              sidebarCollapsed ? 'border-gray-100' : 'border-white/10'
-            }`}>
+            <div className="p-4 border-b border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    sidebarCollapsed
-                      ? 'bg-gray-100'
-                      : 'bg-gradient-to-br from-white/30 to-white/10'
-                  }`}>
-                    <Globe className={`w-4 h-4 ${
-                      sidebarCollapsed ? 'text-gray-600' : 'text-white'
-                    }`} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-white/30 to-white/10">
+                    <Globe className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className={`text-lg font-semibold ${
-                    sidebarCollapsed ? 'text-gray-900' : 'text-white'
-                  }`}>Tradução Automática</h3>
+                  <h3 className="text-lg font-semibold text-white">Tradução Automática</h3>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setShowTranslation(false)}
-                  className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${
-                    sidebarCollapsed
-                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                  }`}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white"
                 >
                   <X className="w-3 h-3" />
                 </motion.button>
@@ -170,12 +149,8 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
                     whileTap={{ scale: 0.98 }}
                     className={`w-full p-3 rounded-lg border transition-all flex items-center gap-3 ${
                       isActive
-                        ? sidebarCollapsed
-                          ? 'bg-green-50 border-green-200 text-green-700 shadow-lg shadow-green-500/10'
-                          : 'bg-green-500/20 border-green-400/50 text-green-300 shadow-lg shadow-green-500/20'
-                        : sidebarCollapsed
-                          ? 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
-                          : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                        ? 'bg-green-500/20 border-green-400/50 text-green-300 shadow-lg shadow-green-500/20'
+                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
                     }`}
                   >
                     <div className="flex-shrink-0">
@@ -194,9 +169,7 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
                       <div className="text-xs opacity-70">{lang.country}</div>
                     </div>
                     {isActive && (
-                      <CheckCircle className={`w-4 h-4 flex-shrink-0 ${
-                        sidebarCollapsed ? 'text-green-600' : 'text-green-400'
-                      }`} />
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-400" />
                     )}
                   </motion.button>
                   )
@@ -205,26 +178,16 @@ export function LanguageSelector({ sidebarCollapsed = true }: LanguageSelectorPr
             </div>
             
             {/* Footer */}
-            <div className={`p-4 border-t ${
-              sidebarCollapsed
-                ? 'border-gray-100 bg-gray-50'
-                : 'border-white/10 bg-white/5'
-            }`}>
+            <div className="p-4 border-t border-white/10 bg-white/5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  <span className={`text-xs ${
-                    sidebarCollapsed ? 'text-gray-600' : 'text-white/80'
-                  }`}>Tradução ativa</span>
+                  <span className="text-xs text-white/80">Tradução ativa</span>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    sidebarCollapsed
-                      ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                  }`}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-white/10 hover:bg-white/20 text-white"
                 >
                   Configurações
                 </motion.button>

@@ -4,11 +4,7 @@ import { useRouter } from 'next/navigation'
 import { FileText } from 'lucide-react'
 import { TopBarButton } from './TopBarButton'
 
-interface QuoteButtonProps {
-  sidebarCollapsed?: boolean
-}
-
-export function QuoteButton({ sidebarCollapsed = true }: QuoteButtonProps) {
+export function QuoteButton() {
   const router = useRouter()
 
   const handleClick = () => {
@@ -22,7 +18,6 @@ export function QuoteButton({ sidebarCollapsed = true }: QuoteButtonProps) {
     <TopBarButton
       icon={FileText}
       onClick={handleClick}
-      sidebarCollapsed={sidebarCollapsed}
       badge={pendingQuotes > 0 ? pendingQuotes : false}
       badgeColor="bg-orange-500"
       tooltip="Orçamentos"

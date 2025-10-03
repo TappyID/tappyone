@@ -42,104 +42,94 @@ import { SidebarLogo } from './SidebarLogo'
 import { SidebarToggle } from './SidebarToggle'
 import { SidebarItem } from './SidebarItem'
 import './sidebar-scrollbar.css'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 
-interface SidebarProps {
-  isCollapsed: boolean
-  onToggle: () => void
-}
+interface SidebarProps {}
 
 const menuItems = [
   {
     title: 'Dashboard',
     icon: LayoutDashboard,
     href: '/dashboard/atendente',
-    color: 'text-blue-600'
+    color: 'text-blue-600',
+    badge: null
   },
   {
     title: 'Atendimentos',
     icon: MessageSquare,
     href: '/dashboard/atendente/atendimento',
-    color: 'text-green-600'
-  },
-  {
-    title: 'Respostas Rápidas',
-    icon: Zap,
-    href: '/dashboard/atendente/respostas-rapidas',
-    color: 'text-yellow-600'
+    color: 'text-green-600',
+    badge: 12,
+    badgeColor: 'from-green-400 to-green-600'
   },
   {
     title: 'Kanban',
     icon: Kanban,
     href: '/dashboard/atendente/kanban',
-    color: 'text-purple-600'
+    color: 'text-purple-600',
+    badge: 8,
+    badgeColor: 'from-purple-400 to-purple-600'
   },
-  
+  {
+    title: 'Respostas Rápidas',
+    icon: Zap,
+    href: '/dashboard/atendente/respostas-rapidas',
+    color: 'text-yellow-600',
+    badge: 24,
+    badgeColor: 'from-yellow-400 to-yellow-600'
+  },
+ 
   {
     title: 'Contatos',
     icon: Users,
     href: '/dashboard/atendente/contatos',
-    color: 'text-indigo-600'
+    color: 'text-indigo-600',
+    badge: 156,
+    badgeColor: 'from-indigo-400 to-indigo-600'
   },
   {
     title: 'Agendamentos',
     icon: Calendar,
     href: '/dashboard/atendente/agendamentos',
-    color: 'text-pink-600'
+    color: 'text-pink-600',
+    badge: 5,
+    badgeColor: 'from-pink-400 to-pink-600'
   },
   {
     title: 'Orçamentos',
     icon: FileText,
     href: '/dashboard/atendente/orcamentos',
-    color: 'text-orange-600'
-  },
-
-  {
-    title: 'Relatórios',
-    icon: BarChart3,
-    color: 'text-teal-600',
-    isSubmenu: true,
-    children: [
-      {
-        title: 'Performances',
-        icon: TrendingUp,
-        href: '/dashboard/atendente/relatorios/performances',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'NPS',
-        icon: Heart,
-        href: '/dashboard/atendente/relatorios/nps',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Meus Atendimentos',
-        icon: Users,
-        href: '/dashboard/atendente/relatorios/meus-atendimentos',
-        color: 'text-teal-600'
-      },
-      {
-        title: 'Vendas',
-        icon: DollarSign,
-        href: '/dashboard/atendente/relatorios/vendas',
-        color: 'text-teal-600'
-      }
-    ]
+    color: 'text-orange-600',
+    badge: 3,
+    badgeColor: 'from-orange-400 to-orange-600'
   },
   
   {
-    title: 'Configurações',
+    title: 'Chat Interno',
+    icon: MessageCircle,
+    href: '/dashboard/atendente/chat-interno',
+    color: 'text-cyan-600',
+    badge: 2,
+    badgeColor: 'from-cyan-400 to-cyan-600'
+  },
+  
+  {
+    title: 'Meu perfil',
     icon: Settings,
     href: '/dashboard/atendente/configuracoes',
-    color: 'text-slate-600'
+    color: 'text-slate-600',
+    badge: null
   }
 ]
 
-export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname()
   const [openSubmenus, setOpenSubmenus] = useState<string[]>([])
+  const [isHovered, setIsHovered] = useState(false)
+  const { colorTheme } = useColorTheme()
 
   const toggleSubmenu = (title: string) => {
-    if (isCollapsed) return
+    if (!isHovered) return
     
     setOpenSubmenus(prev => 
       prev.includes(title) 
@@ -158,9 +148,12 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     <motion.div
       className="relative h-screen shadow-xl shadow-black/5"
       initial={false}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       animate={{ 
-        width: isCollapsed ? 80 : 280,
-        backgroundColor: isCollapsed ? "#f9fafb" : "#273155"
+        width: isHovered ? 280 : 80,
+        backgroundImage: `linear-gradient(180deg, ${colorTheme.primary}, ${colorTheme.secondary})`,
+        opacity: isHovered ? 1 : 0.95
       }}
       transition={{ 
         type: "spring", 
@@ -176,19 +169,15 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         }} />
       </div>
 
-      {/* Toggle Button */}
-      <SidebarToggle isCollapsed={isCollapsed} onToggle={onToggle} />
+      {/* Toggle Button - Removido, expande ao hover */}
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Logo */}
         <motion.div 
-          className="border-b"
-          animate={{
-            borderColor: isCollapsed ? "rgb(229 231 235 / 0.5)" : "rgb(255 255 255 / 0.1)"
-          }}
+          className="border-b border-white/10"
         >
-          <SidebarLogo isCollapsed={isCollapsed} />
+          <SidebarLogo isCollapsed={!isHovered} />
         </motion.div>
 
         {/* Navigation */}
@@ -210,236 +199,37 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 damping: 30
               }}
             >
-              {item.isSubmenu ? (
-                <div>
-                  {/* Submenu Header */}
-                  <motion.div
-                    whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="relative"
-                  >
-                    <motion.button
-                      onClick={() => toggleSubmenu(item.title)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ease-out group relative overflow-hidden ${
-                        isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
-                          ? 'bg-white/10 text-white shadow-lg'
-                          : 'text-white/70 hover:bg-white/5 hover:text-white'
-                      }`}
-                    >
-                      {/* Indicador ativo */}
-                      {(isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)) && (
-                        <motion.div
-                          className="absolute left-0 top-1/2 h-6 w-1 rounded-r-full bg-white"
-                          layoutId="submenu-activeIndicator"
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        />
-                      )}
-                      
-                      <div className="flex items-center gap-3">
-                        <motion.div 
-                          className={`p-2 rounded-lg transition-all duration-200 relative ${
-                            isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
-                              ? 'bg-white/20 shadow-sm'
-                              : 'bg-white/10 group-hover:bg-white/15'
-                          }`}
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                        >
-                          <item.icon className={`w-5 h-5 ${item.color} transition-all duration-300`} strokeWidth={isSubmenuItemActive(item.children) || isSubmenuOpen(item.title) ? 2.5 : 2} />
-                          
-                          {/* Glow effect */}
-                          <motion.div
-                            className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${item.color.replace('text-', 'bg-')}`}
-                            initial={{ scale: 0.8 }}
-                            whileHover={{ scale: 1.2 }}
-                          />
-                        </motion.div>
-                        
-                        {!isCollapsed && (
-                          <motion.span 
-                            className={`font-medium text-sm transition-all duration-300 select-none ${
-                              isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
-                                ? 'text-white font-semibold'
-                                : 'text-white/80 group-hover:text-white'
-                            }`}
-                            initial={false}
-                            animate={{
-                              opacity: isCollapsed ? 0 : 1,
-                              x: isCollapsed ? -10 : 0
-                            }}
-                            transition={{ duration: 0.2, delay: isCollapsed ? 0 : 0.1 }}
-                          >
-                            {item.title}
-                          </motion.span>
-                        )}
-                      </div>
-                      
-                      {!isCollapsed && (
-                        <motion.div
-                          animate={{ rotate: isSubmenuOpen(item.title) ? 90 : 0 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                          className="flex items-center justify-center"
-                        >
-                          <ChevronRight className={`w-4 h-4 transition-all duration-200 ${
-                            isSubmenuOpen(item.title) ? 'text-white' : 'text-white/60 group-hover:text-white/80'
-                          }`} />
-                        </motion.div>
-                      )}
-                      
-                      {/* Ripple effect */}
-                      <motion.div
-                        className="absolute inset-0 rounded-xl overflow-hidden"
-                        initial={{ scale: 0, opacity: 0 }}
-                        whileTap={{ scale: 1, opacity: 0.1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div className="w-full h-full bg-white rounded-xl" />
-                      </motion.div>
-                      
-                      {/* Background gradient */}
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"
-                        initial={{ x: -100 }}
-                        whileHover={{ x: 0 }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </motion.button>
-                    
-                    {/* Tooltip para modo colapsado */}
-                    {isCollapsed && (
-                      <motion.div
-                        className="absolute left-full ml-4 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50"
-                        initial={{ opacity: 0, x: -10 }}
-                        whileHover={{ opacity: 1, x: 0 }}
-                      >
-                        {item.title}
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45" />
-                      </motion.div>
-                    )}
-                  </motion.div>
-                  
-                  {/* Submenu Items */}
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={false}
-                      animate={{ 
-                        height: isSubmenuOpen(item.title) ? 'auto' : 0,
-                        opacity: isSubmenuOpen(item.title) ? 1 : 0
-                      }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/10 pl-4">
-                        {item.children?.map((child, childIndex) => (
-                          <motion.div
-                            key={child.href}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ 
-                              opacity: isSubmenuOpen(item.title) ? 1 : 0,
-                              x: isSubmenuOpen(item.title) ? 0 : -10
-                            }}
-                            transition={{ 
-                              delay: isSubmenuOpen(item.title) ? childIndex * 0.05 : 0,
-                              duration: 0.2
-                            }}
-                          >
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              className="relative"
-                            >
-                              <Link href={child.href}>
-                                <motion.div
-                                  className={`group relative flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
-                                    pathname === child.href
-                                      ? 'bg-white/15 text-white shadow-sm'
-                                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                                  }`}
-                                  whileHover={{ x: 4 }}
-                                >
-                                  {/* Indicador ativo para submenu */}
-                                  {pathname === child.href && (
-                                    <motion.div
-                                      className="absolute left-0 top-1/2 h-4 w-0.5 bg-white rounded-r-full"
-                                      layoutId={`submenu-indicator-${item.title}`}
-                                      initial={{ opacity: 0, x: -5 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    />
-                                  )}
-                                  
-                                  {/* Ícone do submenu */}
-                                  <div className={`p-1.5 rounded-md transition-all duration-200 ${
-                                    pathname === child.href
-                                      ? 'bg-white/20 shadow-sm'
-                                      : 'bg-white/10 group-hover:bg-white/15'
-                                  }`}>
-                                    <child.icon className={`w-4 h-4 ${child.color}`} />
-                                  </div>
-                                  
-                                  {/* Título do submenu */}
-                                  <span className={`font-medium text-sm transition-all duration-200 ${
-                                    pathname === child.href
-                                      ? 'text-white font-semibold'
-                                      : 'text-white/80 group-hover:text-white'
-                                  }`}>
-                                    {child.title}
-                                  </span>
-                                  
-                                  {/* Efeito de hover */}
-                                  <motion.div
-                                    className="absolute inset-0 rounded-lg bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                    initial={{ scale: 0.8 }}
-                                    whileHover={{ scale: 1 }}
-                                  />
-                                </motion.div>
-                              </Link>
-                            </motion.div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              ) : (
-                <SidebarItem
-                  icon={item.icon}
-                  title={item.title}
-                  href={item.href}
-                  isActive={pathname === item.href}
-                  isCollapsed={isCollapsed}
-                  color={item.color}
-                />
-              )}
+              <SidebarItem
+                icon={item.icon}
+                title={item.title}
+                href={item.href}
+                isActive={pathname === item.href}
+                isCollapsed={!isHovered}
+                color={item.color}
+                badge={item.badge}
+                badgeColor={item.badgeColor}
+              />
             </motion.div>
           ))}
         </motion.nav>
 
         {/* Footer */}
         <motion.div 
-          className="p-4 border-t"
+          className="p-4 border-t border-white/10"
           initial={{ opacity: 0 }}
           animate={{ 
-            opacity: 1,
-            borderColor: isCollapsed ? "rgb(229 231 235 / 0.5)" : "rgb(255 255 255 / 0.1)"
+            opacity: 1
           }}
           transition={{ delay: 0.3 }}
         >
           <motion.div
             className="text-center"
-            animate={{ opacity: isCollapsed ? 0 : 1 }}
+            animate={{ opacity: !isHovered ? 0 : 1 }}
             transition={{ duration: 0.2 }}
           >
-            <motion.p 
-              className="text-xs font-medium"
-              animate={{
-                color: isCollapsed ? "rgb(107 114 128)" : "rgb(255 255 255 / 0.7)"
-              }}
-            >
+            <p className="text-xs font-medium text-white/70">
               TappyOne CRM v2.0
-            </motion.p>
+            </p>
           </motion.div>
         </motion.div>
       </div>
