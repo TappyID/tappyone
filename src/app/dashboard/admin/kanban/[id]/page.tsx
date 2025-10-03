@@ -8,7 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useKanbanOptimized } from '@/hooks/useKanbanOptimized'
 import { useKanbanColors } from './hooks/useKanbanColors'
-import useChatsOverview from '@/hooks/useChatsOverview'
+import { useChatsKanban } from '@/hooks/useChatsKanban'
 import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
 
@@ -67,16 +67,16 @@ function QuadroPage() {
   const quadroId = params.id as string
 
   // Hooks para buscar chats do WhatsApp e filtros avançados
-  const { chats: whatsappChats, loading: loadingChats, error: errorChats } = useChatsOverview()
+  const { chats: whatsappChats, loading: loadingChats, error: errorChats } = useChatsKanban()
   const { tags, loading: loadingTags } = useTags()
   const { filas, loading: loadingFilas } = useFilas()
   
   // 🔍 DEBUG: Verificar quantos chats do WhatsApp temos
   useEffect(() => {
-    console.log('🔍 [PAGE] useChatsOverview carregou:', whatsappChats.length, 'chats')
-    console.log('🔍 [PAGE] Loading:', loadingChats)
+    console.log('🔍 [KANBAN] useChatsKanban carregou:', whatsappChats.length, 'chats')
+    console.log('🔍 [KANBAN] Loading:', loadingChats)
     if (whatsappChats.length > 0) {
-      console.log('🔍 [PAGE] Primeiros 3 chats:', whatsappChats.slice(0, 3).map(c => ({ id: c.id, name: c.name })))
+      console.log('🔍 [KANBAN] Primeiros 3 chats:', whatsappChats.slice(0, 3).map(c => ({ id: c.id, name: c.name })))
     }
   }, [whatsappChats.length, loadingChats])
   
