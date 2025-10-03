@@ -36,48 +36,68 @@ export function useChatsKanban() {
         }
 
         const sessions = await sessionsResponse.json()
-        const activeSession = sessions.find((s: any) => s.status === 'WORKING')
+        console.log('📱 [useChatsKanban] Todas as sessões:', sessions)
+        sessions.forEach((s: any, i: number) => {
+          console.log(`  [${i}] ${s.name} | status: ${s.status} | me: ${s.me?.id || 'N/A'}`)
+        })
+        
+        // 🔥 BUSCAR CHATS DE TODAS AS SESSÕES WORKING
+        const activeSessions = sessions.filter((s: any) => s.status === 'WORKING')
 
-        if (!activeSession) {
+        if (activeSessions.length === 0) {
           throw new Error('Nenhuma sessão ativa encontrada')
         }
 
-        console.log('🔄 [useChatsKanban] Sessão ativa:', activeSession.name)
+        console.log(`🔄 [useChatsKanban] ${activeSessions.length} sessões ativas encontradas`)
 
-        // 2. Paginar até pegar TODOS os chats
+        // 2. Paginar TODAS as sessões
         let allChats: any[] = []
-        let offset = 0
-        const limit = 100
+        
+        for (const session of activeSessions) {
+          console.log(`\n📞 [useChatsKanban] Buscando chats de: ${session.name} (${session.me?.id})`)
+          
+          let offset = 0
+          const limit = 100
+          let sessionChats = 0
 
-        while (true) {
-          const response = await fetch(
-            `${baseUrl}/api/${activeSession.name}/chats/overview?limit=${limit}&offset=${offset}`,
-            { headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' } }
-          )
+          while (true) {
+            const url = `${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`
+            
+            const response = await fetch(url, {
+              headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
+            })
 
-          if (!response.ok) break
-
-          const data = await response.json()
-          const newChats = (data.chats || data || []).map((chat: any) => ({
-            ...chat,
-            sessionName: activeSession.name
-          }))
-
-          console.log(`📥 [useChatsKanban] offset=${offset}: ${newChats.length} chats`)
-
-          if (newChats.length === 0) break
-
-          allChats = [...allChats, ...newChats]
-
-          // Para quando retornar menos que o limite ou atingir 2000 (segurança)
-          if (newChats.length < limit || allChats.length >= 2000) {
-            if (allChats.length >= 2000) {
-              console.warn('⚠️ [useChatsKanban] Limite de segurança: 2000 chats')
+            if (!response.ok) {
+              console.error(`❌ [useChatsKanban] Erro HTTP ${response.status} em ${session.name} offset=${offset}`)
+              break
             }
-            break
-          }
 
-          offset += limit
+            const data = await response.json()
+            const newChats = (data.chats || data || []).map((chat: any) => ({
+              ...chat,
+              sessionName: session.name
+            }))
+
+            sessionChats += newChats.length
+            console.log(`   📥 offset=${offset}: +${newChats.length} chats`)
+
+            if (newChats.length === 0) break
+
+            allChats = [...allChats, ...newChats]
+
+            // Para quando retornar menos que o limite
+            if (newChats.length < limit) {
+              console.log(`   ✅ ${session.name}: ${sessionChats} chats (última página)`)
+              break
+            }
+            
+            if (allChats.length >= 5000) {
+              console.warn('⚠️ [useChatsKanban] Limite de segurança: 5000 chats')
+              break
+            }
+
+            offset += limit
+          }
         }
 
         console.log(`✅ [useChatsKanban] Total carregado: ${allChats.length} chats`)
