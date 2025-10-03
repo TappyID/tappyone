@@ -890,10 +890,7 @@ function AtendimentoPage() {
         if (!sessionName) return;
         const response = await fetch(getWahaUrl("/api/sendPollVote"), {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Api-Key": "tappyone-waha-2024-secretkey",
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             session: sessionName,
             chatId,
@@ -1952,10 +1949,7 @@ function AtendimentoPage() {
               if (!sessionName) return;
               fetch(getWahaUrl("/api/reaction"), {
                 method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   messageId: messageId,
                   reaction: emoji,
@@ -2042,10 +2036,7 @@ function AtendimentoPage() {
               // Usar API WAHA para parar "digitando..."
               fetch(getWahaUrl("/api/stopTyping"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2059,10 +2050,7 @@ function AtendimentoPage() {
               // Usar API WAHA para marcar como vista (✓✓ azul)
               fetch(getWahaUrl("/api/sendSeen"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2083,12 +2071,11 @@ function AtendimentoPage() {
               const sessionName = await getActiveSessionName();
               if (!sessionName) return;
               // Usar API WAHA para enviar texto
+              const headers = getAuthHeaders()
+              console.log('📤 [SEND TEXT] Headers:', headers)
               fetch(getWahaUrl("/api/sendText"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: headers,
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2120,10 +2107,7 @@ function AtendimentoPage() {
               // Usar API WAHA para enviar enquete
               fetch(getWahaUrl("/api/sendPoll"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2132,17 +2116,16 @@ function AtendimentoPage() {
               }).then(() => undefined);
             }}
             onSendList={async (listData) => {
+              console.log('📋 [SEND LIST] Função chamada!', listData)
               if (!selectedChatId) return;
 
               const sessionName = await getActiveSessionName();
               if (!sessionName) return;
+              console.log('📋 [SEND LIST] Session:', sessionName, 'ChatId:', selectedChatId)
               // Usar API WAHA para enviar lista/menu - formato correto da documentação
               fetch(getWahaUrl("/api/sendList"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   chatId: selectedChatId,
                   session: sessionName,
@@ -2168,10 +2151,7 @@ function AtendimentoPage() {
               // Usar API WAHA para enviar evento
               fetch(getWahaUrl(`/api/${sessionName}/events`), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   chatId: selectedChatId,
                   event: eventData,
@@ -2228,10 +2208,7 @@ function AtendimentoPage() {
 
                 const response = await fetch(getWahaUrl(endpoint), {
                   method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "X-Api-Key": "tappyone-waha-2024-secretkey",
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify(payload),
                 });
 
@@ -2251,10 +2228,7 @@ function AtendimentoPage() {
               // Usar API WAHA para enviar contato
               fetch(getWahaUrl("/api/sendContactVcard"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2277,10 +2251,7 @@ function AtendimentoPage() {
               // Usar API WAHA para enviar localização
               fetch(getWahaUrl("/api/sendLocation"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2352,10 +2323,7 @@ function AtendimentoPage() {
               if (!sessionName) return;
               fetch(getWahaUrl("/api/sendText"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   session: sessionName,
                   chatId: selectedChatId,
@@ -2416,10 +2384,7 @@ function AtendimentoPage() {
 
             const response = await fetch(getWahaUrl("/api/sendVoice"), {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Api-Key": "tappyone-waha-2024-secretkey",
-              },
+              headers: getAuthHeaders(),
               body: JSON.stringify(payload),
             });
 
@@ -2461,21 +2426,19 @@ function AtendimentoPage() {
                     // Implementar encaminhamento via WAHA
                     const sessionName = await getActiveSessionName();
                     if (!sessionName) return;
-                    fetch(getWahaUrl("/api/forwardMessage"), {
+                    const response = await fetch(getWahaUrl("/api/sendPollVote"), {
                       method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        "X-Api-Key": "tappyone-waha-2024-secretkey",
-                      },
+                      headers: getAuthHeaders(),
                       body: JSON.stringify({
                         session: sessionName,
                         messageId: forwardingMessage,
                         to: selectedChatId, // Por enquanto encaminha para o mesmo chat
                       }),
-                    }).then(() => {
+                    });
+                    if (response.ok) {
                       setShowForwardModal(false);
                       setTimeout(() => refreshMessages(), 500);
-                    });
+                    }
                   }
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"

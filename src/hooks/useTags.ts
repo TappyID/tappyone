@@ -20,6 +20,8 @@ export const useTags = () => {
 
   const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem('token')
+    console.log('🔑 [useTags] Token encontrado?', !!token)
+    console.log('🔑 [useTags] Token (primeiros 50 chars):', token?.substring(0, 50))
     if (!token) {
       throw new Error('Token de autenticação não encontrado')
     }
@@ -50,8 +52,23 @@ export const useTags = () => {
       setError(null)
       console.log('🏷️ [HOOK] Buscando tags...')
       const data = await makeAuthenticatedRequest('/tags')
-      console.log('🏷️ [HOOK] Tags carregadas:', data?.length || 0)
-      setTags(Array.isArray(data?.data) ? data.data : [])
+      console.log('🏷️ [HOOK] Resposta completa da API:', data)
+      console.log('🏷️ [HOOK] data.data existe?', !!data?.data)
+      console.log('🏷️ [HOOK] data é array?', Array.isArray(data))
+      console.log('🏷️ [HOOK] data.data é array?', Array.isArray(data?.data))
+      
+      // Tentar múltiplas estruturas de resposta
+      let tagsArray = []
+      if (Array.isArray(data?.data)) {
+        tagsArray = data.data
+      } else if (Array.isArray(data)) {
+        tagsArray = data
+      } else if (data?.tags && Array.isArray(data.tags)) {
+        tagsArray = data.tags
+      }
+      
+      console.log('🏷️ [HOOK] Tags processadas:', tagsArray.length)
+      setTags(tagsArray)
     } catch (err) {
       console.error('❌ [HOOK] Erro ao buscar tags:', err)
       setError(err instanceof Error ? err.message : 'Erro ao carregar tags')

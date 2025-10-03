@@ -68,10 +68,15 @@ export function useFilas() {
       }
 
       const result = await response.json()
+      console.log('👥 [HOOK] Resposta completa da API:', result)
+      console.log('👥 [HOOK] result.data existe?', !!result?.data)
+      console.log('👥 [HOOK] result é array?', Array.isArray(result))
+      console.log('👥 [HOOK] result.data é array?', Array.isArray(result?.data))
       
       const data = result.success ? result.data : result
       
       const filasArray = Array.isArray(data) ? data : []
+      console.log('👥 [HOOK] Filas processadas:', filasArray.length)
       
       setFilas(filasArray)
     } catch (err) {

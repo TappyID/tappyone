@@ -2237,10 +2237,7 @@ function AtendimentoPage() {
               // Usar API WAHA para enviar evento
               fetch(getWahaUrl(`/api/${sessionName}/events`), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Api-Key": "tappyone-waha-2024-secretkey",
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                   chatId: selectedChatId,
                   event: eventData,
@@ -2473,10 +2470,7 @@ function AtendimentoPage() {
 
             const response = await fetch(getWahaUrl("/api/sendVoice"), {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Api-Key": "tappyone-waha-2024-secretkey",
-              },
+              headers: getAuthHeaders(),
               body: JSON.stringify(payload),
             });
 

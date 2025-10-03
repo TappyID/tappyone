@@ -5,11 +5,15 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081/'
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
+    console.log('🔑 [API TAGS] Auth header recebido:', authHeader ? 'SIM' : 'NÃO')
+    console.log('🔑 [API TAGS] Auth header (primeiros 50):', authHeader?.substring(0, 50))
     
     // DESENVOLVIMENTO: Desabilitar autenticação temporariamente
     const isDevelopment = process.env.NODE_ENV === 'development'
+    console.log('🔑 [API TAGS] isDevelopment:', isDevelopment)
     
     if (!authHeader && !isDevelopment) {
+      console.log('❌ [API TAGS] Token não fornecido e não é desenvolvimento')
       return NextResponse.json({ error: 'Token de autorização não fornecido' }, { status: 401 })
     }
     

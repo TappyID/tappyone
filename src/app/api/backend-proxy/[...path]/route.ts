@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
+
 // Proxy para Backend API - resolve Mixed Content em produção
 export async function GET(
   request: NextRequest,
@@ -8,7 +10,7 @@ export async function GET(
   try {
     const path = params.path.join('/')
     const searchParams = request.nextUrl.searchParams.toString()
-    const backendUrl = `http://159.65.34.199:8081/${path}${searchParams ? `?${searchParams}` : ''}`
+    const backendUrl = `${BACKEND_URL}/${path}${searchParams ? `?${searchParams}` : ''}`
     
     console.log(`🔄 [Backend Proxy] GET ${backendUrl}`)
     
@@ -48,7 +50,7 @@ export async function POST(
   try {
     const path = params.path.join('/')
     const body = await request.text()
-    const backendUrl = `http://159.65.34.199:8081/${path}`
+    const backendUrl = `${BACKEND_URL}/${path}`
     
     console.log(`🔄 [Backend Proxy] POST ${backendUrl}`)
     
@@ -89,7 +91,7 @@ export async function PUT(
   try {
     const path = params.path.join('/')
     const body = await request.text()
-    const backendUrl = `http://159.65.34.199:8081/${path}`
+    const backendUrl = `${BACKEND_URL}/${path}`
     
     console.log(`🔄 [Backend Proxy] PUT ${backendUrl}`)
     
@@ -129,7 +131,7 @@ export async function DELETE(
 ) {
   try {
     const path = params.path.join('/')
-    const backendUrl = `http://159.65.34.199:8081/${path}`
+    const backendUrl = `${BACKEND_URL}/${path}`
     
     console.log(`🔄 [Backend Proxy] DELETE ${backendUrl}`)
     
