@@ -343,14 +343,11 @@ export default function SideFilter({
         } catch (error) {
           console.error('[KANBAN COLUNAS] Erro ao buscar colunas:', error);
         }
-      } else {
-        setKanbanColunas([]);
-        onKanbanColunasChange([]);
       }
     };
 
     fetchKanbanColunas();
-  }, [selectedQuadrosMulti, onKanbanColunasChange, preloadedColunas]);
+  }, [selectedQuadrosMulti, preloadedColunas]);
 
   // Opções de ordenação - Design moderno
   const sortOptions = [
@@ -944,7 +941,8 @@ export default function SideFilter({
             initial={{ opacity: 0, x: -300 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -300 }}
-            className="fixed inset-y-0 left-0 z-50 w-[500px] bg-white dark:bg-gray-900 shadow-xl border-r border-gray-200 dark:border-gray-700"
+            className="fixed inset-y-0 left-0 w-[500px] bg-white dark:bg-gray-900 shadow-xl border-r border-gray-200 dark:border-gray-700"
+            style={{ zIndex: 9998 }}
           >
             {/* Header da sidebar */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -1149,7 +1147,8 @@ export default function SideFilter({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowAdvancedFilters(false)}
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 bg-black/20"
+            style={{ zIndex: 9997 }}
           />
         )}
       </AnimatePresence>

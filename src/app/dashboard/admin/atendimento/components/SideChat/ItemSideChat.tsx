@@ -674,12 +674,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
               // 🎯 PRIORIDADE 1: Buscar fila do chatLeadStatus (vem das props via page.tsx) ou chatLead
               const filaIdDoBanco = chat.chatLeadStatus?.fila_id || chatLead?.fila_id
               
-              console.log('🔍 [ItemSideChat] Badge Fila:', {
-                chatId: chat.id,
-                chatLeadStatusFilaId: chat.chatLeadStatus?.fila_id,
-                chatLeadFilaId: chatLead?.fila_id,
-                filaIdDoBanco
-              })
+            
               
               if (filaIdDoBanco) {
                 const fila = getFilaById(filaIdDoBanco)
