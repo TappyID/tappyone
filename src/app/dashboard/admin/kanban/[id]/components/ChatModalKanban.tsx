@@ -681,6 +681,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   const [totalMessages, setTotalMessages] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(false)
   
   // Buscar dados do usuário logado
   const { user } = useAuth()
@@ -741,6 +742,27 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
       })
     }
   }, [isOpen, chatId])
+  
+  // Auto-scroll para o fim quando carregar mensagens pela primeira vez
+  useEffect(() => {
+    if (messages.length > 0 && !loading) {
+      // Aguardar render e fazer scroll suave para o fim
+      const timer = setTimeout(() => {
+        // Buscar o container de mensagens dentro do ChatArea
+        const containers = document.querySelectorAll('.overflow-y-auto')
+        containers.forEach((container: any) => {
+          if (container.scrollHeight > container.clientHeight) {
+            container.scrollTo({ 
+              top: container.scrollHeight, 
+              behavior: 'instant' // instant na primeira carga, smooth depois
+            })
+          }
+        })
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [loading]) // Só roda quando loading muda para false
   
   const fetchMessages = async (limit = 50, offset = 0, append = false) => {
     try {
