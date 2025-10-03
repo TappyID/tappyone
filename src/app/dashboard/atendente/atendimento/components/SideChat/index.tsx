@@ -95,6 +95,7 @@ export default function SideChat({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
   const [preserveScroll, setPreserveScroll] = useState<number | null>(null)
+  const previousScrollHeightRef = useRef<number>(0) // Altura anterior do scroll
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [conexoes, setConexoes] = useState<any[]>([])
   const [filas, setFilas] = useState<any[]>([])
@@ -239,21 +240,24 @@ export default function SideChat({
 
         if (entry.isIntersecting) {
 
-          // Salvar posição EXATA antes de carregar mais
+          // Salvar altura do scroll ANTES de carregar mais
           if (scrollContainerRef.current) {
             const container = scrollContainerRef.current
-            const currentScroll = container.scrollTop
-            const scrollHeight = container.scrollHeight
-            const clientHeight = container.clientHeight
-
-            setPreserveScroll(currentScroll)
+            const currentScrollTop = container.scrollTop
+            const currentScrollHeight = container.scrollHeight
+            
+            console.log('💾 [SCROLL] Antes - scrollTop:', currentScrollTop, 'scrollHeight:', currentScrollHeight)
+            
+            // Salvar altura anterior para calcular diferença depois
+            previousScrollHeightRef.current = currentScrollHeight
+            setPreserveScroll(currentScrollTop)
           }
 
           // Carregar mais chats
           onLoadMore()
         }
       },
-      { threshold: 0.1, rootMargin: '50px' }
+      { threshold: 0.1, rootMargin: '100px' } // Aumentar margem para detectar antes
     )
 
     if (loadMoreTriggerRef.current) {
@@ -267,21 +271,23 @@ export default function SideChat({
     }
   }, [onLoadMore, hasMoreChats, isLoadingMore])
 
-  // Preservar posição do scroll durante updates - ULTRA MELHORADO
+  // Preservar posição do scroll durante updates - SIMPLIFICADO
   useEffect(() => {
-    if (preserveScroll !== null && scrollContainerRef.current) {
-
-      // Usar múltiplos requestAnimationFrame para garantir que tudo foi renderizado
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTop = preserveScroll
-            setPreserveScroll(null)
-          }
-        })
-      })
+    if (preserveScroll !== null && scrollContainerRef.current && !isLoadingMore) {
+      const container = scrollContainerRef.current
+      
+      // Como adicionamos itens NO FINAL, só manter a posição exata
+      const timer = setTimeout(() => {
+        if (container) {
+          console.log('✅ [SCROLL] Restaurando posição:', preserveScroll)
+          container.scrollTop = preserveScroll
+          setPreserveScroll(null)
+        }
+      }, 50) // Pequeno delay para garantir renderização
+      
+      return () => clearTimeout(timer)
     }
-  }, [chats, preserveScroll])
+  }, [chats.length, preserveScroll, isLoadingMore])
 
   // Impedir scroll automático para o topo
   useEffect(() => {

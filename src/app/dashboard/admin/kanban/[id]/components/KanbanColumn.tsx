@@ -256,8 +256,7 @@ export default function KanbanColumn({
     <motion.div
       ref={combinedRef}
       {...sortableAttributes}
-      {...sortableListeners}
-      className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out cursor-grab active:cursor-grabbing ${
+      className={`w-80 h-[calc(100vh-120px)] flex flex-col rounded-2xl border transition-all duration-200 ease-out ${
         isOver 
           ? theme === 'dark'
             ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 via-blue-500/5 to-transparent shadow-2xl shadow-blue-500/30'
@@ -311,9 +310,10 @@ export default function KanbanColumn({
           {/* Lado Esquerdo - Indicador e Nome */}
           <div className="flex items-center gap-4 flex-1">
             
-            {/* Handle para arrastar coluna - VISUAL APENAS */}
+            {/* Handle para arrastar coluna */}
             <div
-              className={`p-2 rounded-lg select-none transition-all duration-75 ease-out ${
+              {...sortableListeners}
+              className={`p-2 rounded-lg select-none transition-all duration-75 ease-out cursor-grab active:cursor-grabbing ${
                 theme === 'dark' 
                   ? 'hover:bg-slate-700/70 text-gray-400 hover:text-gray-200 hover:scale-110' 
                   : 'hover:bg-gray-200/70 text-gray-500 hover:text-gray-800 hover:scale-110'
