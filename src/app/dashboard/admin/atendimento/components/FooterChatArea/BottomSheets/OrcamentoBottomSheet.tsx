@@ -40,6 +40,15 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
       const data = await response.json()
       const orcamentosData = Array.isArray(data) ? data : (data.data || [])
 
+      // 🔍 DEBUG: Ver estrutura dos dados
+      console.log('📦 [OrcamentoBottomSheet] Orçamentos recebidos:', orcamentosData)
+      if (orcamentosData.length > 0) {
+        console.log('📋 [OrcamentoBottomSheet] Primeiro orçamento:', orcamentosData[0])
+        console.log('💰 [OrcamentoBottomSheet] valorTotal:', orcamentosData[0].valorTotal)
+        console.log('📋 [OrcamentoBottomSheet] Itens do primeiro:', orcamentosData[0].itens)
+        console.log('📋 [OrcamentoBottomSheet] Primeiro item COMPLETO:', JSON.stringify(orcamentosData[0].itens?.[0], null, 2))
+      }
+
       setOrcamentosExistentes(orcamentosData)
 
     } catch {
@@ -96,6 +105,8 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
           valor_total: item.quantidade * item.valor
         }))
       }
+
+      console.log('🚀 [SAVE] Dados sendo enviados:', JSON.stringify(orcamentoData, null, 2))
 
       // 🚀 NOVA URL ESPECÍFICA POR CHAT
       const path = `/api/chats/${encodeURIComponent(chatId || '')}/orcamentos`
@@ -342,7 +353,7 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                          R$ {(orcamento.valorTotal || 0).toFixed(2)}
+                          R$ {(orcamento.valorTotal || orcamento.valor_total || 0).toFixed(2)}
                         </span>
                         <button
                           onClick={() => handleDeletarOrcamento(orcamento.id)}
@@ -359,7 +370,7 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Itens:</p>
                         {orcamento.itens.map((item: any, index: number) => (
                           <div key={index} className="text-xs text-gray-600 dark:text-gray-400">
-                            {item.quantidade}x {item.descricao} - R$ {(item.valor || 0).toFixed(2)}
+                            {item.quantidade}x {item.descricao} - R$ {(item.valor || item.valor_unitario || item.valorUnitario || 0).toFixed(2)}
                           </div>
                         ))}
                       </div>
@@ -367,8 +378,8 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
 
                     <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                       <span className="text-xs text-gray-500">
-                        {new Date(orcamento.criadoEm).toLocaleDateString('pt-BR')} às{' '}
-                        {new Date(orcamento.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(orcamento.criadoEm || orcamento.criado_em || orcamento.created_at).toLocaleDateString('pt-BR')} às{' '}
+                        {new Date(orcamento.criadoEm || orcamento.criado_em || orcamento.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {orcamento.status && (
                         <span className={`text-xs px-2 py-1 rounded-full ${
