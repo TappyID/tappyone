@@ -78,8 +78,8 @@ export function useFiltersData() {
       }
       
       // 🔥 NOVO ENDPOINT: Buscar tags únicas de todos os chats (chat_tags table)
-      const baseUrl = 'http://159.65.34.199:8081'
-      const response = await fetch(`${baseUrl}/api/chats/tags/all`, {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+      const response = await fetch('/api/chats/tags/all', {
         headers: {
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
           'Content-Type': 'application/json'

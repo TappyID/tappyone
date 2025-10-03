@@ -28,23 +28,24 @@ export function useAtendenteData(
       setAtendenteData(null);
       return;
     }
-
+    
     setLoading(true);
     setError(null);
 
     try {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
       const response = await fetch(
-        `http://159.65.34.199:8081/api/chats/${chatId}/atendente`,
+        `/api/chats/${encodeURIComponent(chatId)}/atendente`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
-        },
+        }
       );
 
       if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        throw new Error(`Erro ao buscar atendente: ${response.status}`)
       }
 
       const data = await response.json();

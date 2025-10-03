@@ -185,15 +185,11 @@ export default function ChatHeader({
             <span>Atendido por: {nomeResponsavel || 'Sem atendente'}</span>
             <span className="text-gray-400">•</span>
             <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-              atendenteData?.status === 'em_atendimento'
+              atendenteData?.atendente
                 ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                : atendenteData?.status === 'aguardando'
-                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400'
+                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
             }`}>
-              {atendenteData?.status === 'em_atendimento' ? 'Em Atendimento' :
-               atendenteData?.status === 'aguardando' ? 'Aguardando' :
-               atendenteData?.status ? 'Finalizado' : 'Aguardando'}
+              {atendenteData?.atendente ? '✅ Em Atendimento' : '⏳ Aguardando'}
             </span>
             <span className="text-gray-400">•</span>
             <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400" />

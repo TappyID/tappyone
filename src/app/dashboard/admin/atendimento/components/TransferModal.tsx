@@ -24,6 +24,30 @@ import {
   Filter
 } from 'lucide-react'
 
+// Adicionar estilo de animação para os toasts
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style')
+  style.textContent = `
+    @keyframes slide-in-right {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    .animate-slide-in-right {
+      animation: slide-in-right 0.3s ease-out;
+    }
+  `
+  if (!document.querySelector('style[data-toast-animations]')) {
+    style.setAttribute('data-toast-animations', 'true')
+    document.head.appendChild(style)
+  }
+}
+
 interface Atendente {
   id: string
   nome: string
@@ -314,6 +338,12 @@ export default function TransferModal({
     
     if (!targetId) {
       console.error('❌ [TRANSFER] targetId não definido!')
+      // Toast de erro
+      const toastDiv = document.createElement('div')
+      toastDiv.className = 'fixed top-20 right-4 z-[9999] bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in-right'
+      toastDiv.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg><span>❌ Erro: Selecione um destino!</span>`
+      document.body.appendChild(toastDiv)
+      setTimeout(() => toastDiv.remove(), 3000)
       return
     }
 
@@ -331,17 +361,51 @@ export default function TransferModal({
 
       console.log('✅ [TRANSFER] Transferência concluída!')
       
+      // Toast de sucesso
+      const toastDiv = document.createElement('div')
+      toastDiv.className = 'fixed top-20 right-4 z-[9999] bg-green-500 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-in-right'
+      toastDiv.innerHTML = `
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+          <p class="font-bold">✅ Transferência realizada!</p>
+          <p class="text-xs opacity-90">Atualizando lista...</p>
+        </div>
+      `
+      document.body.appendChild(toastDiv)
+      setTimeout(() => toastDiv.remove(), 4000)
+      
       // Chamar callback de sucesso se fornecido
       if (onTransferSuccess) {
         console.log('🔄 [TRANSFER] Chamando onTransferSuccess')
         onTransferSuccess()
       }
+      
+      // Aguardar 500ms e então recarregar a página para garantir atualização
+      setTimeout(() => {
+        console.log('🔄 [TRANSFER] Recarregando página...')
+        window.location.reload()
+      }, 500)
 
       onClose()
     } catch (error) {
       console.error('❌ [TRANSFER] Erro ao transferir:', error)
 
-      // TODO: Mostrar toast de erro
+      // Toast de erro
+      const toastDiv = document.createElement('div')
+      toastDiv.className = 'fixed top-20 right-4 z-[9999] bg-red-500 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-in-right'
+      toastDiv.innerHTML = `
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+          <p class="font-bold">❌ Erro na transferência!</p>
+          <p class="text-xs opacity-90">${error instanceof Error ? error.message : 'Tente novamente'}</p>
+        </div>
+      `
+      document.body.appendChild(toastDiv)
+      setTimeout(() => toastDiv.remove(), 4000)
     } finally {
       setIsTransferring(false)
     }

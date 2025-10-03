@@ -377,11 +377,13 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
     if (leadStatus) {
       return normalizeLeadStatus(leadStatus)
     }
-    // Padrão: se não tem atendente, está aguardando
+    // Lógica baseada no atendente:
+    // Se NÃO tem atendente → aguardando
+    // Se TEM atendente → atendimento
     if (!atendenteData?.atendente) {
       return 'aguardando'
     }
-    return null
+    return 'atendimento'
   }, [chatLead?.status, leadStatus, atendenteData?.atendente])
 
   // Listener para recarregar dados quando atendimento for assumido
@@ -416,8 +418,8 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
         const token = localStorage.getItem('token') || 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDE9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
 
         // Buscar status do lead no backend GO
-        const baseUrl = 'http://159.65.34.199:8081'
-        const response = await fetch(`${baseUrl}/api/chats/${encodeURIComponent(chat.id)}/lead`, {
+        // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+        const response = await fetch(`/api/chats/${encodeURIComponent(chat.id)}/lead`, {
           headers: {
             'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
           }
