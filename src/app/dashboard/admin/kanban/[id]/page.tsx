@@ -850,11 +850,10 @@ function QuadroPage() {
     
     // 🎯 Buscar TODOS os chats do WhatsApp DIRETO do backend
     try {
-      // Buscar direto do backend Go (mais rápido e sem problemas de proxy)
-      const backendUrl = 'http://159.65.34.199:8081'
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
       const sessionName = 'user_fb8da1d7_1758158816675' // Session padrão
       
-      const response = await fetch(`${backendUrl}/api/whatsapp/chats/cached?session=${sessionName}&limit=10000&offset=0`, {
+      const response = await fetch(`/api/whatsapp/chats/cached?session=${sessionName}&limit=10000&offset=0`, {
         headers: { 
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
           'Content-Type': 'application/json'

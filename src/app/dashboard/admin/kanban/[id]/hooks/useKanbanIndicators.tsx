@@ -42,26 +42,25 @@ export function useKanbanIndicators(contatoId: string | null) {
       }
       
       const chatId = contatoId.includes('@c.us') ? contatoId : `${contatoId}@c.us`
-      const baseUrl = 'http://159.65.34.199:8081'
       
+      // ✅ USAR ROTAS PROXY PARA FUNCIONAR EM PRODUÇÃO
       const promises = [
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []).catch(() => []),
         
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/tickets`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/tickets`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
         fetch(`/api/chats/${encodeURIComponent(chatId)}/tags`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : [])

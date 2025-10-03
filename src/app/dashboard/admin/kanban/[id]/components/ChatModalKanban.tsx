@@ -84,8 +84,8 @@ const ProfileSidebar = ({
       
       // Garantir chatId completo com @c.us (igual aos indicadores e bottom sheets!)
       const chatIdFormatado = chatId.includes('@c.us') ? chatId : `${chatId}@c.us`
-      const baseUrl = 'http://159.65.34.199:8081'
-      const url = `${baseUrl}/api/chats/${encodeURIComponent(chatIdFormatado)}/${section}`
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+      const url = `/api/chats/${encodeURIComponent(chatIdFormatado)}/${section}`
       
       console.log('🔍 [ProfileSidebar] Buscando dados:', { 
         section, 

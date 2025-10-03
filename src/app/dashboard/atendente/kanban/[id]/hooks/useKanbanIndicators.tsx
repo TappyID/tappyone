@@ -52,24 +52,22 @@ export function useKanbanIndicators(contatoId: string | null) {
       // Garantir que temos o chatId completo com @c.us
       const chatId = contatoId.includes('@c.us') ? contatoId : `${contatoId}@c.us`
       console.log('📊 [useKanbanIndicators] ChatId formatado:', chatId)
-      console.log('🔗 [useKanbanIndicators] URL anotações será:', `http://159.65.34.199:8081/api/chats/${encodeURIComponent(chatId)}/anotacoes`)
       console.log('📊 [useKanbanIndicators] Iniciando fetch dos endpoints...')
       
-      // 🚨 CORRETO: Os endpoints estão no BACKEND GO com /api prefix!
-      const baseUrl = 'http://159.65.34.199:8081'
+      // ✅ USAR ROTAS PROXY PARA FUNCIONAR EM PRODUÇÃO
       const promises = [
         // Orçamentos - BACKEND GO
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
         // Agendamentos - BACKEND GO
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
         // Anotações - BACKEND GO
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/anotacoes`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => {
           console.log('📝 [useKanbanIndicators] Response anotações status:', res.status)
@@ -93,7 +91,7 @@ export function useKanbanIndicators(contatoId: string | null) {
         }),
         
         // Tickets - BACKEND GO
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/tickets`, {
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/tickets`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
