@@ -823,8 +823,10 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
           }
         })
         
-        console.log('📨 Mensagens transformadas:', transformedMessages)
-        setMessages(transformedMessages)
+        // ✅ ORDENAR mensagens do mais ANTIGO para o mais NOVO (igual ChatArea)
+        const sortedMessages = transformedMessages.sort((a: any, b: any) => a.timestamp - b.timestamp)
+        console.log('📨 Mensagens transformadas e ordenadas:', sortedMessages)
+        setMessages(sortedMessages)
       } else {
         console.error('Erro na resposta:', response.status, response.statusText)
       }
@@ -1072,8 +1074,8 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
           />
         </div>
         
-        {/* Área de Mensagens com scroll customizado */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        {/* Área de Mensagens - SEM SCROLL (ChatArea já tem scroll interno) */}
+        <div className="flex-1 overflow-hidden flex flex-col">
           <style jsx>{`
             .custom-scrollbar::-webkit-scrollbar {
               width: 8px;
@@ -1111,23 +1113,16 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
           ) : messages.length > 0 ? (
-            <div 
-              className="flex-1 overflow-y-auto custom-dynamic-scroll"
-              style={{
-                '--dynamic-color': columnColor
-              } as React.CSSProperties}
-            >
-              <ChatArea 
-                messages={messages}
-                selectedChat={selectedChat}
-                currentUserId="user"
-                onLoadMore={() => {
-                  // Implementar carregamento de mais mensagens
-                  console.log('📜 Carregar mais mensagens...')
-                }}
-                hasMore={messages.length >= 50}
-              />
-            </div>
+            <ChatArea 
+              messages={messages}
+              selectedChat={selectedChat}
+              currentUserId="user"
+              onLoadMore={() => {
+                // Implementar carregamento de mais mensagens
+                console.log(' Carregar mais mensagens...')
+              }}
+              hasMore={messages.length >= 50}
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
