@@ -176,6 +176,31 @@ export default function KanbanColumn({
   // 🗑️ Estados para modal de confirmação de exclusão
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedTargetColumn, setSelectedTargetColumn] = useState('')
+  
+  // 📊 Estados para scroll infinito de cards
+  const [visibleCardsCount, setVisibleCardsCount] = useState(10)
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
+  
+  // 🔄 IntersectionObserver para carregar mais cards
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current || !coluna.cards || coluna.cards.length <= visibleCardsCount) {
+      return
+    }
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          // Carregar mais 10 cards
+          setVisibleCardsCount(prev => Math.min(prev + 10, coluna.cards?.length || 0))
+        }
+      },
+      { threshold: 0.1 }
+    )
+    
+    observer.observe(loadMoreTriggerRef.current)
+    
+    return () => observer.disconnect()
+  }, [visibleCardsCount, coluna.cards?.length])
 
   // 🗑️ Função para abrir modal de confirmação
   const handleDeleteClick = () => {
@@ -674,13 +699,14 @@ export default function KanbanColumn({
           </div>
         )}
 
-        {/* Lista de Cards com DnD */}
+        {/* Lista de Cards com DnD - SCROLL INFINITO */}
         <SortableContext
           items={coluna.cards?.map((card: any) => card.id) || []}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-2">
-            {coluna.cards?.map((card: any) => (
+            {/* Renderizar apenas cards visíveis (limitado) */}
+            {coluna.cards?.slice(0, visibleCardsCount).map((card: any) => (
               <KanbanCardItem
                 key={card.id}
                 card={card}
@@ -703,6 +729,20 @@ export default function KanbanColumn({
                 onDelete={onDeleteCard}
               />
             ))}
+            
+            {/* Trigger para carregar mais (invisível) */}
+            {coluna.cards && coluna.cards.length > visibleCardsCount && (
+              <div ref={loadMoreTriggerRef} className="h-4" />
+            )}
+            
+            {/* Indicador "Carregando mais" */}
+            {coluna.cards && coluna.cards.length > visibleCardsCount && (
+              <div className={`text-center py-2 text-xs ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Mostrando {visibleCardsCount} de {coluna.cards.length}
+              </div>
+            )}
           </div>
         </SortableContext>
 

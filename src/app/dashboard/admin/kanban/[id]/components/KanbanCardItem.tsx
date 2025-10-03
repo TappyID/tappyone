@@ -282,31 +282,6 @@ export default function KanbanCardItem({
           }}
         />
         
-        {/* 🗑️ Botão de Excluir - Aparece no Hover */}
-        {isHovered && onDelete && (
-          <motion.button
-            data-no-dnd="true"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onDelete(card)
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className={`absolute top-2 right-2 p-1.5 rounded-lg z-10 transition-all duration-200 ${
-              theme === 'dark'
-                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300'
-                : 'bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700'
-            }`}
-            title="Remover do Kanban"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </motion.button>
-        )}
         
         <div className="flex items-start gap-2.5 mb-2">
           {/* Profile Picture - IGUAL ItemSideChat */}
@@ -590,10 +565,38 @@ export default function KanbanCardItem({
             </button>
           </div>
 
-          {/* Horário da última mensagem - à direita */}
-          <Settings className={`w-3 h-3 ${
-            theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-          }`} />
+          {/* Ícones à direita */}
+          <div className="flex items-center gap-1">
+            {/* Botão Excluir - Aparece no hover */}
+            {isHovered && onDelete && (
+              <motion.button
+                data-no-dnd="true"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onDelete(card)
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={`p-1 rounded-lg transition-all ${
+                  theme === 'dark'
+                    ? 'hover:bg-red-500/20 text-red-400'
+                    : 'hover:bg-red-50 text-red-600'
+                }`}
+                title="Remover do Kanban"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Trash2 className="w-3 h-3" />
+              </motion.button>
+            )}
+            
+            <Settings className={`w-3 h-3 ${
+              theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+            }`} />
+          </div>
         </div>
       </div>
 

@@ -71,6 +71,15 @@ function QuadroPage() {
   const { tags, loading: loadingTags } = useTags()
   const { filas, loading: loadingFilas } = useFilas()
   
+  // 🔍 DEBUG: Verificar quantos chats do WhatsApp temos
+  useEffect(() => {
+    console.log('🔍 [PAGE] useChatsOverview carregou:', whatsappChats.length, 'chats')
+    console.log('🔍 [PAGE] Loading:', loadingChats)
+    if (whatsappChats.length > 0) {
+      console.log('🔍 [PAGE] Primeiros 3 chats:', whatsappChats.slice(0, 3).map(c => ({ id: c.id, name: c.name })))
+    }
+  }, [whatsappChats.length, loadingChats])
+  
   // Hook para cores do Kanban
   const kanbanColors = useKanbanColors()
   

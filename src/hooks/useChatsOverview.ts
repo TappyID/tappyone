@@ -53,7 +53,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
   const [initialized, setInitialized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const fetchChatsOverview = async (limit = 10, offset = 0, append = false) => {
+  const fetchChatsOverview = async (limit = 9999, offset = 0, append = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -200,7 +200,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     setIsLoadingMore(true);
 
     try {
-      await fetchChatsOverview(10, chats.length, true); // append = true
+      await fetchChatsOverview(9999, chats.length, true); // append = true
     } catch {
     } finally {
       setIsLoadingMore(false);
@@ -431,9 +431,76 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     setIsMounted(true);
 
     // Executar com delay zero para garantir que roda
-    setTimeout(() => {
-      fetchChatsOverview(10, 0, false);
-      fetchTotalChatsCount();
+    setTimeout(async () => {
+      // 🔥 BUSCAR TODOS OS CHATS COM PAGINAÇÃO
+      let allChats: any[] = []
+      let offset = 0
+      const limit = 100 // Limite por request da WAHA
+      let hasMore = true
+      
+      console.log('🔄 [useChatsOverview] Iniciando busca paginada de TODOS os chats...')
+      
+      while (hasMore) {
+        const token = localStorage.getItem('token')
+        if (!token) break
+        
+        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
+        
+        const sessionsResponse = await fetch(`${baseUrl}/api/sessions`, {
+          headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
+        })
+        
+        if (!sessionsResponse.ok) break
+        
+        const sessions = await sessionsResponse.json()
+        
+        const allChatsPromises = sessions.map(async (session: any) => {
+          try {
+            const response = await fetch(
+              `${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`,
+              { headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' } }
+            )
+            
+            if (!response.ok) return []
+            
+            const data = await response.json()
+            const rawChats = data.chats || data || []
+            
+            return rawChats.map((chat: any) => ({
+              ...chat,
+              sessionName: session.name
+            }))
+          } catch {
+            return []
+          }
+        })
+        
+        const chatsArrays = await Promise.all(allChatsPromises)
+        const newChats = chatsArrays.flat()
+        
+        console.log(`📥 [useChatsOverview] Página offset=${offset}: ${newChats.length} chats`)
+        
+        if (newChats.length === 0) {
+          hasMore = false
+        } else {
+          allChats = [...allChats, ...newChats]
+          offset += limit
+        }
+        
+        // Segurança: parar em 2000 chats para não travar
+        if (allChats.length >= 2000) {
+          console.warn('⚠️ [useChatsOverview] Limite de segurança atingido: 2000 chats')
+          hasMore = false
+        }
+      }
+      
+      console.log(`✅ [useChatsOverview] Total de chats carregados: ${allChats.length}`)
+      setChats(allChats)
+      setLoading(false)
+      setInitialized(true)
+      
+      fetchTotalChatsCount()
     }, 0);
   }, [isMounted]);
 
