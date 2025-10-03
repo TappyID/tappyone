@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
     console.log('🏷️ [API CHAT-TAGS] Proxy - ChatId:', chatId)
 
     // Fazer requisição para o backend GO
-    const backendUrl = `http://159.65.34.199:8081/api/chats/${encodeURIComponent(chatId)}/tags`
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
+    const backendUrl = `${BACKEND_URL}/api/chats/${encodeURIComponent(chatId)}/tags`
     console.log('🏷️ [API CHAT-TAGS] URL do backend:', backendUrl)
 
     const response = await fetch(backendUrl, {

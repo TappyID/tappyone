@@ -61,7 +61,8 @@ export function useKanbanIndicators(contatoId: string | null) {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : []),
         
-        fetch(`${baseUrl}/api/chats/${encodeURIComponent(chatId)}/tags`, {
+        // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/tags`, {
           headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` }
         }).then(res => res.ok ? res.json() : [])
       ]
