@@ -285,8 +285,15 @@ export default function SideFilter({
   // Estado para armazenar colunas do quadro selecionado
   const [kanbanColunas, setKanbanColunas] = useState<any[]>([]);
 
-  // Buscar colunas quando selecionar quadros (múltiplos)
+  // Buscar colunas quando selecionar quadros (múltiplos) OU usar preloadedColunas
   useEffect(() => {
+    // Se tiver colunas pré-carregadas (ex: já está no quadro), usar elas
+    if (preloadedColunas && preloadedColunas.length > 0) {
+      console.log('[KANBAN COLUNAS] Usando colunas pré-carregadas:', preloadedColunas.length)
+      setKanbanColunas(preloadedColunas)
+      return
+    }
+    
     const fetchKanbanColunas = async () => {
       if (selectedQuadrosMulti.length > 0) {
         try {
@@ -343,7 +350,7 @@ export default function SideFilter({
     };
 
     fetchKanbanColunas();
-  }, [selectedQuadrosMulti, onKanbanColunasChange]);
+  }, [selectedQuadrosMulti, onKanbanColunasChange, preloadedColunas]);
 
   // Opções de ordenação - Design moderno
   const sortOptions = [

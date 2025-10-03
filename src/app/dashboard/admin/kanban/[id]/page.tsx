@@ -1263,6 +1263,7 @@ function QuadroPage() {
           selectedTagsMulti={selectedTagsMulti}
           onTagsMultiChange={setSelectedTagsMulti}
           hideQuadrosFilter={true}
+          preloadedColunas={colunas}
           selectedFila=""
           onFilaChange={() => {}}
           filas={filas || []}

@@ -6,6 +6,7 @@ import { AdminLayout } from '../components/AdminLayout'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useColorTheme } from '@/contexts/ColorThemeContext'
 import { 
   Settings,
   Palette,
@@ -154,6 +155,7 @@ export default function ConfiguracoesPage() {
   const { user, isAuthenticated, loading } = useAuth()
   const router = useRouter()
   const { theme } = useTheme()
+  const { colorTheme } = useColorTheme()
   const isDark = theme === 'dark'
   
   const [activeSection, setActiveSection] = useState('geral')
@@ -239,11 +241,15 @@ export default function ConfiguracoesPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className={`rounded-2xl p-8 text-white relative overflow-hidden ${
-            isDark 
-              ? 'bg-gradient-to-r from-slate-800/90 to-slate-700/90 backdrop-blur-xl border border-slate-600/50'
-              : 'bg-gradient-to-r from-[#273155] to-[#1e2442]'
-          }`}>
+          <div 
+            className="rounded-2xl p-8 text-white relative overflow-hidden backdrop-blur-xl"
+            style={{
+              background: isDark
+                ? `linear-gradient(135deg, ${colorTheme.primary}CC, ${colorTheme.secondary}CC)`
+                : `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.secondary})`,
+              border: isDark ? `1px solid ${colorTheme.secondary}80` : 'none'
+            }}
+          >
             {/* Glass effect layers for dark mode */}
             {isDark && (
               <>
