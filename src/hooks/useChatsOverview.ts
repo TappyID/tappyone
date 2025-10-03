@@ -432,75 +432,110 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
     // Executar com delay zero para garantir que roda
     setTimeout(async () => {
-      // 🔥 BUSCAR TODOS OS CHATS COM PAGINAÇÃO
-      let allChats: any[] = []
-      let offset = 0
-      const limit = 100 // Limite por request da WAHA
-      let hasMore = true
+      // 🔥 PAGINAÇÃO AUTOMÁTICA - buscar TODOS os chats
+      const token = localStorage.getItem('token')
+      if (!token) return
       
-      console.log('🔄 [useChatsOverview] Iniciando busca paginada de TODOS os chats...')
+      const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
       
-      while (hasMore) {
-        const token = localStorage.getItem('token')
-        if (!token) break
-        
-        const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:'
-        const baseUrl = isProduction ? '/api/waha-proxy' : 'http://159.65.34.199:3001'
-        
+      console.log('🔄 [useChatsOverview] Iniciando busca COMPLETA de chats...')
+      
+      try {
+        // Buscar sessões ativas
         const sessionsResponse = await fetch(`${baseUrl}/api/sessions`, {
           headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
         })
         
-        if (!sessionsResponse.ok) break
+        if (!sessionsResponse.ok) {
+          setLoading(false)
+          return
+        }
         
         const sessions = await sessionsResponse.json()
+        let allChatsFromAllSessions: any[] = []
         
-        const allChatsPromises = sessions.map(async (session: any) => {
-          try {
-            const response = await fetch(
-              `${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`,
-              { headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' } }
-            )
-            
-            if (!response.ok) return []
-            
-            const data = await response.json()
-            const rawChats = data.chats || data || []
-            
-            return rawChats.map((chat: any) => ({
-              ...chat,
-              sessionName: session.name
-            }))
-          } catch {
-            return []
+        // Para CADA sessão, buscar TODOS os chats paginando
+        for (const session of sessions) {
+          let offset = 0
+          const limit = 100
+          let hasMore = true
+          
+          console.log(`📡 [useChatsOverview] Buscando chats da sessão: ${session.name}`)
+          
+          while (hasMore) {
+            try {
+              const response = await fetch(
+                `${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`,
+                { headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' } }
+              )
+              
+              if (!response.ok) break
+              
+              const data = await response.json()
+              const rawChats = data.chats || data || []
+              
+              if (rawChats.length === 0) {
+                hasMore = false
+              } else {
+                const chatsWithSession = rawChats.map((chat: any) => ({
+                  ...chat,
+                  sessionName: session.name
+                }))
+                
+                allChatsFromAllSessions = [...allChatsFromAllSessions, ...chatsWithSession]
+                
+                console.log(`📥 [${session.name}] offset=${offset}: +${rawChats.length} chats (total: ${allChatsFromAllSessions.length})`)
+                
+                // Se retornou menos que o limit, acabou
+                if (rawChats.length < limit) {
+                  hasMore = false
+                } else {
+                  offset += limit
+                }
+              }
+              
+              // Segurança: limite de 2000 chats por sessão
+              if (offset >= 2000) {
+                console.warn(`⚠️ Limite de segurança: 2000 chats na sessão ${session.name}`)
+                hasMore = false
+              }
+            } catch (err) {
+              console.error(`❌ Erro ao buscar página offset=${offset}:`, err)
+              hasMore = false
+            }
           }
-        })
-        
-        const chatsArrays = await Promise.all(allChatsPromises)
-        const newChats = chatsArrays.flat()
-        
-        console.log(`📥 [useChatsOverview] Página offset=${offset}: ${newChats.length} chats`)
-        
-        if (newChats.length === 0) {
-          hasMore = false
-        } else {
-          allChats = [...allChats, ...newChats]
-          offset += limit
         }
         
-        // Segurança: parar em 2000 chats para não travar
-        if (allChats.length >= 2000) {
-          console.warn('⚠️ [useChatsOverview] Limite de segurança atingido: 2000 chats')
-          hasMore = false
-        }
+        console.log(`✅ [useChatsOverview] TOTAL FINAL: ${allChatsFromAllSessions.length} chats`)
+        
+        // Transformar e setar
+        const transformedChats = allChatsFromAllSessions.map((chat: any) => ({
+          id: chat.id,
+          name: chat.name || chat.contact?.name || chat.contact?.pushname || 'Usuário',
+          image: chat.contact?.profilePicUrl || chat.profilePicUrl || null,
+          sessionName: chat.sessionName,
+          lastMessage: chat.lastMessage ? {
+            id: chat.lastMessage.id,
+            body: chat.lastMessage.body || getMessageTypeDescription(chat.lastMessage),
+            timestamp: chat.lastMessage.timestamp * 1000,
+            fromMe: chat.lastMessage.fromMe,
+            type: chat.lastMessage.type || 'chat',
+            hasMedia: chat.lastMessage.hasMedia || false,
+            ack: chat.lastMessage.ack
+          } : null
+        }))
+        
+        setChats(transformedChats)
+        setLoading(false)
+        setInitialized(true)
+        
+      } catch (error) {
+        console.error('❌ [useChatsOverview] Erro ao buscar chats:', error)
+        setLoading(false)
       }
       
-      console.log(`✅ [useChatsOverview] Total de chats carregados: ${allChats.length}`)
-      setChats(allChats)
-      setLoading(false)
-      setInitialized(true)
-      
-      fetchTotalChatsCount()
+      fetchTotalChatsCount();
     }, 0);
   }, [isMounted]);
 
