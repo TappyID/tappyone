@@ -53,7 +53,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
   const [initialized, setInitialized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const fetchChatsOverview = async (limit = 12, offset = 0, append = false) => {
+  const fetchChatsOverview = async (limit = 10, offset = 0, append = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -200,7 +200,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
     setIsLoadingMore(true);
 
     try {
-      await fetchChatsOverview(12, chats.length, true); // append = true
+      await fetchChatsOverview(10, chats.length, true); // append = true
     } catch {
     } finally {
       setIsLoadingMore(false);
@@ -383,7 +383,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
         : "http://159.65.34.199:3001";
 
       const response = await fetch(
-        `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=12&offset=0`,
+        `${baseUrl}/api/user_fb8da1d7_1758158816675/chats/overview?limit=10&offset=0`,
         {
           headers: { "X-Api-Key": "tappyone-waha-2024-secretkey" },
         },
@@ -432,7 +432,7 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
     // Executar com delay zero para garantir que roda
     setTimeout(() => {
-      fetchChatsOverview(12, 0, false);
+      fetchChatsOverview(10, 0, false);
       fetchTotalChatsCount();
     }, 0);
   }, [isMounted]);
