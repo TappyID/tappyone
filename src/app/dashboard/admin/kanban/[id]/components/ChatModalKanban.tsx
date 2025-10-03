@@ -678,6 +678,9 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   const [loading, setLoading] = useState(true)
   const [selectedChat, setSelectedChat] = useState<any>(null)
   const [profilePhoto, setProfilePhoto] = useState<string>('')
+  const [totalMessages, setTotalMessages] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   
   // Buscar dados do usuário logado
   const { user } = useAuth()
@@ -717,7 +720,15 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   // Buscar mensagens quando abrir o modal
   useEffect(() => {
     if (isOpen && chatId) {
-      fetchMessages()
+      // Resetar estados ao abrir
+      setMessages([])
+      setTotalMessages(0)
+      setHasMore(true)
+      setIsLoadingMore(false)
+      
+      // Carregar primeiras 50 mensagens
+      fetchMessages(50, 0, false)
+      
       // Criar objeto de chat para o ChatHeader
       setSelectedChat({
         id: chatId,
@@ -731,15 +742,17 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
     }
   }, [isOpen, chatId])
   
-  const fetchMessages = async () => {
+  const fetchMessages = async (limit = 50, offset = 0, append = false) => {
     try {
-      setLoading(true)
+      if (offset === 0) setLoading(true)
+      else setIsLoadingMore(true)
+      
       const token = localStorage.getItem('token')
       
-      console.log('🔍 Buscando mensagens para:', chatId)
+      console.log('🔍 Buscando mensagens:', { chatId, limit, offset, append })
       
-      // Usar a API da WAHA
-      const response = await fetch(`/api/whatsapp/chats/${chatId}/messages?limit=100`, {
+      // Usar a API da WAHA com paginação
+      const response = await fetch(`/api/whatsapp/chats/${chatId}/messages?limit=${limit}&offset=${offset}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -825,8 +838,24 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
         
         // ✅ ORDENAR mensagens do mais ANTIGO para o mais NOVO (igual ChatArea)
         const sortedMessages = transformedMessages.sort((a: any, b: any) => a.timestamp - b.timestamp)
-        console.log('📨 Mensagens transformadas e ordenadas:', sortedMessages)
-        setMessages(sortedMessages)
+        console.log('📨 Mensagens transformadas e ordenadas:', sortedMessages.length)
+        
+        // Atualizar mensagens (append ou replace)
+        if (append) {
+          // Adicionar mensagens antigas no INÍCIO
+          setMessages(prev => [...sortedMessages, ...prev])
+        } else {
+          setMessages(sortedMessages)
+        }
+        
+        // Atualizar controles de paginação
+        setHasMore(sortedMessages.length >= limit)
+        
+        // Buscar total de mensagens (primeira vez)
+        if (offset === 0) {
+          // Assumir que há mais se retornou limit completo
+          setTotalMessages(sortedMessages.length >= limit ? sortedMessages.length + 100 : sortedMessages.length)
+        }
       } else {
         console.error('Erro na resposta:', response.status, response.statusText)
       }
@@ -834,7 +863,16 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
       console.error('Erro ao buscar mensagens:', error)
     } finally {
       setLoading(false)
+      setIsLoadingMore(false)
     }
+  }
+  
+  // Função para carregar mais mensagens antigas
+  const loadMoreMessages = async () => {
+    if (isLoadingMore || !hasMore) return
+    
+    console.log('📜 Carregando mais mensagens antigas...')
+    await fetchMessages(50, messages.length, true)
   }
   
   const handleSendMessage = async (message: string, attachments?: any[]) => {
@@ -1116,12 +1154,10 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             <ChatArea 
               messages={messages}
               selectedChat={selectedChat}
-              currentUserId="user"
-              onLoadMore={() => {
-                // Implementar carregamento de mais mensagens
-                console.log(' Carregar mais mensagens...')
-              }}
-              hasMore={messages.length >= 50}
+              isLoading={isLoadingMore}
+              hasMore={hasMore}
+              totalMessages={totalMessages}
+              onLoadMore={loadMoreMessages}
             />
           ) : (
             <div className="flex items-center justify-center h-full">
