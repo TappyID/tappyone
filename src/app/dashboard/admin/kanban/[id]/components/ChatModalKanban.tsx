@@ -794,7 +794,15 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             metadata.menuTitle = msg.list?.title || msg.listTitle
             metadata.menuDescription = msg.list?.description || msg.listDescription
             metadata.menuItems = msg.list?.sections?.[0]?.rows || msg.listItems || []
+          } else if (msg.type === 'event' || msg.event) {
+            messageType = 'event'
+            metadata.eventType = msg.event?.type || 'info'
+            metadata.eventTitle = msg.event?.name || msg.eventName
+            metadata.eventDescription = msg.event?.description
+            metadata.eventDate = msg.event?.startTime ? new Date(msg.event.startTime * 1000).toISOString() : null
           }
+          
+          console.log('🔍 [fetchMessages] Mensagem transformada:', { type: messageType, metadata })
           
           return {
             id: msg.id || msg.messageId || `msg_${Date.now()}_${Math.random()}`,

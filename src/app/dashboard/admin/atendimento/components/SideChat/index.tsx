@@ -65,6 +65,7 @@ interface SideChatProps {
   onToggleArchive?: (chatId: string) => void
   onToggleHidden?: (chatId: string) => void
   onDelete?: (chatId: string) => void
+  onRefreshChats?: () => void
 
   // Scroll infinito
   onLoadMore?: () => void
@@ -90,7 +91,8 @@ export default function SideChat({
   hasMoreChats = false,
   isLoadingMore = false,
   isLoading,
-  isCollapsed = false
+  isCollapsed = false,
+  onRefreshChats
 }: SideChatProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
@@ -412,6 +414,7 @@ export default function SideChat({
                   onToggleArchive={onToggleArchive}
                   onToggleHidden={onToggleHidden}
                   onDelete={onDelete}
+                  onRefreshChats={onRefreshChats}
                   conexoes={conexoes}
                   filas={filas}
                   loadingConexoes={loadingConexoes || loadingFilas}

@@ -305,26 +305,41 @@ export default function TransferModal({
   // Função para transferir
   const handleTransfer = async () => {
     const targetId = activeTab === 'atendentes' ? selectedAtendente : selectedFila
-    if (!targetId) return
+    console.log('🔄 [TRANSFER] Iniciando transferência:', {
+      chatId,
+      activeTab,
+      targetId,
+      transferNotes
+    })
+    
+    if (!targetId) {
+      console.error('❌ [TRANSFER] targetId não definido!')
+      return
+    }
 
     setIsTransferring(true)
-
     try {
       if (activeTab === 'atendentes') {
+        console.log('👤 [TRANSFER] Transferindo para atendente:', targetId)
         // Transferir para um atendente específico
         await transferirAtendimento(chatId, targetId, undefined, transferNotes)
       } else {
+        console.log('📋 [TRANSFER] Transferindo para fila:', targetId)
         // Transferir para uma fila (limpar atendente atual)
         await transferirAtendimento(chatId, '', targetId, transferNotes)
       }
 
+      console.log('✅ [TRANSFER] Transferência concluída!')
+      
       // Chamar callback de sucesso se fornecido
       if (onTransferSuccess) {
+        console.log('🔄 [TRANSFER] Chamando onTransferSuccess')
         onTransferSuccess()
       }
 
       onClose()
-    } catch {
+    } catch (error) {
+      console.error('❌ [TRANSFER] Erro ao transferir:', error)
 
       // TODO: Mostrar toast de erro
     } finally {

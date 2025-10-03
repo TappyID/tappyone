@@ -103,6 +103,11 @@ interface ItemSideChatProps {
       nome: string
       cor?: string
     }
+    chatLeadStatus?: {
+      fila_id?: string
+      responsavel?: string
+      status?: string
+    }
     ticketStatus?: {
       id: string
       nome: string
@@ -136,6 +141,7 @@ interface ItemSideChatProps {
   onToggleArchive?: (chatId: string) => void
   onToggleHidden?: (chatId: string) => void
   onDelete?: (chatId: string) => void
+  onRefreshChats?: () => void
   conexoes: any[]
   filas: any[]
   loadingConexoes: boolean
@@ -166,6 +172,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   onToggleArchive,
   onToggleHidden,
   onDelete,
+  onRefreshChats,
   conexoes,
   filas,
   loadingConexoes,
@@ -662,8 +669,15 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
             {/* Fila do Chat (SEMPRE do chatLead.fila_id) */}
             {(() => {
-              // 🎯 PRIORIDADE 1: Buscar fila do chatLead (banco de dados)
-              const filaIdDoBanco = chatLead?.fila_id
+              // 🎯 PRIORIDADE 1: Buscar fila do chatLeadStatus (vem das props via page.tsx) ou chatLead
+              const filaIdDoBanco = chat.chatLeadStatus?.fila_id || chatLead?.fila_id
+              
+              console.log('🔍 [ItemSideChat] Badge Fila:', {
+                chatId: chat.id,
+                chatLeadStatusFilaId: chat.chatLeadStatus?.fila_id,
+                chatLeadFilaId: chatLead?.fila_id,
+                filaIdDoBanco
+              })
               
               if (filaIdDoBanco) {
                 const fila = getFilaById(filaIdDoBanco)
@@ -1015,29 +1029,25 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
       currentAtendente={chatLead?.responsavelUser?.nome || (chatLead?.responsavel && chatLead.responsavel !== 'Não atribuído' ? `ID:${chatLead.responsavel.slice(0,8)}` : 'Não atribuído')}
       currentFila={(typeof chat.fila === 'object' ? chat.fila?.id : null) || chatLead?.fila?.id || chatLead?.fila_id || 'Sem fila'}
       onTransferSuccess={() => {
+          console.log('✅ [ItemSideChat] onTransferSuccess chamado!')
+          
+          // Chamar onRefreshChats diretamente
+          if (onRefreshChats) {
+            console.log('🔄 [ItemSideChat] Chamando onRefreshChats...')
+            onRefreshChats()
+          }
+          
           // Recarregar status do chat após transferência
           const fetchStatus = async () => {
             try {
+              console.log('🔄 [ItemSideChat] Buscando novo status...')
               const status = await buscarStatusChat(chat.id)
               applyChatLeadStatus(status)
+              console.log('✅ [ItemSideChat] Status atualizado:', status)
 
-              // Invalidar cache do React Query para forçar reload
-              if (typeof window !== 'undefined') {
-                // @ts-ignore
-                window.__REACT_QUERY_CACHE_INVALIDATE?.()
-              }
-
-              // Disparar evento global para atualizar toda a lista
-              window.dispatchEvent(new CustomEvent('chatTransferred', {
-                detail: { chatId: chat.id }
-              }))
-
-              // Forçar reload da página após 500ms para garantir atualização
-              setTimeout(() => {
-                window.location.reload()
-              }, 500)
-
-            } catch {}
+            } catch (error) {
+              console.error('❌ [ItemSideChat] Erro ao buscar status:', error)
+            }
           }
           fetchStatus()
         }}

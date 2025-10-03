@@ -1087,15 +1087,20 @@ function AtendimentoPage() {
   // Listener para atualizar lista quando houver transferência
   useEffect(() => {
     const handleChatTransferred = (event: any) => {
+      console.log('📡 [PAGE] Evento chatTransferred recebido!', event.detail)
       // Aguardar 500ms para garantir que o backend atualizou
       setTimeout(() => {
+        console.log('🔄 [PAGE] Recarregando chats após transferência...')
         fetchChats(searchQuery);
       }, 500);
     };
 
     window.addEventListener("chatTransferred", handleChatTransferred);
-    return () =>
+    console.log('👂 [PAGE] Listener chatTransferred registrado')
+    return () => {
+      console.log('🔇 [PAGE] Listener chatTransferred removido')
       window.removeEventListener("chatTransferred", handleChatTransferred);
+    }
   }, [searchQuery]);
 
   // Debounce para pesquisa
@@ -1824,6 +1829,10 @@ function AtendimentoPage() {
               onSelectChat={setSelectedChatId}
               isLoading={loadingOverview && activeFilter === "all"}
               onLoadMore={handleLoadMoreChats}
+              onRefreshChats={() => {
+                console.log('🔄 [PAGE] onRefreshChats chamado!')
+                fetchChats(searchQuery)
+              }}
               hasMoreChats={(() => {
                 // Para filtros específicos (favoritos, arquivados, ocultos, status), nunca há mais para carregar
                 if (
