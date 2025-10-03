@@ -819,8 +819,8 @@ function AtendimentoPage() {
 
   // Função para carregar mais chats (agora usa paginação real da API)
   const handleLoadMoreChats = useCallback(async () => {
-    // 🚫 BLOQUEAR scroll infinito para filtros de status
-    if (["em_atendimento", "aguardando", "finalizado", "agentes_ia", "leads_quentes", "favorites", "archived", "hidden"].includes(activeFilter)) {
+    // 🚫 BLOQUEAR scroll infinito para filtros de status E para "all" (atendente só vê suas filas)
+    if (["all", "em_atendimento", "aguardando", "finalizado", "agentes_ia", "leads_quentes", "favorites", "archived", "hidden"].includes(activeFilter)) {
       console.log('🚫 [LOAD MORE] Bloqueado para filtro:', activeFilter)
       return
     }
@@ -1907,9 +1907,9 @@ function AtendimentoPage() {
               isLoading={loadingOverview && activeFilter === "all"}
               onLoadMore={handleLoadMoreChats}
               hasMoreChats={(() => {
-                // Para filtros específicos (favoritos, arquivados, ocultos, status), nunca há mais para carregar
+                // Para filtros específicos (favoritos, arquivados, ocultos, status, all), nunca há mais para carregar
                 if (
-                  ["favorites", "archived", "hidden", "em_atendimento", "aguardando", "finalizado", "agentes_ia", "leads_quentes"].includes(activeFilter)
+                  ["all", "favorites", "archived", "hidden", "em_atendimento", "aguardando", "finalizado", "agentes_ia", "leads_quentes"].includes(activeFilter)
                 ) {
                   return false;
                 }
