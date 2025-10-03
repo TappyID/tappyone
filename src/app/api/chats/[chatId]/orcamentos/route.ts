@@ -1,44 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { chatId: string } }
 ) {
+  console.log('📞 [ORÇAMENTOS] GET route foi chamado para chatId:', params.chatId)
+  
   try {
-    const { chatId } = params
-
-    if (!chatId) {
-      return NextResponse.json({ error: 'Chat ID é obrigatório' }, { status: 400 })
+    const authHeader = request.headers.get('authorization')
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ [ORÇAMENTOS] Token não encontrado no header')
+      return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
     }
 
-    // Buscar orçamentos do chat
-    const query = `
-      SELECT id, titulo, status, valor, data_criacao
-      FROM orcamentos 
-      WHERE chat_id = $1
-      ORDER BY data_criacao DESC
-    `
-
-    // Simulação da consulta - substitua pela sua implementação de DB
-    // const result = await db.query(query, [chatId])
+    const token = authHeader.substring(7) // Remove "Bearer "
+    const url = `${BACKEND_URL}/api/chats/${encodeURIComponent(params.chatId)}/orcamentos`
+    console.log('📞 [ORÇAMENTOS] Fazendo requisição para backend:', url)
     
-    // Por enquanto, retornar mock baseado no chatId
-    const mockOrcamentos = [
-      {
-        id: '1',
-        titulo: 'Proposta Sistema CRM',
-        status: 'enviado'
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      {
-        id: '2',
-        titulo: 'Orçamento Consultoria',
-        status: 'aprovado'
-      }
-    ]
+    })
 
-    return NextResponse.json(mockOrcamentos)
+    if (!response.ok) {
+      console.error('❌ [ORÇAMENTOS] Erro na resposta do backend:', response.status)
+      return NextResponse.json({ error: 'Erro ao buscar orçamentos' }, { status: response.status })
+    }
+
+    const data = await response.json()
+    console.log('✅ [ORÇAMENTOS] Dados recebidos do backend:', data)
+    
+    return NextResponse.json(data, { status: 200 })
+    
   } catch (error) {
-    console.error('Erro ao buscar orçamentos do chat:', error)
+    console.error('❌ [ORÇAMENTOS] Erro na API proxy:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

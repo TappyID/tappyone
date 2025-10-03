@@ -1,44 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { chatId: string } }
 ) {
   try {
-    const { chatId } = params
-
-    if (!chatId) {
-      return NextResponse.json({ error: 'Chat ID é obrigatório' }, { status: 400 })
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token não encontrado' }, { status: 401 })
     }
 
-    // Buscar tickets do chat
-    const query = `
-      SELECT id, titulo, status, prioridade, data_criacao
-      FROM tickets 
-      WHERE chat_id = $1
-      ORDER BY data_criacao DESC
-    `
-
-    // Simulação da consulta - substitua pela sua implementação de DB
-    // const result = await db.query(query, [chatId])
+    const token = authHeader.substring(7)
+    const url = `${BACKEND_URL}/api/chats/${encodeURIComponent(params.chatId)}/tickets`
     
-    // Por enquanto, retornar mock baseado no chatId
-    const mockTickets = [
-      {
-        id: '1',
-        titulo: 'Suporte Técnico',
-        status: 'aberto'
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      {
-        id: '2',
-        titulo: 'Dúvida sobre Funcionalidade',
-        status: 'resolvido'
-      }
-    ]
+    })
 
-    return NextResponse.json(mockTickets)
+    if (!response.ok) {
+      return NextResponse.json({ error: 'Erro ao buscar tickets' }, { status: response.status })
+    }
+
+    const data = await response.json()
+    return NextResponse.json(data, { status: 200 })
   } catch (error) {
-    console.error('Erro ao buscar tickets do chat:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

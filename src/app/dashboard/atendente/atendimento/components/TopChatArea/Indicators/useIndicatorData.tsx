@@ -21,9 +21,8 @@ export function useIndicatorData(chatId: string | null | undefined, endpoint: st
       // Garantir chatId com @c.us
       const formattedChatId = chatId.includes('@c.us') ? chatId : `${chatId}@c.us`
 
-      // Backend GO
-      const baseUrl = 'http://159.65.34.199:8081'
-      const response = await fetch(`${baseUrl}/api/chats/${encodeURIComponent(formattedChatId)}/${endpoint}`, {
+      // ✅ USAR ROTA PROXY PARA FUNCIONAR EM PRODUÇÃO
+      const response = await fetch(`/api/chats/${encodeURIComponent(formattedChatId)}/${endpoint}`, {
         headers: {
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
         }
