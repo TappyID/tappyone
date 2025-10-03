@@ -178,7 +178,7 @@ export default function KanbanColumn({
   const [selectedTargetColumn, setSelectedTargetColumn] = useState('')
   
   // 📊 Estados para scroll infinito de cards
-  const [visibleCardsCount, setVisibleCardsCount] = useState(10)
+  const [visibleCardsCount, setVisibleCardsCount] = useState(10) // ✅ Correto: 10 iniciais
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
   
   // 🔄 IntersectionObserver para carregar mais cards
@@ -190,7 +190,7 @@ export default function KanbanColumn({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          // Carregar mais 10 cards
+          // Carregar mais 10 cards ao rolar
           setVisibleCardsCount(prev => Math.min(prev + 10, coluna.cards?.length || 0))
         }
       },

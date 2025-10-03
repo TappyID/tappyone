@@ -61,42 +61,52 @@ export function useChatsKanban() {
           let sessionChats = 0
 
           while (true) {
-            const url = `${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`
-            
-            const response = await fetch(url, {
-              headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
-            })
+            try {
+              const url = `${baseUrl}/api/${session.name}/chats/overview?limit=${limit}&offset=${offset}`
+              
+              const response = await fetch(url, {
+                headers: { 'X-Api-Key': 'tappyone-waha-2024-secretkey' }
+              })
 
-            if (!response.ok) {
-              console.error(`❌ [useChatsKanban] Erro HTTP ${response.status} em ${session.name} offset=${offset}`)
+              if (!response.ok) {
+                console.error(`❌ [useChatsKanban] Erro HTTP ${response.status} em ${session.name} offset=${offset}`)
+                break
+              }
+
+              const data = await response.json()
+              const newChats = (data.chats || data || []).map((chat: any) => ({
+                ...chat,
+                sessionName: session.name
+              }))
+
+              sessionChats += newChats.length
+              console.log(`   📥 offset=${offset}: +${newChats.length} chats | Total sessão: ${sessionChats}`)
+
+              if (newChats.length === 0) {
+                console.log(`   🛑 Parando: 0 chats retornados em offset=${offset}`)
+                break
+              }
+
+              allChats = [...allChats, ...newChats]
+
+              // Para quando retornar menos que o limite
+              if (newChats.length < limit) {
+                console.log(`   ✅ ${session.name}: ${sessionChats} chats (última página)`)
+                break
+              }
+              
+              if (allChats.length >= 5000) {
+                console.warn('⚠️ [useChatsKanban] Limite de segurança: 5000 chats')
+                break
+              }
+
+              offset += limit
+              console.log(`   ➡️ Próximo offset: ${offset}`)
+              
+            } catch (err) {
+              console.error(`❌ [useChatsKanban] Erro no loop:`, err)
               break
             }
-
-            const data = await response.json()
-            const newChats = (data.chats || data || []).map((chat: any) => ({
-              ...chat,
-              sessionName: session.name
-            }))
-
-            sessionChats += newChats.length
-            console.log(`   📥 offset=${offset}: +${newChats.length} chats`)
-
-            if (newChats.length === 0) break
-
-            allChats = [...allChats, ...newChats]
-
-            // Para quando retornar menos que o limite
-            if (newChats.length < limit) {
-              console.log(`   ✅ ${session.name}: ${sessionChats} chats (última página)`)
-              break
-            }
-            
-            if (allChats.length >= 5000) {
-              console.warn('⚠️ [useChatsKanban] Limite de segurança: 5000 chats')
-              break
-            }
-
-            offset += limit
           }
         }
 

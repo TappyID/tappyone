@@ -96,30 +96,34 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
   }, [])
 
   // Buscar dados otimizados com batch API
-  const fetchOptimizedData = useCallback(async (background = false) => {
+  const fetchOptimizedData = useCallback(async (background = false): Promise<OptimizedKanbanData> => {
+    console.log(`🚀🚀🚀 [fetchOptimizedData] FUNÇÃO INICIADA! whatsappChats.length=${whatsappChats.length}`)
+    
     let token = localStorage.getItem('token')
     if (!token) {
-      token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('token='))
-        ?.split('=')[1]
+      const cookies = document.cookie.split(';')
+      const tokenCookie = cookies.find(row => row.trim().startsWith('token='))
+      token = tokenCookie?.split('=')[1] || null
     }
     
     if (!token) {
-      const emptyData: OptimizedKanbanData = {
-        cards: {},
-        columnStats: {},
-        loading: false,
-        error: 'Token de autenticação não encontrado'
-      }
-      return emptyData
+      throw new Error('Token não encontrado')
     }
-
+    
+    const cacheKey = `kanban-${quadroId}`
+    
+    // Verificar cache
     if (!background) {
-      setData(prev => ({ ...prev, loading: true }))
+      const cached = getCachedData(cacheKey)
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log('💾 [useKanbanOptimized] Usando dados do cache')
+        return cached.data
+      }
     }
 
     try {
+      console.log(`🔧 [fetchOptimizedData] Iniciando TRY block...`)
+      
       // Limpar cache para forçar reload dos dados reais
       const cacheKey = `kanban-${quadroId}`
       kanbanCache.delete(cacheKey) // Força reload
@@ -129,6 +133,8 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
       } else {
         setPrefetching(true)
       }
+      
+      console.log(`🔧 [fetchOptimizedData] Estados setados, buscando quadro...`)
       
       // Buscar dados do quadro
       const quadroResponse = await fetch(`/api/kanban/quadros/${quadroId}`, {
@@ -168,8 +174,12 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
         console.warn('⚠️ [useKanbanOptimized] Hook foi chamado ANTES dos chats carregarem?')
       }
       
+      console.log('🔄 [useKanbanOptimized] INICIANDO processamento dos', whatsappChats.length, 'chats...')
+      
       // 🎯 USAR TODOS OS CHATS DO WHATSAPP (não só os do banco)
+      console.log('🔄 [useKanbanOptimized] Mapeando IDs...')
       const cardIds: string[] = whatsappChats.map((chat: any) => chat.id)
+      console.log('✅ [useKanbanOptimized] IDs mapeados:', cardIds.length)
       console.log('📋 [useKanbanOptimized] Total de cards (TODOS do WhatsApp):', cardIds.length)
       
       // Debug dos primeiros 5 chats
@@ -199,6 +209,9 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
       })
       
       // Filtrar cards inválidos
+      console.log('🔍 [useKanbanOptimized] Total antes do filtro:', cardsData.length)
+      
+      let invalidCount = 0
       const validCards = cardsData.filter((card: any) => {
           const numero = card.numeroTelefone
           const isValid = numero && 
@@ -208,15 +221,27 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
                          /^\d+$/.test(numero)
           
           if (!isValid) {
-            console.log('❌ CARD INVÁLIDO FILTRADO:', {
-              id: card.id,
-              numeroTelefone: numero
-            })
+            invalidCount++
+            if (invalidCount <= 10) {
+              console.log(`❌ CARD INVÁLIDO #${invalidCount}:`, {
+                id: card.id,
+                numeroTelefone: numero,
+                motivo: !numero ? 'sem número' : 
+                       numero === 'undefined' ? 'undefined' :
+                       numero === '0' ? 'zero' :
+                       numero.length < 10 ? `curto (${numero.length})` :
+                       !/^\d+$/.test(numero) ? 'não-numérico' : 'outro'
+              })
+            }
           }
           
           return isValid
         })
-        .map((contato: any) => {
+        
+      console.log(`✅ [useKanbanOptimized] Válidos: ${validCards.length} | ❌ Inválidos: ${invalidCount}`)
+      console.log('🔄 [useKanbanOptimized] Iniciando mapeamento finalCards...')
+      
+      const finalCards = validCards.map((contato: any) => {
           const numeroTelefone = contato.numeroTelefone
           const chatId = contato.id // Manter o ID original
           
@@ -230,11 +255,14 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
           }
         })
       
+      console.log('✅ [useKanbanOptimized] finalCards mapeados:', finalCards.length)
+      
       // Preparar IDs para batch requests
+      console.log('🔄 [useKanbanOptimized] Preparando IDs para batch...')
       const allCardIds: string[] = []
       const cardContactMapping: { [cardId: string]: string } = {}
       
-      validCards.forEach((card: any) => {
+      finalCards.forEach((card: any) => {
         const chatId = card.id
         allCardIds.push(chatId)
         if (card.contato_id) {
@@ -245,6 +273,9 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
         }
       })
       
+      console.log('✅ [useKanbanOptimized] IDs preparados:', allCardIds.length)
+      console.log('🔄 [useKanbanOptimized] Distribuindo cards nas colunas...')
+      
       // 🔄 Distribuir cards nas colunas corretas
       if (quadroData.colunas && quadroData.colunas.length > 0) {
         // Resetar todas as colunas
@@ -253,7 +284,7 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
         })
         
         // Distribuir cada card na coluna correta
-        validCards.forEach((card: any) => {
+        finalCards.forEach((card: any) => {
           const cardDoBanco = cardsNoBanco.get(card.id)
           
           if (cardDoBanco && cardDoBanco.colunaId) {
@@ -290,8 +321,11 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
           quadroData.colunas.map((col: any) => `${col.nome}: ${col.cards.length}`).join(', '))
       }
 
+      console.log('✅ [useKanbanOptimized] Cards distribuídos nas colunas!')
+      
       // Se não há cards, retornar dados vazios
       if (allCardIds.length === 0) {
+        console.log('⚠️ [useKanbanOptimized] allCardIds.length === 0, retornando vazio')
         const emptyData: OptimizedKanbanData = {
           cards: {},
           columnStats: {},
@@ -302,6 +336,8 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
         return emptyData
       }
 
+      console.log('🔄 [useKanbanOptimized] Iniciando batch requests...')
+      
       // Batch request para orçamentos, agendamentos, assinaturas, anotações, contatos e agentes
       console.log('🚀 [DEBUG] Iniciando Promise.all com 6 requests incluindo agentes')
       const [orcamentosResponse, agendamentosResponse, assinaturasResponse, anotacoesResponse, contatosBatchResponse, agentesResponse] = await Promise.all([
@@ -659,12 +695,23 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
     }
   }, [quadroId, whatsappChats]) // ✅ Adicionar whatsappChats para capturar valor atualizado
 
-  // useEffect para carregar dados na montagem
+  // useEffect para carregar dados na montagem E quando chats mudarem
   useEffect(() => {
-    fetchOptimizedData().then(result => {
-      setData(result)
-    })
-  }, [quadroId])
+    console.log(`🔥 [useEffect] EXECUTANDO com ${whatsappChats.length} chats`)
+    console.log(`🔥 [useEffect] CHAMANDO fetchOptimizedData()...`)
+    
+    fetchOptimizedData()
+      .then(result => {
+        console.log(`✅ [useEffect] Dados prontos! Setando state...`)
+        console.log(`✅ [useEffect] Result:`, { loading: result.loading, cardsCount: Object.keys(result.cards || {}).length })
+        setData(result)
+        console.log(`✅ [useEffect] setData() CONCLUÍDO!`)
+      })
+      .catch(error => {
+        console.error(`❌ [useEffect] ERRO ao buscar dados:`, error)
+        setData(prev => ({ ...prev, loading: false, error: error.message }))
+      })
+  }, [quadroId, whatsappChats.length]) // ✅ Usar .length para evitar referência circular
 
   // Função para refresh forçado (limpa cache)
   const forceRefresh = useCallback(async () => {
@@ -688,27 +735,6 @@ export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) 
     kanbanCache.delete(cacheKey)
     console.log('🔄 CACHE AUTO-LIMPO para:', cacheKey)
   }, [])
-
-  // Carregar dados iniciais E recarregar quando whatsappChats mudar
-  useEffect(() => {
-    // Só rodar se tiver chats do WhatsApp
-    if (quadroId && whatsappChats.length > 0) {
-      console.log('🔄 [useKanbanOptimized] Carregando com', whatsappChats.length, 'chats do WhatsApp')
-      console.log('🔄 [useKanbanOptimized] Primeiros 3 IDs:', whatsappChats.slice(0, 3).map(c => c.id))
-      
-      // Passar os chats atualizados diretamente
-      const loadData = async () => {
-        try {
-          const result = await fetchOptimizedData()
-          setData(result)
-        } catch (error: any) {
-          setData(prev => ({ ...prev, loading: false, error: error.message }))
-        }
-      }
-      
-      loadData()
-    }
-  }, [quadroId, whatsappChats]) // ✅ Depender do array inteiro
 
   // Memoizar estatísticas computadas para evitar recálculo
   const memoizedStats = useMemo(() => {
