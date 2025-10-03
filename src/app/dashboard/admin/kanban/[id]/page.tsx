@@ -115,7 +115,8 @@ function QuadroPage() {
     fetchColunas()
   }, [quadroId])
 
-  const kanbanOptimized = useKanbanOptimized(quadroId)
+  // ✅ Passar chats do WhatsApp para sincronização automática
+  const kanbanOptimized = useKanbanOptimized(quadroId, whatsappChats)
 
   const quadro = { 
     id: quadroId, 
@@ -786,6 +787,36 @@ function QuadroPage() {
     setShowCriarCardModal(true)
   }
 
+  // 🗑️ Função para deletar card do Kanban
+  const handleDeleteCard = async (card: any) => {
+    if (!confirm(`Tem certeza que deseja remover "${card.nome || card.name}" do Kanban?`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/kanban/cards/${card.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        console.log('✅ Card removido do Kanban:', card.id)
+        // Recarregar dados
+        window.location.reload()
+      } else {
+        const errorData = await response.json()
+        alert(`Erro ao remover card: ${errorData.error || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao deletar card:', error)
+      alert('Erro ao remover card do Kanban')
+    }
+  }
+
   // Abre o modal para adicionar coluna
   const handleAddColuna = () => {
     setNovaColunaData({ nome: '', cor: '#3B82F6' })
@@ -1387,6 +1418,7 @@ function QuadroPage() {
                 }}
                 onOpenAnotacoes={onOpenAnotacoes}
                 onOpenTickets={onOpenTickets}
+                onDeleteCard={handleDeleteCard}
                 // 🗑️ Props para modal de confirmação de exclusão
                 allColumns={colunasComCards}
                 onDeleteWithReallocation={handleDeleteWithReallocation}

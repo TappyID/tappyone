@@ -55,7 +55,7 @@ const kanbanCache = new Map<string, {
 
 const CACHE_TTL = 2 * 60 * 1000 // 2 minutos
 
-export function useKanbanOptimized(quadroId: string) {
+export function useKanbanOptimized(quadroId: string, whatsappChats: any[] = []) {
   const [data, setData] = useState<OptimizedKanbanData>({
     cards: {},
     columnStats: {},
@@ -64,6 +64,7 @@ export function useKanbanOptimized(quadroId: string) {
   })
 
   const [prefetching, setPrefetching] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   // Função para buscar token
   const getAuthToken = useCallback(() => {
@@ -144,24 +145,100 @@ export function useKanbanOptimized(quadroId: string) {
 
       const quadroData = await quadroResponse.json()
       
-      // 🔥 EXTRAIR IDs dos cards do banco (não buscar contatos)
-      const cardIds: string[] = []
-      quadroData.colunas?.forEach((coluna: any) => {
+      // 🔥 SINCRONIZAÇÃO AUTOMÁTICA: Buscar cards do banco + chats do WhatsApp
+      const cardsNoBanco = new Map<string, any>()
+      quadroData.colunas?.forEach((coluna: any, colunaIndex: number) => {
         coluna.cards?.forEach((card: any) => {
           if (card.conversaId) {
-            cardIds.push(card.conversaId)
+            cardsNoBanco.set(card.conversaId, {
+              ...card,
+              colunaId: coluna.id,
+              colunaIndex
+            })
           }
         })
       })
       
-      console.log('📋 [useKanbanOptimized] IDs dos cards do banco:', cardIds)
+      console.log('📋 [useKanbanOptimized] Cards no banco:', cardsNoBanco.size)
+      console.log('📱 [useKanbanOptimized] Chats do WhatsApp:', whatsappChats.length)
       
-      // Converter IDs em formato de cards
-      const cardsData: any[] = cardIds.map(chatId => ({
-        id: chatId,
-        numeroTelefone: chatId.replace('@c.us', '').replace('@g.us', ''),
-        nome: chatId
-      }))
+      // ✅ Identificar novos chats (que estão no WhatsApp mas não no banco)
+      const novosChats: any[] = []
+      whatsappChats.forEach((chat: any) => {
+        if (!cardsNoBanco.has(chat.id)) {
+          novosChats.push(chat)
+        }
+      })
+      
+      console.log('🆕 [useKanbanOptimized] Novos chats para salvar:', novosChats.length)
+      
+      // 💾 Salvar automaticamente os novos chats no banco (na primeira coluna)
+      if (novosChats.length > 0 && quadroData.colunas && quadroData.colunas.length > 0) {
+        const primeiraColuna = quadroData.colunas[0]
+        
+        // Criar cards em batch para os novos chats
+        const cardsParaCriar = novosChats.map((chat: any) => ({
+          conversaId: chat.id,
+          colunaId: primeiraColuna.id,
+          posicao: (primeiraColuna.cards?.length || 0) + novosChats.indexOf(chat)
+        }))
+        
+        try {
+          setSyncing(true)
+          const createResponse = await fetch(`/api/kanban/quadros/${quadroId}/cards/batch`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ cards: cardsParaCriar })
+          })
+          
+          if (createResponse.ok) {
+            const novosCardsData = await createResponse.json()
+            console.log('✅ [useKanbanOptimized] Novos cards criados:', novosCardsData.cards?.length || 0)
+            
+            // Adicionar ao mapa de cards no banco
+            novosCardsData.cards?.forEach((card: any) => {
+              cardsNoBanco.set(card.conversaId, {
+                ...card,
+                colunaId: primeiraColuna.id,
+                colunaIndex: 0
+              })
+            })
+          } else {
+            console.error('❌ Erro ao criar cards em batch:', createResponse.status)
+          }
+        } catch (error) {
+          console.error('❌ Erro ao sincronizar novos chats:', error)
+        } finally {
+          setSyncing(false)
+        }
+      }
+      
+      // 🔄 Usar TODOS os chats (do banco + novos sincronizados)
+      const cardIds: string[] = Array.from(cardsNoBanco.keys())
+      console.log('📋 [useKanbanOptimized] Total de cards após sincronização:', cardIds.length)
+      
+      // 🔥 Enriquecer com dados do WhatsApp
+      const whatsappChatsMap = new Map(whatsappChats.map((chat: any) => [chat.id, chat]))
+      
+      // Converter IDs em formato de cards, usando dados do WhatsApp quando disponível
+      const cardsData: any[] = cardIds.map(chatId => {
+        const whatsappChat = whatsappChatsMap.get(chatId)
+        const cardDoBanco = cardsNoBanco.get(chatId)
+        
+        return {
+          id: chatId,
+          numeroTelefone: chatId.replace('@c.us', '').replace('@g.us', ''),
+          nome: whatsappChat?.name || cardDoBanco?.nome || chatId,
+          profilePicUrl: whatsappChat?.image,
+          lastMessage: whatsappChat?.lastMessage,
+          unreadCount: whatsappChat?.unreadCount,
+          colunaId: cardDoBanco?.colunaId,
+          colunaIndex: cardDoBanco?.colunaIndex
+        }
+      })
       
       // Filtrar cards inválidos
       const validCards = cardsData.filter((card: any) => {
@@ -625,9 +702,10 @@ export function useKanbanOptimized(quadroId: string) {
     console.log('🔄 CACHE AUTO-LIMPO para:', cacheKey)
   }, [])
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais E recarregar quando whatsappChats mudar
   useEffect(() => {
     if (quadroId) {
+      console.log('🔄 [useKanbanOptimized] Carregando com', whatsappChats.length, 'chats do WhatsApp')
       fetchOptimizedData()
         .then((result) => {
           setData(result)
@@ -636,7 +714,7 @@ export function useKanbanOptimized(quadroId: string) {
           setData(prev => ({ ...prev, loading: false, error: error.message }))
         })
     }
-  }, [quadroId, fetchOptimizedData])
+  }, [quadroId, whatsappChats.length, fetchOptimizedData]) // ✅ Reagir quando whatsappChats mudar
 
   // Memoizar estatísticas computadas para evitar recálculo
   const memoizedStats = useMemo(() => {

@@ -80,6 +80,7 @@ interface KanbanColumnProps {
   onOpenConexaoFila?: (card: any) => void
   onOpenConfig?: (coluna: any) => void
   getColumnStats?: (columnId: string) => any
+  onDeleteCard?: (card: any) => void
   // 🗑️ Props para modal de confirmação de exclusão
   allColumns?: any[] // Lista de todas as colunas para realocação
   onDeleteWithReallocation?: (columnId: string, targetColumnId: string) => void
@@ -130,6 +131,7 @@ export default function KanbanColumn({
   onOpenConexaoFila,
   onOpenConfig,
   getColumnStats,
+  onDeleteCard,
   allColumns = [],
   onDeleteWithReallocation
 }: KanbanColumnProps) {
@@ -698,6 +700,7 @@ export default function KanbanColumn({
                 onOpenTickets={onOpenTickets}
                 onOpenTags={onOpenTags}
                 onOpenChat={onOpenChat}
+                onDelete={onDeleteCard}
               />
             ))}
           </div>

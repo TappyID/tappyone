@@ -16,7 +16,9 @@ import {
   Phone,
   FileText,
   Bot,
-  Settings
+  Settings,
+  Trash2,
+  X
 } from 'lucide-react'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import LastMessageSideChat from '../../../atendimento/components/SideChat/LastMessageSideChat'
@@ -67,6 +69,7 @@ interface KanbanCardItemProps {
   onOpenTags?: (card: any) => void
   onOpenAssinatura?: (card: any) => void
   onOpenChat?: (card: any) => void
+  onDelete?: (card: any) => void
 }
 
 export default function KanbanCardItem({
@@ -80,6 +83,7 @@ export default function KanbanCardItem({
   onOpenTags,
   onOpenAssinatura,
   onOpenChat,
+  onDelete,
   orcamentosCount,
   agendamentosCount,
   anotacoesCount,
@@ -277,6 +281,32 @@ export default function KanbanCardItem({
             borderRadius: '8px 0 0 8px'
           }}
         />
+        
+        {/* 🗑️ Botão de Excluir - Aparece no Hover */}
+        {isHovered && onDelete && (
+          <motion.button
+            data-no-dnd="true"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete(card)
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`absolute top-2 right-2 p-1.5 rounded-lg z-10 transition-all duration-200 ${
+              theme === 'dark'
+                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300'
+                : 'bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700'
+            }`}
+            title="Remover do Kanban"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </motion.button>
+        )}
         
         <div className="flex items-start gap-2.5 mb-2">
           {/* Profile Picture - IGUAL ItemSideChat */}
