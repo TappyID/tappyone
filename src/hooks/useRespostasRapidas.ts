@@ -140,11 +140,8 @@ export function useRespostasRapidas() {
   const fetchCategorias = useCallback(async () => {
     setLoading(true);
     try {
-      // Backend Go usa endpoint /respostas-rapidas/categorias
-      const categoriasURL =
-        process.env.NODE_ENV === "development"
-          ? "http://159.65.34.199:8081/api/respostas-rapidas/categorias"
-          : "http://159.65.34.199:8081/api/respostas-rapidas/categorias";
+      // Usar API route do Next.js para evitar Mixed Content
+      const categoriasURL = "/api/respostas-rapidas/categorias";
 
       const response = await fetch(categoriasURL, {
         headers: {
@@ -361,10 +358,7 @@ export function useRespostasRapidas() {
           icone: data.icone || "MessageCircle",
         };
 
-        const categoriasURL =
-          process.env.NODE_ENV === "development"
-            ? "http://159.65.34.199:8081/api/respostas-rapidas/categorias"
-            : "http://159.65.34.199:8081/api/respostas-rapidas/categorias";
+        const categoriasURL = "/api/respostas-rapidas/categorias";
 
         const bodyData = JSON.stringify(categoriaData);
 
@@ -407,7 +401,7 @@ export function useRespostasRapidas() {
         setError(null);
 
         const response = await fetch(
-          `http://159.65.34.199:8081/api/respostas-rapidas/categorias/${id}`,
+          `/api/respostas-rapidas/categorias/${id}`,
           {
             method: "DELETE",
             headers: {
@@ -437,7 +431,7 @@ export function useRespostasRapidas() {
     async (id: string, data: CreateCategoriaRequest) => {
       try {
         const response = await fetch(
-          `http://159.65.34.199:8081/api/respostas-rapidas/categorias/${id}`,
+          `/api/respostas-rapidas/categorias/${id}`,
           {
             method: "PUT",
             headers: {
