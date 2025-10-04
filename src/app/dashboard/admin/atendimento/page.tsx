@@ -2417,57 +2417,88 @@ function AtendimentoPage() {
 
               // Enviar imagem
               if (data.imageUrl) {
+                console.log("🖼️ Baixando e enviando imagem:", data.imageUrl);
+                
                 // Baixar imagem e converter para base64
                 const imgResponse = await fetch(data.imageUrl);
                 const imgBlob = await imgResponse.blob();
+                
                 const reader = new FileReader();
                 const base64Promise = new Promise<string>((resolve) => {
                   reader.onloadend = () => {
                     const base64 = reader.result as string;
-                    resolve(base64.split(",")[1]);
+                    resolve(base64.split(",")[1]); // Remove o prefixo data:...
                   };
                 });
                 reader.readAsDataURL(imgBlob);
                 const base64Image = await base64Promise;
 
-                await fetch(getWahaUrl("/api/sendImage"), {
+                const payload: any = {
+                  session: sessionName,
+                  chatId: selectedChatId,
+                  file: {
+                    data: base64Image,
+                    mimetype: "image/png",
+                    filename: "ai-generated-image.png",
+                  },
+                };
+
+                // Adicionar caption se houver texto
+                if (data.text?.trim()) {
+                  payload.caption = data.text.trim();
+                }
+
+                console.log("📤 Enviando imagem via WAHA...");
+                const imgRes = await fetch(getWahaUrl("/api/sendImage"), {
                   method: "POST",
                   headers: getAuthHeaders(),
-                  body: JSON.stringify({
-                    session: sessionName,
-                    chatId: selectedChatId,
-                    file: {
-                      data: base64Image,
-                      mimetype: "image/png",
-                      filename: "image.png",
-                    },
-                    caption: data.text || "",
-                  }),
+                  body: JSON.stringify(payload),
                 });
+
+                if (imgRes.ok) {
+                  console.log("✅ Imagem enviada com sucesso!");
+                } else {
+                  const error = await imgRes.text();
+                  console.error("❌ Erro ao enviar imagem:", error);
+                  throw new Error("Erro ao enviar imagem");
+                }
               }
 
               // Enviar áudio
               if (data.audioBase64) {
-                await fetch(getWahaUrl("/api/sendVoice"), {
+                console.log("🎤 Enviando áudio...");
+
+                const payload = {
+                  session: sessionName,
+                  chatId: selectedChatId,
+                  file: {
+                    data: data.audioBase64,
+                    mimetype: "audio/mpeg",
+                    filename: "ai-generated-audio.mp3",
+                  },
+                };
+
+                console.log("📤 Enviando áudio via WAHA...");
+                const audioRes = await fetch(getWahaUrl("/api/sendVoice"), {
                   method: "POST",
                   headers: getAuthHeaders(),
-                  body: JSON.stringify({
-                    session: sessionName,
-                    chatId: selectedChatId,
-                    file: {
-                      data: data.audioBase64,
-                      mimetype: "audio/mp3",
-                      filename: "audio.mp3",
-                    },
-                  }),
+                  body: JSON.stringify(payload),
                 });
+
+                if (audioRes.ok) {
+                  console.log("✅ Áudio enviado com sucesso!");
+                } else {
+                  const error = await audioRes.text();
+                  console.error("❌ Erro ao enviar áudio:", error);
+                  throw new Error("Erro ao enviar áudio");
+                }
               }
 
               setTimeout(() => refreshMessages(), 500);
               setShowEditTextModal(false);
             } catch (error) {
-              console.error("Erro ao enviar:", error);
-              alert("Erro ao enviar mensagem");
+              console.error("💥 Erro ao enviar:", error);
+              alert("Erro ao enviar mensagem. Verifique o console.");
             }
           }}
         />
