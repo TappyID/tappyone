@@ -1,6 +1,6 @@
 /* Scrollbar customizado - Cor personalizada #273155 */
 .scrollbar-paypal {
-  /* Para navegadores Webkit (Chrome, Safari, Edge) */
+  /* Para navegadores Webkit (Chrome, Safari, Esdge) */
   scrollbar-width: thin;
   scrollbar-color: #273155 rgba(148, 163, 184, 0.1);
 }
