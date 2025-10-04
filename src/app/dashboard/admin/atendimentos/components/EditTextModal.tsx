@@ -22,10 +22,16 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/contexts/ThemeContext'
 
+export interface SendData {
+  text?: string
+  imageUrl?: string
+  audioBase64?: string
+}
+
 interface EditTextModalProps {
   isOpen: boolean
   onClose: () => void
-  onSend: (text: string) => void
+  onSend: (data: SendData) => void
   initialText: string
   contactName?: string
   actionTitle?: string
@@ -48,11 +54,33 @@ export default function EditTextModal({
   const [showImagePreview, setShowImagePreview] = useState(false)
   const [showAudioPreview, setShowAudioPreview] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
-  const [selectedImageModel, setSelectedImageModel] = useState<'dall-e-2' | 'dall-e-3'>('dall-e-2') // dall-e-2 mais barato!
+  const [selectedImageModel, setSelectedImageModel] = useState<'dall-e-2' | 'dall-e-3'>('dall-e-2')
+  const [showFullImage, setShowFullImage] = useState(false)
+  
+  // Checkboxes para escolher o que enviar
+  const [sendText, setSendText] = useState(true)
+  const [sendImage, setSendImage] = useState(false)
+  const [sendAudio, setSendAudio] = useState(false)
 
-  const handleSend = () => {
-    if (!text.trim()) return
-    onSend(text)
+  const handleSend = async () => {
+    if (!sendText && !sendImage && !sendAudio) return
+    
+    const data: SendData = {}
+    
+    if (sendText && text.trim()) {
+      data.text = text
+    }
+    
+    if (sendImage && generatedImageUrl) {
+      data.imageUrl = generatedImageUrl
+    }
+    
+    if (sendAudio && generatedAudioUrl) {
+      // Extrair apenas o base64 (remover o prefixo data:audio/mp3;base64,)
+      data.audioBase64 = generatedAudioUrl.split(',')[1]
+    }
+    
+    onSend(data)
     onClose()
   }
 
@@ -114,6 +142,7 @@ export default function EditTextModal({
           if (data.imageUrl) {
             setGeneratedImageUrl(data.imageUrl)
             setShowImagePreview(true)
+            setSendImage(true) // Auto-marcar checkbox
             setText(data.revised_prompt || data.prompt || text)
           } else {
             alert('Erro: URL da imagem não encontrada')
@@ -122,6 +151,7 @@ export default function EditTextModal({
           if (data.audioUrl) {
             setGeneratedAudioUrl(data.audioUrl)
             setShowAudioPreview(true)
+            setSendAudio(true) // Auto-marcar checkbox
             setText(text || data.prompt)
           } else {
             alert('Erro: Áudio não gerado')
@@ -167,45 +197,31 @@ export default function EditTextModal({
               : 'bg-white border-gray-200'
           }`}
         >
-          {/* Header - Design Moderno */}
-          <div className="relative p-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.8),transparent_70%)]" />
-            </div>
-            
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                  className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center ring-2 ring-white/30 shadow-lg"
-                >
-                  <IoChatbubbleEllipses className="w-6 h-6 text-white" />
-                </motion.div>
+          {/* Header - Clean & Minimalista */}
+          <div className="relative px-6 py-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <IoChatbubbleEllipses className="w-5 h-5 text-white" />
+                </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Editar Mensagem
-                    <IoSparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
                   </h2>
-                  <p className="text-white/90 text-sm font-medium mt-0.5">
-                    {actionTitle && <span className="bg-white/20 px-2 py-0.5 rounded">{actionTitle}</span>}
-                    {actionTitle && contactName && ' • '}
-                    {contactName && <span>Para: <strong>{contactName}</strong></span>}
-                    {!actionTitle && !contactName && 'Nova mensagem com IA'}
-                  </p>
+                  {contactName && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Para: <span className="font-medium">{contactName}</span>
+                    </p>
+                  )}
                 </div>
               </div>
               
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={onClose}
-                className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center hover:bg-white/30 transition-all ring-2 ring-white/20"
+                className="w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors"
               >
-                <IoClose className="w-5 h-5 text-white" />
-              </motion.button>
+                <IoClose className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
             </div>
           </div>
 
@@ -274,34 +290,40 @@ export default function EditTextModal({
                 </h3>
                 
                 {/* Configurações de Mídia */}
-                <div className="flex gap-3 pb-2">
+                <div className="grid grid-cols-2 gap-3 pb-2">
                   {/* Seletor de Voz */}
-                  <div className="flex-1">
-                    <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Voz para Áudio:</label>
+                  <div>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block flex items-center gap-1.5">
+                      <IoVolumeHigh className="w-3.5 h-3.5 text-blue-500" />
+                      Voz
+                    </label>
                     <select
                       value={selectedVoice}
                       onChange={(e) => setSelectedVoice(e.target.value as any)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
                     >
-                      <option value="nova">🎤 Nova (Feminina)</option>
-                      <option value="shimmer">✨ Shimmer (Feminina)</option>
-                      <option value="alloy">🎵 Alloy (Neutra)</option>
-                      <option value="echo">🔊 Echo (Masculina)</option>
-                      <option value="fable">📖 Fable (Masculina)</option>
-                      <option value="onyx">🎙️ Onyx (Masculina)</option>
+                      <option value="nova">Nova (Feminina)</option>
+                      <option value="shimmer">Shimmer (Feminina)</option>
+                      <option value="alloy">Alloy (Neutra)</option>
+                      <option value="echo">Echo (Masculina)</option>
+                      <option value="fable">Fable (Masculina)</option>
+                      <option value="onyx">Onyx (Masculina)</option>
                     </select>
                   </div>
                   
                   {/* Seletor de Modelo de Imagem */}
-                  <div className="flex-1">
-                    <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Modelo de Imagem:</label>
+                  <div>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block flex items-center gap-1.5">
+                      <IoImage className="w-3.5 h-3.5 text-blue-500" />
+                      Modelo
+                    </label>
                     <select
                       value={selectedImageModel}
                       onChange={(e) => setSelectedImageModel(e.target.value as any)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
                     >
-                      <option value="dall-e-2">💰 DALL-E 2 ($0.02)</option>
-                      <option value="dall-e-3">⭐ DALL-E 3 ($0.04)</option>
+                      <option value="dall-e-2">DALL-E 2 (Econômico)</option>
+                      <option value="dall-e-3">DALL-E 3 (Premium)</option>
                     </select>
                   </div>
                 </div>
@@ -369,97 +391,97 @@ export default function EditTextModal({
               </div>
             </div>
 
-            {/* Preview de Imagem Gerada */}
+            {/* Preview de Imagem Gerada - THUMBNAIL */}
             {showImagePreview && generatedImageUrl && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl p-4 border-2 border-pink-200 dark:border-pink-800"
+                className="relative bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3 border border-blue-200 dark:border-blue-800"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-pink-700 dark:text-pink-300 flex items-center gap-2">
-                    <IoImage className="w-4 h-4" />
-                    Imagem Gerada
-                  </h4>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={generatedImageUrl} 
+                    alt="Thumbnail"
+                    onClick={() => setShowFullImage(true)}
+                    className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-md"
+                  />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <IoImage className="w-4 h-4 text-blue-500" />
+                      Imagem Gerada
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Clique para visualizar
+                    </p>
+                  </div>
                   <button
                     onClick={() => {
                       setShowImagePreview(false)
                       setGeneratedImageUrl(null)
+                      setSendImage(false)
                     }}
-                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
-                    <IoClose className="w-4 h-4" />
-                  </button>
-                </div>
-                <img 
-                  src={generatedImageUrl} 
-                  alt="Imagem gerada"
-                  className="w-full rounded-lg shadow-lg mb-3"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => window.open(generatedImageUrl, '_blank')}
-                    className="flex-1 px-3 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <IoDownload className="w-4 h-4" />
-                    Baixar
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedImageUrl)
-                      alert('URL copiada!')
-                    }}
-                    className="flex-1 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <IoCopy className="w-4 h-4" />
-                    Copiar URL
+                    <IoClose className="w-5 h-5" />
                   </button>
                 </div>
               </motion.div>
             )}
 
-            {/* Preview de Áudio Gerado */}
+            {/* Modal Imagem Completa */}
+            {showFullImage && generatedImageUrl && (
+              <div 
+                className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4"
+                onClick={() => setShowFullImage(false)}
+              >
+                <div className="relative max-w-4xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => setShowFullImage(false)}
+                    className="absolute -top-12 right-0 text-white hover:text-gray-300"
+                  >
+                    <IoClose className="w-8 h-8" />
+                  </button>
+                  <img 
+                    src={generatedImageUrl} 
+                    alt="Imagem completa"
+                    className="max-w-full max-h-[90vh] rounded-lg shadow-2xl"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Preview de Áudio Gerado - COMPACTO */}
             {showAudioPreview && generatedAudioUrl && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-4 border-2 border-orange-200 dark:border-orange-800"
+                className="relative bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3 border border-blue-200 dark:border-blue-800"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-orange-700 dark:text-orange-300 flex items-center gap-2">
-                    <IoVolumeHigh className="w-4 h-4" />
-                    Áudio Gerado
-                  </h4>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-20 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <IoVolumeHigh className="w-8 h-8 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <IoPlayCircle className="w-4 h-4 text-blue-500" />
+                      Áudio Gerado
+                    </h4>
+                    <audio 
+                      controls 
+                      src={generatedAudioUrl}
+                      className="w-full mt-2 h-8"
+                      style={{ maxHeight: '32px' }}
+                    />
+                  </div>
                   <button
                     onClick={() => {
                       setShowAudioPreview(false)
                       setGeneratedAudioUrl(null)
+                      setSendAudio(false)
                     }}
-                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
-                    <IoClose className="w-4 h-4" />
-                  </button>
-                </div>
-                <audio 
-                  controls 
-                  src={generatedAudioUrl}
-                  className="w-full mb-3"
-                />
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                  ✨ Este áudio será enviado como mensagem de voz no WhatsApp
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      const link = document.createElement('a')
-                      link.href = generatedAudioUrl
-                      link.download = 'audio.mp3'
-                      link.click()
-                    }}
-                    className="flex-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <IoDownload className="w-4 h-4" />
-                    Baixar MP3
+                    <IoClose className="w-5 h-5" />
                   </button>
                 </div>
               </motion.div>
@@ -467,7 +489,57 @@ export default function EditTextModal({
           </div>
 
           {/* Footer */}
-          <div className="border-t border-border p-6 bg-muted/30">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-50 dark:bg-gray-900/50">
+            {/* Checkboxes de Envio */}
+            {(showImagePreview || showAudioPreview || text.trim()) && (
+              <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase">
+                  O que deseja enviar?
+                </h4>
+                <div className="flex flex-wrap gap-3">
+                  {text.trim() && (
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={sendText}
+                        onChange={(e) => setSendText(e.target.checked)}
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-500">
+                        📝 Mensagem de texto
+                      </span>
+                    </label>
+                  )}
+                  {showImagePreview && (
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={sendImage}
+                        onChange={(e) => setSendImage(e.target.checked)}
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-500">
+                        🖼️ Imagem gerada
+                      </span>
+                    </label>
+                  )}
+                  {showAudioPreview && (
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={sendAudio}
+                        onChange={(e) => setSendAudio(e.target.checked)}
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-500">
+                        🎤 Áudio gerado
+                      </span>
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
@@ -479,11 +551,11 @@ export default function EditTextModal({
               
               <Button
                 onClick={handleSend}
-                disabled={!text.trim() || isGenerating}
-                className="flex items-center gap-2"
+                disabled={(!sendText && !sendImage && !sendAudio) || isGenerating}
+                className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
               >
                 <IoSend className="w-4 h-4" />
-                Enviar Mensagem
+                Enviar
               </Button>
             </div>
           </div>

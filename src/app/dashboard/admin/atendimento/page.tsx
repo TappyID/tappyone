@@ -2395,23 +2395,79 @@ function AtendimentoPage() {
             "Usuário"
           }
           actionTitle="Gerar com IA"
-          onSend={async (message) => {
-            // Enviar mensagem gerada pela IA
-            if (selectedChatId) {
-              const sessionName = await getActiveSessionName();
-              if (!sessionName) return;
-              fetch(getWahaUrl("/api/sendText"), {
-                method: "POST",
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                  session: sessionName,
-                  chatId: selectedChatId,
-                  text: message,
-                }),
-              }).then(() => {
-                setTimeout(() => refreshMessages(), 500);
-                setShowEditTextModal(false);
-              });
+          onSend={async (data) => {
+            if (!selectedChatId) return;
+            const sessionName = await getActiveSessionName();
+            if (!sessionName) return;
+
+            try {
+              // Enviar texto separado apenas se não tiver imagem ou áudio
+              // Se tiver imagem, o texto vai como caption
+              if (data.text && !data.imageUrl && !data.audioBase64) {
+                await fetch(getWahaUrl("/api/sendText"), {
+                  method: "POST",
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify({
+                    session: sessionName,
+                    chatId: selectedChatId,
+                    text: data.text,
+                  }),
+                });
+              }
+
+              // Enviar imagem
+              if (data.imageUrl) {
+                // Baixar imagem e converter para base64
+                const imgResponse = await fetch(data.imageUrl);
+                const imgBlob = await imgResponse.blob();
+                const reader = new FileReader();
+                const base64Promise = new Promise<string>((resolve) => {
+                  reader.onloadend = () => {
+                    const base64 = reader.result as string;
+                    resolve(base64.split(",")[1]);
+                  };
+                });
+                reader.readAsDataURL(imgBlob);
+                const base64Image = await base64Promise;
+
+                await fetch(getWahaUrl("/api/sendImage"), {
+                  method: "POST",
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify({
+                    session: sessionName,
+                    chatId: selectedChatId,
+                    file: {
+                      data: base64Image,
+                      mimetype: "image/png",
+                      filename: "image.png",
+                    },
+                    caption: data.text || "",
+                  }),
+                });
+              }
+
+              // Enviar áudio
+              if (data.audioBase64) {
+                await fetch(getWahaUrl("/api/sendVoice"), {
+                  method: "POST",
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify({
+                    session: sessionName,
+                    chatId: selectedChatId,
+                    file: {
+                      data: data.audioBase64,
+                      mimetype: "audio/mp3",
+                      filename: "audio.mp3",
+                    },
+                  }),
+                });
+              }
+
+              setTimeout(() => refreshMessages(), 500);
+              setShowEditTextModal(false);
+            } catch (error) {
+              console.error("Erro ao enviar:", error);
+              alert("Erro ao enviar mensagem");
             }
           }}
         />
