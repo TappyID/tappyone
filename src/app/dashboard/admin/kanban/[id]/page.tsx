@@ -123,19 +123,14 @@ function QuadroPage() {
       const agendamentos: Record<string, any[]> = {}
       const tickets: Record<string, any[]> = {}
       
-      // Buscar para cada chat - usar API routes diretamente (sem fetchApi para evitar duplicação de /api)
-      const token = localStorage.getItem('token')
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : ''
-      }
-      
+      // Buscar para cada chat
       for (const chat of whatsappChats) {
         const chatId = chat.id
         
         try {
           // Orçamentos
-          const orcRes = await fetch(`/api/chats/${encodeURIComponent(chatId)}/orcamentos`, { headers })
+          const pathOrc = `/api/chats/${encodeURIComponent(chatId)}/orcamentos`
+          const orcRes = await fetchApi('backend', pathOrc)
           if (orcRes.ok) {
             const data = await orcRes.json()
             orcamentos[chatId] = Array.isArray(data) ? data : (data.data || [])
@@ -144,7 +139,8 @@ function QuadroPage() {
         
         try {
           // Agendamentos
-          const agendRes = await fetch(`/api/chats/${encodeURIComponent(chatId)}/agendamentos`, { headers })
+          const pathAgend = `/api/chats/${encodeURIComponent(chatId)}/agendamentos`
+          const agendRes = await fetchApi('backend', pathAgend)
           if (agendRes.ok) {
             const data = await agendRes.json()
             agendamentos[chatId] = Array.isArray(data) ? data : (data.data || [])
@@ -153,7 +149,8 @@ function QuadroPage() {
         
         try {
           // Tickets
-          const ticketsRes = await fetch(`/api/chats/${encodeURIComponent(chatId)}/tickets`, { headers })
+          const pathTickets = `/api/chats/${encodeURIComponent(chatId)}/tickets`
+          const ticketsRes = await fetchApi('backend', pathTickets)
           if (ticketsRes.ok) {
             const data = await ticketsRes.json()
             tickets[chatId] = Array.isArray(data) ? data : (data.data || [])

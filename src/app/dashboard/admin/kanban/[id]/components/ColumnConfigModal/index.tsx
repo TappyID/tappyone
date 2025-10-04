@@ -72,21 +72,21 @@ export default function ColumnConfigModal({
             className="fixed inset-0 z-[100] bg-black/40"
           />
 
-          {/* Modal Full-Screen Container */}
+          {/* Sidebar Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className={`fixed inset-0 z-[101] m-4 rounded-2xl border shadow-2xl overflow-hidden ${
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className={`fixed right-0 top-0 z-[101] h-full w-[600px] border-l shadow-2xl overflow-hidden ${
               theme === 'dark' 
-                ? 'bg-slate-950/95 backdrop-blur-2xl border-slate-700' 
-                : 'bg-white/95 backdrop-blur-2xl border-gray-200'
+                ? 'bg-slate-950 border-slate-700' 
+                : 'bg-white border-gray-200'
             }`}
             style={{
               boxShadow: `
-                0 0 60px ${coluna.cor}30,
-                inset 0 0 100px ${coluna.cor}05
+                -10px 0 40px ${coluna.cor}20,
+                0 0 100px ${coluna.cor}10
               `
             }}
           >

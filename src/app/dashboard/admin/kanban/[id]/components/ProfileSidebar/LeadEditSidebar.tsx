@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { X, Save, MapPin, User, Building, Phone, Mail, FileText, Users } from 'lucide-react'
+import { fetchApi } from '@/utils/api'
 
 interface LeadEditSidebarProps {
   isOpen: boolean
@@ -70,15 +71,9 @@ export default function LeadEditSidebar({
       setLoadingData(true)
       console.log('🔍 Carregando dados existentes do lead para chatId:', chatId)
       
-      const token = localStorage.getItem('token')
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : ''
-      }
-      
-      const response = await fetch(`/api/chats/${encodeURIComponent(chatId)}/leads`, {
-        method: 'GET',
-        headers
+      const path = `/api/chats/${encodeURIComponent(chatId)}/leads`
+      const response = await fetchApi('backend', path, {
+        method: 'GET'
       })
 
       if (response.ok) {
@@ -183,15 +178,9 @@ export default function LeadEditSidebar({
       console.log('💾 Salvando dados do lead:', formData)
       
       // Salvar no backend via chat_leads - IGUAL TAGS
-      const token = localStorage.getItem('token')
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : ''
-      }
-      
-      const response = await fetch(`/api/chats/${encodeURIComponent(chatId)}/leads`, {
+      const path = `/api/chats/${encodeURIComponent(chatId)}/leads`
+      const response = await fetchApi('backend', path, {
         method: 'POST',
-        headers,
         body: JSON.stringify(formData)
       })
 
