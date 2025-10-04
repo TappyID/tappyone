@@ -88,6 +88,31 @@ function QuadroPage() {
   const [orcamentosDataState, setOrcamentosDataState] = useState<Record<string, any[]>>({})
   const [agendamentosDataState, setAgendamentosDataState] = useState<Record<string, any[]>>({})
   const [ticketsDataState, setTicketsDataState] = useState<Record<string, any[]>>({})
+
+  // 📊 Calcular counts baseado nos dados
+  const orcamentosCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(orcamentosDataState || {}).forEach(cardId => {
+      counts[cardId] = orcamentosDataState[cardId]?.length || 0
+    })
+    return counts
+  }, [orcamentosDataState])
+
+  const agendamentosCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(agendamentosDataState || {}).forEach(cardId => {
+      counts[cardId] = agendamentosDataState[cardId]?.length || 0
+    })
+    return counts
+  }, [agendamentosDataState])
+
+  const ticketsCount = useMemo(() => {
+    const counts: Record<string, number> = {}
+    Object.keys(ticketsDataState || {}).forEach(cardId => {
+      counts[cardId] = ticketsDataState[cardId]?.length || 0
+    })
+    return counts
+  }, [ticketsDataState])
   
   // 🔄 Buscar dados agregados (logo após os useState)
   useEffect(() => {
@@ -136,6 +161,13 @@ function QuadroPage() {
       setOrcamentosDataState(orcamentos)
       setAgendamentosDataState(agendamentos)
       setTicketsDataState(tickets)
+
+      // 🔍 DEBUG: Verificar dados carregados
+      console.log('📊 [KANBAN] Dados agregados carregados:', {
+        orcamentos: Object.keys(orcamentos).length,
+        agendamentos: Object.keys(agendamentos).length,
+        tickets: Object.keys(tickets).length
+      })
     }
     
     fetchAllData()
@@ -1451,12 +1483,12 @@ function QuadroPage() {
                 coluna={coluna}
                 theme={theme}
                 notesCount={{}}
-                orcamentosCount={{}}
-                agendamentosCount={{}}
+                orcamentosCount={orcamentosCount}
+                agendamentosCount={agendamentosCount}
                 assinaturasCount={{}}
                 anotacoesCount={{}}
                 tagsCount={{}}
-                ticketsCount={{}}
+                ticketsCount={ticketsCount}
                 agentesCount={{}}
                 contactStatus={{}}
                 orcamentosData={orcamentosDataState}
