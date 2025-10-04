@@ -11,6 +11,7 @@ import { useKanbanColors } from './hooks/useKanbanColors'
 import { useChatsKanban } from '@/hooks/useChatsKanban'
 import { useTags } from '@/hooks/useTags'
 import { useFilas } from '@/hooks/useFilas'
+import { fetchApi } from '@/utils/api'
 
 // Componentes componentizados
 import KanbanHeader from './components/KanbanHeader'
@@ -103,9 +104,8 @@ function QuadroPage() {
         
         try {
           // Orçamentos
-          const orcRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-          })
+          const pathOrc = `/api/chats/${encodeURIComponent(chatId)}/orcamentos`
+          const orcRes = await fetchApi('backend', pathOrc)
           if (orcRes.ok) {
             const data = await orcRes.json()
             orcamentos[chatId] = Array.isArray(data) ? data : (data.data || [])
@@ -114,9 +114,8 @@ function QuadroPage() {
         
         try {
           // Agendamentos
-          const agendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-          })
+          const pathAgend = `/api/chats/${encodeURIComponent(chatId)}/agendamentos`
+          const agendRes = await fetchApi('backend', pathAgend)
           if (agendRes.ok) {
             const data = await agendRes.json()
             agendamentos[chatId] = Array.isArray(data) ? data : (data.data || [])
@@ -125,9 +124,8 @@ function QuadroPage() {
         
         try {
           // Tickets
-          const ticketsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/api/chats/${encodeURIComponent(chatId)}/tickets`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-          })
+          const pathTickets = `/api/chats/${encodeURIComponent(chatId)}/tickets`
+          const ticketsRes = await fetchApi('backend', pathTickets)
           if (ticketsRes.ok) {
             const data = await ticketsRes.json()
             tickets[chatId] = Array.isArray(data) ? data : (data.data || [])
