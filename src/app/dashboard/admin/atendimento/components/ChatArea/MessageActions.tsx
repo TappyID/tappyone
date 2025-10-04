@@ -509,41 +509,47 @@ export default function MessageActions({
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-background rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto border border-border"
             >
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
-                    <Languages className="w-5 h-5 text-white" />
+              {/* Header com gradiente */}
+              <div className="p-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                      <Languages className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base text-foreground">
+                        Responder com Tradução
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Idioma detectado: {detectedLanguage === 'es' ? '🇪🇸 Espanhol' : detectedLanguage === 'en' ? '🇺🇸 Inglês' : '🇧🇷 Português'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      Responder com Tradução
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Idioma detectado: {detectedLanguage === 'es' ? '🇪🇸 Espanhol' : detectedLanguage === 'en' ? '🇺🇸 Inglês' : '🇧🇷 Português'}
-                    </p>
-                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setShowTranslateReply(false)
+                      setReplyText('')
+                      setTranslatedMessage('')
+                      setGeneratedAudioUrl(null)
+                    }}
+                    className="p-2 hover:bg-red-500/10 rounded-xl transition-all duration-300 group"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground group-hover:text-red-500 transition-colors" />
+                  </motion.button>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowTranslateReply(false)
-                    setReplyText('')
-                    setTranslatedMessage('')
-                    setGeneratedAudioUrl(null)
-                  }}
-                  className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500 hover:text-red-500" />
-                </button>
               </div>
+
+              <div className="p-6">
 
               {/* Mensagem Original Traduzida */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-purple-500" />
                   Mensagem traduzida:
                 </label>
-                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div className="p-4 bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-900/10 dark:to-blue-900/10 rounded-xl border border-purple-200/50 dark:border-purple-500/20">
                   {isTranslating ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -559,7 +565,8 @@ export default function MessageActions({
 
               {/* Campo de Resposta */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <Mic className="w-4 h-4 text-blue-500" />
                   Sua resposta em português (será traduzida na hora do envio):
                 </label>
                 <div className="relative">
@@ -567,7 +574,7 @@ export default function MessageActions({
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Digite, fale no microfone ou gere com IA - tudo em português. Será traduzido automaticamente ao enviar..."
-                    className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full p-4 pr-12 border-2 border-border rounded-xl bg-background text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all resize-none"
                     rows={6}
                     autoFocus={!isRecording}
                   />
@@ -729,21 +736,25 @@ export default function MessageActions({
               </div>
 
               {/* Botões */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <button
+              <div className="flex gap-3 pt-4 border-t border-border/50">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setShowTranslateReply(false)
                     setReplyText('')
                     setTranslatedMessage('')
                   }}
-                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  className="flex-1 px-6 py-3 text-foreground bg-muted hover:bg-muted/80 rounded-xl transition-all font-medium"
                 >
                   Cancelar
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleSendTranslatedReply}
                   disabled={!replyText.trim() || isTranslating}
-                  className="flex-1 px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 text-white bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed rounded-xl transition-all flex items-center justify-center gap-2 font-medium shadow-lg shadow-purple-500/20 disabled:shadow-none"
                 >
                   {isTranslating ? (
                     <>
@@ -756,7 +767,7 @@ export default function MessageActions({
                       Enviar Traduzido
                     </>
                   )}
-                </button>
+                </motion.button>
               </div>
               </div>
             </motion.div>
