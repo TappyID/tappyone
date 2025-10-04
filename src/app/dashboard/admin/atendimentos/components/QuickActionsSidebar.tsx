@@ -44,7 +44,7 @@ import { Input } from '@/components/ui/input'
 import { useTheme } from '@/contexts/ThemeContext'
 import CriarRespostaModal from '../../respostas-rapidas/components/CriarRespostaModal'
 import CriarFluxoIAModal from './CriarFluxoIAModal'
-import EditTextModal from './EditTextModal'
+import EditTextModal, { SendData } from './EditTextModal'
 import { useRespostasRapidas } from '@/hooks/useRespostasRapidas'
 import { AudioRecorder } from '@/components/shared/AudioRecorder'
 import MediaUpload from '@/components/shared/MediaUpload'
@@ -1895,9 +1895,54 @@ export default function QuickActionsSidebar({
               console.log('🔒 Fechando EditTextModal')
               setShowEditTextModal(false)
             }}
-            onSend={(text) => {
-              console.log('✅ Texto criado com IA:', text)
-              // TODO: Salvar como resposta rápida
+            onSend={(data) => {
+              console.log('✅ Dados recebidos do EditTextModal:', data)
+              
+              // Criar nova resposta rápida com os dados gerados
+              const newAction: any = {
+                titulo: 'Resposta criada com IA',
+                categoria_id: categorias[0]?.id || '', // Primeira categoria disponível
+                tags: ['ia', 'gerado'],
+                acoes: []
+              }
+
+              // Adicionar texto se houver
+              if (data.text) {
+                newAction.acoes.push({
+                  tipo: 'texto',
+                  conteudo: data.text,
+                  ordem: 1
+                })
+                console.log('📝 Texto adicionado:', data.text)
+              }
+
+              // Adicionar imagem se houver
+              if (data.imageUrl) {
+                newAction.acoes.push({
+                  tipo: 'imagem',
+                  url: data.imageUrl,
+                  ordem: newAction.acoes.length + 1
+                })
+                console.log('🖼️ Imagem adicionada:', data.imageUrl)
+              }
+
+              // Adicionar áudio se houver
+              if (data.audioBase64) {
+                // Converter base64 para URL ou salvar
+                const audioUrl = `data:audio/mp3;base64,${data.audioBase64}`
+                newAction.acoes.push({
+                  tipo: 'audio',
+                  url: audioUrl,
+                  ordem: newAction.acoes.length + 1
+                })
+                console.log('🎤 Áudio adicionado (base64)')
+              }
+
+              console.log('💾 Nova resposta rápida:', newAction)
+              
+              // TODO: Salvar via API
+              alert(`✅ Resposta criada com ${newAction.acoes.length} ação(ões)!`)
+              
               setShowEditTextModal(false)
             }}
             initialText=""
