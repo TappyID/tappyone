@@ -184,70 +184,70 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="absolute bottom-0 left-0 right-0 w-full max-h-[85vh] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl overflow-hidden"
+        className="absolute bottom-0 left-0 right-0 w-full max-h-[90vh] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col"
       >
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+        <div className="flex justify-center pt-1.5 pb-0.5">
+          <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
 
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-6 h-6 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">💰 Novo Orçamento</h2>
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">💰 Novo Orçamento</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         {/* Conteúdo scrollável */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-4 pb-24">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 space-y-2 pb-20">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium mb-2">Título *</label>
+              <label className="block text-xs font-medium mb-1">Título *</label>
               <input
                 type="text"
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
                 placeholder="Ex: Proposta Comercial"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-1 focus:ring-green-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Descrição</label>
+              <label className="block text-xs font-medium mb-1">Descrição</label>
               <input
                 type="text"
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
                 placeholder="Breve descrição"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-1 focus:ring-green-500"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium">Itens do Orçamento</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium">Itens</label>
               <button
                 onClick={adicionarItem}
-                className="flex items-center gap-1 px-3 py-1 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600"
+                className="flex items-center gap-1 px-2 py-0.5 text-xs bg-green-500 text-white rounded hover:bg-green-600"
               >
-                <Plus className="w-4 h-4" />
-                Adicionar
+                <Plus className="w-3 h-3" />
+                Add
               </button>
             </div>
 
-            <div className="space-y-2 max-h-32 overflow-y-auto">
+            <div className="space-y-1 max-h-24 overflow-y-auto">
               {itens.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div key={index} className="grid grid-cols-12 gap-1 items-center p-1 bg-gray-50 dark:bg-gray-800 rounded">
                   <div className="col-span-5">
                     <input
                       type="text"
                       value={item.descricao}
                       onChange={(e) => atualizarItem(index, 'descricao', e.target.value)}
-                      placeholder="Descrição do item"
-                      className="w-full px-2 py-1 text-sm border rounded"
+                      placeholder="Descrição"
+                      className="w-full px-1.5 py-0.5 text-xs border rounded"
                     />
                   </div>
                   <div className="col-span-2">
@@ -257,7 +257,7 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
                       onChange={(e) => atualizarItem(index, 'quantidade', Number(e.target.value))}
                       placeholder="Qtd"
                       min="1"
-                      className="w-full px-2 py-1 text-sm border rounded"
+                      className="w-full px-1 py-0.5 text-xs border rounded text-center"
                     />
                   </div>
                   <div className="col-span-3">
@@ -265,21 +265,22 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
                       type="number"
                       value={item.valor}
                       onChange={(e) => atualizarItem(index, 'valor', Number(e.target.value))}
-                      placeholder="Valor"
+                      placeholder="R$"
                       step="0.01"
-                      className="w-full px-2 py-1 text-sm border rounded"
+                      className="w-full px-1 py-0.5 text-xs border rounded text-right"
                     />
                   </div>
                   <div className="col-span-1">
-                    <span className="text-sm font-medium">R$ {(item.quantidade * item.valor).toFixed(2)}</span>
+                    <span className="text-[10px] font-medium text-green-600">R$ {(item.quantidade * item.valor).toFixed(0)}</span>
                   </div>
                   <div className="col-span-1">
                     {itens.length > 1 && (
                       <button
                         onClick={() => removerItem(index)}
-                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        className="p-0.5 text-red-500 hover:bg-red-50 rounded"
+                        title="Remover"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     )}
                   </div>
@@ -288,23 +289,23 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium mb-2">Desconto (R$)</label>
+              <label className="block text-xs font-medium mb-1">Desconto (R$)</label>
               <input
                 type="number"
                 value={desconto}
                 onChange={(e) => setDesconto(Number(e.target.value))}
                 placeholder="0.00"
                 step="0.01"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-1 focus:ring-green-500"
               />
             </div>
             <div className="flex flex-col justify-end">
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                <div className="text-sm text-gray-600">Subtotal: R$ {subtotal.toFixed(2)}</div>
-                <div className="text-sm text-gray-600">Desconto: R$ {desconto.toFixed(2)}</div>
-                <div className="text-lg font-bold text-green-600">Total: R$ {total.toFixed(2)}</div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-1.5 rounded-lg">
+                <div className="text-[10px] text-gray-600">Subtotal: R$ {subtotal.toFixed(2)}</div>
+                <div className="text-[10px] text-gray-600">Desconto: R$ {desconto.toFixed(2)}</div>
+                <div className="text-xs font-bold text-green-600">Total: R$ {total.toFixed(2)}</div>
               </div>
             </div>
           </div>
@@ -406,24 +407,25 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
         </div>
 
         {/* Botões fixos na parte inferior */}
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
-          <div className="flex justify-end gap-3">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+          <div className="flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={!titulo.trim() || itens.some(item => !item.descricao.trim())}
-              className={`px-6 py-2 rounded-lg font-medium ${
+              className={`px-4 py-1.5 text-sm rounded-lg font-medium flex items-center gap-1 ${
                 !titulo.trim() || itens.some(item => !item.descricao.trim())
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-green-500 text-white hover:bg-green-600'
               }`}
             >
-              Criar Orçamento
+              <DollarSign className="w-4 h-4" />
+              Criar
             </button>
           </div>
         </div>
