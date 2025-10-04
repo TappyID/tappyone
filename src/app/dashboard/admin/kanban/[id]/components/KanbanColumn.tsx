@@ -515,23 +515,29 @@ export default function KanbanColumn({
             <span className={`text-xs font-bold ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}>
-              {Object.keys(orcamentosData || {}).reduce((total, cardId) => {
-                return total + (orcamentosData[cardId]?.length || 0)
-              }, 0)} / 20
+              R$ {Object.keys(orcamentosData || {}).reduce((total, cardId) => {
+                const orcamentos = orcamentosData[cardId] || []
+                return total + orcamentos.reduce((sum: number, orc: any) => {
+                  let valor = parseFloat(orc.valorTotal) || 0
+                  // Se valorTotal for 0, calcular a partir dos itens
+                  if (valor === 0 && orc.itens && Array.isArray(orc.itens)) {
+                    valor = orc.itens.reduce((itemSum: number, item: any) => {
+                      const quantidade = parseFloat(item.quantidade) || 0
+                      const valorUnitario = parseFloat(item.valorUnitario) || 0
+                      return itemSum + (quantidade * valorUnitario)
+                    }, 0)
+                  }
+                  return sum + valor
+                }, 0)
+              }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
-          <div className={`h-1.5 rounded-full ${
-            theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200'
-          }`}>
-            <div 
-              className="h-full rounded-full transition-all duration-500"
-              style={{ 
-                backgroundColor: coluna.cor,
-                width: `${Math.min((Object.keys(orcamentosData || {}).reduce((total, cardId) => {
-                  return total + (orcamentosData[cardId]?.length || 0)
-                }, 0) / 20) * 100, 100)}%`
-              }}
-            />
+          <div className={`text-[10px] ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          } text-right mt-0.5`}>
+            {Object.keys(orcamentosData || {}).reduce((total, cardId) => {
+              return total + (orcamentosData[cardId]?.length || 0)
+            }, 0)} orçamento(s)
           </div>
         </div>
 

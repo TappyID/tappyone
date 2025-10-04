@@ -83,6 +83,66 @@ function QuadroPage() {
   // Hook para cores do Kanban
   const kanbanColors = useKanbanColors()
   
+  // 🔄 Buscar dados agregados de TODOS os cards (orçamentos, agendamentos, tickets)
+  const [orcamentosDataState, setOrcamentosDataState] = useState<Record<string, any[]>>({})
+  const [agendamentosDataState, setAgendamentosDataState] = useState<Record<string, any[]>>({})
+  const [ticketsDataState, setTicketsDataState] = useState<Record<string, any[]>>({})
+  
+  // 🔄 Buscar dados agregados (logo após os useState)
+  useEffect(() => {
+    const fetchAllData = async () => {
+      if (whatsappChats.length === 0) return
+      
+      const orcamentos: Record<string, any[]> = {}
+      const agendamentos: Record<string, any[]> = {}
+      const tickets: Record<string, any[]> = {}
+      
+      // Buscar para cada chat
+      for (const chat of whatsappChats) {
+        const chatId = chat.id
+        
+        try {
+          // Orçamentos
+          const orcRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/api/chats/${encodeURIComponent(chatId)}/orcamentos`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (orcRes.ok) {
+            const data = await orcRes.json()
+            orcamentos[chatId] = Array.isArray(data) ? data : (data.data || [])
+          }
+        } catch {}
+        
+        try {
+          // Agendamentos
+          const agendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/api/chats/${encodeURIComponent(chatId)}/agendamentos`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (agendRes.ok) {
+            const data = await agendRes.json()
+            agendamentos[chatId] = Array.isArray(data) ? data : (data.data || [])
+          }
+        } catch {}
+        
+        try {
+          // Tickets
+          const ticketsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/api/chats/${encodeURIComponent(chatId)}/tickets`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (ticketsRes.ok) {
+            const data = await ticketsRes.json()
+            tickets[chatId] = Array.isArray(data) ? data : (data.data || [])
+          }
+        } catch {}
+      }
+      
+      setOrcamentosDataState(orcamentos)
+      setAgendamentosDataState(agendamentos)
+      setTicketsDataState(tickets)
+    }
+    
+    fetchAllData()
+  }, [whatsappChats])
+  
   // 🔄 Buscar colunas do backend - DIRETO NO USEEFFECT
   useEffect(() => {
     if (!quadroId) return
@@ -1187,7 +1247,7 @@ function QuadroPage() {
     )
   }
 
-  // Mostrar erro se houver
+  // Mostrar erro se houver (DEPOIS de todos os hooks)
   if (errorChats) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
@@ -1401,12 +1461,12 @@ function QuadroPage() {
                 ticketsCount={{}}
                 agentesCount={{}}
                 contactStatus={{}}
-                orcamentosData={{}}
-                agendamentosData={{}}
+                orcamentosData={orcamentosDataState}
+                agendamentosData={agendamentosDataState}
                 assinaturasData={{}}
                 anotacoesData={{}}
                 tagsData={{}}
-                ticketsData={{}}
+                ticketsData={ticketsDataState}
                 agentesData={{}}
                 editingColumnId={editingColumnId}
                 editingColumnName={editingColumnName}
