@@ -23,7 +23,10 @@ import {
   X,
   Filter,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Clock,
+  UserCheck,
+  CheckCircle2
 } from 'lucide-react'
 import KanbanCardItem from './KanbanCardItem'
 import MetricCard from './MetricCard'
@@ -636,6 +639,72 @@ export default function KanbanColumn({
                 width: '45%'
               }}
             />
+          </div>
+        </div>
+
+        {/* Status: Aguardando */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3 border-l-yellow-500`}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Clock className="w-3 h-3 text-yellow-500" />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Aguardando</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {coluna.cards?.filter((card: any) => {
+                const status = card.status?.toLowerCase()
+                return status === 'aguardando'
+              }).length || 0}
+            </span>
+          </div>
+        </div>
+
+        {/* Status: Em Atendimento */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3 border-l-green-500`}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-3 h-3 text-green-500" />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Em Atendimento</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {coluna.cards?.filter((card: any) => {
+                const status = card.status?.toLowerCase()
+                return status === 'atendimento' || status === 'em_atendimento'
+              }).length || 0}
+            </span>
+          </div>
+        </div>
+
+        {/* Status: Finalizados */}
+        <div className={`p-2 rounded-lg ${
+          theme === 'dark' ? 'bg-slate-800/60' : 'bg-white'
+        } border-l-3 border-l-gray-500`}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-3 h-3 text-gray-500" />
+              <span className={`text-xs font-medium ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Finalizados</span>
+            </div>
+            <span className={`text-xs font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {coluna.cards?.filter((card: any) => {
+                const status = card.status?.toLowerCase()
+                return status === 'finalizado' || status === 'encerrado' || status === 'fechado'
+              }).length || 0}
+            </span>
           </div>
         </div>
       </motion.div>
