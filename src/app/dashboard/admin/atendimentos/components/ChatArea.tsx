@@ -3061,7 +3061,7 @@ export default function ChatArea({
                     </div>
                     
                     {/* Ícones de Ação - Aparecem no hover */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
                       {/* Botão de Favoritar */}
                       <motion.button
                         whileHover={{ 

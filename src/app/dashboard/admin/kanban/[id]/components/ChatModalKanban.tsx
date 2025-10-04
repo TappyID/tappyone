@@ -1235,7 +1235,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
         </div>
         
         {/* Área de Mensagens - SEM SCROLL (ChatArea já tem scroll interno) */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col">
           <style jsx>{`
             .custom-scrollbar::-webkit-scrollbar {
               width: 8px;

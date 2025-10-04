@@ -233,7 +233,7 @@ export default function ChatArea({
       {/* Área de mensagens com pattern WhatsApp */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-1 relative"
+        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative"
         onScroll={handleScroll}
         style={{
           height: 'calc(100vh - 180px)',

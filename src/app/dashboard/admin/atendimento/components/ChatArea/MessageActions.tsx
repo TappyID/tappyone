@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MoreHorizontal,
@@ -60,25 +60,6 @@ export default function MessageActions({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  // Fechar menu ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false)
-        setShowReactions(false)
-      }
-    }
-
-    if (showMenu || showReactions) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showMenu, showReactions])
 
   // Função melhorada para detectar idioma
   const detectLanguage = (text: string) => {
@@ -458,14 +439,12 @@ export default function MessageActions({
   ]
 
   return (
-    <div ref={menuRef} className="relative">
+    <div className="relative">
       {/* Botão 3 pontinhos */}
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className={`transition-all p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${
-          showMenu || showReactions
-            ? 'opacity-100 bg-gray-100 dark:bg-gray-700' 
-            : 'opacity-0 group-hover:opacity-100'
+        className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${
+          showMenu ? 'opacity-100' : ''
         }`}
       >
         <MoreHorizontal className="w-4 h-4 text-gray-500" />
