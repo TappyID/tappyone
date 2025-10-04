@@ -484,11 +484,10 @@ export default function QuickActionsSidebar({
   }
 
   const handleCreateNow = () => {
-    console.log('➕ Botão "Criar Agora" clicado!')
-    setCreateModalWithAI(false) // ← SEM IA
-    setShowCreateModal(true)     // ← Abre o modal normal
+    console.log('Abrindo modal de criação imediata')
+    setShowCreateModal(true)
+    setCreateModalWithAI(false)
   }
-
   const toggleActionExpansion = (actionId: string) => {
     setExpandedActions(prev => {
       const newSet = new Set(prev)
@@ -1079,20 +1078,81 @@ export default function QuickActionsSidebar({
                                             
                                             {acao.tipo === 'imagem' && (
                                               <div className="space-y-2">
-                                                <MediaUpload
-                                                  type="image"
-                                                  onUpload={(file, url) => {
-                                                    updateEditingAction(action.id, index, 'url', url)
-                                                    updateEditingAction(action.id, index, 'filename', file.name)
-                                                  }}
-                                                  onRemove={() => {
-                                                    updateEditingAction(action.id, index, 'url', '')
-                                                    updateEditingAction(action.id, index, 'filename', '')
-                                                  }}
-                                                  currentFile={conteudoAcao?.url}
-                                                  currentFileName={conteudoAcao?.filename}
-                                                  maxSizeMB={10}
-                                                />
+                                                {/* 🎨 Seção de Gerar Imagem com IA */}
+                                                <div className={`p-3 rounded-lg border ${
+                                                  actualTheme === 'dark' ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'
+                                                }`}>
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                    <Sparkles className="w-4 h-4 text-purple-500" />
+                                                    <span className="text-xs font-medium">Gerar com IA</span>
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <input
+                                                      type="text"
+                                                      className="w-full p-2 text-xs border border-border rounded bg-background text-foreground"
+                                                      placeholder="Descreva a imagem que deseja gerar..."
+                                                      value={conteudoAcao?.aiPrompt || ''}
+                                                      onChange={(e) => updateEditingAction(action.id, index, 'aiPrompt', e.target.value)}
+                                                    />
+                                                    <Button
+                                                      size="sm"
+                                                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                                                      onClick={async () => {
+                                                        const prompt = conteudoAcao?.aiPrompt || 'Uma imagem profissional e criativa'
+                                                        try {
+                                                          const response = await fetch('/api/ai/generate', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                              prompt,
+                                                              type: 'image',
+                                                              imageModel: 'dall-e-3'
+                                                            })
+                                                          })
+                                                          
+                                                          if (response.ok) {
+                                                            const data = await response.json()
+                                                            if (data.imageUrl) {
+                                                              updateEditingAction(action.id, index, 'url', data.imageUrl)
+                                                              updateEditingAction(action.id, index, 'filename', 'imagem-ia.png')
+                                                              updateEditingAction(action.id, index, 'caption', data.revised_prompt || prompt)
+                                                            }
+                                                          }
+                                                        } catch (error) {
+                                                          console.error('Erro ao gerar imagem:', error)
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Sparkles className="w-3 h-3 mr-1" />
+                                                      Gerar Imagem com IA
+                                                    </Button>
+                                                  </div>
+                                                </div>
+
+                                                {/* 📤 Seção de Upload Manual */}
+                                                <div className={`p-3 rounded-lg border ${
+                                                  actualTheme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'
+                                                }`}>
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                    <Upload className="w-4 h-4 text-blue-500" />
+                                                    <span className="text-xs font-medium">Fazer Upload</span>
+                                                  </div>
+                                                  <MediaUpload
+                                                    type="image"
+                                                    onUpload={(file, url) => {
+                                                      updateEditingAction(action.id, index, 'url', url)
+                                                      updateEditingAction(action.id, index, 'filename', file.name)
+                                                    }}
+                                                    onRemove={() => {
+                                                      updateEditingAction(action.id, index, 'url', '')
+                                                      updateEditingAction(action.id, index, 'filename', '')
+                                                    }}
+                                                    currentFile={conteudoAcao?.url}
+                                                    currentFileName={conteudoAcao?.filename}
+                                                    maxSizeMB={10}
+                                                  />
+                                                </div>
+
                                                 <input
                                                   className="w-full p-2 text-xs border border-border rounded bg-background text-foreground"
                                                   value={conteudoAcao?.caption || ''}
@@ -1895,55 +1955,118 @@ export default function QuickActionsSidebar({
               console.log('🔒 Fechando EditTextModal')
               setShowEditTextModal(false)
             }}
-            onSend={(data) => {
+            onSend={async (data: SendData) => {
               console.log('✅ Dados recebidos do EditTextModal:', data)
               
-              // Criar nova resposta rápida com os dados gerados
-              const newAction: any = {
-                titulo: 'Resposta criada com IA',
-                categoria_id: categorias[0]?.id || '', // Primeira categoria disponível
-                tags: ['ia', 'gerado'],
-                acoes: []
+              if (!activeChatId) {
+                alert('❌ Nenhum chat ativo selecionado!')
+                return
               }
 
-              // Adicionar texto se houver
-              if (data.text) {
-                newAction.acoes.push({
-                  tipo: 'texto',
-                  conteudo: data.text,
-                  ordem: 1
-                })
-                console.log('📝 Texto adicionado:', data.text)
+              const token = localStorage.getItem('token')
+              if (!token) {
+                alert('❌ Token não encontrado!')
+                return
               }
 
-              // Adicionar imagem se houver
-              if (data.imageUrl) {
-                newAction.acoes.push({
-                  tipo: 'imagem',
-                  url: data.imageUrl,
-                  ordem: newAction.acoes.length + 1
-                })
-                console.log('🖼️ Imagem adicionada:', data.imageUrl)
-              }
+              try {
+                let enviadoCount = 0
 
-              // Adicionar áudio se houver
-              if (data.audioBase64) {
-                // Converter base64 para URL ou salvar
-                const audioUrl = `data:audio/mp3;base64,${data.audioBase64}`
-                newAction.acoes.push({
-                  tipo: 'audio',
-                  url: audioUrl,
-                  ordem: newAction.acoes.length + 1
-                })
-                console.log('🎤 Áudio adicionado (base64)')
-              }
+                // 1. Enviar TEXTO (se houver)
+                if (data.text) {
+                  console.log('📝 Enviando texto...')
+                  const response = await fetch('/api/whatsapp/send', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      chatId: activeChatId,
+                      message: data.text
+                    })
+                  })
 
-              console.log('💾 Nova resposta rápida:', newAction)
-              
-              // TODO: Salvar via API
-              alert(`✅ Resposta criada com ${newAction.acoes.length} ação(ões)!`)
-              
-              setShowEditTextModal(false)
+                  if (response.ok) {
+                    console.log('✅ Texto enviado!')
+                    enviadoCount++
+                  } else {
+                    console.error('❌ Erro ao enviar texto:', response.status)
+                  }
+                }
+
+                // 2. Enviar IMAGEM (se houver)
+                if (data.imageUrl) {
+                  console.log('🖼️ Enviando imagem...')
+                  
+                  // Converter URL base64 para Blob
+                  const imageResponse = await fetch(data.imageUrl)
+                  const imageBlob = await imageResponse.blob()
+                  
+                  const formData = new FormData()
+                  formData.append('chatId', activeChatId)
+                  formData.append('image', imageBlob, 'imagem-ia.png')  // 🔥 Campo "image" (não "file")
+                  if (data.text) {
+                    formData.append('caption', data.text)
+                  }
+
+                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+                  const response = await fetch(`${backendUrl}/api/whatsapp/chats/${activeChatId}/image`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                  })
+
+                  if (response.ok) {
+                    console.log('✅ Imagem enviada!')
+                    enviadoCount++
+                  } else {
+                    console.error('❌ Erro ao enviar imagem:', response.status)
+                  }
+                }
+
+                // 3. Enviar ÁUDIO (se houver)
+                if (data.audioBase64) {
+                  console.log('🎤 Enviando áudio...')
+                  
+                  // Converter base64 para Blob
+                  const audioBlob = await fetch(`data:audio/mp3;base64,${data.audioBase64}`).then(r => r.blob())
+                  
+                  const formData = new FormData()
+                  formData.append('chatId', activeChatId)
+                  formData.append('voice', audioBlob, 'audio-ia.mp3')  // 🔥 Campo "voice" para áudio
+
+                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://159.65.34.199:3001/'
+                  const response = await fetch(`${backendUrl}/api/whatsapp/chats/${activeChatId}/file`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                  })
+
+                  if (response.ok) {
+                    console.log('✅ Áudio enviado!')
+                    enviadoCount++
+                  } else {
+                    console.error('❌ Erro ao enviar áudio:', response.status)
+                  }
+                }
+
+                if (enviadoCount > 0) {
+                  alert(`✅ ${enviadoCount} mensagem(ns) enviada(s) com sucesso!`)
+                } else {
+                  alert('⚠️ Nenhum conteúdo foi enviado')
+                }
+
+              } catch (error) {
+                console.error('❌ Erro ao enviar:', error)
+                alert('❌ Erro ao enviar mensagens!')
+              } finally {
+                setShowEditTextModal(false)
+              }
             }}
             initialText=""
             contactName="IA Assistant"

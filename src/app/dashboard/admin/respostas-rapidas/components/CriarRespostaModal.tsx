@@ -18,7 +18,8 @@ import {
   ChevronUp, 
   ChevronDown, 
   Trash2, 
-  Music 
+  Music,
+  Sparkles
 } from 'lucide-react'
 import { AudioRecorder } from '@/components/shared/AudioRecorder'
 import MediaUpload from '@/components/shared/MediaUpload'
@@ -473,16 +474,59 @@ export default function CriarRespostaModal({
 
         {acao.tipo === 'audio' && (
           <div className="space-y-4">
-            {/* Debug info */}
-            <div className={`text-xs p-2 rounded ${
-              actualTheme === 'dark'
-                ? 'text-slate-400 bg-slate-800'
-                : 'text-gray-500 bg-gray-50'
-            }`}>
-              Debug: currentAudioUrl = "{acao.conteudo.url || 'EMPTY'}"
-              <br/>
-              Conteúdo completo: {JSON.stringify(acao.conteudo)}
+            {/* 🎤 Gerar Áudio com IA */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-orange-500" />
+                <span className="text-sm font-medium">Gerar com IA</span>
+              </div>
+              <div className="space-y-2">
+                <textarea
+                  placeholder="Digite o texto que deseja converter em áudio..."
+                  value={acao.conteudo.aiText || ''}
+                  onChange={(e) => updateAcaoConteudo(index, { ...acao.conteudo, aiText: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none"
+                  rows={2}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const text = acao.conteudo.aiText || 'Olá, esta é uma mensagem de áudio gerada por inteligência artificial'
+                    try {
+                      const response = await fetch('/api/ai/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          prompt: text,
+                          type: 'audio',
+                          voice: 'nova'
+                        })
+                      })
+                      
+                      if (response.ok) {
+                        const data = await response.json()
+                        if (data.audioUrl) {
+                          updateAcaoConteudo(index, { 
+                            ...acao.conteudo, 
+                            url: data.audioUrl,
+                            arquivo_nome: 'audio-ia.mp3',
+                            tipo: 'audio'
+                          })
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Erro ao gerar áudio:', error)
+                    }
+                  }}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Gerar Áudio com IA
+                </button>
+              </div>
             </div>
+
+            {/* Gravar Áudio */}
             <AudioRecorder
               onAudioReady={async (file, url) => {
                 console.log('🎵 onAudioReady chamado:', { fileName: file.name, fileSize: file.size, localUrl: url })
@@ -599,6 +643,61 @@ export default function CriarRespostaModal({
 
         {(acao.tipo === 'imagem' || acao.tipo === 'video') && (
           <div className="space-y-3">
+            {/* 🎨 Gerar Imagem com IA (somente para imagem) */}
+            {acao.tipo === 'imagem' && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm font-medium">Gerar com IA</span>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Descreva a imagem que deseja gerar..."
+                    value={acao.conteudo.aiPrompt || ''}
+                    onChange={(e) => updateAcaoConteudo(index, { ...acao.conteudo, aiPrompt: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const prompt = acao.conteudo.aiPrompt || 'Uma imagem profissional e criativa'
+                      try {
+                        const response = await fetch('/api/ai/generate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            prompt,
+                            type: 'image',
+                            imageModel: 'dall-e-3'
+                          })
+                        })
+                        
+                        if (response.ok) {
+                          const data = await response.json()
+                          if (data.imageUrl) {
+                            updateAcaoConteudo(index, { 
+                              ...acao.conteudo, 
+                              url: data.imageUrl,
+                              filename: 'imagem-ia.png',
+                              caption: data.revised_prompt || prompt
+                            })
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Erro ao gerar imagem:', error)
+                      }
+                    }}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Gerar Imagem com IA
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Upload Manual */}
             <MediaUpload
               type={acao.tipo === 'imagem' ? 'image' : 'video'}
               onUpload={(file, url) => {

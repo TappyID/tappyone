@@ -1078,20 +1078,81 @@ export default function QuickActionsSidebar({
                                             
                                             {acao.tipo === 'imagem' && (
                                               <div className="space-y-2">
-                                                <MediaUpload
-                                                  type="image"
-                                                  onUpload={(file, url) => {
-                                                    updateEditingAction(action.id, index, 'url', url)
-                                                    updateEditingAction(action.id, index, 'filename', file.name)
-                                                  }}
-                                                  onRemove={() => {
-                                                    updateEditingAction(action.id, index, 'url', '')
-                                                    updateEditingAction(action.id, index, 'filename', '')
-                                                  }}
-                                                  currentFile={conteudoAcao?.url}
-                                                  currentFileName={conteudoAcao?.filename}
-                                                  maxSizeMB={10}
-                                                />
+                                                {/* 🎨 Seção de Gerar Imagem com IA */}
+                                                <div className={`p-3 rounded-lg border ${
+                                                  actualTheme === 'dark' ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'
+                                                }`}>
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                    <Sparkles className="w-4 h-4 text-purple-500" />
+                                                    <span className="text-xs font-medium">Gerar com IA</span>
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <input
+                                                      type="text"
+                                                      className="w-full p-2 text-xs border border-border rounded bg-background text-foreground"
+                                                      placeholder="Descreva a imagem que deseja gerar..."
+                                                      value={conteudoAcao?.aiPrompt || ''}
+                                                      onChange={(e) => updateEditingAction(action.id, index, 'aiPrompt', e.target.value)}
+                                                    />
+                                                    <Button
+                                                      size="sm"
+                                                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                                                      onClick={async () => {
+                                                        const prompt = conteudoAcao?.aiPrompt || 'Uma imagem profissional e criativa'
+                                                        try {
+                                                          const response = await fetch('/api/ai/generate', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                              prompt,
+                                                              type: 'image',
+                                                              imageModel: 'dall-e-3'
+                                                            })
+                                                          })
+                                                          
+                                                          if (response.ok) {
+                                                            const data = await response.json()
+                                                            if (data.imageUrl) {
+                                                              updateEditingAction(action.id, index, 'url', data.imageUrl)
+                                                              updateEditingAction(action.id, index, 'filename', 'imagem-ia.png')
+                                                              updateEditingAction(action.id, index, 'caption', data.revised_prompt || prompt)
+                                                            }
+                                                          }
+                                                        } catch (error) {
+                                                          console.error('Erro ao gerar imagem:', error)
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Sparkles className="w-3 h-3 mr-1" />
+                                                      Gerar Imagem com IA
+                                                    </Button>
+                                                  </div>
+                                                </div>
+
+                                                {/* 📤 Seção de Upload Manual */}
+                                                <div className={`p-3 rounded-lg border ${
+                                                  actualTheme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'
+                                                }`}>
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                    <Upload className="w-4 h-4 text-blue-500" />
+                                                    <span className="text-xs font-medium">Fazer Upload</span>
+                                                  </div>
+                                                  <MediaUpload
+                                                    type="image"
+                                                    onUpload={(file, url) => {
+                                                      updateEditingAction(action.id, index, 'url', url)
+                                                      updateEditingAction(action.id, index, 'filename', file.name)
+                                                    }}
+                                                    onRemove={() => {
+                                                      updateEditingAction(action.id, index, 'url', '')
+                                                      updateEditingAction(action.id, index, 'filename', '')
+                                                    }}
+                                                    currentFile={conteudoAcao?.url}
+                                                    currentFileName={conteudoAcao?.filename}
+                                                    maxSizeMB={10}
+                                                  />
+                                                </div>
+
                                                 <input
                                                   className="w-full p-2 text-xs border border-border rounded bg-background text-foreground"
                                                   value={conteudoAcao?.caption || ''}
