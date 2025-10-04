@@ -238,7 +238,7 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
               </button>
             </div>
 
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="space-y-2 max-h-32 overflow-y-auto">
               {itens.map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="col-span-5">
@@ -310,49 +310,49 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Observações</label>
+            <label className="block text-xs font-medium mb-1">Observações</label>
             <textarea
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Condições, prazo de validade, etc..."
-              rows={3}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              placeholder="Detalhes do agendamento..."
+              rows={2}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           {/* Orçamentos Existentes */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-gray-900 dark:text-white">
               Orçamentos Existentes ({orcamentosExistentes.length})
             </h3>
 
             {loading && orcamentosExistentes.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
-                <p className="text-sm text-gray-500 mt-2">Carregando orçamentos...</p>
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
+                <p className="text-xs text-gray-500 mt-2">Carregando orçamentos...</p>
               </div>
             ) : orcamentosExistentes.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 max-h-40 overflow-y-auto">
                 {orcamentosExistentes.map((orcamento) => (
                   <motion.div
                     key={orcamento.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                    className="p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white">
+                        <h4 className="font-medium text-sm text-gray-900 dark:text-white">
                           {orcamento.titulo}
                         </h4>
                         {orcamento.descricao && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                             {orcamento.descricao}
                           </p>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
                           R$ {(orcamento.valorTotal || orcamento.valor_total || 0).toFixed(2)}
                         </span>
                         <button
@@ -395,10 +395,9 @@ export default function OrcamentoBottomSheet({ isOpen, onClose, chatId }: Orcame
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Nenhum orçamento encontrado</p>
-                <p className="text-xs mt-1">Crie o primeiro orçamento acima</p>
+              <div className="text-center py-4 text-gray-500">
+                <FileText className="w-8 h-8 mx-auto mb-1 opacity-50" />
+                <p className="text-xs">Nenhum orçamento encontrado</p>
               </div>
             )}
           </div>

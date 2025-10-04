@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, Calendar, Clock, Users, Phone, Video, MapPin, Coffee } from 'lucide-react'
+import { X, Calendar, Clock, Users, Phone, Video, MapPin, Coffee, Trash2, FileText } from 'lucide-react'
 import { fetchApi } from '@/utils/api'
 
 interface AgendamentoBottomSheetProps {
@@ -18,6 +18,39 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
   const [horaFim, setHoraFim] = useState('')
   const [tipo, setTipo] = useState('reuniao')
   const [descricao, setDescricao] = useState('')
+  const [agendamentosExistentes, setAgendamentosExistentes] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  // 🚀 BUSCAR AGENDAMENTOS ESPECÍFICOS DO CHAT
+  const fetchAgendamentos = useCallback(async () => {
+    if (!chatId) return
+
+    try {
+      setLoading(true)
+      const path = `/api/chats/${encodeURIComponent(chatId)}/agendamentos`
+      const response = await fetchApi('backend', path)
+
+      if (!response.ok) {
+        setAgendamentosExistentes([])
+        return
+      }
+
+      const data = await response.json()
+      const agendamentosData = Array.isArray(data) ? data : (data.data || [])
+      setAgendamentosExistentes(agendamentosData)
+    } catch {
+      setAgendamentosExistentes([])
+    } finally {
+      setLoading(false)
+    }
+  }, [chatId])
+
+  // Carregar agendamentos quando abrir
+  useEffect(() => {
+    if (isOpen) {
+      fetchAgendamentos()
+    }
+  }, [isOpen, fetchAgendamentos])
 
   if (!isOpen) return null
 
@@ -64,6 +97,9 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
         window.dispatchEvent(new CustomEvent('agendamentoCreated', {
           detail: { chatId, agendamento: result }
         }))
+
+        // Recarregar agendamentos
+        fetchAgendamentos()
 
       } else {
         // Capturar erro detalhado
@@ -195,9 +231,59 @@ export default function AgendamentoBottomSheet({ isOpen, onClose, chatId }: Agen
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder="Detalhes do agendamento..."
-              rows={3}
+              rows={2}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Agendamentos Existentes */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              Agendamentos Existentes ({agendamentosExistentes.length})
+            </h3>
+
+            {loading && agendamentosExistentes.length === 0 ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="text-xs text-gray-500 mt-2">Carregando agendamentos...</p>
+              </div>
+            ) : agendamentosExistentes.length > 0 ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {agendamentosExistentes.map((agendamento) => (
+                  <motion.div
+                    key={agendamento.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm text-gray-900 dark:text-white">
+                          {agendamento.titulo}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Calendar className="w-3 h-3 text-blue-500" />
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            {new Date(agendamento.dataInicio || agendamento.data_inicio).toLocaleDateString('pt-BR')} às{' '}
+                            {new Date(agendamento.dataInicio || agendamento.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {agendamento.tipo && (
+                          <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                            {agendamento.tipo}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-xs">Nenhum agendamento encontrado</p>
+              </div>
+            )}
           </div>
 
           </div>
