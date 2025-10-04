@@ -2417,21 +2417,10 @@ function AtendimentoPage() {
 
               // Enviar imagem
               if (data.imageUrl) {
-                console.log("🖼️ Baixando e enviando imagem:", data.imageUrl);
+                console.log("🖼️ Enviando imagem gerada pela IA...");
                 
-                // Baixar imagem e converter para base64
-                const imgResponse = await fetch(data.imageUrl);
-                const imgBlob = await imgResponse.blob();
-                
-                const reader = new FileReader();
-                const base64Promise = new Promise<string>((resolve) => {
-                  reader.onloadend = () => {
-                    const base64 = reader.result as string;
-                    resolve(base64.split(",")[1]); // Remove o prefixo data:...
-                  };
-                });
-                reader.readAsDataURL(imgBlob);
-                const base64Image = await base64Promise;
+                // A imageUrl já vem em base64 (data:image/png;base64,...)
+                const base64Image = data.imageUrl.split(",")[1]; // Remove o prefixo
 
                 const payload: any = {
                   session: sessionName,

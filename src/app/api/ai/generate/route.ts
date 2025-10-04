@@ -40,11 +40,19 @@ async function generateImage(prompt: string, model: 'dall-e-2' | 'dall-e-3' = 'd
     const imageUrl = result.data[0]?.url
 
     console.log('✅ Imagem gerada com sucesso')
+    
+    // Baixar a imagem e converter para base64 (evitar CORS no frontend)
+    console.log('📥 Baixando imagem para base64...')
+    const imgResponse = await fetch(imageUrl)
+    const imgBuffer = await imgResponse.arrayBuffer()
+    const base64Image = Buffer.from(imgBuffer).toString('base64')
+    const imageDataUrl = `data:image/png;base64,${base64Image}`
 
     return NextResponse.json({
       success: true,
       type: 'image',
-      imageUrl,
+      imageUrl: imageDataUrl, // Retornar como data URL base64
+      imageUrlOriginal: imageUrl, // URL original da OpenAI
       prompt,
       revised_prompt: result.data[0]?.revised_prompt
     })
