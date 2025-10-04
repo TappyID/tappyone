@@ -6,8 +6,9 @@ import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Tic
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
-import EditTextModal from '../../../atendimentos/components/EditTextModal'
 import QuickActionsSidebarKanban from './QuickActionsSidebarKanban'
+import EditTextModalKanban from './EditTextModalKanban'
+import TranslateReplyModalKanban from './TranslateReplyModalKanban'
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import { useAuth } from '@/hooks/useAuth'
@@ -694,6 +695,8 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   // Estados para os modais - IGUAL AO ATENDIMENTO
   const [showEditTextModal, setShowEditTextModal] = useState(false)
   const [showQuickActionsSidebarKanban, setShowQuickActionsSidebarKanban] = useState(false)
+  const [showTranslateReplyModal, setShowTranslateReplyModal] = useState(false)
+  const [selectedMessageToTranslate, setSelectedMessageToTranslate] = useState('')
   const [showEmojisModal, setShowEmojisModal] = useState(false)
   const [showProfileSidebar, setShowProfileSidebar] = useState(false)
   const [showLeadEditSidebar, setShowLeadEditSidebar] = useState(false)
@@ -945,10 +948,66 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className={`flex h-[80vh] rounded-16xl shadow-1xl overflow-hidden transition-all duration-300 ${
-        showProfileSidebar || showQuickActionsSidebarKanban ? 'w-full max-w-7xl' : 'w-full max-w-4xl'
+        showProfileSidebar || showQuickActionsSidebarKanban || showEditTextModal || showTranslateReplyModal ? 'w-full max-w-7xl' : 'w-full max-w-4xl'
       }`}>
-        {/* QuickActionsSidebarKanban - Esquerda */}
-        {showQuickActionsSidebarKanban && (
+        {/* TranslateReplyModalKanban - Esquerda (máxima prioridade) */}
+        {showTranslateReplyModal && (
+          <TranslateReplyModalKanban
+            isOpen={showTranslateReplyModal}
+            onClose={() => {
+              setShowTranslateReplyModal(false)
+              setSelectedMessageToTranslate('')
+            }}
+            messageContent={selectedMessageToTranslate}
+            onSend={async (translatedText, audioUrl) => {
+              if (chatId) {
+                const sessionName = await getActiveSessionName()
+                if (!sessionName) return
+                
+                await fetch(`/api/whatsapp/sessions/${sessionName}/chats/${chatId}/messages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text: translatedText })
+                }).then(() => {
+                  console.log('🌍 Mensagem traduzida enviada')
+                  setTimeout(() => fetchMessages(), 500)
+                  setShowTranslateReplyModal(false)
+                  setSelectedMessageToTranslate('')
+                })
+              }
+            }}
+          />
+        )}
+
+        {/* EditTextModalKanban - Esquerda (segunda prioridade) */}
+        {!showTranslateReplyModal && showEditTextModal && (
+          <EditTextModalKanban
+            isOpen={showEditTextModal}
+            onClose={() => setShowEditTextModal(false)}
+            initialText=""
+            contactName={contactName}
+            actionTitle="Gerar com IA"
+            onSend={async (message) => {
+              if (chatId) {
+                const sessionName = await getActiveSessionName()
+                if (!sessionName) return
+                
+                await fetch(`/api/whatsapp/sessions/${sessionName}/chats/${chatId}/messages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text: message.text })
+                }).then(() => {
+                  console.log('🤖 Mensagem IA enviada')
+                  setTimeout(() => fetchMessages(), 500)
+                  setShowEditTextModal(false)
+                })
+              }
+            }}
+          />
+        )}
+        
+        {/* QuickActionsSidebarKanban - Esquerda (terceira prioridade) */}
+        {!showTranslateReplyModal && !showEditTextModal && showQuickActionsSidebarKanban && (
           <QuickActionsSidebarKanban
             isOpen={showQuickActionsSidebarKanban}
             onClose={() => setShowQuickActionsSidebarKanban(false)}
@@ -963,15 +1022,15 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
 
         {/* Modal Principal do Chat */}
         <div className={`flex flex-col overflow-hidden transition-all duration-300 ${
-          showProfileSidebar && showQuickActionsSidebarKanban
+          showProfileSidebar && (showQuickActionsSidebarKanban || showEditTextModal || showTranslateReplyModal)
             ? 'w-1/2'
-            : showProfileSidebar || showQuickActionsSidebarKanban
+            : showProfileSidebar || showQuickActionsSidebarKanban || showEditTextModal || showTranslateReplyModal
               ? 'w-2/3'
               : 'w-full'
         } ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'} ${
-          showQuickActionsSidebarKanban && showProfileSidebar
+          (showQuickActionsSidebarKanban || showEditTextModal || showTranslateReplyModal) && showProfileSidebar
             ? ''
-            : showQuickActionsSidebarKanban
+            : (showQuickActionsSidebarKanban || showEditTextModal || showTranslateReplyModal)
               ? 'rounded-r-2xl rounded-tr-2xl rounded-br-2xl'
               : showProfileSidebar
                 ? 'rounded-l-2xl rounded-tl-2xl rounded-bl-2xl'
@@ -1176,7 +1235,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
         </div>
         
         {/* Área de Mensagens - SEM SCROLL (ChatArea já tem scroll interno) */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col">
           <style jsx>{`
             .custom-scrollbar::-webkit-scrollbar {
               width: 8px;
@@ -1221,6 +1280,15 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
               hasMore={hasMore}
               totalMessages={totalMessages}
               onLoadMore={loadMoreMessages}
+              onOpenTranslateReply={(messageId, messageContent) => {
+                console.log('🌍 Abrindo sidebar de tradução')
+                setSelectedMessageToTranslate(messageContent)
+                setShowTranslateReplyModal(true)
+              }}
+              onOpenAIEditor={(messageId, messageContent) => {
+                console.log('🤖 Abrindo sidebar de IA')
+                setShowEditTextModal(true)
+              }}
             />
           ) : (
             <div className="flex items-center justify-center h-full">
@@ -1477,38 +1545,6 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             }}
           />
         </div>
-
-        {/* Componentes reais - IGUAL AO ATENDIMENTO */}
-        {showEditTextModal && (
-          <EditTextModal
-            isOpen={showEditTextModal}
-            onClose={() => setShowEditTextModal(false)}
-            initialText=""
-            contactName={contactName}
-            actionTitle="Gerar com IA"
-            onSend={async (message) => {
-              // Enviar mensagem gerada pela IA
-              if (chatId) {
-                const sessionName = await getActiveSessionName()
-                if (!sessionName) return
-                fetch(getWahaUrl('/api/sendText'), {
-                  method: 'POST',
-                  headers: getAuthHeaders(),
-                  body: JSON.stringify({
-                    session: sessionName,
-                    chatId: chatId,
-                    text: message
-                  })
-                }).then(() => {
-                  console.log('🤖 Mensagem IA enviada')
-                  setTimeout(() => fetchMessages(), 500)
-                  setShowEditTextModal(false)
-                })
-              }
-            }}
-          />
-        )}
-
 
         {showEmojisModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

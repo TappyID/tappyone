@@ -88,6 +88,8 @@ interface MessageBubbleProps {
   onReaction?: (messageId: string, emoji: string) => void
   onTranslate?: (messageId: string, translatedText?: string) => void
   onAIReply?: (messageId: string, content: string) => void
+  onOpenTranslateReply?: (messageId: string, messageContent: string) => void
+  onOpenAIEditor?: (messageId: string, messageContent: string) => void
 }
 
 const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
@@ -98,12 +100,13 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
   onForward,
   onReaction,
   onTranslate,
-  onAIReply
+  onAIReply,
+  onOpenTranslateReply,
+  onOpenAIEditor
 }, ref) => {
 
   // INVERTIDO: user = esquerda (recebe), agent = direita (envia)
   const isFromUser = message.sender !== 'user'
-
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
       hour: '2-digit',
@@ -472,6 +475,8 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
           onReaction={onReaction}
           onTranslate={onTranslate}
           onAIReply={onAIReply}
+          onOpenTranslateReply={onOpenTranslateReply}
+          onOpenAIEditor={onOpenAIEditor}
         />
       </div>
     </motion.div>

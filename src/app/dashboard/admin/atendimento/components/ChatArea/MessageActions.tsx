@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MoreHorizontal,
@@ -27,6 +27,8 @@ interface MessageActionsProps {
   onReaction?: (messageId: string, emoji: string) => void
   onTranslate?: (messageId: string, translatedText?: string) => void
   onAIReply?: (messageId: string, content: string) => void
+  onOpenTranslateReply?: (messageId: string, messageContent: string) => void
+  onOpenAIEditor?: (messageId: string, messageContent: string) => void
 }
 
 export default function MessageActions({
@@ -37,7 +39,9 @@ export default function MessageActions({
   onForward,
   onReaction,
   onTranslate,
-  onAIReply
+  onAIReply,
+  onOpenTranslateReply,
+  onOpenAIEditor
 }: MessageActionsProps) {
   const [showMenu, setShowMenu] = useState(false)
   const [showReactions, setShowReactions] = useState(false)
@@ -56,6 +60,25 @@ export default function MessageActions({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+        setShowReactions(false)
+      }
+    }
+
+    if (showMenu || showReactions) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMenu, showReactions])
 
   // Função melhorada para detectar idioma
   const detectLanguage = (text: string) => {
@@ -397,7 +420,13 @@ export default function MessageActions({
       label: 'Responder com I.A',
       icon: Bot,
       onClick: () => {
-        handleAIReply()
+        // Se tem callback para abrir editor expansível, usa ele (ChatModalKanban)
+        if (onOpenAIEditor) {
+          onOpenAIEditor(messageId, messageContent)
+        } else {
+          // Senão, abre o modal interno (comportamento padrão)
+          handleAIReply()
+        }
         setShowMenu(false)
       }
     },
@@ -406,8 +435,14 @@ export default function MessageActions({
       label: 'Responder com tradução',
       icon: Languages,
       onClick: () => {
-        handleOpenTranslateReply()
-        setShowTranslateReply(true)
+        // Se tem callback para abrir sidebar expansível, usa ele (ChatModalKanban)
+        if (onOpenTranslateReply) {
+          onOpenTranslateReply(messageId, messageContent)
+        } else {
+          // Senão, abre o modal interno (comportamento padrão)
+          handleOpenTranslateReply()
+          setShowTranslateReply(true)
+        }
         setShowMenu(false)
       }
     },
@@ -423,12 +458,14 @@ export default function MessageActions({
   ]
 
   return (
-    <div className="relative">
+    <div ref={menuRef} className="relative">
       {/* Botão 3 pontinhos */}
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${
-          showMenu ? 'opacity-100' : ''
+        className={`transition-all p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${
+          showMenu || showReactions
+            ? 'opacity-100 bg-gray-100 dark:bg-gray-700' 
+            : 'opacity-0 group-hover:opacity-100'
         }`}
       >
         <MoreHorizontal className="w-4 h-4 text-gray-500" />
@@ -441,7 +478,7 @@ export default function MessageActions({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className={`absolute z-50 ${
+            className={`absolute z-[9999] ${
               isFromUser ? 'right-0' : 'left-0'
             } mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2`}
           >
@@ -469,7 +506,7 @@ export default function MessageActions({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`absolute z-50 ${
+            className={`absolute z-[9999] ${
               isFromUser ? 'right-0' : 'left-0'
             } mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3`}
           >

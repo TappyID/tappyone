@@ -85,6 +85,8 @@ interface ChatAreaProps {
   onReaction?: (messageId: string, emoji: string) => void
   onTranslate?: (messageId: string, translatedText?: string) => void
   onAIReply?: (messageId: string, content: string) => void
+  onOpenTranslateReply?: (messageId: string, messageContent: string) => void
+  onOpenAIEditor?: (messageId: string, messageContent: string) => void
 }
 
 export default function ChatArea({
@@ -100,7 +102,9 @@ export default function ChatArea({
   onForward,
   onReaction,
   onTranslate,
-  onAIReply
+  onAIReply,
+  onOpenTranslateReply,
+  onOpenAIEditor
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -229,7 +233,7 @@ export default function ChatArea({
       {/* Área de mensagens com pattern WhatsApp */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-1 relative"
+        className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-1 relative"
         onScroll={handleScroll}
         style={{
           height: 'calc(100vh - 180px)',
@@ -277,6 +281,8 @@ export default function ChatArea({
                 onReaction={onReaction}
                 onTranslate={onTranslate}
                 onAIReply={onAIReply}
+                onOpenTranslateReply={onOpenTranslateReply}
+                onOpenAIEditor={onOpenAIEditor}
               />
             )
           })}

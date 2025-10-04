@@ -45,6 +45,25 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   const handleToggleMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -105,12 +124,12 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
 
       {isOpen && (
         <div 
-          className="absolute bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[160px] max-w-[200px]"
+          ref={menuRef}
+          className="absolute bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-[9999] min-w-[160px] max-w-[200px]"
           style={{
             top: '-10px',
             [message.fromMe ? 'right' : 'left']: '30px'
           }}
-          onMouseLeave={() => setIsOpen(false)}
         >
             {/* Reações */}
             <div className="px-3 py-2 border-b border-gray-100">
