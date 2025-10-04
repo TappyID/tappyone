@@ -4,20 +4,21 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Paperclip,
-  Plus,
   Image,
   Camera,
   Mic,
   Send,
-  UserCheck,
-  Zap,
-  Bot,
-  MessageSquare,
   Video,
   Menu,
   MapPin,
   User,
-  BarChart3
+  BarChart3,
+  Zap,
+  MessageSquare,
+  Sparkles,
+  Bot,
+  PlusCircle,
+  SmilePlus
 } from 'lucide-react'
 
 // Micro componente Anexo com Menu
@@ -50,14 +51,14 @@ export const AnexoMenuButton = ({
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowMenu(!showMenu)}
-        className="p-2.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10
-                   hover:from-blue-500/20 hover:to-purple-500/20
+        className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+                   hover:bg-white/90 dark:hover:bg-gray-800/90
                    text-blue-600 dark:text-blue-400 rounded-xl
-                   border border-blue-200/50 dark:border-blue-700/50
-                   transition-all duration-200 shadow-sm hover:shadow-md"
+                   border border-white/50 dark:border-gray-700/50
+                   shadow-lg hover:shadow-xl transition-all duration-200"
         title="Anexos & Ações"
       >
-        <Plus className="w-5 h-5" />
+        <PlusCircle className="w-5 h-5" />
       </motion.button>
 
       {showMenu && (
@@ -76,8 +77,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <Image className="w-4 h-4 text-green-500" />
-            <span>Enviar Imagem</span>
+            <Image className="w-4 h-4 text-emerald-500" />
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Enviar Imagem</span>
           </button>
 
           <button
@@ -88,8 +89,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <Camera className="w-4 h-4 text-blue-500" />
-            <span>Tirar Foto</span>
+            <Camera className="w-4 h-4 text-sky-500" />
+            <span className="text-sky-600 dark:text-sky-400 font-medium">Tirar Foto</span>
           </button>
 
           <button
@@ -100,8 +101,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <Video className="w-4 h-4 text-purple-500" />
-            <span>Enviar Vídeo</span>
+            <Video className="w-4 h-4 text-violet-500" />
+            <span className="text-violet-600 dark:text-violet-400 font-medium">Enviar Vídeo</span>
           </button>
 
           <button
@@ -112,8 +113,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <Mic className="w-4 h-4 text-red-500" />
-            <span>Enviar Áudio</span>
+            <Mic className="w-4 h-4 text-rose-500" />
+            <span className="text-rose-600 dark:text-rose-400 font-medium">Enviar Áudio</span>
           </button>
 
           <button
@@ -124,8 +125,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <Paperclip className="w-4 h-4 text-gray-500" />
-            <span>Anexar Arquivo</span>
+            <Paperclip className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-600 dark:text-slate-400 font-medium">Anexar Arquivo</span>
           </button>
 
           <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
@@ -139,7 +140,7 @@ export const AnexoMenuButton = ({
                        flex items-center gap-2 text-sm"
           >
             <Menu className="w-4 h-4 text-indigo-500" />
-            <span>Enviar Menu</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-medium">Enviar Menu</span>
           </button>
 
           <button
@@ -150,8 +151,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <MapPin className="w-4 h-4 text-orange-500" />
-            <span>Enviar Localização</span>
+            <MapPin className="w-4 h-4 text-amber-500" />
+            <span className="text-amber-600 dark:text-amber-400 font-medium">Enviar Localização</span>
           </button>
 
           <button
@@ -162,8 +163,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <User className="w-4 h-4 text-cyan-500" />
-            <span>Enviar Contato</span>
+            <User className="w-4 h-4 text-teal-500" />
+            <span className="text-teal-600 dark:text-teal-400 font-medium">Enviar Contato</span>
           </button>
 
           <button
@@ -174,8 +175,8 @@ export const AnexoMenuButton = ({
             className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700
                        flex items-center gap-2 text-sm"
           >
-            <BarChart3 className="w-4 h-4 text-pink-500" />
-            <span>Enviar Enquete</span>
+            <BarChart3 className="w-4 h-4 text-fuchsia-500" />
+            <span className="text-fuchsia-600 dark:text-fuchsia-400 font-medium">Enviar Enquete</span>
           </button>
         </motion.div>
       )}
@@ -189,9 +190,11 @@ export const AnexoButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400
-               dark:hover:text-gray-200 rounded-lg hover:bg-gray-100
-               dark:hover:bg-gray-800 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-gray-600 dark:text-gray-300 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Anexar arquivo"
   >
     <Paperclip className="w-5 h-5" />
@@ -204,9 +207,11 @@ export const ImagemButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-green-600 hover:text-green-700 dark:text-green-400
-               dark:hover:text-green-300 rounded-lg hover:bg-green-50
-               dark:hover:bg-green-900/20 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-green-600 dark:text-green-400 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Enviar imagem"
   >
     <Image className="w-5 h-5" />
@@ -219,9 +224,11 @@ export const CameraButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400
-               dark:hover:text-blue-300 rounded-lg hover:bg-blue-50
-               dark:hover:bg-blue-900/20 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-blue-600 dark:text-blue-400 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Tirar foto"
   >
     <Camera className="w-5 h-5" />
@@ -234,9 +241,11 @@ export const AudioButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-red-600 hover:text-red-700 dark:text-red-400
-               dark:hover:text-red-300 rounded-lg hover:bg-red-50
-               dark:hover:bg-red-900/20 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-red-600 dark:text-red-400 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Gravar áudio"
   >
     <Mic className="w-5 h-5" />
@@ -294,9 +303,11 @@ export const AcoesRapidasButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-purple-600 hover:text-purple-700 dark:text-purple-400
-               dark:hover:text-purple-300 rounded-lg hover:bg-purple-50
-               dark:hover:bg-purple-900/20 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-purple-600 dark:text-purple-400 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Ações rápidas"
   >
     <Zap className="w-5 h-5" />
@@ -309,12 +320,14 @@ export const IAButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400
-               dark:hover:text-cyan-300 rounded-lg hover:bg-cyan-50
-               dark:hover:bg-cyan-900/20 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-cyan-600 dark:text-cyan-400 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Enviar com I.A"
   >
-    <Bot className="w-5 h-5" />
+    <Sparkles className="w-5 h-5" />
   </motion.button>
 )
 
@@ -324,14 +337,104 @@ export const RespostaRapidaButton = ({ onClick }: { onClick?: () => void }) => (
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={onClick}
-    className="p-2 text-teal-600 hover:text-teal-700 dark:text-teal-400
-               dark:hover:text-teal-300 rounded-lg hover:bg-teal-50
-               dark:hover:bg-teal-900/20 transition-colors"
+    className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+               hover:bg-white/90 dark:hover:bg-gray-800/90
+               text-teal-600 dark:text-teal-400 rounded-xl
+               border border-white/50 dark:border-gray-700/50
+               shadow-lg hover:shadow-xl transition-all duration-200"
     title="Respostas rápidas"
   >
     <MessageSquare className="w-5 h-5" />
   </motion.button>
 )
+
+// Micro componente Emoji Picker
+export const EmojiButton = ({ 
+  onEmojiSelect 
+}: { 
+  onEmojiSelect?: (emoji: string) => void 
+}) => {
+  const [showPicker, setShowPicker] = useState(false)
+  
+  const emojis = [
+    '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+    '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘',
+    '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪',
+    '🤨', '🧐', '🤓', '😎', '🥳', '😏', '😒', '😞',
+    '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫',
+    '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬',
+    '👍', '👎', '👏', '🙌', '👌', '✌️', '🤞', '🤝',
+    '🙏', '💪', '❤️', '🧡', '💛', '💚', '💙', '💜',
+    '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓',
+    '🔥', '⭐', '✨', '💫', '🎉', '🎊', '🎈', '🎁'
+  ]
+
+  // Fechar ao clicar fora
+  React.useEffect(() => {
+    if (!showPicker) return
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.emoji-picker-container')) {
+        setShowPicker(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showPicker])
+
+  return (
+    <div className="relative emoji-picker-container">
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setShowPicker(!showPicker)}
+        className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+                   hover:bg-white/90 dark:hover:bg-gray-800/90
+                   text-yellow-600 dark:text-yellow-400 rounded-xl
+                   border border-white/50 dark:border-gray-700/50
+                   shadow-lg hover:shadow-xl transition-all duration-200"
+        title="Emojis"
+      >
+        <SmilePlus className="w-5 h-5" />
+      </motion.button>
+
+      {showPicker && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 10 }}
+          className="absolute bottom-full mb-2 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl
+                     border border-gray-200 dark:border-gray-600 rounded-2xl shadow-2xl
+                     p-4 w-72 z-50"
+        >
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wider">Selecione um emoji</h4>
+          <div 
+            className="grid grid-cols-8 gap-1.5 max-h-56 overflow-y-auto pr-1"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#cbd5e1 transparent'
+            }}
+          >
+            {emojis.map((emoji, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  onEmojiSelect?.(emoji)
+                  setShowPicker(false)
+                }}
+                className="text-2xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1.5 transition-all hover:scale-110"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+}
 
 // Micro componente Enviar Expansivo
 export const EnviarButton = ({

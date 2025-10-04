@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Smile, Send, Mic, MicOff, Zap, Bot, MessageSquare, X, Reply,
   GripHorizontal, Bold, Italic, Code, Strikethrough, Quote, List,
-  ListOrdered, Type, Layers, Settings
+  ListOrdered, Type, Layers, Settings, PlusCircle
 } from 'lucide-react'
 import { useMessagesData } from '@/hooks/useMessagesData'
 import { useChatAgente } from '@/hooks/useChatAgente'
@@ -17,7 +17,8 @@ import {
   AgenteButton,
   IAButton,
   RespostaRapidaButton,
-  EnviarButton
+  EnviarButton,
+  EmojiButton
 } from './InputActions'
 
 import {
@@ -901,15 +902,20 @@ export default function MessageInput({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400
-                       dark:hover:text-gray-200 rounded-lg hover:bg-gray-100
-                       dark:hover:bg-gray-800 transition-colors"
+            className="p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg
+                       hover:bg-white/90 dark:hover:bg-gray-800/90
+                       text-blue-600 dark:text-blue-400 rounded-xl
+                       border border-white/50 dark:border-gray-700/50
+                       shadow-lg hover:shadow-xl transition-all duration-200"
             title="Anexos & Ações"
           >
-            📎
+            <PlusCircle className="w-5 h-5" />
           </motion.button>
 
           {/* Botões principais */}
+          <EmojiButton onEmojiSelect={(emoji) => {
+            setMessage(prev => prev + emoji)
+          }} />
           <RespostaRapidaButton onClick={onRespostaRapidaClick} />
           <IAButton onClick={onIAClick} />
         </div>
@@ -1077,19 +1083,6 @@ export default function MessageInput({
             <Type className="w-4 h-4" />
           </motion.button>
         </div>
-
-        {/* Botão de Emojis (fora do input) */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onOpenEmojis}
-          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400
-                     dark:hover:text-gray-200 rounded-lg hover:bg-gray-100
-                     dark:hover:bg-gray-800 transition-colors"
-          title="Emojis"
-        >
-          <Smile className="w-5 h-5" />
-        </motion.button>
 
         {/* Botão Agente antes do enviar */}
         <AgenteButton
