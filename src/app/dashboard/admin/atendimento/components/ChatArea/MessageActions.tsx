@@ -457,7 +457,7 @@ export default function MessageActions({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className={`absolute z-[9999] ${
+            className={`absolute z-50 ${
               isFromUser ? 'right-0' : 'left-0'
             } mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2`}
           >
@@ -485,7 +485,7 @@ export default function MessageActions({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`absolute z-[9999] ${
+            className={`absolute z-50 ${
               isFromUser ? 'right-0' : 'left-0'
             } mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3`}
           >
