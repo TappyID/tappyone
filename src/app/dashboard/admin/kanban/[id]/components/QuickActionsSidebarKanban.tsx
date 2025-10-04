@@ -276,13 +276,20 @@ export default function QuickActionsSidebar({
       // 🔥 CORRIGIDO: Usar editingActions do estado ao invés de action.editedActions
       const acoesEditadas = editingActions[action.id]
       
-      // Se há ações editadas, usar o fluxo customizado
-      if (acoesEditadas && acoesEditadas.length > 0) {
-        console.log('🎯 Usando ações editadas no modo automático:', acoesEditadas)
-        console.log('📊 Total de ações editadas:', acoesEditadas.length)
+      // ✅ VERIFICAR se as ações originais têm mídia (áudio/imagem/vídeo)
+      const acoesOriginaisTemmMidia = action.originalData?.acoes?.some((acao: any) => 
+        ['audio', 'imagem', 'video', 'arquivo'].includes(acao.tipo) && acao.ativo
+      )
+      
+      // Se há ações editadas OU as originais têm mídia, usar o fluxo customizado
+      if ((acoesEditadas && acoesEditadas.length > 0) || acoesOriginaisTemmMidia) {
+        const acoesParaEnviar = acoesEditadas || action.originalData?.acoes || []
+        console.log('🎯 Usando ações customizadas (editadas ou originais com mídia)')
+        console.log('📊 Total de ações:', acoesParaEnviar.length)
+        console.log('🔧 Fonte:', acoesEditadas ? 'editadas' : 'originais com mídia')
         
         // 🔍 LOG DETALHADO de cada ação
-        acoesEditadas.forEach((acao, i) => {
+        acoesParaEnviar.forEach((acao, i) => {
           console.log(`\n🔍 Ação ${i+1}:`)
           console.log(`  - ID: ${acao.id}`)
           console.log(`  - Tipo: ${acao.tipo}`)
@@ -302,7 +309,7 @@ export default function QuickActionsSidebar({
         try {
           const payload = {
             chat_id: chatId,
-            acoes_customizadas: acoesEditadas
+            acoes_customizadas: acoesParaEnviar
           }
           
           console.log('\n📤 Payload completo sendo enviado:')
@@ -331,6 +338,18 @@ export default function QuickActionsSidebar({
         }
       } else {
         console.log('📝 Usando ações originais (sem edições)')
+        
+        // 🔍 DEBUG: Verificar se as ações têm conteúdo
+        console.log('🔍 Total de ações na resposta:', action.originalData?.acoes?.length || 0)
+        action.originalData?.acoes?.forEach((acao: any, i: number) => {
+          console.log(`🔍 Ação ${i+1}:`, {
+            tipo: acao.tipo,
+            ativo: acao.ativo,
+            tem_url: !!acao.conteudo?.url,
+            conteudo: acao.conteudo
+          })
+        })
+        
         // Abordagem 1: AUTOMÁTICO - Envia direto via API
         try {
           console.log('Chamando executeResposta com:', { actionId: action.id, chatId })

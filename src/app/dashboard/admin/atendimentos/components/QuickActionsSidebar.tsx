@@ -162,21 +162,18 @@ export default function QuickActionsSidebar({
   const [showEditTextModal, setShowEditTextModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [selectedActionToSchedule, setSelectedActionToSchedule] = useState<QuickAction | null>(null)
-  const [editingActions, setEditingActions] = useState<{[key: string]: any[]}>({})
+  const [showTriggerModal, setShowTriggerModal] = useState(false)
+  const [selectedActionForTrigger, setSelectedActionForTrigger] = useState<QuickAction | null>(null)
   const [textareaHeights, setTextareaHeights] = useState<{[key: string]: number}>({}) // Controla altura das textareas
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({}) // Controla loading da IA
+  const [editingActions, setEditingActions] = useState<Record<string, any[]>>({}) // Armazena ações em edição por action.id
   
   const { respostas, categorias, fetchRespostas, fetchCategorias, togglePauseResposta, executeResposta } = useRespostasRapidas()
 
-  // Debug do estado do modal
-  useEffect(() => {
-    console.log('📋 [DEBUG] showFluxoIAModal estado:', showFluxoIAModal)
-  }, [showFluxoIAModal])
-
   useEffect(() => {
     if (isOpen) {
-      fetchRespostas()
-      fetchCategorias()
+      fetchRespostas().catch(error => console.error('Erro ao carregar respostas rápidas:', error))
+      fetchCategorias().catch(error => console.error('Erro ao carregar categorias:', error))
     }
   }, [isOpen, fetchRespostas, fetchCategorias])
   
@@ -238,12 +235,6 @@ export default function QuickActionsSidebar({
   }
 
   const handleActionSelect = async (action: QuickAction) => {
-    console.log('=== DEBUG handleActionSelect ===')
-    console.log('Action clicada:', action)
-    console.log('activeChatId:', activeChatId)
-    console.log('selectedContact:', selectedContact)
-    console.log('🔍 editedActions exist?', !!action.editedActions)
-    console.log('🔍 editedActions:', action.editedActions)
     
     // Usar chat ativo prioritariamente, depois contato selecionado como fallback
     const chatId = activeChatId || selectedContact?.jid
@@ -276,33 +267,19 @@ export default function QuickActionsSidebar({
       // 🔥 CORRIGIDO: Usar editingActions do estado ao invés de action.editedActions
       const acoesEditadas = editingActions[action.id]
       
-      // Se há ações editadas, usar o fluxo customizado
-      if (acoesEditadas && acoesEditadas.length > 0) {
-        console.log('🎯 Usando ações editadas no modo automático:', acoesEditadas)
-        console.log('📊 Total de ações editadas:', acoesEditadas.length)
-        
-        // 🔍 LOG DETALHADO de cada ação
-        acoesEditadas.forEach((acao, i) => {
-          console.log(`\n🔍 Ação ${i+1}:`)
-          console.log(`  - ID: ${acao.id}`)
-          console.log(`  - Tipo: ${acao.tipo}`)
-          console.log(`  - Ativo: ${acao.ativo}`)
-          console.log(`  - Conteúdo tipo: ${typeof acao.conteudo}`)
-          console.log(`  - Conteúdo:`, acao.conteudo)
-          
-          if (acao.tipo === 'imagem') {
-            console.log(`  - URL imagem: ${acao.conteudo?.url || 'VAZIO'}`)
-            console.log(`  - Caption: ${acao.conteudo?.caption || 'VAZIO'}`)
-          }
-          if (acao.tipo === 'audio') {
-            console.log(`  - URL áudio: ${acao.conteudo?.url || 'VAZIO'}`)
-          }
-        })
+      // ✅ VERIFICAR se as ações originais têm mídia (áudio/imagem/vídeo)
+      const acoesOriginaisTemmMidia = action.originalData?.acoes?.some((acao: any) => 
+        ['audio', 'imagem', 'video', 'arquivo'].includes(acao.tipo) && acao.ativo
+      )
+      
+      // Se há ações editadas OU as originais têm mídia, usar o fluxo customizado
+      if ((acoesEditadas && acoesEditadas.length > 0) || acoesOriginaisTemmMidia) {
+        const acoesParaEnviar = acoesEditadas || action.originalData?.acoes || []
         
         try {
           const payload = {
             chat_id: chatId,
-            acoes_customizadas: acoesEditadas
+            acoes_customizadas: acoesParaEnviar
           }
           
           console.log('\n📤 Payload completo sendo enviado:')
@@ -330,7 +307,7 @@ export default function QuickActionsSidebar({
           alert('❌ Erro ao executar ações editadas')
         }
       } else {
-        console.log('📝 Usando ações originais (sem edições)')
+        
         // Abordagem 1: AUTOMÁTICO - Envia direto via API
         try {
           console.log('Chamando executeResposta com:', { actionId: action.id, chatId })
@@ -369,27 +346,26 @@ export default function QuickActionsSidebar({
         content: conteudoCompleto
       })
     }
-    console.log('=== FIM DEBUG handleActionSelect ===')
   }
 
   const handleToggleAutomatic = useCallback(async (action: QuickAction, e: React.MouseEvent) => {
     e.stopPropagation()
     
-    try {
-      console.log('🤖 Alterando status automático:', action.title)
-      
-      // Se está ativo (automático), pausar. Se pausado, ativar
-      const novoPausado = action.isAutomatic ? true : false
-      await togglePauseResposta(action.id, novoPausado)
-      
-      console.log(`✅ Resposta ${novoPausado ? 'pausada' : 'ativada'} com sucesso`)
-      
-      // Recarregar dados
-      fetchRespostas()
-    } catch (error) {
-      console.error('❌ Erro ao alterar status da resposta:', error)
-      alert('Erro ao alterar status da resposta rápida')
+    // Se já está ativo, apenas pausar/despausar
+    if (action.isAutomatic) {
+      try {
+        await togglePauseResposta(action.id, true)
+        fetchRespostas()
+      } catch (error) {
+        console.error('❌ Erro ao pausar resposta:', error)
+        alert('Erro ao pausar resposta rápida')
+      }
+      return
     }
+    
+    // Se não está ativo, abrir modal para configurar trigger
+    setSelectedActionForTrigger(action)
+    setShowTriggerModal(true)
   }, [togglePauseResposta, fetchRespostas])
 
   const handleScheduleAction = useCallback((action: QuickAction, e: React.MouseEvent) => {
@@ -421,12 +397,9 @@ export default function QuickActionsSidebar({
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          resposta_rapida_id: selectedActionToSchedule.id,
-          chat_id: data.chatId,
-          proxima_execucao: dateTime.toISOString(),
-          trigger_tipo: 'horario',
-          max_execucoes: 1,
-          ativo: true
+          respostaRapidaId: selectedActionToSchedule.id,
+          chatId: data.chatId,
+          dataAgendamento: dateTime.toISOString()
         })
       })
       
@@ -687,19 +660,19 @@ export default function QuickActionsSidebar({
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ x: -520, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -520, opacity: 0 }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 backdrop-blur-xl ${
-            actualTheme === 'dark'
-              ? 'bg-gradient-to-br from-gray-950/95 via-gray-900/95 to-gray-950/95 border-purple-500/20'
-              : 'bg-gradient-to-br from-white/95 via-purple-50/40 to-white/95 border-purple-200/50'
-          } ${isOpen ? 'translate-x-0' : '-translate-x-full'
-      } z-50 pt-20`}
-        >
+        {isOpen && (
+          <motion.div
+            initial={{ x: -520, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -520, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 backdrop-blur-xl ${
+              actualTheme === 'dark'
+                ? 'bg-gradient-to-br from-gray-950/95 via-gray-900/95 to-gray-950/95 border-purple-500/20'
+                : 'bg-gradient-to-br from-white/95 via-purple-50/40 to-white/95 border-purple-200/50'
+            } ${isOpen ? 'translate-x-0' : '-translate-x-full'
+        } z-50 pt-20`}
+          >
           {/* Header */}
           <div className="p-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
@@ -911,7 +884,7 @@ export default function QuickActionsSidebar({
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
                                   onClick={(e) => handleToggleAutomatic(action, e)}
-                                  className={`p-1.5 rounded-lg transition-all shadow-sm ${
+                                  className={`relative p-1.5 rounded-lg transition-all shadow-sm ${
                                     action.isAutomatic 
                                       ? 'bg-gradient-to-br from-yellow-500/30 to-orange-500/30 text-yellow-600 hover:from-yellow-500/40 hover:to-orange-500/40 dark:text-yellow-400' 
                                       : action.isPaused 
@@ -920,7 +893,13 @@ export default function QuickActionsSidebar({
                                   }`}
                                   title={action.isAutomatic ? 'Automático ATIVO (clique para desativar)' : action.isPaused ? 'Pausado' : 'Ativar automático'}
                                 >
-                                  <Zap className={`w-3 h-3 ${action.isAutomatic ? 'text-yellow-600' : ''}`} />
+                                  <Zap className={`w-3 h-3 ${action.isAutomatic ? 'text-yellow-600 animate-pulse' : ''}`} />
+                                  {action.isAutomatic && (
+                                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                                    </span>
+                                  )}
                                 </motion.button>
                               </div>
                             </div>
@@ -947,6 +926,13 @@ export default function QuickActionsSidebar({
                                     <div className="space-y-2 max-h-80 overflow-y-auto">
                                       {(() => {
                                         const actionsToShow = (editingActions[action.id]?.length > 0) ? editingActions[action.id] : (action.originalData?.acoes || [])
+                                        
+                                        // Debug
+                                        if (actionsToShow.length === 0) {
+                                          console.log('⚠️ Nenhuma ação encontrada para:', action.title)
+                                          console.log('editingActions:', editingActions[action.id])
+                                          console.log('originalData.acoes:', action.originalData?.acoes)
+                                        }
                                       
                                         return actionsToShow
                                       })().map((acao: any, index: number) => {
@@ -2123,6 +2109,102 @@ export default function QuickActionsSidebar({
             contactName="IA Assistant"
             actionTitle="Criar Resposta com IA"
           />
+
+          {/* Modal de Configuração de Trigger */}
+          {showTriggerModal && selectedActionForTrigger && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-background rounded-xl p-6 w-[500px] mx-4 max-h-[80vh] overflow-y-auto">
+                <h3 className="font-bold text-lg mb-4">⚡ Configurar Auto-Resposta</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Configure quando esta resposta deve ser enviada automaticamente
+                </p>
+                
+                <form onSubmit={async (e) => {
+                  e.preventDefault()
+                  const formData = new FormData(e.target as HTMLFormElement)
+                  const triggerTipo = formData.get('triggerTipo') as string
+                  const palavrasChave = formData.get('palavrasChave') as string
+                  
+                  try {
+                    const token = localStorage.getItem('token')
+                    
+                    // Buscar dados completos da resposta
+                    const respostaCompleta = respostas?.find(r => r.id === selectedActionForTrigger.id)
+                    
+                    const response = await fetch(`/api/respostas-rapidas/${selectedActionForTrigger.id}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        titulo: respostaCompleta?.titulo || selectedActionForTrigger.title,
+                        descricao: respostaCompleta?.descricao || '',
+                        categoria_id: respostaCompleta?.categoria_id || null,
+                        trigger_tipo: triggerTipo,
+                        triggers: palavrasChave ? palavrasChave.split(',').map(p => p.trim()) : [],
+                        pausado: false,
+                        ativo: true
+                      })
+                    })
+                    
+                    if (response.ok) {
+                      alert('✅ Auto-resposta configurada com sucesso!')
+                      setShowTriggerModal(false)
+                      setSelectedActionForTrigger(null)
+                      fetchRespostas()
+                    } else {
+                      throw new Error('Erro ao configurar')
+                    }
+                  } catch (error) {
+                    console.error('Erro:', error)
+                    alert('❌ Erro ao configurar auto-resposta')
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tipo de Gatilho</label>
+                    <select name="triggerTipo" className="w-full p-2 border rounded-lg bg-background" required>
+                      <option value="primeira_mensagem">📨 Primeira mensagem do contato</option>
+                      <option value="palavra_chave">🔑 Palavra-chave específica</option>
+                      <option value="horario">⏰ Horário específico (em desenvolvimento)</option>
+                      <option value="intervalo">⏱️ Após intervalo de tempo (em desenvolvimento)</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Palavras-chave (separadas por vírgula)</label>
+                    <Input 
+                      name="palavrasChave"
+                      placeholder="Ex: oi, olá, bom dia"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Deixe vazio se não for usar palavra-chave
+                    </p>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      💡 <strong>Dica:</strong> A resposta será enviada automaticamente quando o gatilho for acionado.
+                      Você pode pausar a qualquer momento clicando no ícone ⚡.
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => {
+                      setShowTriggerModal(false)
+                      setSelectedActionForTrigger(null)
+                    }} className="flex-1">
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600">
+                      ⚡ Ativar Auto-Resposta
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* Modal de Agendamento */}
           {showScheduleModal && (

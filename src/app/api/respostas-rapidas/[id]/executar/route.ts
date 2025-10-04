@@ -9,19 +9,13 @@ export async function POST(
   try {
     const authHeader = request.headers.get('authorization')
     
-    // DESENVOLVIMENTO: Desabilitar autenticação temporariamente
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    
-    if (!authHeader && !isDevelopment) {
+    // ✅ SEMPRE usar o token que veio da requisição (localStorage do front)
+    if (!authHeader) {
       return NextResponse.json({ error: 'Authorization header missing' }, { status: 401 })
     }
     
-    // Token para desenvolvimento - EXECUTAR (token válido do Rodrigo Admin)
-    const effectiveAuthHeader = isDevelopment 
-      ? 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-      : authHeader
+    const effectiveAuthHeader = authHeader // Usar token real do localStorage
       
-    console.log('🔍 [EXECUTAR] isDevelopment:', isDevelopment)
     console.log('🔍 [EXECUTAR] effectiveAuthHeader:', effectiveAuthHeader?.substring(0, 20) + '...')
 
     const { id } = params

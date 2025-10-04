@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, AlertCircle, XCircle, Edit, Wifi, MessageSquare, Users, Clock, Trash2, Loader2 } from 'lucide-react'
+import { CheckCircle, AlertCircle, XCircle, Edit, Wifi, MessageSquare, Users, Clock, Trash2, Loader2, RefreshCw } from 'lucide-react'
 
 interface WAHASession {
   name: string
@@ -68,6 +68,7 @@ export function ActiveConnectionsTable({
   const [authError, setAuthError] = useState(false)
   const [filas, setFilas] = useState<any[]>([])
   const [deletingSession, setDeletingSession] = useState<string | null>(null)
+  const [reconnectingSession, setReconnectingSession] = useState<string | null>(null)
 
   // Buscar filas para mapear nomes e cores
   const fetchFilas = async () => {
@@ -272,6 +273,43 @@ export function ActiveConnectionsTable({
       label: 'Desconectado',
       pill: 'border-rose-500/40 bg-rose-500/10 text-rose-400',
       dot: 'bg-rose-400'
+    }
+  }
+
+  const handleReconnect = async (connection: ActiveConnection) => {
+    if (!connection?.sessionName) {
+      alert('❌ Sessão não identificada')
+      return
+    }
+
+    try {
+      setReconnectingSession(connection.sessionName)
+      const token = localStorage.getItem('token')
+
+      // Chamar endpoint de restart da WAHA
+      const response = await fetch(`/api/connections/whatsapp/${connection.sessionName}/restart`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        alert('✅ Reconexão iniciada! Aguarde alguns segundos...')
+        // Recarregar conexões após 3 segundos
+        setTimeout(() => {
+          window.location.reload()
+        }, 3000)
+      } else {
+        const error = await response.text()
+        alert(`❌ Erro ao reconectar: ${error}`)
+      }
+    } catch (error) {
+      console.error('Erro ao reconectar:', error)
+      alert('❌ Erro ao reconectar')
+    } finally {
+      setReconnectingSession(null)
     }
   }
 
@@ -537,6 +575,25 @@ export function ActiveConnectionsTable({
                       </div>
 
                       <div className="flex items-center gap-2">
+                        <motion.button
+                          onClick={() => handleReconnect(conn)}
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
+                          disabled={reconnectingSession === conn.sessionName}
+                          className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-all ${
+                            reconnectingSession === conn.sessionName
+                              ? 'cursor-wait border-blue-400/20 bg-blue-500/20 text-blue-200'
+                              : 'border-blue-400/20 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'
+                          }`}
+                          title="Reconectar sessão WhatsApp"
+                        >
+                          {reconnectingSession === conn.sessionName ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          Reconectar
+                        </motion.button>
                         <motion.button
                           onClick={() => onEditConnection(conn)}
                           whileHover={{ scale: 1.04 }}

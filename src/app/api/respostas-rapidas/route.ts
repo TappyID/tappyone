@@ -9,19 +9,13 @@ export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     
-    // DESENVOLVIMENTO: Desabilitar autenticação temporariamente
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    
-    if (!authHeader && !isDevelopment) {
+    // ✅ SEMPRE usar o token que veio da requisição (localStorage do front)
+    if (!authHeader) {
       return NextResponse.json({ error: 'Authorization header missing' }, { status: 401 })
     }
     
-    // Token para desenvolvimento - GET (token válido do Rodrigo Admin)
-    const effectiveAuthHeader = isDevelopment 
-      ? 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-      : authHeader
+    const effectiveAuthHeader = authHeader // Usar token real do localStorage
       
-    console.log('🔍 [GET] isDevelopment:', isDevelopment)
     console.log('🔍 [GET] effectiveAuthHeader:', effectiveAuthHeader?.substring(0, 20) + '...')
 
     const url = new URL(request.url)
@@ -54,9 +48,11 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
+    console.log('✅ [RESPOSTAS-RAPIDAS] GET sucesso - Total de respostas:', Array.isArray(data) ? data.length : 'não é array')
+    console.log('📊 [RESPOSTAS-RAPIDAS] GET dados:', JSON.stringify(data, null, 2).substring(0, 500) + '...')
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching respostas rapidas:', error)
+    console.error('❌ [RESPOSTAS-RAPIDAS] Error fetching respostas rapidas:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -68,19 +64,13 @@ export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     
-    // DESENVOLVIMENTO: Desabilitar autenticação temporariamente
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    
-    if (!authHeader && !isDevelopment) {
+    // ✅ SEMPRE usar o token que veio da requisição (localStorage do front)
+    if (!authHeader) {
       return NextResponse.json({ error: 'Authorization header missing' }, { status: 401 })
     }
     
-    // Token para desenvolvimento - POST (token válido do Rodrigo Admin)
-    const effectiveAuthHeader = isDevelopment 
-      ? 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmI4ZGExZDctZDI4Zi00ZWY5LWI4YjAtZTAxZjc0NjZmNTc4IiwiZW1haWwiOiJyb2RyaWdvQGNybS50YXBweS5pZCIsInJvbGUiOiJBRE1JTiIsImlzcyI6InRhcHB5b25lLWNybSIsInN1YiI6ImZiOGRhMWQ3LWQyOGYtNGVmOS1iOGIwLWUwMWY3NDY2ZjU3OCIsImV4cCI6MTc1OTE2MzcwMSwibmJmIjoxNzU4NTU4OTAxLCJpYXQiOjE3NTg1NTg5MDF9.xY9ikMSOHMcatFdierE3-bTw-knQgSmqxASRSHUZqfw'
-      : authHeader
+    const effectiveAuthHeader = authHeader // Usar token real do localStorage
       
-    console.log('🔍 [POST] isDevelopment:', isDevelopment)
     console.log('🔍 [POST] effectiveAuthHeader:', effectiveAuthHeader?.substring(0, 20) + '...')
 
     const body = await request.json()
