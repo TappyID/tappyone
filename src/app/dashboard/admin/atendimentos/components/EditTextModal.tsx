@@ -38,6 +38,10 @@ export default function EditTextModal({
   const [text, setText] = useState(initialText)
   const [isGenerating, setIsGenerating] = useState(false)
   const [originalText] = useState(initialText)
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+  const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
+  const [selectedImageModel, setSelectedImageModel] = useState<'dall-e-2' | 'dall-e-3'>('dall-e-2') // dall-e-2 mais barato!
 
   const handleSend = () => {
     if (!text.trim()) return
@@ -90,7 +94,9 @@ export default function EditTextModal({
         body: JSON.stringify({
           prompt,
           context,
-          type
+          type,
+          voice: selectedVoice, // Voz selecionada
+          imageModel: selectedImageModel // Modelo de imagem selecionado
         })
       })
 
@@ -146,116 +152,183 @@ export default function EditTextModal({
               : 'bg-white border-gray-200'
           }`}
         >
-          {/* Header */}
-          <div className={`p-6 ${
-            actualTheme === 'dark'
-              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-              : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
+          {/* Header - Design Moderno */}
+          <div className="relative p-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.8),transparent_70%)]" />
+            </div>
+            
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                  className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center ring-2 ring-white/30 shadow-lg"
+                >
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </motion.div>
                 <div>
-                  <h2 className="text-xl font-bold">Editar Mensagem</h2>
-                  <p className="text-primary-foreground/80 text-sm">
-                    {actionTitle && `${actionTitle} • `}
-                    {contactName ? `Para: ${contactName}` : 'Nova mensagem'}
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    Editar Mensagem
+                    <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
+                  </h2>
+                  <p className="text-white/90 text-sm font-medium mt-0.5">
+                    {actionTitle && <span className="bg-white/20 px-2 py-0.5 rounded">{actionTitle}</span>}
+                    {actionTitle && contactName && ' • '}
+                    {contactName && <span>Para: <strong>{contactName}</strong></span>}
+                    {!actionTitle && !contactName && 'Nova mensagem com IA'}
                   </p>
                 </div>
               </div>
               
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
+                className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center hover:bg-white/30 transition-all ring-2 ring-white/20"
               >
-                <X className="w-4 h-4" />
-              </button>
+                <X className="w-5 h-5 text-white" />
+              </motion.button>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-4">
-            {/* AI Actions */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate('response')}
-                disabled={isGenerating}
-                className="h-8"
-              >
-                <Bot className="w-3 h-3 mr-1" />
-                Gerar com IA
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate('improve')}
-                disabled={isGenerating || !text.trim()}
-                className="h-8"
-              >
-                <Wand2 className="w-3 h-3 mr-1" />
-                Melhorar
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate('formal')}
-                disabled={isGenerating || !text.trim()}
-                className="h-8"
-              >
-                <Sparkles className="w-3 h-3 mr-1" />
-                Formal
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate('casual')}
-                disabled={isGenerating || !text.trim()}
-                className="h-8"
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Casual
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate('image')}
-                disabled={isGenerating}
-                className="h-8"
-              >
-                <Image className="w-3 h-3 mr-1" />
-                Gerar Imagem
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate('audio')}
-                disabled={isGenerating}
-                className="h-8"
-              >
-                <Volume2 className="w-3 h-3 mr-1" />
-                Gerar Áudio
-              </Button>
+          <div className="p-6 space-y-5">
+            {/* AI Actions - Design Categorizado */}
+            <div className="space-y-3">
+              {/* Seção: Texto */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Bot className="w-3.5 h-3.5" />
+                  Ajustes de Texto
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleGenerate('response')}
+                    disabled={isGenerating}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                  >
+                    <Bot className="w-4 h-4" />
+                    Gerar com IA
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleGenerate('improve')}
+                    disabled={isGenerating || !text.trim()}
+                    className="px-4 py-2 bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                  >
+                    <Wand2 className="w-4 h-4" />
+                    Melhorar
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleGenerate('formal')}
+                    disabled={isGenerating || !text.trim()}
+                    className="px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Formal
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleGenerate('casual')}
+                    disabled={isGenerating || !text.trim()}
+                    className="px-4 py-2 bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-all disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Casual
+                  </motion.button>
+                </div>
+              </div>
 
-              {text !== originalText && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  disabled={isGenerating}
-                  className="h-8 ml-auto"
-                >
-                  Resetar
-                </Button>
-              )}
+              {/* Seção: Multimídia */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Gerar Mídia (OpenAI)
+                </h3>
+                
+                {/* Configurações de Mídia */}
+                <div className="flex gap-3 pb-2">
+                  {/* Seletor de Voz */}
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Voz para Áudio:</label>
+                    <select
+                      value={selectedVoice}
+                      onChange={(e) => setSelectedVoice(e.target.value as any)}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="nova">🎤 Nova (Feminina)</option>
+                      <option value="shimmer">✨ Shimmer (Feminina)</option>
+                      <option value="alloy">🎵 Alloy (Neutra)</option>
+                      <option value="echo">🔊 Echo (Masculina)</option>
+                      <option value="fable">📖 Fable (Masculina)</option>
+                      <option value="onyx">🎙️ Onyx (Masculina)</option>
+                    </select>
+                  </div>
+                  
+                  {/* Seletor de Modelo de Imagem */}
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Modelo de Imagem:</label>
+                    <select
+                      value={selectedImageModel}
+                      onChange={(e) => setSelectedImageModel(e.target.value as any)}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-2 focus:ring-pink-500"
+                    >
+                      <option value="dall-e-2">💰 DALL-E 2 ($0.02)</option>
+                      <option value="dall-e-3">⭐ DALL-E 3 ($0.04)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleGenerate('image')}
+                    disabled={isGenerating}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                  >
+                    <Image className="w-4 h-4" />
+                    Gerar Imagem
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleGenerate('audio')}
+                    disabled={isGenerating}
+                    className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                    Gerar Áudio
+                  </motion.button>
+
+                  {text !== originalText && (
+                    <motion.button
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleReset}
+                      disabled={isGenerating}
+                      className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50 text-sm font-medium ml-auto"
+                    >
+                      Resetar
+                    </motion.button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Text Editor */}

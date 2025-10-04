@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Generate image with OpenAI DALL-E 3
-async function generateImage(prompt: string) {
+// Generate image with OpenAI DALL-E
+async function generateImage(prompt: string, model: 'dall-e-2' | 'dall-e-3' = 'dall-e-2') {
   try {
-    console.log('🎨 Gerando imagem com DALL-E 3:', prompt.substring(0, 100))
+    console.log(`🎨 Gerando imagem com ${model.toUpperCase()}:`, prompt.substring(0, 100))
+    
+    const requestBody: any = {
+      model,
+      prompt: prompt,
+      n: 1,
+      size: '1024x1024'
+    }
+    
+    // DALL-E 3 tem parâmetros extras
+    if (model === 'dall-e-3') {
+      requestBody.quality = 'standard'
+      requestBody.style = 'vivid'
+    }
     
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -11,14 +24,7 @@ async function generateImage(prompt: string) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'vivid'
-      })
+      body: JSON.stringify(requestBody)
     })
 
     if (!response.ok) {
@@ -52,20 +58,52 @@ async function generateImage(prompt: string) {
   }
 }
 
-// Generate audio (placeholder for future implementation)
-async function generateAudio(prompt: string) {
+// Generate audio with OpenAI TTS
+async function generateAudio(prompt: string, voice: string = 'nova') {
   try {
-    console.log('🎵 Simulando geração de áudio:', prompt.substring(0, 100))
+    console.log(`🎵 Gerando áudio com OpenAI TTS (voz: ${voice}):`, prompt.substring(0, 100))
     
-    // Simulate audio generation delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1', // tts-1 ou tts-1-hd (mais qualidade)
+        input: prompt,
+        voice: voice, // Voz dinâmica!
+        response_format: 'mp3',
+        speed: 1.0 // 0.25 a 4.0
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('❌ Erro do OpenAI TTS:', response.status, error)
+      return NextResponse.json({ 
+        error: 'Erro ao gerar áudio', 
+        details: error 
+      }, { status: response.status })
+    }
+
+    // Converter response para base64 para enviar ao frontend
+    const audioBuffer = await response.arrayBuffer()
+    const base64Audio = Buffer.from(audioBuffer).toString('base64')
+    const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`
+
+    console.log('✅ Áudio gerado com sucesso:', {
+      size: audioBuffer.byteLength,
+      prompt: prompt.substring(0, 50)
+    })
+
     return NextResponse.json({
       success: true,
       type: 'audio',
-      message: '🎵 Áudio gerado com sucesso! (Funcionalidade em desenvolvimento)',
-      audioUrl: 'https://example.com/generated-audio.mp3', // Placeholder
-      prompt
+      message: '🎵 Áudio gerado com sucesso!',
+      audioUrl: audioDataUrl, // Base64 data URL
+      prompt,
+      duration_estimate: Math.ceil(prompt.length / 15) // Estimativa: ~15 caracteres por segundo
     })
 
   } catch (error) {
@@ -79,7 +117,7 @@ async function generateAudio(prompt: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, context, type = 'response' } = await request.json()
+    const { prompt, context, type = 'response', voice = 'nova', imageModel = 'dall-e-2' } = await request.json()
     
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt é obrigatório' }, { status: 400 })
@@ -91,14 +129,14 @@ export async function POST(request: NextRequest) {
       hasContext: !!context
     })
 
-    // Handle image generation with OpenAI DALL-E 3
+    // Handle image generation with OpenAI DALL-E
     if (type === 'image') {
-      return await generateImage(prompt)
+      return await generateImage(prompt, imageModel)
     }
 
-    // Handle audio generation (placeholder)
+    // Handle audio generation with selected voice
     if (type === 'audio') {
-      return await generateAudio(prompt)
+      return await generateAudio(prompt, voice)
     }
 
     let systemMessage = ''

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Smile, Send, Mic, MicOff, Zap, Bot, MessageSquare, X, Reply,
   GripHorizontal, Bold, Italic, Code, Strikethrough, Quote, List,
-  ListOrdered, Type
+  ListOrdered, Type, Layers, Settings
 } from 'lucide-react'
 import { useMessagesData } from '@/hooks/useMessagesData'
 import { useChatAgente } from '@/hooks/useChatAgente'
@@ -701,133 +701,195 @@ export default function MessageInput({
             </button>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setActiveTab('whatsapp')}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'whatsapp'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-              }`}
-            >
-              WhatsApp
-            </button>
-            <button
-              onClick={() => setActiveTab('sistema')}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'sistema'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-              }`}
-            >
-              Sistema
-            </button>
-          </div>
-
-          {/* Conteúdo das Tabs */}
-          <div className="p-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-            <div className="grid grid-cols-4 gap-3">
-              {activeTab === 'whatsapp' ? (
-                <>
-                <MenuButton onClick={() => {
-                  setShowSpecialModal('menu');
-                  setShowAttachMenu(false)
-                }} />
-                <ImageButton onClick={() => {
-                  setMediaSendType('image');
-                  setShowMediaSendModal(true);
-                  setShowAttachMenu(false);
-                }} />
-                <EnqueteButton onClick={() => {
-                  setShowSpecialModal('poll');
-                  setShowAttachMenu(false)
-                }} />
-                <LocalizacaoButton onClick={() => {
-                  setShowSpecialModal('location');
-                  setShowAttachMenu(false)
-                }} />
-                <ContatoButton onClick={() => {
-                  setShowSpecialModal('contact');
-                  setShowAttachMenu(false)
-                }} />
-                <AnexoWhatsappButton onClick={() => handleFileSelect('document')} />
-                <VideoButton onClick={() => handleFileSelect('video')} />
-                <AudioWhatsappButton onClick={() => handleFileSelect('document')} />
-                <EventsButton onClick={() => {
-                  setShowSpecialModal('events');
-                  setShowAttachMenu(false)
-                }} />
-              </>
-            ) : (
-              <>
-                <AgendamentoButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('agendamento');
-                    setShowAttachMenu(false)
-                  }}
-                />
-                <OrcamentoButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('orcamento');
-                    setShowAttachMenu(false)
-                  }}
-                />
-                <AssinaturaButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('assinatura')
-                    setShowAttachMenu(false)
-                  }}
-                />
-                <AnotacoesButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('anotacoes')
-                    setShowAttachMenu(false)
-                  }}
-                />
-                <TagButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('tags');
-                  setShowAttachMenu(false)
-                }} />
-                <TicketButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('ticket');
-                    setShowAttachMenu(false)
-                  }}
-                />
-                <FilaButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('fila');
-                    setShowAttachMenu(false)
-                  }}
-                />
-                <AtendenteButton
-                  contatoId={contatoId}
-                  onClick={() => {
-
-                    setShowActionSheet('atendente');
-                    setShowAttachMenu(false)
-                  }}
-                />
-              </>
-            )}
+          {/* Segmented Control - Professional Design */}
+          <div className="relative mb-5">
+            <div className="inline-flex w-full p-1 bg-gray-100 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl shadow-inner">
+              {/* Sliding Background */}
+              <motion.div
+                layoutId="activeTabBg"
+                className="absolute h-[calc(100%-8px)] bg-white dark:bg-gray-700 rounded-lg shadow-md"
+                initial={false}
+                animate={{
+                  x: activeTab === 'whatsapp' ? 4 : 'calc(50% + 2px)',
+                  width: 'calc(50% - 6px)'
+                }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              />
+              
+              {/* WhatsApp Tab */}
+              <button
+                onClick={() => setActiveTab('whatsapp')}
+                className="relative flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-semibold rounded-lg transition-colors z-10"
+              >
+                <MessageSquare className={`w-4 h-4 transition-colors ${
+                  activeTab === 'whatsapp' 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`} />
+                <span className={`transition-colors ${
+                  activeTab === 'whatsapp'
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}>
+                  WhatsApp
+                </span>
+              </button>
+              
+              {/* Sistema Tab */}
+              <button
+                onClick={() => setActiveTab('sistema')}
+                className="relative flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-semibold rounded-lg transition-colors z-10"
+              >
+                <Settings className={`w-4 h-4 transition-colors ${
+                  activeTab === 'sistema' 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`} />
+                <span className={`transition-colors ${
+                  activeTab === 'sistema'
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}>
+                  Sistema
+                </span>
+              </button>
             </div>
           </div>
+
+          {/* Conteúdo das Tabs com Animação */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="p-5 bg-gradient-to-br from-white/80 to-white/40 dark:from-gray-800/80 dark:to-gray-800/40 backdrop-blur-md rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg space-y-5"
+            >
+              {activeTab === 'whatsapp' ? (
+                <>
+                  {/* Seção: Mídia & Conteúdo */}
+                  <div className="space-y-3 p-3.5 bg-white/60 dark:bg-gray-900/40 rounded-xl border border-emerald-200/50 dark:border-emerald-700/30 shadow-sm">
+                    <div className="flex items-center gap-2.5 px-0.5">
+                      <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                        <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                        Mídia & Conteúdo
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      <ImageButton onClick={() => {
+                        setMediaSendType('image');
+                        setShowMediaSendModal(true);
+                        setShowAttachMenu(false);
+                      }} />
+                      <VideoButton onClick={() => handleFileSelect('video')} />
+                      <AudioWhatsappButton onClick={() => handleFileSelect('document')} />
+                      <AnexoWhatsappButton onClick={() => handleFileSelect('document')} />
+                      <MenuButton onClick={() => {
+                        setShowSpecialModal('menu');
+                        setShowAttachMenu(false)
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* Seção: Interação */}
+                  <div className="space-y-3 p-3.5 bg-white/60 dark:bg-gray-900/40 rounded-xl border border-blue-200/50 dark:border-blue-700/30 shadow-sm">
+                    <div className="flex items-center gap-2.5 px-0.5">
+                      <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                        Interação
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      <EnqueteButton onClick={() => {
+                        setShowSpecialModal('poll');
+                        setShowAttachMenu(false)
+                      }} />
+                      <LocalizacaoButton onClick={() => {
+                        setShowSpecialModal('location');
+                        setShowAttachMenu(false)
+                      }} />
+                      <ContatoButton onClick={() => {
+                        setShowSpecialModal('contact');
+                        setShowAttachMenu(false)
+                      }} />
+                      <EventsButton onClick={() => {
+                        setShowSpecialModal('events');
+                        setShowAttachMenu(false)
+                      }} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Seção: Gestão Comercial */}
+                  <div className="space-y-3 p-3.5 bg-white/60 dark:bg-gray-900/40 rounded-xl border border-amber-200/50 dark:border-amber-700/30 shadow-sm">
+                    <div className="flex items-center gap-2.5 px-0.5">
+                      <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                        <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                        Gestão Comercial
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      <AgendamentoButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('agendamento');
+                        setShowAttachMenu(false)
+                      }} />
+                      <OrcamentoButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('orcamento');
+                        setShowAttachMenu(false)
+                      }} />
+                      <AssinaturaButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('assinatura')
+                        setShowAttachMenu(false)
+                      }} />
+                      <TicketButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('ticket');
+                        setShowAttachMenu(false)
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* Seção: Organização */}
+                  <div className="space-y-3 p-3.5 bg-white/60 dark:bg-gray-900/40 rounded-xl border border-purple-200/50 dark:border-purple-700/30 shadow-sm">
+                    <div className="flex items-center gap-2.5 px-0.5">
+                      <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <Settings className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                        Organização
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      <AnotacoesButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('anotacoes')
+                        setShowAttachMenu(false)
+                      }} />
+                      <TagButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('tags');
+                        setShowAttachMenu(false)
+                      }} />
+                      <FilaButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('fila');
+                        setShowAttachMenu(false)
+                      }} />
+                      <AtendenteButton contatoId={contatoId} onClick={() => {
+                        setShowActionSheet('atendente');
+                        setShowAttachMenu(false)
+                      }} />
+                    </div>
+                  </div>
+                </>
+              )}
+
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       )}
 

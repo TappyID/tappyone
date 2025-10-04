@@ -79,6 +79,49 @@ const mockChats = [
 ];
 
 function AtendimentoPage() {
+  // 🎯 Estado para redimensionamento da sidebar
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('atendimento-sidebar-width')
+      return saved ? parseInt(saved) : 512 // 32rem = 512px
+    }
+    return 512
+  })
+  const [isResizing, setIsResizing] = useState(false)
+
+  // 🎯 Handlers de redimensionamento
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      
+      // Calcular nova largura (mín: 280px, máx: 800px)
+      const newWidth = Math.min(Math.max(e.clientX, 280), 800)
+      setSidebarWidth(newWidth)
+    }
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false)
+        // Salvar no localStorage
+        localStorage.setItem('atendimento-sidebar-width', sidebarWidth.toString())
+        document.body.style.cursor = 'default'
+        document.body.style.userSelect = 'auto'
+      }
+    }
+
+    if (isResizing) {
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing, sidebarWidth])
+
   // Estados para busca e filtros
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("todas");
@@ -1735,7 +1778,10 @@ function AtendimentoPage() {
       {/* Container principal */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Esquerda - Filtros + Chats */}
-        <div className="w-[32rem] flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+        <div 
+          className="flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex-shrink-0"
+          style={{ width: `${sidebarWidth}px` }}
+        >
           {/* Filtros */}
           <div className="flex-shrink-0">
             <SideFilter
@@ -1884,6 +1930,30 @@ function AtendimentoPage() {
               onToggleHidden={toggleHiddenChat}
               onDelete={deleteChat}
             />
+          </div>
+        </div>
+
+        {/* 🎯 Handle de Redimensionamento - Ultra Fino */}
+        <div
+          className={`w-px hover:w-1 transition-all cursor-ew-resize bg-gray-300/50 dark:bg-gray-600/50 hover:bg-blue-500 dark:hover:bg-blue-400 relative group ${isResizing ? 'bg-blue-500 dark:bg-blue-400 w-1' : ''}`}
+          onMouseDown={() => setIsResizing(true)}
+          onDoubleClick={() => {
+            setSidebarWidth(512)
+            localStorage.setItem('atendimento-sidebar-width', '512')
+          }}
+          title="Arraste para redimensionar (duplo clique para resetar)"
+        >
+          {/* Área de hover ampliada invisível para facilitar o grab */}
+          <div className="absolute inset-y-0 -left-3 -right-3 cursor-ew-resize" />
+          
+          {/* Indicador visual minimalista ao fazer hover */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="w-6 h-10 bg-blue-500/10 dark:bg-blue-400/10 rounded-md backdrop-blur-sm border border-blue-500/30 dark:border-blue-400/30 flex items-center justify-center shadow-lg">
+              <div className="flex gap-0.5">
+                <div className="w-px h-3 bg-blue-600 dark:bg-blue-400" />
+                <div className="w-px h-3 bg-blue-600 dark:bg-blue-400" />
+              </div>
+            </div>
           </div>
         </div>
 
