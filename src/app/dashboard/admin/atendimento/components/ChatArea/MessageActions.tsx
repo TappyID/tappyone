@@ -11,7 +11,11 @@ import {
   Bot,
   X,
   Mic,
-  MicOff
+  MicOff,
+  Volume2,
+  Sparkles,
+  Play,
+  Pause
 } from 'lucide-react'
 
 interface MessageActionsProps {
@@ -46,8 +50,12 @@ export default function MessageActions({
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null)
+  const [detectedLanguage, setDetectedLanguage] = useState<string>('pt')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Função melhorada para detectar idioma
   const detectLanguage = (text: string) => {
@@ -105,6 +113,9 @@ export default function MessageActions({
 
       // Usar nova função de detecção de idioma
       const sourceLanguage = detectLanguage(messageContent)
+
+      // Salvar idioma detectado para usar na geração de áudio
+      setDetectedLanguage(sourceLanguage)
 
       // Se já está em português, não precisa traduzir
       if (sourceLanguage === 'pt') {
@@ -491,7 +502,7 @@ export default function MessageActions({
       {/* Modal de Resposta com Tradução */}
       <AnimatePresence>
         {showTranslateReply && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -501,18 +512,29 @@ export default function MessageActions({
               <div className="p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  🌍 Responder com Tradução
-                </h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <Languages className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Responder com Tradução
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Idioma detectado: {detectedLanguage === 'es' ? '🇪🇸 Espanhol' : detectedLanguage === 'en' ? '🇺🇸 Inglês' : '🇧🇷 Português'}
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => {
                     setShowTranslateReply(false)
                     setReplyText('')
                     setTranslatedMessage('')
+                    setGeneratedAudioUrl(null)
                   }}
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                  className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-gray-500 hover:text-red-500" />
                 </button>
               </div>
 
@@ -552,6 +574,55 @@ export default function MessageActions({
 
                   {/* Botões de Ação */}
                   <div className="absolute bottom-3 right-3 flex gap-2">
+                    {/* Botão de Gerar Áudio com IA */}
+                    <button
+                      onClick={async () => {
+                        if (!replyText.trim()) {
+                          alert('Digite um texto primeiro')
+                          return
+                        }
+                        setIsGeneratingAudio(true)
+                        try {
+                          const response = await fetch('/api/ai/generate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              prompt: replyText,
+                              type: 'audio',
+                              voice: 'nova',
+                              targetLanguage: detectedLanguage
+                            })
+                          })
+
+                          if (response.ok) {
+                            const data = await response.json()
+                            if (data.audioUrl) {
+                              setGeneratedAudioUrl(data.audioUrl)
+                            }
+                          } else {
+                            alert('Erro ao gerar áudio')
+                          }
+                        } catch (error) {
+                          console.error('Erro:', error)
+                          alert('Erro ao gerar áudio com IA')
+                        } finally {
+                          setIsGeneratingAudio(false)
+                        }
+                      }}
+                      disabled={isGeneratingAudio || isTranscribing || isRecording || !replyText.trim()}
+                      className={`p-2 rounded-full transition-all ${
+                        isGeneratingAudio
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title="Gerar áudio com IA no idioma detectado"
+                    >
+                      {isGeneratingAudio ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Volume2 className="w-4 h-4" />
+                      )}
+                    </button>
                     {/* Botão de IA */}
                     <button
                       onClick={handleGenerateAIResponse}
@@ -604,8 +675,30 @@ export default function MessageActions({
                   </div>
                 </div>
 
+                {/* Preview do Áudio Gerado */}
+                {generatedAudioUrl && (
+                  <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                        <Volume2 className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-green-700 dark:text-green-300">Áudio gerado em {detectedLanguage === 'es' ? 'Espanhol' : detectedLanguage === 'en' ? 'Inglês' : 'Português'}</p>
+                        <audio ref={audioRef} src={generatedAudioUrl} controls className="w-full mt-1 h-8" />
+                      </div>
+                      <button
+                        onClick={() => setGeneratedAudioUrl(null)}
+                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded"
+                        title="Remover áudio"
+                      >
+                        <X className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Indicador de status */}
-                {(isRecording || isTranscribing || isGeneratingAI) && (
+                {(isRecording || isTranscribing || isGeneratingAI || isGeneratingAudio) && (
                   <div className="mt-2 flex items-center gap-2 text-sm">
                     {isRecording && (
                       <span className="text-red-500 flex items-center gap-1">
@@ -623,6 +716,12 @@ export default function MessageActions({
                       <span className="text-blue-500 flex items-center gap-1">
                         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                         Gerando resposta com IA...
+                      </span>
+                    )}
+                    {isGeneratingAudio && (
+                      <span className="text-green-500 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        Gerando áudio com IA...
                       </span>
                     )}
                   </div>

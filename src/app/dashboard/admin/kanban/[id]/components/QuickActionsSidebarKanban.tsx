@@ -42,9 +42,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTheme } from '@/contexts/ThemeContext'
-import CriarRespostaModal from '../../respostas-rapidas/components/CriarRespostaModal'
-import CriarFluxoIAModal from './CriarFluxoIAModal'
-import EditTextModal from './EditTextModal'
+import CriarRespostaModal from '../../../respostas-rapidas/components/CriarRespostaModal'
+import CriarFluxoIAModal from '../../../atendimentos/components/CriarFluxoIAModal'
+import EditTextModal from '../../../atendimentos/components/EditTextModal'
 import { useRespostasRapidas } from '@/hooks/useRespostasRapidas'
 import { AudioRecorder } from '@/components/shared/AudioRecorder'
 import MediaUpload from '@/components/shared/MediaUpload'
@@ -643,12 +643,11 @@ export default function QuickActionsSidebar({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -520, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={`fixed top-0 left-0 h-full w-[520px] shadow-2xl border-r z-50 pt-20 backdrop-blur-xl ${
+          className={`w-[520px] h-full shadow-2xl border-r overflow-y-auto rounded-l-2xl ${
             actualTheme === 'dark'
-              ? 'bg-gradient-to-br from-gray-950/95 via-gray-900/95 to-gray-950/95 border-purple-500/20'
-              : 'bg-gradient-to-br from-white/95 via-purple-50/40 to-white/95 border-purple-200/50'
-          } ${isOpen ? 'translate-x-0' : '-translate-x-full'
-      } z-50 pt-20`}
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white border-gray-200'
+          }`}
         >
           {/* Header */}
           <div className="p-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10 backdrop-blur-sm">

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import './styles.css' // Importar estilos customizados
-import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Ticket, UserCircle, StickyNote, Edit3 } from 'lucide-react'
+import { X, Calendar, DollarSign, Tag, Users, Layers, Trello, FileText, Bot, Ticket, UserCircle, StickyNote, Edit3, Zap } from 'lucide-react'
 import ChatHeader from '../../../atendimento/components/TopChatArea/ChatHeader'
 import ChatArea from '../../../atendimento/components/ChatArea'
 import MessageInput from '../../../atendimento/components/FooterChatArea/MessageInput'
 import EditTextModal from '../../../atendimentos/components/EditTextModal'
-import QuickActionsSidebar from '../../../atendimentos/components/QuickActionsSidebar'
+import QuickActionsSidebarKanban from './QuickActionsSidebarKanban'
 import { useKanbanIndicators } from '../hooks/useKanbanIndicators'
 import { useChatPicture } from '@/hooks/useChatPicture'
 import { useAuth } from '@/hooks/useAuth'
@@ -693,7 +693,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   
   // Estados para os modais - IGUAL AO ATENDIMENTO
   const [showEditTextModal, setShowEditTextModal] = useState(false)
-  const [showQuickActionsSidebar, setShowQuickActionsSidebar] = useState(false)
+  const [showQuickActionsSidebarKanban, setShowQuickActionsSidebarKanban] = useState(false)
   const [showEmojisModal, setShowEmojisModal] = useState(false)
   const [showProfileSidebar, setShowProfileSidebar] = useState(false)
   const [showLeadEditSidebar, setShowLeadEditSidebar] = useState(false)
@@ -945,13 +945,37 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className={`flex h-[80vh] rounded-16xl shadow-1xl overflow-hidden transition-all duration-300 ${
-        showProfileSidebar ? 'w-full max-w-7xl' : 'w-full max-w-4xl'
+        showProfileSidebar || showQuickActionsSidebarKanban ? 'w-full max-w-7xl' : 'w-full max-w-4xl'
       }`}>
+        {/* QuickActionsSidebarKanban - Esquerda */}
+        {showQuickActionsSidebarKanban && (
+          <QuickActionsSidebarKanban
+            isOpen={showQuickActionsSidebarKanban}
+            onClose={() => setShowQuickActionsSidebarKanban(false)}
+            activeChatId={chatId}
+            selectedContact={{ name: contactName, number: contactNumber }}
+            onSelectAction={(action) => {
+              console.log('⚡ Ação selecionada:', action)
+              setShowQuickActionsSidebarKanban(false)
+            }}
+          />
+        )}
+
         {/* Modal Principal do Chat */}
         <div className={`flex flex-col overflow-hidden transition-all duration-300 ${
-          showProfileSidebar ? 'w-2/3' : 'w-full'
+          showProfileSidebar && showQuickActionsSidebarKanban
+            ? 'w-1/2'
+            : showProfileSidebar || showQuickActionsSidebarKanban
+              ? 'w-2/3'
+              : 'w-full'
         } ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'} ${
-          showProfileSidebar ? 'rounded-l-2xl rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
+          showQuickActionsSidebarKanban && showProfileSidebar
+            ? ''
+            : showQuickActionsSidebarKanban
+              ? 'rounded-r-2xl rounded-tr-2xl rounded-br-2xl'
+              : showProfileSidebar
+                ? 'rounded-l-2xl rounded-tl-2xl rounded-bl-2xl'
+                : 'rounded-2xl'
         }`}>
         
         {/* Header do Modal */}
@@ -986,7 +1010,24 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
           
           {/* Ações do Kanban */}
           <div className="flex items-center gap-2">
-            {/* Perfil do Contato */}
+            {/* Quick Actions - Esquerda */}
+            <button
+              onClick={() => setShowQuickActionsSidebarKanban(true)}
+              title="Ações Rápidas"
+              className={`p-2 rounded-lg transition-colors ${
+                showQuickActionsSidebarKanban
+                  ? theme === 'dark'
+                    ? 'bg-purple-500/20 text-purple-400'
+                    : 'bg-purple-100 text-purple-700'
+                  : theme === 'dark' 
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Zap className="w-4 h-4" />
+            </button>
+
+            {/* Perfil do Contato - Direita */}
             <button
               onClick={() => setShowProfileSidebar(true)}
               title="Ver Perfil"
@@ -1420,7 +1461,7 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
             }}
             onRespostaRapidaClick={() => {
               console.log('⚡ Abrindo respostas rápidas')
-              setShowQuickActionsSidebar(true)
+              setShowQuickActionsSidebarKanban(true)
             }}
             onIAClick={() => {
               console.log('🤖 Abrindo resposta com I.A')
@@ -1468,16 +1509,6 @@ export default function ChatModalKanban({ isOpen, onClose, card, theme, columnCo
           />
         )}
 
-        <QuickActionsSidebar
-          isOpen={showQuickActionsSidebar}
-          onClose={() => setShowQuickActionsSidebar(false)}
-          activeChatId={chatId}
-          onSelectAction={(action) => {
-            // Executar ação rápida selecionada
-            console.log('⚡ Ação rápida:', action)
-            setShowQuickActionsSidebar(false)
-          }}
-        />
 
         {showEmojisModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
