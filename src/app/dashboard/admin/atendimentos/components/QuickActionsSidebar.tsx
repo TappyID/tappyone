@@ -273,27 +273,56 @@ export default function QuickActionsSidebar({
       console.log('=== MODO AUTOMÁTICO ===')
       console.log('Executando resposta automaticamente...')
       
+      // 🔥 CORRIGIDO: Usar editingActions do estado ao invés de action.editedActions
+      const acoesEditadas = editingActions[action.id]
+      
       // Se há ações editadas, usar o fluxo customizado
-      if (action.editedActions && action.editedActions.length > 0) {
-        console.log('🎯 Usando ações editadas no modo automático:', action.editedActions)
+      if (acoesEditadas && acoesEditadas.length > 0) {
+        console.log('🎯 Usando ações editadas no modo automático:', acoesEditadas)
+        console.log('📊 Total de ações editadas:', acoesEditadas.length)
+        
+        // 🔍 LOG DETALHADO de cada ação
+        acoesEditadas.forEach((acao, i) => {
+          console.log(`\n🔍 Ação ${i+1}:`)
+          console.log(`  - ID: ${acao.id}`)
+          console.log(`  - Tipo: ${acao.tipo}`)
+          console.log(`  - Ativo: ${acao.ativo}`)
+          console.log(`  - Conteúdo tipo: ${typeof acao.conteudo}`)
+          console.log(`  - Conteúdo:`, acao.conteudo)
+          
+          if (acao.tipo === 'imagem') {
+            console.log(`  - URL imagem: ${acao.conteudo?.url || 'VAZIO'}`)
+            console.log(`  - Caption: ${acao.conteudo?.caption || 'VAZIO'}`)
+          }
+          if (acao.tipo === 'audio') {
+            console.log(`  - URL áudio: ${acao.conteudo?.url || 'VAZIO'}`)
+          }
+        })
+        
         try {
+          const payload = {
+            chat_id: chatId,
+            acoes_customizadas: acoesEditadas
+          }
+          
+          console.log('\n📤 Payload completo sendo enviado:')
+          console.log(JSON.stringify(payload, null, 2))
+          
           const response = await fetch(`/api/respostas-rapidas/${action.id}/executar`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
-            body: JSON.stringify({
-              chat_id: chatId,
-              acoes_customizadas: action.editedActions
-            })
+            body: JSON.stringify(payload)
           })
           
           if (response.ok) {
             console.log('✅ Resposta rápida com ações editadas executada!')
             alert('✅ Resposta com ações editadas enviada!')
           } else {
-            console.error('❌ Erro:', await response.text())
+            const errorText = await response.text()
+            console.error('❌ Erro:', errorText)
             alert('❌ Erro ao enviar resposta editada')
           }
         } catch (error) {
@@ -504,9 +533,31 @@ export default function QuickActionsSidebar({
         // Inicializar ações editadas
         const action = quickActions.find(a => a.id === actionId)
         if (action?.originalData?.acoes) {
+          // 🔥 GARANTIR que o conteúdo seja deserializado
+          const acoesComConteudoDeserializado = action.originalData.acoes.map(acao => {
+            let conteudo = acao.conteudo
+            
+            // Se conteúdo for string JSON, fazer parse
+            if (typeof conteudo === 'string') {
+              try {
+                conteudo = JSON.parse(conteudo)
+              } catch (e) {
+                console.error('Erro ao fazer parse do conteúdo:', e)
+                conteudo = {}
+              }
+            }
+            
+            return {
+              ...acao,
+              conteudo: conteudo || {}
+            }
+          })
+          
+          console.log(`🔄 Ações carregadas para edição (${actionId}):`, acoesComConteudoDeserializado)
+          
           setEditingActions(prev => ({
             ...prev,
-            [actionId]: [...action.originalData.acoes]
+            [actionId]: acoesComConteudoDeserializado
           }))
         }
       }
