@@ -16,7 +16,7 @@ const nextConfig = {
   reactStrictMode: true,
   // 🎯 OTIMIZAÇÕES DE PERFORMANCE
   experimental: {
-    optimizeCss: true, // Otimizar CSS
+    // optimizeCss: true, // DESABILITADO - causando erro com critters
     optimizePackageImports: ['lucide-react', 'react-icons', 'framer-motion'], // Tree-shaking agressivo
     // turbotrace - analisa imports mais rápido
   },
