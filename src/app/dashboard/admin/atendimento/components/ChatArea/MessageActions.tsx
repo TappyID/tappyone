@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
 import {
   MoreHorizontal,
   Reply,
@@ -60,6 +61,64 @@ export default function MessageActions({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+
+  const [isMounted, setIsMounted] = useState(() => typeof window !== 'undefined')
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  const updateMenuPosition = useCallback(() => {
+    if (typeof window === 'undefined' || !triggerRef.current) return
+
+    const rect = triggerRef.current.getBoundingClientRect()
+    const spacing = 8
+    const menuWidth = 192 // w-48
+    const estimatedHeight = 260
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    let top = rect.bottom + spacing
+    let left = isFromUser ? rect.right - menuWidth : rect.left
+
+    left = Math.min(Math.max(left, 16), viewportWidth - menuWidth - 16)
+
+    if (top + estimatedHeight > viewportHeight - 16) {
+      top = Math.max(16, rect.top - estimatedHeight - spacing)
+    }
+
+    setMenuCoords({ top, left })
+  }, [isFromUser])
+
+  useEffect(() => {
+    if (!showMenu) {
+      setMenuCoords(null)
+      return
+    }
+
+    updateMenuPosition()
+
+    const handleWindowChange = () => updateMenuPosition()
+    window.addEventListener('resize', handleWindowChange)
+    window.addEventListener('scroll', handleWindowChange, true)
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMenu(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange)
+      window.removeEventListener('scroll', handleWindowChange, true)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showMenu, updateMenuPosition])
 
   // Função melhorada para detectar idioma
   const detectLanguage = (text: string) => {
@@ -438,45 +497,60 @@ export default function MessageActions({
     }
   ]
 
+  const menuPortal = isMounted
+    ? createPortal(
+        <AnimatePresence>
+          {showMenu && menuCoords && (
+            <>
+              <motion.div
+                key="menu-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] bg-transparent"
+                onClick={() => setShowMenu(false)}
+              />
+              <motion.div
+                key="menu-content"
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="fixed z-[210] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2"
+                style={{ top: menuCoords.top, left: menuCoords.left }}
+              >
+                {menuActions.map((action) => {
+                  const Icon = action.icon
+                  return (
+                    <button
+                      key={action.id}
+                      onClick={action.onClick}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm"
+                    >
+                      <Icon className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700 dark:text-gray-200">{action.label}</span>
+                    </button>
+                  )
+                })}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )
+    : null
+
   return (
     <div className="relative">
       {/* Botão 3 pontinhos */}
       <button
-        onClick={() => setShowMenu(!showMenu)}
+        ref={triggerRef}
+        onClick={() => setShowMenu(prev => !prev)}
         className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ${
           showMenu ? 'opacity-100' : ''
         }`}
       >
         <MoreHorizontal className="w-4 h-4 text-gray-500" />
       </button>
-
-      {/* Menu de ações */}
-      <AnimatePresence>
-        {showMenu && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className={`absolute z-50 ${
-              isFromUser ? 'right-0' : 'left-0'
-            } mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2`}
-          >
-            {menuActions.map((action) => {
-              const Icon = action.icon
-              return (
-                <button
-                  key={action.id}
-                  onClick={action.onClick}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm"
-                >
-                  <Icon className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-700 dark:text-gray-200">{action.label}</span>
-                </button>
-              )
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Menu de reações */}
       <AnimatePresence>
@@ -485,7 +559,7 @@ export default function MessageActions({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`absolute z-50 ${
+            className={`absolute z-[80] ${
               isFromUser ? 'right-0' : 'left-0'
             } mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3`}
           >
@@ -518,7 +592,7 @@ export default function MessageActions({
       {/* Modal de Resposta com Tradução */}
       <AnimatePresence>
         {showTranslateReply && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -792,15 +866,13 @@ export default function MessageActions({
       </AnimatePresence>
 
       {/* Overlay para fechar menus */}
-      {(showMenu || showReactions) && (
+      {showReactions && (
         <div
-          className="fixed inset-0 z-40"
-          onClick={() => {
-            setShowMenu(false)
-            setShowReactions(false)
-          }}
+          className="fixed inset-0 z-[70]"
+          onClick={() => setShowReactions(false)}
         />
       )}
+      {menuPortal}
     </div>
   )
 }

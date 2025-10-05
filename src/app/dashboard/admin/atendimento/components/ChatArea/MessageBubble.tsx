@@ -465,7 +465,11 @@ const MessageBubble = React.forwardRef<HTMLDivElement, MessageBubbleProps>(({
       </div>
 
       {/* Menu de ações ao lado direito */}
-      <div className={`self-start ${isFromUser ? 'order-first mr-1' : 'ml-1'}`}>
+      <div
+        className={`self-start ${
+          isFromUser ? 'order-first mr-1' : 'ml-1'
+        } relative z-[60]`}
+      >
         <MessageActions
           messageId={message.id}
           messageContent={message.content}
