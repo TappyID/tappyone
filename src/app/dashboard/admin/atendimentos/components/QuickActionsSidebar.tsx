@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import ScheduleRespostaModal from './modals/ScheduleRespostaModal'
 import {
   Search,
   Filter,
@@ -164,6 +165,7 @@ export default function QuickActionsSidebar({
   const [selectedActionToSchedule, setSelectedActionToSchedule] = useState<QuickAction | null>(null)
   const [showTriggerModal, setShowTriggerModal] = useState(false)
   const [selectedActionForTrigger, setSelectedActionForTrigger] = useState<QuickAction | null>(null)
+  const [agendamentos, setAgendamentos] = useState<Record<string, any>>({})
   const [textareaHeights, setTextareaHeights] = useState<{[key: string]: number}>({}) // Controla altura das textareas
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({}) // Controla loading da IA
   const [editingActions, setEditingActions] = useState<Record<string, any[]>>({}) // Armazena ações em edição por action.id
@@ -174,6 +176,28 @@ export default function QuickActionsSidebar({
     if (isOpen) {
       fetchRespostas().catch(error => console.error('Erro ao carregar respostas rápidas:', error))
       fetchCategorias().catch(error => console.error('Erro ao carregar categorias:', error))
+      
+      // Buscar agendamentos
+      const fetchAgendamentos = async () => {
+        try {
+          const token = localStorage.getItem('token')
+          const response = await fetch('/api/respostas-rapidas/agendamentos', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            // Mapear por respostaRapidaId
+            const mapped = data.reduce((acc: any, ag: any) => {
+              acc[ag.respostaRapidaId] = ag
+              return acc
+            }, {})
+            setAgendamentos(mapped)
+          }
+        } catch (error) {
+          console.error('Erro ao buscar agendamentos:', error)
+        }
+      }
+      fetchAgendamentos()
     }
   }, [isOpen, fetchRespostas, fetchCategorias])
   
@@ -385,8 +409,18 @@ export default function QuickActionsSidebar({
     try {
       console.log('📅 Confirmando agendamento:', data)
       
-      // Combinar data e hora
-      const dateTime = new Date(`${data.date}T${data.time}`)
+      // Combinar data e hora (adicionar :00 se necessário)
+      const timeWithSeconds = data.time.includes(':') && data.time.split(':').length === 2 
+        ? `${data.time}:00` 
+        : data.time
+      const dateTime = new Date(`${data.date}T${timeWithSeconds}`)
+      
+      // Validar se a data é no futuro
+      if (dateTime <= new Date()) {
+        alert('❌ A data e hora devem ser no futuro!')
+        return
+      }
+      
       const token = localStorage.getItem('token')
       
       // Criar agendamento via API
@@ -406,11 +440,20 @@ export default function QuickActionsSidebar({
       if (response.ok) {
         const result = await response.json()
         console.log('✅ Agendamento criado:', result)
+        
+        // Atualizar lista de agendamentos
+        setAgendamentos(prev => ({
+          ...prev,
+          [selectedActionToSchedule.id]: result
+        }))
+        
         alert(`📅 Resposta "${selectedActionToSchedule.title}" agendada para:\n🗓️ ${dateTime.toLocaleString()}\n💬 Chat: ${data.chatId}`)
         setShowScheduleModal(false)
         setSelectedActionToSchedule(null)
       } else {
-        throw new Error('Erro na API de agendamento')
+        const errorData = await response.json()
+        console.error('❌ Erro do backend:', errorData)
+        throw new Error(errorData.error || 'Erro na API de agendamento')
       }
       
     } catch (error) {
@@ -817,6 +860,35 @@ export default function QuickActionsSidebar({
                                         <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400">Pausada</span>
                                       </div>
                                     )}
+                                    {agendamentos[action.id] && (() => {
+                                      const ag = agendamentos[action.id]
+                                      const dataAgendamento = ag.proximaExecucao || ag.dataAgendamento || ag.proxima_execucao
+                                      
+                                      if (!dataAgendamento) {
+                                        console.warn('⚠️ Agendamento sem data:', ag)
+                                        return null
+                                      }
+                                      
+                                      const date = new Date(dataAgendamento)
+                                      if (isNaN(date.getTime())) {
+                                        console.error('❌ Data inválida:', dataAgendamento, ag)
+                                        return null
+                                      }
+                                      
+                                      return (
+                                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+                                          <Calendar className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                          <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                                            {date.toLocaleString('pt-BR', { 
+                                              day: '2-digit', 
+                                              month: '2-digit', 
+                                              hour: '2-digit', 
+                                              minute: '2-digit' 
+                                            })}
+                                          </span>
+                                        </div>
+                                      )
+                                    })()}
                                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20">
                                       <Star className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                                       <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{action.usageCount}</span>
@@ -2206,47 +2278,17 @@ export default function QuickActionsSidebar({
             </div>
           )}
 
-          {/* Modal de Agendamento */}
-          {showScheduleModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-background rounded-xl p-6 w-96 mx-4">
-                <h3 className="font-bold mb-4">📅 Agendar: {selectedActionToSchedule?.title}</h3>
-                <form onSubmit={(e) => {
-                  e.preventDefault()
-                  const form = new FormData(e.target as HTMLFormElement)
-                  handleConfirmSchedule({
-                    chatId: activeChatId || form.get('chatId') as string,
-                    date: form.get('date') as string,
-                    time: form.get('time') as string,
-                  })
-                }} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Chat</label>
-                    <Input 
-                      name="chatId" 
-                      value={activeChatId || ''}
-                      placeholder="Chat ID (ex: 5519999999999@c.us)" 
-                      required 
-                      disabled={!!activeChatId}
-                      className={activeChatId ? 'bg-gray-100 dark:bg-gray-800' : ''}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Data</label>
-                    <Input name="date" type="date" required min={new Date().toISOString().split('T')[0]} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Horário</label>
-                    <Input name="time" type="time" required />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => setShowScheduleModal(false)} className="flex-1">Cancelar</Button>
-                    <Button type="submit" className="flex-1">Agendar</Button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+          {/* Modal de Agendamento Moderno */}
+          <ScheduleRespostaModal
+            isOpen={showScheduleModal}
+            onClose={() => {
+              setShowScheduleModal(false)
+              setSelectedActionToSchedule(null)
+            }}
+            respostaTitulo={selectedActionToSchedule?.title || ''}
+            chatId={activeChatId}
+            onConfirm={handleConfirmSchedule}
+          />
         </motion.div>
       )}
     </AnimatePresence>
