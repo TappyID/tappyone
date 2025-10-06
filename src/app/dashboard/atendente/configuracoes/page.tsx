@@ -58,7 +58,7 @@ const configSections: ConfigSection[] = [
   {
     id: 'geral',
     title: 'Configurações Gerais',
-    description: 'Configurações básicas da plataforma e empresa',
+    description: 'Suas informações pessoais e preferências',
     icon: Settings,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
@@ -67,86 +67,92 @@ const configSections: ConfigSection[] = [
   {
     id: 'tema',
     title: 'Tema e Aparência',
-    description: 'Cores, fontes, logos e personalização visual',
+    description: 'Cores, fontes e personalização visual',
     icon: Palette,
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
     component: TemaSection,
-    badge: 'Popular'
+    badge: 'Em breve'
   },
   {
     id: 'notificacoes',
     title: 'Notificações',
-    description: 'Configurar alertas, sons e notificações push',
+    description: 'Configurar alertas e notificações',
     icon: Bell,
     color: 'text-orange-600',
     bgColor: 'bg-orange-100',
-    component: NotificacoesSection
+    component: NotificacoesSection,
+    badge: 'Em breve'
   },
   {
     id: 'email',
-    title: 'Email e SMTP',
-    description: 'Configurações de email, templates e automações',
+    title: 'Email',
+    description: 'Preferências de email',
     icon: Mail,
     color: 'text-green-600',
     bgColor: 'bg-green-100',
-    component: EmailSection
+    component: EmailSection,
+    badge: 'Em breve'
   },
   {
     id: 'permissoes',
-    title: 'Permissões e Roles',
-    description: 'Gerenciar roles, permissões e controle de acesso',
+    title: 'Privacidade',
+    description: 'Controle de privacidade e dados',
     icon: Shield,
     color: 'text-red-600',
     bgColor: 'bg-red-100',
-    component: PermissoesSection
+    component: PermissoesSection,
+    badge: 'Em breve'
   },
   {
     id: 'tarefas',
-    title: 'Tarefas Agendadas',
-    description: 'Cron jobs, automações e tarefas programadas',
+    title: 'Atalhos',
+    description: 'Atalhos e produtividade',
     icon: Clock,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-100',
     component: TarefasSection,
-    badge: 'Avançado'
+    badge: 'Em breve'
   },
   {
     id: 'backup',
-    title: 'Backup e Restauração',
-    description: 'Configurar backups automáticos e restauração',
+    title: 'Dados',
+    description: 'Exportar e gerenciar dados',
     icon: Database,
     color: 'text-cyan-600',
     bgColor: 'bg-cyan-100',
-    component: BackupSection
+    component: BackupSection,
+    badge: 'Em breve'
   },
   {
     id: 'integracao',
     title: 'Integrações',
-    description: 'APIs, webhooks e integrações externas',
+    description: 'Conectar com outros apps',
     icon: Globe,
     color: 'text-teal-600',
     bgColor: 'bg-teal-100',
-    component: IntegracoesSection
+    component: IntegracoesSection,
+    badge: 'Em breve'
   },
   {
     id: 'performance',
     title: 'Performance',
-    description: 'Cache, otimizações e monitoramento',
+    description: 'Otimizações e velocidade',
     icon: Zap,
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
-    component: PerformanceSection
+    component: PerformanceSection,
+    badge: 'Em breve'
   },
   {
     id: 'seguranca',
     title: 'Segurança',
-    description: 'Autenticação, criptografia e logs de auditoria',
+    description: 'Autenticação e segurança',
     icon: Key,
     color: 'text-pink-600',
     bgColor: 'bg-pink-100',
     component: SegurancaSection,
-    badge: 'Crítico'
+    badge: 'Em breve'
   }
 ]
 
@@ -193,6 +199,12 @@ export default function ConfiguracoesPage() {
   const ActiveComponent = activeConfig?.component
 
   const handleSectionChange = (sectionId: string) => {
+    // Apenas permitir "geral" - outros mostram aviso
+    if (sectionId !== 'geral') {
+      alert('🚧 Em breve!\n\nEsta funcionalidade estará disponível em breve. Por enquanto, você pode gerenciar suas configurações básicas na aba "Configurações Gerais".')
+      return
+    }
+    
     if (hasUnsavedChanges) {
       setShowSaveDialog(true)
       return
@@ -261,7 +273,7 @@ export default function ConfiguracoesPage() {
                   className="text-3xl font-bold mb-2 flex items-center gap-3"
                 >
                   <Settings className="w-8 h-8" />
-                  Configurações Avançadas
+                  Minhas Configurações
                   <Sparkles className="w-6 h-6 text-yellow-400" />
                 </motion.h1>
                 <motion.p
@@ -270,29 +282,8 @@ export default function ConfiguracoesPage() {
                   transition={{ delay: 0.3 }}
                   className="text-white/80 text-lg"
                 >
-                  Configure todos os aspectos da sua plataforma de forma inteligente e intuitiva
+                  Gerencie suas informações pessoais e preferências
                 </motion.p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={exportConfigurations}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium flex items-center gap-2 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Exportar
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium flex items-center gap-2 transition-colors"
-                >
-                  <Upload className="w-4 h-4" />
-                  Importar
-                </motion.button>
               </div>
             </div>
           </div>
@@ -346,6 +337,7 @@ export default function ConfiguracoesPage() {
                   {filteredSections.map((section, index) => {
                     const isActive = activeSection === section.id
                     const Icon = section.icon
+                    const isDisabled = section.id !== 'geral' // Apenas "geral" está habilitado
 
                     return (
                       <motion.button
@@ -353,10 +345,13 @@ export default function ConfiguracoesPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 + (index * 0.05) }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: isDisabled ? 1 : 1.02 }}
+                        whileTap={{ scale: isDisabled ? 1 : 0.98 }}
                         onClick={() => handleSectionChange(section.id)}
+                        disabled={isDisabled}
                         className={`w-full text-left p-4 rounded-xl transition-all duration-200 mb-2 group relative overflow-hidden ${
+                          isDisabled ? 'opacity-40 cursor-not-allowed' : ''
+                        } ${
                           isActive
                             ? isDark
                               ? 'border-2 border-blue-400/50 shadow-md'

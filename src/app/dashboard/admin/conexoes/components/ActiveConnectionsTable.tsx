@@ -153,17 +153,9 @@ export function ActiveConnectionsTable({
             }
           })
           
-          // Filtrar conexões deletadas (waha_deleted: true)
-          const activeConnections = connections.filter((conn: any) => {
-            const isDeleted = conn.sessionData?.waha_deleted === true
-            if (isDeleted) {
-              console.log(`🗑️ [CONNECTION] Filtrando conexão deletada: ${conn.sessionName}`)
-            }
-            return !isDeleted
-          })
-          
-          console.log('✅ [CONNECTIONS] Total de conexões ativas:', activeConnections.length, '(deletadas filtradas:', connections.length - activeConnections.length, ')')
-          setConnections(activeConnections)
+          // Backend já filtra por 'ativo = true', não precisa filtrar aqui
+          console.log('✅ [CONNECTIONS] Total de conexões recebidas:', connections.length)
+          setConnections(connections)
         } else if (response.status === 401) {
           console.warn('⚠️ Token inválido ou expirado - redirecionando para login')
           setAuthError(true)

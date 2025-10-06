@@ -1,112 +1,200 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/hooks/useAuth'
 import { 
-  Building,
-  Globe,
-  MapPin,
+  User,
   Phone,
   Mail,
-  Clock,
-  Languages,
-  DollarSign,
-  Users,
-  Calendar,
-  Upload,
-  Image as ImageIcon,
+  Lock,
   Save,
-  Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  MessageSquare,
+  Shield,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Camera,
+  Upload,
+  Trash2
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface GeralSectionProps {
-  onConfigChange: () => void
+  onConfigChange?: () => void
 }
 
 export default function GeralSection({ onConfigChange }: GeralSectionProps) {
   const { actualTheme } = useTheme()
+  const { user } = useAuth()
   const isDark = actualTheme === 'dark'
-  const [config, setConfig] = useState({
-    // Informações da Empresa
-    nomeEmpresa: 'TappyOne CRM',
-    descricaoEmpresa: 'Plataforma avançada de gestão de relacionamento com clientes',
-    cnpj: '12.345.678/0001-90',
-    endereco: 'Rua das Flores, 123',
-    cidade: 'São Paulo',
-    estado: 'SP',
-    cep: '01234-567',
-    telefone: '(11) 99999-9999',
-    email: 'contato@tappyone.com',
-    website: 'https://tappyone.com',
-    
-    // Configurações Regionais
-    timezone: 'America/Sao_Paulo',
-    idioma: 'pt-BR',
-    moeda: 'BRL',
-    formatoData: 'DD/MM/YYYY',
-    formatoHora: '24h',
-    
-    // Configurações da Plataforma
-    nomeAplicacao: 'TappyOne',
-    versao: '2.1.0',
-    ambiente: 'producao',
-    debugMode: false,
-    manutencao: false,
-    
-    // Limites e Quotas
-    maxUsuarios: 1000,
-    maxArmazenamento: 100, // GB
-    maxUploadSize: 50, // MB
-    
-    // Logos e Imagens
-    logoUrl: '',
-    faviconUrl: '',
-    logoLoginUrl: '',
-    backgroundLoginUrl: ''
+  
+  const [formData, setFormData] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    fotoPerfil: '',
+    senhaAtual: '',
+    novaSenha: '',
+    confirmarSenha: ''
   })
-
-  const [showAdvanced, setShowAdvanced] = useState(false)
-
-  const handleConfigChange = (field: string, value: any) => {
-    setConfig(prev => ({ ...prev, [field]: value }))
-    onConfigChange()
+  
+  const [chats, setChats] = useState<any[]>([])
+  const [previewFoto, setPreviewFoto] = useState('')
+  const [showPassword, setShowPassword] = useState({
+    atual: false,
+    nova: false,
+    confirmar: false
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  
+  // Carregar dados do usuário
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        nome: user.nome || '',
+        email: user.email || '',
+        fotoPerfil: (user as any).fotoPerfil || ''
+      }))
+      setPreviewFoto((user as any).fotoPerfil || '')
+      
+      // Buscar chats do atendente
+      fetchAttendenteChats()
+    }
+  }, [user])
+  
+  const fetchAttendenteChats = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/atendentes/chats', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setChats(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar chats:', error)
+    }
   }
-
-  const handleLogoUpload = (field: string, file: File) => {
+  
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    setError('')
+    setSuccess('')
+  }
+  
+  const handleFotoUpload = (file: File) => {
     const reader = new FileReader()
     reader.onload = (e) => {
-      handleConfigChange(field, e.target?.result as string)
+      const base64 = e.target?.result as string
+      setFormData(prev => ({ ...prev, fotoPerfil: base64 }))
+      setPreviewFoto(base64)
     }
     reader.readAsDataURL(file)
   }
-
-  const timezones = [
-    { value: 'America/Sao_Paulo', label: 'São Paulo (UTC-3)' },
-    { value: 'America/New_York', label: 'Nova York (UTC-5)' },
-    { value: 'Europe/London', label: 'Londres (UTC+0)' },
-    { value: 'Asia/Tokyo', label: 'Tóquio (UTC+9)' }
-  ]
-
-  const idiomas = [
-    { value: 'pt-BR', label: 'Português (Brasil)' },
-    { value: 'en-US', label: 'English (US)' },
-    { value: 'es-ES', label: 'Español' },
-    { value: 'fr-FR', label: 'Français' }
-  ]
-
-  const moedas = [
-    { value: 'BRL', label: 'Real (R$)' },
-    { value: 'USD', label: 'Dólar ($)' },
-    { value: 'EUR', label: 'Euro (€)' },
-    { value: 'GBP', label: 'Libra (£)' }
-  ]
+  
+  const handleSubmit = async () => {
+    setError('')
+    setSuccess('')
+    
+    // Validações
+    if (!formData.nome.trim()) {
+      setError('Nome é obrigatório')
+      return
+    }
+    
+    if (!formData.email.trim()) {
+      setError('Email é obrigatório')
+      return
+    }
+    
+    // Se está tentando mudar senha
+    if (formData.novaSenha || formData.confirmarSenha) {
+      if (!formData.senhaAtual) {
+        setError('Digite sua senha atual para alterar a senha')
+        return
+      }
+      
+      if (formData.novaSenha !== formData.confirmarSenha) {
+        setError('As senhas não coincidem')
+        return
+      }
+      
+      if (formData.novaSenha.length < 6) {
+        setError('A nova senha deve ter no mínimo 6 caracteres')
+        return
+      }
+    }
+    
+    setLoading(true)
+    
+    try {
+      const token = localStorage.getItem('token')
+      
+      // Preparar payload
+      const payload: any = {
+        nome: formData.nome,
+        email: formData.email
+      }
+      
+      if (formData.telefone) {
+        payload.telefone = formData.telefone
+      }
+      
+      if (formData.fotoPerfil) {
+        payload.fotoPerfil = formData.fotoPerfil
+      }
+      
+      if (formData.novaSenha) {
+        payload.senhaAtual = formData.senhaAtual
+        payload.novaSenha = formData.novaSenha
+      }
+      
+      const response = await fetch('/api/atendentes/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Erro ao atualizar dados')
+      }
+      
+      setSuccess('Dados atualizados com sucesso!')
+      
+      // Limpar campos de senha
+      setFormData(prev => ({
+        ...prev,
+        senhaAtual: '',
+        novaSenha: '',
+        confirmarSenha: ''
+      }))
+      
+      if (onConfigChange) {
+        onConfigChange()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar dados')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Informações da Empresa */}
+    <div className="space-y-6">
+      {/* Informações Pessoais */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,127 +208,74 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           <div className={`p-3 rounded-xl ${
             isDark ? 'bg-blue-500/20' : 'bg-blue-100'
           }`}>
-            <Building className={`w-6 h-6 ${
+            <User className={`w-6 h-6 ${
               isDark ? 'text-blue-400' : 'text-blue-600'
             }`} />
           </div>
           <div>
             <h3 className={`text-xl font-bold ${
               isDark ? 'text-white' : 'text-gray-900'
-            }`}>Informações da Empresa</h3>
+            }`}>Informações Pessoais</h3>
             <p className={`${
               isDark ? 'text-slate-300' : 'text-gray-600'
-            }`}>Configure os dados básicos da sua empresa</p>
+            }`}>Atualize seus dados cadastrais</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              Nome da Empresa *
-            </label>
-            <input
-              type="text"
-              value={config.nomeEmpresa}
-              onChange={(e) => handleConfigChange('nomeEmpresa', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="Digite o nome da empresa"
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              CNPJ
-            </label>
-            <input
-              type="text"
-              value={config.cnpj}
-              onChange={(e) => handleConfigChange('cnpj', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="00.000.000/0000-00"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              Descrição da Empresa
-            </label>
-            <textarea
-              value={config.descricaoEmpresa}
-              onChange={(e) => handleConfigChange('descricaoEmpresa', e.target.value)}
-              rows={3}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="Descreva sua empresa..."
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <MapPin className="w-4 h-4 inline mr-2" />
-              Endereço
-            </label>
-            <input
-              type="text"
-              value={config.endereco}
-              onChange={(e) => handleConfigChange('endereco', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="Rua, número, bairro"
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              Cidade / Estado
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={config.cidade}
-                onChange={(e) => handleConfigChange('cidade', e.target.value)}
-                className={`px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
-                placeholder="Cidade"
-              />
-              <input
-                type="text"
-                value={config.estado}
-                onChange={(e) => handleConfigChange('estado', e.target.value)}
-                className={`px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
-                placeholder="UF"
-              />
+        <div className="space-y-4">
+          {/* Foto de Perfil */}
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className={`w-24 h-24 rounded-full overflow-hidden border-4 ${
+                isDark ? 'border-slate-600' : 'border-blue-200'
+              }`}>
+                {previewFoto ? (
+                  <img src={previewFoto} alt="Foto de perfil" className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full flex items-center justify-center ${
+                    isDark ? 'bg-slate-700' : 'bg-gray-200'
+                  }`}>
+                    <User className={`w-12 h-12 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                  </div>
+                )}
+              </div>
+              <label htmlFor="foto-upload" className={`absolute bottom-0 right-0 p-2 rounded-full cursor-pointer ${
+                isDark ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'
+              } text-white shadow-lg transition-colors`}>
+                <Camera className="w-4 h-4" />
+                <input
+                  id="foto-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFotoUpload(file)
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <div>
+              <h4 className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Foto de Perfil
+              </h4>
+              <p className={`text-sm mb-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                Clique no ícone para alterar
+              </p>
+              {previewFoto && (
+                <button
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, fotoPerfil: '' }))
+                    setPreviewFoto('')
+                  }}
+                  className={`text-sm flex items-center gap-1 ${
+                    isDark ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
+                  }`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Remover foto
+                </button>
+              )}
             </div>
           </div>
 
@@ -248,228 +283,57 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
             <label className={`block text-sm font-semibold mb-2 ${
               isDark ? 'text-slate-300' : 'text-gray-700'
             }`}>
-              <Phone className="w-4 h-4 inline mr-2" />
+              Nome *
+            </label>
+            <Input
+              value={formData.nome}
+              onChange={(e) => handleChange('nome', e.target.value)}
+              className={isDark ? 'bg-slate-700/50 border-slate-600 text-white' : ''}
+              placeholder="Seu nome completo"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
+              Email * (somente leitura)
+            </label>
+            <Input
+              value={formData.email}
+              disabled
+              className={`${isDark ? 'bg-slate-700/30 border-slate-600 text-slate-400' : 'bg-gray-100'} cursor-not-allowed`}
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Telefone
             </label>
-            <input
-              type="tel"
-              value={config.telefone}
-              onChange={(e) => handleConfigChange('telefone', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
+            <Input
+              value={formData.telefone}
+              onChange={(e) => handleChange('telefone', e.target.value)}
+              className={isDark ? 'bg-slate-700/50 border-slate-600 text-white' : ''}
               placeholder="(11) 99999-9999"
             />
           </div>
 
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <Mail className="w-4 h-4 inline mr-2" />
-              Email
-            </label>
-            <input
-              type="email"
-              value={config.email}
-              onChange={(e) => handleConfigChange('email', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="contato@empresa.com"
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <Globe className="w-4 h-4 inline mr-2" />
-              Website
-            </label>
-            <input
-              type="url"
-              value={config.website}
-              onChange={(e) => handleConfigChange('website', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="https://empresa.com"
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              CEP
-            </label>
-            <input
-              type="text"
-              value={config.cep}
-              onChange={(e) => handleConfigChange('cep', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="00000-000"
-            />
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <MessageSquare className="w-4 h-4 text-blue-500" />
+            <span className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+              <strong>{chats.length}</strong> {chats.length === 1 ? 'chat' : 'chats'} sob sua responsabilidade
+            </span>
           </div>
         </div>
       </motion.div>
 
-      {/* Configurações Regionais */}
+      {/* Alterar Senha */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className={`rounded-2xl p-6 border ${
-          isDark 
-            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
-            : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
-        }`}
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className={`p-3 rounded-xl ${
-            isDark ? 'bg-green-500/20' : 'bg-green-100'
-          }`}>
-            <Globe className={`w-6 h-6 ${
-              isDark ? 'text-green-400' : 'text-green-600'
-            }`} />
-          </div>
-          <div>
-            <h3 className={`text-xl font-bold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>Configurações Regionais</h3>
-            <p className={`${
-              isDark ? 'text-slate-300' : 'text-gray-600'
-            }`}>Defina timezone, idioma e formatos</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <Clock className="w-4 h-4 inline mr-2" />
-              Timezone
-            </label>
-            <select
-              value={config.timezone}
-              onChange={(e) => handleConfigChange('timezone', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-            >
-              {timezones.map(tz => (
-                <option key={tz.value} value={tz.value}>{tz.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <Languages className="w-4 h-4 inline mr-2" />
-              Idioma
-            </label>
-            <select
-              value={config.idioma}
-              onChange={(e) => handleConfigChange('idioma', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-            >
-              {idiomas.map(lang => (
-                <option key={lang.value} value={lang.value}>{lang.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <DollarSign className="w-4 h-4 inline mr-2" />
-              Moeda
-            </label>
-            <select
-              value={config.moeda}
-              onChange={(e) => handleConfigChange('moeda', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-            >
-              {moedas.map(currency => (
-                <option key={currency.value} value={currency.value}>{currency.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              <Calendar className="w-4 h-4 inline mr-2" />
-              Formato de Data
-            </label>
-            <select
-              value={config.formatoData}
-              onChange={(e) => handleConfigChange('formatoData', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-            >
-              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${
-              isDark ? 'text-slate-300' : 'text-gray-700'
-            }`}>
-              Formato de Hora
-            </label>
-            <select
-              value={config.formatoHora}
-              onChange={(e) => handleConfigChange('formatoHora', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                isDark 
-                  ? 'bg-slate-700/50 border-slate-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              }`}
-            >
-              <option value="24h">24 horas (14:30)</option>
-              <option value="12h">12 horas (2:30 PM)</option>
-            </select>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Logos e Imagens */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
         className={`rounded-2xl p-6 border ${
           isDark 
             ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
@@ -480,294 +344,138 @@ export default function GeralSection({ onConfigChange }: GeralSectionProps) {
           <div className={`p-3 rounded-xl ${
             isDark ? 'bg-purple-500/20' : 'bg-purple-100'
           }`}>
-            <ImageIcon className={`w-6 h-6 ${
+            <Lock className={`w-6 h-6 ${
               isDark ? 'text-purple-400' : 'text-purple-600'
             }`} />
           </div>
           <div>
             <h3 className={`text-xl font-bold ${
               isDark ? 'text-white' : 'text-gray-900'
-            }`}>Logos e Imagens</h3>
+            }`}>Alterar Senha</h3>
             <p className={`${
               isDark ? 'text-slate-300' : 'text-gray-600'
-            }`}>Configure as imagens da sua marca</p>
+            }`}>Atualize sua senha de acesso</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            { key: 'logoUrl', label: 'Logo Principal', description: 'Logo usado no sistema (recomendado: 200x60px)' },
-            { key: 'faviconUrl', label: 'Favicon', description: 'Ícone do navegador (recomendado: 32x32px)' },
-            { key: 'logoLoginUrl', label: 'Logo do Login', description: 'Logo da página de login (recomendado: 300x100px)' },
-            { key: 'backgroundLoginUrl', label: 'Background Login', description: 'Imagem de fundo do login (recomendado: 1920x1080px)' }
-          ].map((item) => (
-            <div key={item.key} className="space-y-3">
-              <div>
-                <label className={`block text-sm font-semibold mb-1 ${
-                  isDark ? 'text-slate-300' : 'text-gray-700'
-                }`}>
-                  {item.label}
-                </label>
-                <p className={`text-xs ${
-                  isDark ? 'text-slate-400' : 'text-gray-500'
-                }`}>{item.description}</p>
-              </div>
-              
-              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
-                isDark 
-                  ? 'border-slate-600 hover:border-purple-400' 
-                  : 'border-gray-300 hover:border-purple-400'
-              }`}>
-                {config[item.key as keyof typeof config] ? (
-                  <div className="space-y-3">
-                    <img
-                      src={config[item.key as keyof typeof config] as string}
-                      alt={item.label}
-                      className="max-h-20 mx-auto rounded-lg"
-                    />
-                    <div className="flex items-center justify-center gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        onClick={() => handleConfigChange(item.key, '')}
-                        className={`px-3 py-1 text-sm rounded-lg ${
-                          isDark 
-                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                            : 'bg-red-100 text-red-700 hover:bg-red-200'
-                        }`}
-                      >
-                        <Trash2 className="w-3 h-3 inline mr-1" />
-                        Remover
-                      </motion.button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <Upload className={`w-8 h-8 mx-auto mb-2 ${
-                      isDark ? 'text-slate-500' : 'text-gray-400'
-                    }`} />
-                    <p className={`text-sm mb-2 ${
-                      isDark ? 'text-slate-400' : 'text-gray-600'
-                    }`}>Clique para enviar</p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) handleLogoUpload(item.key, file)
-                      }}
-                      className="hidden"
-                      id={`upload-${item.key}`}
-                    />
-                    <label
-                      htmlFor={`upload-${item.key}`}
-                      className={`cursor-pointer px-4 py-2 rounded-lg inline-block ${
-                        isDark 
-                          ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' 
-                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      }`}
-                    >
-                      Selecionar Arquivo
-                    </label>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Configurações Avançadas */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className={`rounded-2xl p-6 border ${
-          isDark 
-            ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-xl border-slate-600/50' 
-            : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
-        }`}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-xl ${
-              isDark ? 'bg-orange-500/20' : 'bg-orange-100'
+        <div className="space-y-4">
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
             }`}>
-              <Users className={`w-6 h-6 ${
-                isDark ? 'text-orange-400' : 'text-orange-600'
-              }`} />
-            </div>
-            <div>
-              <h3 className={`text-xl font-bold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>Configurações Avançadas</h3>
-              <p className={`${
-                isDark ? 'text-slate-300' : 'text-gray-600'
-              }`}>Limites, quotas e configurações técnicas</p>
+              Senha Atual
+            </label>
+            <div className="relative">
+              <Input
+                type={showPassword.atual ? 'text' : 'password'}
+                value={formData.senhaAtual}
+                onChange={(e) => handleChange('senhaAtual', e.target.value)}
+                className={isDark ? 'bg-slate-700/50 border-slate-600 text-white pr-10' : 'pr-10'}
+                placeholder="Digite sua senha atual"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => ({ ...prev, atual: !prev.atual }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword.atual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-              isDark 
-                ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' 
-                : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-            }`}
-          >
-            {showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showAdvanced ? 'Ocultar' : 'Mostrar'}
-          </motion.button>
-        </div>
 
-        {showAdvanced && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                isDark ? 'text-slate-300' : 'text-gray-700'
-              }`}>
-                Nome da Aplicação
-              </label>
-              <input
-                type="text"
-                value={config.nomeAplicacao}
-                onChange={(e) => handleConfigChange('nomeAplicacao', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
+              Nova Senha
+            </label>
+            <div className="relative">
+              <Input
+                type={showPassword.nova ? 'text' : 'password'}
+                value={formData.novaSenha}
+                onChange={(e) => handleChange('novaSenha', e.target.value)}
+                className={isDark ? 'bg-slate-700/50 border-slate-600 text-white pr-10' : 'pr-10'}
+                placeholder="Digite a nova senha (mín. 6 caracteres)"
               />
-            </div>
-
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                isDark ? 'text-slate-300' : 'text-gray-700'
-              }`}>
-                Versão
-              </label>
-              <input
-                type="text"
-                value={config.versao}
-                onChange={(e) => handleConfigChange('versao', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                isDark ? 'text-slate-300' : 'text-gray-700'
-              }`}>
-                Ambiente
-              </label>
-              <select
-                value={config.ambiente}
-                onChange={(e) => handleConfigChange('ambiente', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => ({ ...prev, nova: !prev.nova }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <option value="desenvolvimento">Desenvolvimento</option>
-                <option value="homologacao">Homologação</option>
-                <option value="producao">Produção</option>
-              </select>
+                {showPassword.nova ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
+          </div>
 
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                isDark ? 'text-slate-300' : 'text-gray-700'
-              }`}>
-                Máximo de Usuários
-              </label>
-              <input
-                type="number"
-                value={config.maxUsuarios}
-                onChange={(e) => handleConfigChange('maxUsuarios', parseInt(e.target.value))}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${
+              isDark ? 'text-slate-300' : 'text-gray-700'
+            }`}>
+              Confirmar Nova Senha
+            </label>
+            <div className="relative">
+              <Input
+                type={showPassword.confirmar ? 'text' : 'password'}
+                value={formData.confirmarSenha}
+                onChange={(e) => handleChange('confirmarSenha', e.target.value)}
+                className={isDark ? 'bg-slate-700/50 border-slate-600 text-white pr-10' : 'pr-10'}
+                placeholder="Digite a nova senha novamente"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => ({ ...prev, confirmar: !prev.confirmar }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword.confirmar ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                isDark ? 'text-slate-300' : 'text-gray-700'
-              }`}>
-                Armazenamento Máximo (GB)
-              </label>
-              <input
-                type="number"
-                value={config.maxArmazenamento}
-                onChange={(e) => handleConfigChange('maxArmazenamento', parseInt(e.target.value))}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                isDark ? 'text-slate-300' : 'text-gray-700'
-              }`}>
-                Tamanho Máximo de Upload (MB)
-              </label>
-              <input
-                type="number"
-                value={config.maxUploadSize}
-                onChange={(e) => handleConfigChange('maxUploadSize', parseInt(e.target.value))}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  isDark 
-                    ? 'bg-slate-700/50 border-slate-600 text-white placeholder-slate-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.debugMode}
-                    onChange={(e) => handleConfigChange('debugMode', e.target.checked)}
-                    className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
-                  />
-                  <span className={`text-sm font-medium ${
-                    isDark ? 'text-slate-300' : 'text-gray-700'
-                  }`}>Modo Debug</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.manutencao}
-                    onChange={(e) => handleConfigChange('manutencao', e.target.checked)}
-                    className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
-                  />
-                  <span className={`text-sm font-medium ${
-                    isDark ? 'text-slate-300' : 'text-gray-700'
-                  }`}>Modo Manutenção</span>
-                </label>
-              </div>
-            </div>
-          </motion.div>
-        )}
+          </div>
+        </div>
       </motion.div>
+
+      {/* Mensagens de Erro/Sucesso */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center gap-2 p-4 rounded-lg bg-red-500/10 border border-red-500/30"
+        >
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <span className="text-red-600 dark:text-red-400">{error}</span>
+        </motion.div>
+      )}
+
+      {success && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 border border-green-500/30"
+        >
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          <span className="text-green-600 dark:text-green-400">{success}</span>
+        </motion.div>
+      )}
+
+      {/* Botão Salvar */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold flex items-center gap-2"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              Salvar Alterações
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }
