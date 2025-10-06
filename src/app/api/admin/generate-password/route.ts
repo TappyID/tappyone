@@ -69,19 +69,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Configurar transporter do email
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: parseInt(process.env.EMAIL_SERVER_PORT || '465'),
-      secure: process.env.EMAIL_SERVER_SECURE === 'true',
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    })
+    // Tentar enviar email (opcional - não bloquear se falhar)
+    let emailSent = false
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_SERVER_HOST,
+        port: parseInt(process.env.EMAIL_SERVER_PORT || '465'),
+        secure: process.env.EMAIL_SERVER_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
+        },
+      })
 
-    // Template HTML para admin recovery
-    const htmlTemplate = `
+      // Template HTML para admin recovery
+      const htmlTemplate = `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
@@ -151,18 +153,29 @@ export async function POST(request: NextRequest) {
     </html>
     `
 
-    // Enviar email
-    await transporter.sendMail({
-      from: `"TappyOne CRM - Admin Recovery" <${process.env.EMAIL_FROM}>`,
-      to: email,
-      subject: '🔑 Nova Senha de Administrador - TappyOne CRM',
-      html: htmlTemplate,
-    })
+      // Enviar email
+      await transporter.sendMail({
+        from: `"TappyOne CRM - Admin Recovery" <${process.env.EMAIL_FROM}>`,
+        to: email,
+        subject: '🔑 Nova Senha de Administrador - TappyOne CRM',
+        html: htmlTemplate,
+      })
+      
+      emailSent = true
+      console.log('✅ Email de recuperação enviado com sucesso')
+    } catch (emailError) {
+      console.error('⚠️ Erro ao enviar email (não crítico):', emailError)
+      // Não bloquear - a senha já foi gerada e salva
+    }
 
+    // Retornar sucesso mesmo se email falhar
     return NextResponse.json({
-      message: 'Nova senha gerada e enviada com sucesso',
+      message: emailSent 
+        ? 'Nova senha gerada e enviada por email com sucesso' 
+        : 'Nova senha gerada com sucesso (email não enviado - verifique na tela)',
       email,
-      newPassword: newPassword, // Retorna também na resposta para exibir na tela
+      newPassword: newPassword, // Sempre retorna na resposta para exibir na tela
+      emailSent,
     })
 
   } catch (error) {
