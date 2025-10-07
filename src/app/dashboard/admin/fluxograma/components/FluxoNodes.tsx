@@ -48,7 +48,8 @@ import {
   Info,
   Edit,
   UserPlus,
-  Grid3X3
+  Grid3X3,
+  Dot
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useState } from 'react'
@@ -93,7 +94,7 @@ export type NodeType =
   | 'condition-conversation-count' // Número de conversas do contato
   | 'condition-random'             // Condição aleatória (A/B testing)
   
-  // ========== AÇÕES WHATSAPP (7) ==========
+  // ========== AÇÕES WHATSAPP (8) ==========
   | 'action-whatsapp-text'         // Enviar texto
   | 'action-whatsapp-media'        // Enviar mídia
   | 'action-whatsapp-template'     // Template aprovado
@@ -101,6 +102,7 @@ export type NodeType =
   | 'action-whatsapp-contact'      // Cartão de contato
   | 'action-whatsapp-list'         // Enviar menu de lista
   | 'action-whatsapp-event'        // Enviar evento/agendamento
+  | 'menu-option'                  // Sub-nó de opção do menu (gerado automaticamente)
   
   // ========== AÇÕES KANBAN (3) ==========
   | 'action-kanban-create'         // Criar card
@@ -477,6 +479,14 @@ export const NODE_TYPES: Record<NodeType, {
     color: 'green',
     category: 'action'
   },
+  
+  'menu-option': {
+    icon: Dot,
+    label: 'Opção do Menu',
+    description: 'Opção individual do menu lista',
+    color: 'purple',
+    category: 'action'
+  },
 
   // ============= ACTIONS - Kanban =============
   'action-kanban-create': {
@@ -818,8 +828,8 @@ export function NodePalette({ onNodeSelect }: { onNodeSelect: (nodeType: NodeTyp
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
         {Object.entries(categories).map(([categoryKey, categoryInfo]) => {
-          const nodeTypes = Object.entries(NODE_TYPES).filter(([_, config]) => 
-            config.category === categoryKey
+          const nodeTypes = Object.entries(NODE_TYPES).filter(([key, config]) => 
+            config.category === categoryKey && key !== 'menu-option'
           )
 
           return (

@@ -10,13 +10,13 @@ interface ConnectionLineProps {
 export default function ConnectionLine({ from, to, isDark, isActive = false }: ConnectionLineProps) {
   // Calculate control points for a smooth curve
   const dx = to.x - from.x
-  const dy = to.y - from.y
   
   // Control points for bezier curve
-  const controlPoint1X = from.x + Math.min(Math.abs(dx) * 0.5, 100)
+  const offset = Math.max(Math.abs(dx) * 0.35, 50)
+  const controlPoint1X = from.x + offset
   const controlPoint1Y = from.y
   
-  const controlPoint2X = to.x - Math.min(Math.abs(dx) * 0.5, 100)
+  const controlPoint2X = to.x - offset
   const controlPoint2Y = to.y
 
   const pathData = `M ${from.x} ${from.y} C ${controlPoint1X} ${controlPoint1Y}, ${controlPoint2X} ${controlPoint2Y}, ${to.x} ${to.y}`
@@ -33,14 +33,14 @@ export default function ConnectionLine({ from, to, isDark, isActive = false }: C
       <defs>
         <marker
           id={`arrowhead-${isDark ? 'dark' : 'light'}${isActive ? '-active' : ''}`}
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
+          markerWidth="8"
+          markerHeight="6"
+          refX="7"
+          refY="3"
           orient="auto"
         >
           <polygon
-            points="0 0, 10 3.5, 0 7"
+            points="0 0, 8 3, 0 6"
             fill={
               isActive 
                 ? '#3B82F6' 
@@ -61,10 +61,11 @@ export default function ConnectionLine({ from, to, isDark, isActive = false }: C
               ? '#6B7280' 
               : '#9CA3AF'
         }
-        strokeWidth={isActive ? 3 : 2}
+        strokeWidth={isActive ? 2.4 : 1.6}
         fill="none"
         markerEnd={`url(#arrowhead-${isDark ? 'dark' : 'light'}${isActive ? '-active' : ''})`}
         className={isActive ? 'animate-pulse' : ''}
+        strokeLinecap="round"
       />
     </svg>
   )

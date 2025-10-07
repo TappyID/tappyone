@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { useTheme } from '@/contexts/ThemeContext'
 import { FlowNode, FlowConnection } from './types'
 import { NODE_TYPES } from './FluxoNodes'
-import FlowNodeComponent from './FlowNodeComponent'
+import FlowNodeComponent, { getMenuOptionAnchorRatio, getNodeDimensions } from './FlowNodeComponent'
 import ConnectionLine from './ConnectionLine'
 
 interface FlowCanvasProps {
@@ -15,11 +15,11 @@ interface FlowCanvasProps {
   isDragging: boolean
   selectedNodeId: string | null
   isConnecting: boolean
-  connectionStart: { nodeId: string; x: number; y: number } | null
+  connectionStart: { nodeId: string; x: number; y: number; optionIndex?: number } | null
   mousePosition: { x: number; y: number }
   onNodeDragStart: (nodeId: string, e: React.MouseEvent) => void
   onNodeConfigOpen: (nodeId: string, nodeType: string) => void
-  onConnectionStart: (nodeId: string, e: React.MouseEvent) => void
+  onConnectionStart: (nodeId: string, e: React.MouseEvent, portInfo?: { optionIndex?: number }) => void
   onConnectionEnd: (e: React.MouseEvent) => void
   onCanvasMouseMove: (e: React.MouseEvent) => void
   onCanvasMouseUp: () => void
@@ -100,12 +100,33 @@ export default function FlowCanvas({
             <ConnectionLine
               key={connection.id}
               from={{
-                x: fromNode.position.x + 200, // Node width
-                y: fromNode.position.y + 50   // Half node height
+                x: fromNode.position.x + getNodeDimensions(fromNode).width,
+                y: (() => {
+                  const { height } = getNodeDimensions(fromNode)
+                  const derivedSourceIndex = (() => {
+                    if (typeof connection.sourcePortIndex === 'number') {
+                      return connection.sourcePortIndex
+                    }
+                    if (
+                      fromNode.type === 'action-whatsapp-list' &&
+                      toNode.config?.parentNodeId === fromNode.id &&
+                      typeof toNode.config?.optionIndex === 'number'
+                    ) {
+                      return toNode.config.optionIndex
+                    }
+                    return undefined
+                  })()
+
+                  if (fromNode.type === 'action-whatsapp-list' && typeof derivedSourceIndex === 'number') {
+                    const ratio = getMenuOptionAnchorRatio(fromNode, derivedSourceIndex)
+                    return fromNode.position.y + height * ratio
+                  }
+                  return fromNode.position.y + height / 2
+                })()
               }}
               to={{
                 x: toNode.position.x,
-                y: toNode.position.y + 50
+                y: toNode.position.y + getNodeDimensions(toNode).height / 2
               }}
               isDark={isDark}
             />

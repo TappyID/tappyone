@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
-import FlowNodeComponent from './FlowNodeComponent'
+import FlowNodeComponent, { getMenuOptionAnchorRatio, getNodeDimensions } from './FlowNodeComponent'
 import NodeConfigModal from './NodeConfigModal'
 import NodePalette from './NodePalette'
 import AiGenerateModal from './AiGenerateModal'
@@ -92,7 +92,7 @@ export default function FlowEditor({
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const [isConnecting, setIsConnecting] = useState(false)
-  const [connectionStart, setConnectionStart] = useState<{ nodeId: string, x: number, y: number } | null>(null)
+  const [connectionStart, setConnectionStart] = useState<{ nodeId: string, x: number, y: number, optionIndex?: number } | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
   const [selectedConfig, setSelectedConfig] = useState<FlowNode | null>(null)
@@ -274,7 +274,7 @@ export default function FlowEditor({
   }, [])
 
   // Handle node connections
-  const handleConnectionStart = useCallback((nodeId: string, e: React.MouseEvent) => {
+  const handleConnectionStart = useCallback((nodeId: string, e: React.MouseEvent, portInfo?: { optionIndex?: number }) => {
     e.stopPropagation()
     
     const canvasRect = canvasRef.current?.getBoundingClientRect()
@@ -282,14 +282,21 @@ export default function FlowEditor({
     
     if (!canvasRect || !node) return
     
-    const nodeWidth = 200
-    const nodeHeight = 100
-    
+    const { width, height } = getNodeDimensions(node)
+    const optionIndex = typeof portInfo?.optionIndex === 'number' ? portInfo.optionIndex : undefined
+    let anchorY = node.position.y + height / 2
+
+    if (node.type === 'action-whatsapp-list' && typeof optionIndex === 'number') {
+      const ratio = getMenuOptionAnchorRatio(node, optionIndex)
+      anchorY = node.position.y + height * ratio
+    }
+
     setIsConnecting(true)
     setConnectionStart({
       nodeId,
-      x: node.position.x + nodeWidth, // Align with output connection point center
-      y: node.position.y + nodeHeight / 2
+      x: node.position.x + width,
+      y: anchorY,
+      optionIndex
     })
     setMousePosition({
       x: (e.clientX - canvasRect.left) / state.zoom,
@@ -348,7 +355,8 @@ export default function FlowEditor({
           const newConnection: FlowConnection = {
             id: `connection_${Date.now()}`,
             from: connectionStart.nodeId,
-            to: targetNodeId
+            to: targetNodeId,
+            sourcePortIndex: connectionStart.optionIndex
           }
 
           setState(prev => ({
@@ -575,8 +583,8 @@ export default function FlowEditor({
 
     // Criar mini-nodes automaticamente para Menu Lista WhatsApp
     if (node.type === 'action-whatsapp-list' && config.listOptions?.length > 0) {
-      const baseX = node.position.x + 300
-      const baseY = node.position.y - 30
+      const baseX = node.position.x + 210
+      const baseY = node.position.y - 12
       const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'teal']
       
       config.listOptions.forEach((option: any, index: number) => {
@@ -585,10 +593,10 @@ export default function FlowEditor({
         
         const miniNode: FlowNode = {
           id: miniNodeId,
-          type: 'action-whatsapp-text',
+          type: 'menu-option', // ✅ Usar novo tipo menu-option
           position: { 
             x: baseX, 
-            y: baseY + (index * 80) 
+            y: baseY + (index * 44)
           },
           config: {
             message: `Você selecionou: ${option.title}`,
@@ -597,6 +605,7 @@ export default function FlowEditor({
             parentNodeId: nodeId,
             optionIndex: index,
             optionTitle: option.title,
+            optionDescription: option.description || '',
             borderColor: color
           }
         }
@@ -606,7 +615,8 @@ export default function FlowEditor({
         updatedConnections.push({
           id: `${nodeId}-to-${miniNodeId}`,
           from: nodeId,
-          to: miniNodeId
+          to: miniNodeId,
+          sourcePortIndex: index
         })
       })
     }
@@ -1290,62 +1300,90 @@ export default function FlowEditor({
                     
                     if (!fromNode || !toNode) return null
 
-                    // Calculate connection points based on actual visual elements
-                    const nodeWidth = 200 // min-w-[200px] from FlowNode
-                    const nodeHeight = 100 // more accurate height estimate
-                    
-                    // Connection points should align with the visual circles
-                    // Output point (green circle on right): -right-3 (12px) + center (12px) = node + width
-                    const startX = fromNode.position.x + nodeWidth
-                    const startY = fromNode.position.y + nodeHeight / 2
-                    
-                    // Input point (blue circle on left): -left-3 (12px) + center (12px) = node position
-                    const endX = toNode.position.x
-                    const endY = toNode.position.y + nodeHeight / 2
+                    // ✅ Detectar se é mini-node para calcular tamanho correto
+                    const { width: fromWidth, height: fromHeight } = getNodeDimensions(fromNode)
+                    const { height: toHeight } = getNodeDimensions(toNode)
 
-                    const midX = (startX + endX) / 2
+                    // ✅ Connection points alinhados com as bolinhas
+                    const startX = fromNode.position.x + fromWidth
+                    const derivedSourceIndex = (() => {
+                      if (typeof connection.sourcePortIndex === 'number') {
+                        return connection.sourcePortIndex
+                      }
+                      if (
+                        fromNode.type === 'action-whatsapp-list' &&
+                        toNode.config?.parentNodeId === fromNode.id &&
+                        typeof toNode.config?.optionIndex === 'number'
+                      ) {
+                        return toNode.config.optionIndex
+                      }
+                      return undefined
+                    })()
+                    let startY = fromNode.position.y + fromHeight / 2
+                    if (fromNode.type === 'action-whatsapp-list' && typeof derivedSourceIndex === 'number') {
+                      const ratio = getMenuOptionAnchorRatio(fromNode, derivedSourceIndex)
+                      startY = fromNode.position.y + fromHeight * ratio
+                    }
+                    
+                    const endX = toNode.position.x
+                    const endY = toNode.position.y + toHeight / 2
+
+                    const horizontalDistance = Math.abs(endX - startX)
+                    const controlOffset = Math.max(horizontalDistance * 0.4, 60)
+                    const controlPointStart = startX + controlOffset
+                    const controlPointEnd = endX - controlOffset
 
                     return (
                       <g key={connection.id}>
                         {/* Definir gradientes */}
                         <defs>
                           <linearGradient id={`gradient-${connection.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
-                            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8" />
+                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.85" />
+                            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.85" />
                           </linearGradient>
-                          <marker id={`arrowhead-${connection.id}`} markerWidth="10" markerHeight="7" 
-                            refX="9" refY="3.5" orient="auto">
-                            <polygon points="0 0, 10 3.5, 0 7" 
-                              fill={isDark ? '#3B82F6' : '#2563EB'} />
+                          <marker 
+                            id={`arrowhead-${connection.id}`} 
+                            markerWidth="8" 
+                            markerHeight="6" 
+                            refX="7" 
+                            refY="3" 
+                            orient="auto"
+                          >
+                            <polygon 
+                              points="0 0, 8 3, 0 6" 
+                              fill={isDark ? '#3B82F6' : '#2563EB'} 
+                            />
                           </marker>
                         </defs>
                         
                         {/* Linha de fundo (sombra) */}
                         <path
-                          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                          d={`M ${startX} ${startY} C ${controlPointStart} ${startY}, ${controlPointEnd} ${endY}, ${endX} ${endY}`}
                           stroke={isDark ? '#1F2937' : '#E5E7EB'}
-                          strokeWidth="4"
+                          strokeWidth="2.6"
                           fill="none"
                           opacity="0.3"
                         />
                         
                         {/* Linha principal com gradiente */}
                         <path
-                          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                          d={`M ${startX} ${startY} C ${controlPointStart} ${startY}, ${controlPointEnd} ${endY}, ${endX} ${endY}`}
                           stroke={`url(#gradient-${connection.id})`}
-                          strokeWidth="2"
+                          strokeWidth="1.75"
                           fill="none"
                           markerEnd={`url(#arrowhead-${connection.id})`}
                           className="hover:stroke-opacity-100 cursor-pointer transition-all duration-200"
-                          style={{ filter: 'drop-shadow(0 0 3px rgba(59, 130, 246, 0.3))' }}
+                          style={{ filter: 'drop-shadow(0 1px 2px rgba(59, 130, 246, 0.25))' }}
                         />
                         
                         {/* Ponto de origem */}
                         <circle
                           cx={startX}
                           cy={startY}
-                          r="3"
+                          r="2.4"
                           fill="#10B981"
+                          stroke="#ecfdf5"
+                          strokeWidth="1"
                           className="drop-shadow-sm"
                         />
                       </g>
@@ -1357,34 +1395,34 @@ export default function FlowEditor({
                     <g>
                       <defs>
                         <linearGradient id="temp-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
-                          <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8" />
+                          <stop offset="0%" stopColor="#10B981" stopOpacity="0.85" />
+                          <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.85" />
                         </linearGradient>
                       </defs>
                       <path
                         d={`M ${connectionStart.x} ${connectionStart.y} Q ${(connectionStart.x + mousePosition.x) / 2} ${connectionStart.y} ${mousePosition.x} ${mousePosition.y}`}
                         stroke="url(#temp-gradient)"
-                        strokeWidth="3"
+                        strokeWidth="2"
                         fill="none"
-                        strokeDasharray="5,5"
+                        strokeDasharray="4 4"
                         className="animate-pulse pointer-events-none"
                       />
                       <circle
                         cx={connectionStart.x}
                         cy={connectionStart.y}
-                        r="5"
+                        r="4"
                         fill="#10B981"
                         stroke="white"
-                        strokeWidth="2"
+                        strokeWidth="1.2"
                         className="pointer-events-none"
                       />
                       <circle
                         cx={mousePosition.x}
                         cy={mousePosition.y}
-                        r="4"
+                        r="3.4"
                         fill="#3B82F6"
                         stroke="white"
-                        strokeWidth="2"
+                        strokeWidth="1.2"
                         className="pointer-events-none"
                       />
                     </g>

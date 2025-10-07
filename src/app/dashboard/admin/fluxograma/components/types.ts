@@ -11,6 +11,7 @@ export interface FlowConnection {
   to: string
   sourceNodeId?: string // For backward compatibility  
   targetNodeId?: string // For backward compatibility
+  sourcePortIndex?: number
 }
 
 export interface FlowState {
