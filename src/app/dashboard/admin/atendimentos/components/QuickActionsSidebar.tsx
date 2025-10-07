@@ -2213,8 +2213,12 @@ export default function QuickActionsSidebar({
                         titulo: respostaCompleta?.titulo || selectedActionForTrigger.title,
                         descricao: respostaCompleta?.descricao || '',
                         categoria_id: respostaCompleta?.categoria_id || null,
-                        trigger_tipo: triggerTipo,
+                        automatico: triggerTipo !== 'manual', // ← Backend usa isso
                         triggers: palavrasChave ? palavrasChave.split(',').map(p => p.trim()) : [],
+                        acoes: respostaCompleta?.acoes || [], // ← IMPORTANTE: Preservar ações
+                        fallback: false,
+                        agendamento_ativo: false,
+                        agendamento_config: null,
                         pausado: false,
                         ativo: true
                       })
