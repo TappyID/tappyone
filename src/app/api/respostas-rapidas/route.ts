@@ -48,11 +48,8 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    console.log('✅ [RESPOSTAS-RAPIDAS] GET sucesso - Total de respostas:', Array.isArray(data) ? data.length : 'não é array')
-    console.log('📊 [RESPOSTAS-RAPIDAS] GET dados:', JSON.stringify(data, null, 2).substring(0, 500) + '...')
     return NextResponse.json(data)
   } catch (error) {
-    console.error('❌ [RESPOSTAS-RAPIDAS] Error fetching respostas rapidas:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

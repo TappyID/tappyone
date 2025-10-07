@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('📡 Response do backend:', response.status, response.statusText)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -82,11 +81,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body)
     })
 
-    console.log('📡 Response do backend:', response.status, response.statusText)
-
     if (!response.ok) {
       const errorText = await response.text()
-      console.log('❌ Erro do backend:', errorText)
       return NextResponse.json(
         { error: `Erro do backend: ${response.status} - ${errorText}` }, 
         { status: response.status }

@@ -28,7 +28,6 @@ export async function GET(
       }
     })
 
-    console.log('📡 Response do backend:', response.status, response.statusText)
 
     if (!response.ok) {
       const errorText = await response.text()

@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
     // 🔍 DEBUG: Mostrar primeiro lead
     const firstKey = Object.keys(data)[0]
     if (firstKey) {
-      console.log('🔍 [BATCH LEADS] Exemplo:', JSON.stringify(data[firstKey], null, 2))
     }
     
     return NextResponse.json(data)

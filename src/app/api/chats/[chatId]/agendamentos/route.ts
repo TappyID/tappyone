@@ -29,17 +29,14 @@ export async function GET(
     })
 
     if (!response.ok) {
-      console.error('❌ [AGENDAMENTOS] Erro na resposta do backend:', response.status)
       return NextResponse.json({ error: 'Erro ao buscar agendamentos' }, { status: response.status })
     }
 
     const data = await response.json()
-    console.log('✅ [AGENDAMENTOS] Dados recebidos do backend:', data)
     
     return NextResponse.json(data, { status: 200 })
     
   } catch (error) {
-    console.error('❌ [AGENDAMENTOS] Erro na API proxy:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

@@ -22,25 +22,20 @@ export async function getActiveSession(authHeader: string): Promise<string | nul
     }
 
     const data = await response.json()
-    console.log('📦 [getActiveSession] Dados recebidos:', data)
     
     const connections = data.connections || []
-    console.log('🔗 [getActiveSession] Total de conexões:', connections.length)
 
     // Buscar primeira conexão WORKING
     const activeConnection = connections.find((conn: any) => {
       const sessionName = conn.sessionName || conn.session_name // Suporta ambos formatos
-      console.log('🔍 [getActiveSession] Verificando conexão:', sessionName, 'status:', conn.status)
       return conn.status === 'WORKING' || conn.status === 'connected'
     })
 
     if (activeConnection) {
       const sessionName = activeConnection.sessionName || activeConnection.session_name
-      console.log('✅ [getActiveSession] Sessão ativa encontrada:', sessionName)
       return sessionName
     }
 
-    console.warn('⚠️ [getActiveSession] Nenhuma sessão ativa encontrada. Conexões:', connections)
     return null
   } catch (error) {
     console.error('❌ [getActiveSession] Erro:', error)

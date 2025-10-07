@@ -34,7 +34,6 @@ export async function GET(
     }
 
     const data = await response.json()
-    console.log('✅ [ORÇAMENTOS] Dados recebidos do backend:', data)
     
     return NextResponse.json(data, { status: 200 })
     

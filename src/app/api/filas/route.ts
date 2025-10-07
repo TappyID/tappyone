@@ -26,12 +26,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error('❌ [FILAS] Erro na resposta do backend:', response.status)
       return NextResponse.json({ error: 'Erro ao buscar filas' }, { status: response.status })
     }
 
     const data = await response.json()
-    console.log('✅ [FILAS] Dados recebidos do backend:', data)
     
     return NextResponse.json(data, { status: 200 })
     

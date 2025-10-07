@@ -16,12 +16,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token não fornecido' }, { status: 401 })
     }
 
-    console.log('🏷️ [API CHAT-TAGS] Proxy - ChatId:', chatId)
 
     // Fazer requisição para o backend GO
     const BACKEND_URL = process.env.BACKEND_URL || 'http://159.65.34.199:8081'
     const backendUrl = `${BACKEND_URL}/api/chats/${encodeURIComponent(chatId)}/tags`
-    console.log('🏷️ [API CHAT-TAGS] URL do backend:', backendUrl)
 
     const response = await fetch(backendUrl, {
       headers: {
@@ -30,20 +28,16 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('🏷️ [API CHAT-TAGS] Status:', response.status)
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('🏷️ [API CHAT-TAGS] Erro:', error)
       return NextResponse.json({ error: 'Erro ao buscar tags' }, { status: response.status })
     }
 
     const data = await response.json()
-    console.log('🏷️ [API CHAT-TAGS] Tags encontradas:', data.data?.length || 0)
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error('❌ [API CHAT-TAGS] Erro:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
