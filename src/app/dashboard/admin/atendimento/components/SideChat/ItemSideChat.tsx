@@ -898,7 +898,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                       className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                     >
                       <UserCheck className="w-3 h-3" />
-                      <span>Assumir Atendimento</span>
+                      <span>Assumir Atendimentos</span>
                     </button>
                   )}
 
