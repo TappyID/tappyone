@@ -841,7 +841,7 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                   ? 'bg-yellow-100 dark:bg-yellow-900/20 hover:ring-yellow-300'
                   : leadStatusDisplay === 'atendimento'
                   ? 'bg-green-100 dark:bg-green-900/20 hover:ring-green-300'
-                  : 'bg-gray-100 dark:bg-gray-900/20 hover:ring-gray-300'
+                  : 'bg-purple-100 dark:bg-purple-900/20 hover:ring-purple-300'
               }`}
               title="Clique para alterar status"
             >
@@ -850,14 +850,14 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
                   ? 'bg-yellow-500'
                   : leadStatusDisplay === 'atendimento'
                   ? 'bg-green-500'
-                  : 'bg-gray-500'
+                  : 'bg-purple-500'
               }`}></div>
               <span className={`text-[8px] font-medium truncate max-w-[46px] ${
                 leadStatusDisplay === 'aguardando'
                   ? 'text-yellow-600'
                   : leadStatusDisplay === 'atendimento'
                   ? 'text-green-600'
-                  : 'text-gray-600'
+                  : 'text-purple-600'
               }`}>
                 {leadStatusDisplay === 'aguardando'
                   ? 'Aguardando'
