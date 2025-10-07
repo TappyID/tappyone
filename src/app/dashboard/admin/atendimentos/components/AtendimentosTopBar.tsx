@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, 
@@ -81,6 +81,67 @@ export default function AtendimentosTopBar({
   const { colorTheme } = useColorTheme()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showColorModal, setShowColorModal] = useState(false)
+  
+  // 🎯 Edição do nome de usuário
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(user?.nome || 'Admin')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Focar no input quando entrar em modo edição
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus()
+      nameInputRef.current.select()
+    }
+  }, [isEditingName])
+
+  const handleNameDoubleClick = () => {
+    setIsEditingName(true)
+    setEditedName(user?.nome || 'Admin')
+  }
+
+  const handleNameSave = async () => {
+    if (!editedName.trim()) {
+      setEditedName(user?.nome || 'Admin')
+      setIsEditingName(false)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nome: editedName.trim() })
+      })
+
+      if (response.ok) {
+        // Atualizar contexto do usuário
+        window.location.reload() // Recarregar para atualizar o contexto
+      } else {
+        alert('Erro ao salvar nome')
+        setEditedName(user?.nome || 'Admin')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar nome:', error)
+      alert('Erro ao salvar nome')
+      setEditedName(user?.nome || 'Admin')
+    } finally {
+      setIsEditingName(false)
+    }
+  }
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleNameSave()
+    } else if (e.key === 'Escape') {
+      setEditedName(user?.nome || 'Admin')
+      setIsEditingName(false)
+    }
+  }
 
   const handleLogout = () => {
     logout()
@@ -911,8 +972,28 @@ export default function AtendimentosTopBar({
                         <div className="w-12 h-12 bg-gradient-to-br from-white/30 to-white/10 rounded-xl flex items-center justify-center">
                           <User className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">{user?.nome || 'Admin'}</h3>
+                        <div className="flex-1">
+                          {/* Nome editável com duplo clique */}
+                          {isEditingName ? (
+                            <input
+                              ref={nameInputRef}
+                              type="text"
+                              value={editedName}
+                              onChange={(e) => setEditedName(e.target.value)}
+                              onBlur={handleNameSave}
+                              onKeyDown={handleNameKeyDown}
+                              className="text-lg font-semibold text-white bg-white/10 px-2 py-1 rounded border border-white/30 focus:outline-none focus:border-white/50 w-full"
+                              placeholder="Seu nome"
+                            />
+                          ) : (
+                            <h3 
+                              className="text-lg font-semibold text-white cursor-pointer hover:text-white/80 transition-colors"
+                              onDoubleClick={handleNameDoubleClick}
+                              title="Duplo clique para editar"
+                            >
+                              {user?.nome || 'Admin'}
+                            </h3>
+                          )}
                           <p className="text-sm text-white/70">{user?.email || 'admin@tappyone.com'}</p>
                         </div>
                       </div>

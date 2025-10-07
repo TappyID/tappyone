@@ -67,20 +67,50 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
         ? "/api/waha-proxy"
         : "http://159.65.34.199:3001";
 
-      // ✅ BUSCAR DE TODAS AS CONEXÕES ATIVAS
-      // Buscar lista de sessões ativas
+      // ✅ BUSCAR APENAS CONEXÕES ATIVAS DO BANCO (ativo = true)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
 
-      const sessionsResponse = await fetch(`${baseUrl}/api/sessions`, {
+      // 1. Buscar conexões ativas do nosso banco
+      const conexoesResponse = await fetch('/api/connections', {
         headers: {
-          "X-Api-Key": "tappyone-waha-2024-secretkey",
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
-      if (!sessionsResponse.ok) {
-        throw new Error(`Erro ao buscar sessões: ${sessionsResponse.status}`);
+      if (!conexoesResponse.ok) {
+        throw new Error(`Erro ao buscar conexões: ${conexoesResponse.status}`);
       }
 
-      const sessions = await sessionsResponse.json();
+      const { connections } = await conexoesResponse.json();
+      
+      // 2. Extrair apenas sessionNames das conexões ativas
+      const activeSessions = connections
+        .filter((conn: any) => conn.ativo !== false) // Garantir que está ativo
+        .map((conn: any) => ({ name: conn.sessionName }));
+      
+      console.log('🔍 [useChatsOverview] Total conexões recebidas:', connections?.length || 0);
+      console.log('🔍 [useChatsOverview] Conexões ativas (ativo=true):', activeSessions.length);
+      console.log('🔍 [useChatsOverview] SessionNames ativos:', activeSessions.map((s: any) => s.name));
+
+      // Se não há conexões ativas, retornar vazio
+      if (activeSessions.length === 0) {
+        console.warn('⚠️ [useChatsOverview] Nenhuma conexão ativa encontrada!');
+        setChats([]);
+        setTotalChatsCount(0);
+        setUnreadChatsCount(0);
+        setReadNoReplyCount(0);
+        setGroupChatsCount(0);
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
+      const sessions = activeSessions;
 
       // Buscar chats de todas as sessões em paralelo
       const allChatsPromises = sessions.map(async (session: any) => {

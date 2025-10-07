@@ -195,6 +195,18 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   const [showFinalizarModal, setShowFinalizarModal] = useState(false)
   const [isFinalizando, setIsFinalizando] = useState(false)
 
+  // Debug do modal de finalização
+  useEffect(() => {
+    console.log('🎬 [Finalizar] showFinalizarModal mudou para:', showFinalizarModal)
+  }, [showFinalizarModal])
+
+  // Debug do chatLead e status
+  useEffect(() => {
+    console.log('💾 [Finalizar] chatLead mudou:', chatLead)
+    console.log('💾 [Finalizar] chatLead.status:', chatLead?.status)
+    console.log('💾 [Finalizar] canFinalizarAtendimento:', chatLead?.status === 'atendimento')
+  }, [chatLead])
+
   // Buscar informações do Kanban REAL
   const { kanbanInfo: realKanbanInfo } = useKanbanInfo(chat.id)
   
@@ -211,12 +223,24 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   }, [chat.id, chat.name, realKanbanInfo]);
 
   const applyChatLeadStatus = React.useCallback((status: any) => {
+    console.log('🔧 [applyChatLeadStatus] Recebido da API:', JSON.stringify(status, null, 2))
+    
     if (!status) {
+      console.log('⚠️ [applyChatLeadStatus] Status é null/undefined')
       setChatLead(null)
       return
     }
 
-    const normalizedStatus = normalizeLeadStatus(status.status) || 'aguardando'
+    console.log('🔍 [applyChatLeadStatus] status.status:', status.status)
+    console.log('🔍 [applyChatLeadStatus] status.lead_status:', status.lead_status)
+    
+    // Tentar pegar status de diferentes campos possíveis
+    const rawStatus = status.status || status.lead_status || status.statusAtendimento
+    console.log('🔍 [applyChatLeadStatus] rawStatus extraído:', rawStatus)
+    
+    const normalizedStatus = normalizeLeadStatus(rawStatus) || 'aguardando'
+    console.log('✅ [applyChatLeadStatus] normalizedStatus final:', normalizedStatus)
+    
     setChatLead({ ...status, status: normalizedStatus })
   }, [])
 
@@ -276,12 +300,25 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
   const fetchLeadStatus = async () => {
     if (!chat.id) return
 
+    console.log('🔄 [fetchLeadStatus] Buscando status para chat:', chat.id)
     setLoadingLead(true)
     try {
       const status = await buscarStatusChat(chat.id)
-      applyChatLeadStatus(status)
-      setLeadStatus(normalizeLeadStatus(status?.status) || null)
-    } catch {} finally {
+      console.log('📥 [fetchLeadStatus] Status retornado da API:', status)
+      
+      if (!status) {
+        console.warn('⚠️ [fetchLeadStatus] API retornou NULL - chat sem lead!')
+        console.log('💡 [fetchLeadStatus] Chat pode estar sem atendente associado')
+        // Se não tem lead, setar como aguardando
+        setChatLead({ chatId: chat.id, status: 'aguardando' })
+        setLeadStatus('aguardando')
+      } else {
+        applyChatLeadStatus(status)
+        setLeadStatus(normalizeLeadStatus(status?.status) || null)
+      }
+    } catch (error) {
+      console.error('❌ [fetchLeadStatus] Erro:', error)
+    } finally {
       setLoadingLead(false)
     }
   }
@@ -312,38 +349,72 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
   // Tags simplificadas - usando mesmo padrão do ChatHeader
 
-  const canFinalizarAtendimento = chatLead?.status === 'atendimento'
+  // Pode finalizar se tem lead com status em_atendimento/atendimento
+  const canFinalizarAtendimento = 
+    chatLead?.status === 'em_atendimento' || 
+    chatLead?.status === 'atendimento' // Aceitar ambos por compatibilidade
 
   const handleFinalizarClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!canFinalizarAtendimento) return
+    console.log('🔍 [Finalizar] canFinalizarAtendimento:', canFinalizarAtendimento)
+    console.log('🔍 [Finalizar] chatLead:', chatLead)
+    console.log('🔍 [Finalizar] chatLead.status:', chatLead?.status)
+    if (!canFinalizarAtendimento) {
+      console.warn('⚠️ [Finalizar] Não pode finalizar - status não é "atendimento"')
+      return
+    }
+    console.log('✅ [Finalizar] Abrindo modal...')
     setShowFinalizarModal(true)
   }
 
   const handleConfirmFinalizar = async () => {
-    if (!canFinalizarAtendimento) return
+    console.log('🎯 [Finalizar] Botão confirmar clicado!')
+    console.log('🔍 [Finalizar] chatLead COMPLETO:', JSON.stringify(chatLead, null, 2))
+    console.log('🔍 [Finalizar] chatLead.status:', chatLead?.status)
+    console.log('🔍 [Finalizar] typeof chatLead.status:', typeof chatLead?.status)
+    console.log('🔍 [Finalizar] é "em_atendimento"?', chatLead?.status === 'em_atendimento')
+    console.log('🔍 [Finalizar] é "atendimento"?', chatLead?.status === 'atendimento')
+    console.log('🔍 [Finalizar] canFinalizarAtendimento:', canFinalizarAtendimento)
+    
+    if (!canFinalizarAtendimento) {
+      console.error('❌ [Finalizar] Status atual:', chatLead?.status)
+      console.error('❌ [Finalizar] Esperado: "em_atendimento" ou "atendimento"')
+      alert(`Não é possível finalizar. Status atual: "${chatLead?.status}". Esperado: "em_atendimento" ou "atendimento"`)
+      return
+    }
 
+    console.log('⏳ [Finalizar] Iniciando finalização...')
     setIsFinalizando(true)
     try {
+      console.log('📡 [Finalizar] Chamando finalizarAtendimento API...')
       const result = await finalizarAtendimento(chat.id)
+      console.log('✅ [Finalizar] Resultado da API:', result)
+      
       applyChatLeadStatus(result)
       setLeadStatus('finalizado')
       window.dispatchEvent(new CustomEvent('chatStatusUpdated', {
         detail: { chatId: chat.id }
       }))
       setShowFinalizarModal(false)
+      console.log('✅ [Finalizar] Atendimento finalizado com sucesso!')
 
-    } catch {
-
+    } catch (error) {
+      console.error('❌ [Finalizar] Erro ao finalizar:', error)
       alert('Erro ao finalizar atendimento. Tente novamente.')
     } finally {
       setIsFinalizando(false)
+      console.log('🏁 [Finalizar] Processo finalizado')
     }
   }
 
   const handleCancelFinalizar = () => {
-    if (isFinalizando) return
+    console.log('❌ [Finalizar] Cancelar clicado')
+    if (isFinalizando) {
+      console.log('⚠️ [Finalizar] Cancelar ignorado - está finalizando')
+      return
+    }
     setShowFinalizarModal(false)
+    console.log('✅ [Finalizar] Modal fechado')
   }
 
   // Estado de conexão - usar isOnline do chat ou um valor default
@@ -970,12 +1041,12 @@ const ItemSideChat = React.forwardRef<HTMLDivElement, ItemSideChatProps>(({
 
     {/* Modal de confirmação de finalização */}
     {showFinalizarModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 pointer-events-auto">
         <div
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto"
           onClick={handleCancelFinalizar}
         />
-        <div className="relative w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4">
+        <div className="relative w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4 pointer-events-auto">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />

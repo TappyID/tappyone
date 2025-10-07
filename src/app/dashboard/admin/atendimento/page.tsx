@@ -98,30 +98,30 @@ function AtendimentoPage() {
       const newWidth = Math.min(Math.max(e.clientX, 280), 800)
       setSidebarWidth(newWidth)
     }
-
     const handleMouseUp = () => {
       if (isResizing) {
         setIsResizing(false)
         // Salvar no localStorage
         localStorage.setItem('atendimento-sidebar-width', sidebarWidth.toString())
-        document.body.style.cursor = 'default'
-        document.body.style.userSelect = 'auto'
+        console.log('✅ Largura salva:', sidebarWidth)
       }
     }
 
     if (isResizing) {
       document.body.style.cursor = 'ew-resize'
       document.body.style.userSelect = 'none'
+      // IMPORTANTE: Desabilitar pointer events em tudo exceto o handle durante resize
+      document.body.style.pointerEvents = 'none'
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
-    }
-
-    return () => {
+    } else {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.body.style.pointerEvents = ''
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
   }, [isResizing, sidebarWidth])
-
   // Estados para busca e filtros
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("todas");
@@ -1933,18 +1933,35 @@ function AtendimentoPage() {
           </div>
         </div>
 
-        {/* 🎯 Handle de Redimensionamento - Ultra Fino */}
+        {/* 🎯 Handle de Redimensionamento - OTIMIZADO */}
         <div
-          className={`w-px hover:w-1 transition-all cursor-ew-resize bg-gray-300/50 dark:bg-gray-600/50 hover:bg-blue-500 dark:hover:bg-blue-400 relative group ${isResizing ? 'bg-blue-500 dark:bg-blue-400 w-1' : ''}`}
-          onMouseDown={() => setIsResizing(true)}
-          onDoubleClick={() => {
-            setSidebarWidth(512)
-            localStorage.setItem('atendimento-sidebar-width', '512')
+          className={`relative group z-10 ${isResizing ? 'w-1' : 'w-0'}`}
+          style={{ 
+            pointerEvents: isResizing ? 'auto' : 'none' // Não bloquear scroll quando não está resizing
           }}
-          title="Arraste para redimensionar (duplo clique para resetar)"
         >
-          {/* Área de hover ampliada invisível para facilitar o grab */}
-          <div className="absolute inset-y-0 -left-3 -right-3 cursor-ew-resize" />
+          {/* Barra visual - aparece só no hover */}
+          <div 
+            className={`absolute inset-y-0 right-0 w-px bg-gray-300/50 dark:bg-gray-600/50 transition-all group-hover:w-1 group-hover:bg-blue-500 dark:group-hover:bg-blue-400 ${isResizing ? 'w-1 bg-blue-500 dark:bg-blue-400' : ''}`}
+          />
+          
+          {/* Área de captura - SÓ ativa no hover */}
+          <div 
+            className="absolute inset-y-0 -left-2 w-4 cursor-ew-resize opacity-0 group-hover:opacity-100"
+            style={{ pointerEvents: 'auto' }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsResizing(true);
+            }}
+            onDoubleClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setSidebarWidth(512);
+              localStorage.setItem('atendimento-sidebar-width', '512');
+            }}
+            title="Arraste para redimensionar (duplo clique: 512px)"
+          />
           
           {/* Indicador visual minimalista ao fazer hover */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

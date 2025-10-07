@@ -110,6 +110,11 @@ export default function ChatArea({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const { actualTheme } = useTheme()
+  
+  // 🎯 CONTROLE DE THROTTLE para não disparar load infinito
+  const isLoadingMoreRef = useRef(false)
+  const lastLoadTimeRef = useRef(0)
+  const previousScrollHeightRef = useRef(0)
 
   // Auto-scroll DESABILITADO para permitir scroll manual
   // useEffect(() => {
@@ -121,15 +126,62 @@ export default function ChatArea({
   //   }
   // }, [messages.length])
 
-  // Detectar scroll para mostrar badge e load more
+  // 🔥 RESET loading flag quando mensagens mudarem
+  useEffect(() => {
+    if (messages.length > 0) {
+      isLoadingMoreRef.current = false
+    }
+  }, [messages.length])
+
+  // 🎯 MANTER POSIÇÃO DO SCROLL ao carregar mais mensagens (estilo WhatsApp)
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container || previousScrollHeightRef.current === 0) return
+
+    // Calcular quanto de conteúdo novo foi adicionado
+    const currentScrollHeight = container.scrollHeight
+    const heightDifference = currentScrollHeight - previousScrollHeightRef.current
+
+    // Se adicionou conteúdo acima (carregou mensagens antigas)
+    if (heightDifference > 0 && previousScrollHeightRef.current > 0) {
+      // Ajustar scroll para manter posição visual
+      container.scrollTop = container.scrollTop + heightDifference
+      console.log('📍 [ChatArea] Scroll ajustado:', {
+        heightDiff: heightDifference,
+        newScrollTop: container.scrollTop
+      })
+      previousScrollHeightRef.current = 0 // Reset
+    }
+  }, [messages])
+
+  // 🎯 Detectar scroll para mostrar badge e load more - OTIMIZADO
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
 
     // Mostrar botão "voltar ao topo" se scrollou muito
     setShowScrollToTop(scrollTop > 200)
 
-    // Load more quando chegar próximo do topo (não exatamente 0)
-    if (scrollTop < 100 && hasMore && onLoadMore && !isLoading) {
+    // 🔥 Load more OTIMIZADO - estilo WhatsApp Web
+    // Só carrega quando:
+    // 1. Scrollou MUITO próximo do topo (< 50px)
+    // 2. Tem mais mensagens
+    // 3. NÃO está carregando
+    // 4. Passou pelo menos 1 segundo desde último load
+    const now = Date.now()
+    const timeSinceLastLoad = now - lastLoadTimeRef.current
+    
+    if (
+      scrollTop < 50 && // Muito próximo do topo
+      hasMore && 
+      onLoadMore && 
+      !isLoading && 
+      !isLoadingMoreRef.current &&
+      timeSinceLastLoad > 1000 // Throttle de 1 segundo
+    ) {
+      console.log('📜 [ChatArea] Carregando mais mensagens... (scrollTop:', scrollTop, ')')
+      isLoadingMoreRef.current = true
+      lastLoadTimeRef.current = now
+      previousScrollHeightRef.current = scrollHeight
       onLoadMore()
     }
   }
@@ -247,12 +299,19 @@ export default function ChatArea({
           backgroundPosition: '0 0, 10px 10px'
         }}
       >
-        {/* Loading mais mensagens no topo */}
-        {isLoading && messages.length > 0 && (
-          <div className="flex items-center justify-center py-4 border-b border-gray-200 dark:border-gray-700">
-            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-            <span className="ml-2 text-xs text-gray-500">Carregando mais mensagens...</span>
-          </div>
+        {/* Loading mais mensagens no topo - ESTILO WHATSAPP */}
+        {isLoading && messages.length > 0 && hasMore && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center justify-center py-3 mb-2"
+          >
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+              <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Carregando mensagens antigas...</span>
+            </div>
+          </motion.div>
         )}
 
         {/* Loading inicial */}
