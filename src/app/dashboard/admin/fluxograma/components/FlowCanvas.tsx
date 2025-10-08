@@ -1,10 +1,9 @@
 'use client'
 
-import { useRef, useCallback } from 'react'
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useTheme } from '@/contexts/ThemeContext'
 import { FlowNode, FlowConnection } from './types'
-import { NODE_TYPES } from './FluxoNodes'
 import FlowNodeComponent, { getMenuOptionAnchorRatio, getNodeDimensions } from './FlowNodeComponent'
 import ConnectionLine from './ConnectionLine'
 
@@ -96,13 +95,24 @@ export default function FlowCanvas({
           
           if (!fromNode || !toNode) return null
 
+          const fromMenuOptions = Array.isArray(fromNode.config?.listOptions) ? fromNode.config.listOptions : []
+          const siblingConnections = connections.filter(c => c.from === fromNode.id)
+          const menuPortCount = fromNode.type === 'action-whatsapp-list'
+            ? Math.max(fromMenuOptions.length, siblingConnections.length || 0)
+            : undefined
+          const toMenuOptions = Array.isArray(toNode.config?.listOptions) ? toNode.config.listOptions : []
+          const toSiblingConnections = connections.filter(c => c.from === toNode.id)
+          const toMenuPortCount = toNode.type === 'action-whatsapp-list'
+            ? Math.max(toMenuOptions.length, toSiblingConnections.length || 0)
+            : undefined
+
           return (
             <ConnectionLine
               key={connection.id}
               from={{
-                x: fromNode.position.x + getNodeDimensions(fromNode).width,
+                x: fromNode.position.x + getNodeDimensions(fromNode, menuPortCount).width,
                 y: (() => {
-                  const { height } = getNodeDimensions(fromNode)
+                  const { height } = getNodeDimensions(fromNode, menuPortCount)
                   const derivedSourceIndex = (() => {
                     if (typeof connection.sourcePortIndex === 'number') {
                       return connection.sourcePortIndex
@@ -117,8 +127,11 @@ export default function FlowCanvas({
                     return undefined
                   })()
 
-                  if (fromNode.type === 'action-whatsapp-list' && typeof derivedSourceIndex === 'number') {
-                    const ratio = getMenuOptionAnchorRatio(fromNode, derivedSourceIndex)
+                  if (fromNode.type === 'action-whatsapp-list') {
+                    const siblingsIndex = siblingConnections.findIndex(c => c.id === connection.id)
+                    const fallbackIndex = siblingsIndex === -1 ? 0 : siblingsIndex
+                    const effectiveIndex = typeof derivedSourceIndex === 'number' ? derivedSourceIndex : fallbackIndex
+                    const ratio = getMenuOptionAnchorRatio(fromNode, effectiveIndex, menuPortCount)
                     return fromNode.position.y + height * ratio
                   }
                   return fromNode.position.y + height / 2
@@ -126,7 +139,7 @@ export default function FlowCanvas({
               }}
               to={{
                 x: toNode.position.x,
-                y: toNode.position.y + getNodeDimensions(toNode).height / 2
+                y: toNode.position.y + getNodeDimensions(toNode, toMenuPortCount).height / 2
               }}
               isDark={isDark}
             />
@@ -144,18 +157,27 @@ export default function FlowCanvas({
         )}
 
         {/* Nodes */}
-        {nodes.map((node) => (
-          <FlowNodeComponent
-            key={node.id}
-            node={node}
-            isSelected={selectedNodeId === node.id}
-            isDark={isDark}
-            onDragStart={onNodeDragStart}
-            onConfigOpen={onNodeConfigOpen}
-            onConnectionStart={onConnectionStart}
-            onDelete={onNodeDelete}
-          />
-        ))}
+        {nodes.map((node) => {
+          const outgoingConnections = connections.filter(conn => conn.from === node.id)
+          const menuOptions = Array.isArray(node.config?.listOptions) ? node.config.listOptions : []
+          const menuPortCount = node.type === 'action-whatsapp-list'
+            ? Math.max(menuOptions.length, outgoingConnections.length || 0)
+            : undefined
+
+          return (
+            <FlowNodeComponent
+              key={node.id}
+              node={node}
+              isSelected={selectedNodeId === node.id}
+              isDark={isDark}
+              onDragStart={onNodeDragStart}
+              onConfigOpen={onNodeConfigOpen}
+              onConnectionStart={onConnectionStart}
+              onDelete={onNodeDelete}
+              menuPortCount={menuPortCount}
+            />
+          )
+        })}
       </motion.div>
     </div>
   )

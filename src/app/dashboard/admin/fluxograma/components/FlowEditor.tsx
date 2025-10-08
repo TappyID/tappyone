@@ -244,7 +244,7 @@ export default function FlowEditor({
         y: (e.clientY - rect.top) / state.zoom - node.position.y
       }
     }))
-  }, [state.nodes, state.zoom])
+  }, [state.nodes, state.zoom, state.connections])
 
   const handleNodeDrag = useCallback((e: React.MouseEvent) => {
     if (!state.isDragging || !state.selectedNodeId) return
@@ -282,12 +282,17 @@ export default function FlowEditor({
     
     if (!canvasRect || !node) return
     
-    const { width, height } = getNodeDimensions(node)
+    const menuOptions = Array.isArray(node.config?.listOptions) ? node.config.listOptions : []
+    const existingConnections = state.connections.filter(conn => conn.from === node.id)
+    const menuPortCount = node.type === 'action-whatsapp-list'
+      ? Math.max(menuOptions.length, existingConnections.length || 0)
+      : undefined
+    const { width, height } = getNodeDimensions(node, menuPortCount)
     const optionIndex = typeof portInfo?.optionIndex === 'number' ? portInfo.optionIndex : undefined
     let anchorY = node.position.y + height / 2
 
     if (node.type === 'action-whatsapp-list' && typeof optionIndex === 'number') {
-      const ratio = getMenuOptionAnchorRatio(node, optionIndex)
+      const ratio = getMenuOptionAnchorRatio(node, optionIndex, menuPortCount)
       anchorY = node.position.y + height * ratio
     }
 
@@ -302,7 +307,7 @@ export default function FlowEditor({
       x: (e.clientX - canvasRect.left) / state.zoom,
       y: (e.clientY - canvasRect.top) / state.zoom
     })
-  }, [state.nodes, state.zoom])
+  }, [state.nodes, state.zoom, state.connections])
 
   // Validate if connection is allowed based on node types
   const isValidConnection = useCallback((sourceNodeId: string, targetNodeId: string) => {
@@ -1277,19 +1282,28 @@ export default function FlowEditor({
             }}
           >
             {/* Render Nodes */}
-            {state.nodes.map(node => (
-                  <FlowNodeComponent
-                    key={node.id}
-                    node={node}
-                    isSelected={state.selectedNodeId === node.id}
-                    isDark={isDark}
-                    onDragStart={handleNodeDragStart}
-                    onConfigOpen={(nodeId) => handleConfigEdit(nodeId, {})}
-                    onConnectionStart={handleConnectionStart}
-                    onConnectionEnd={handleConnectionEnd}
-                    onDelete={handleNodeDelete}
-                  />
-                ))}
+            {state.nodes.map(node => {
+              const outgoingConnections = state.connections.filter(conn => conn.from === node.id)
+              const menuOptions = Array.isArray(node.config?.listOptions) ? node.config.listOptions : []
+              const menuPortCount = node.type === 'action-whatsapp-list'
+                ? Math.max(menuOptions.length, outgoingConnections.length || 0)
+                : undefined
+
+              return (
+                <FlowNodeComponent
+                  key={node.id}
+                  node={node}
+                  isSelected={state.selectedNodeId === node.id}
+                  isDark={isDark}
+                  onDragStart={handleNodeDragStart}
+                  onConfigOpen={(nodeId) => handleConfigEdit(nodeId, {})}
+                  onConnectionStart={handleConnectionStart}
+                  onConnectionEnd={handleConnectionEnd}
+                  onDelete={handleNodeDelete}
+                  menuPortCount={menuPortCount}
+                />
+              )
+            })}
 
                 {/* Render Connections */}
                 <svg className="absolute inset-0 pointer-events-none w-full h-full">
@@ -1301,11 +1315,23 @@ export default function FlowEditor({
                     if (!fromNode || !toNode) return null
 
                     // ✅ Detectar se é mini-node para calcular tamanho correto
-                    const { width: fromWidth, height: fromHeight } = getNodeDimensions(fromNode)
-                    const { height: toHeight } = getNodeDimensions(toNode)
+                    const fromMenuOptions = Array.isArray(fromNode.config?.listOptions) ? fromNode.config.listOptions : []
+                    const siblingConnections = state.connections.filter(c => c.from === fromNode.id)
+                    const menuPortCount = fromNode.type === 'action-whatsapp-list'
+                      ? Math.max(fromMenuOptions.length, siblingConnections.length || 0)
+                      : undefined
+                    const { width: fromWidth, height: fromHeight } = getNodeDimensions(fromNode, menuPortCount)
+                    const toMenuOptions = Array.isArray(toNode.config?.listOptions) ? toNode.config.listOptions : []
+                    const toSiblingConnections = state.connections.filter(c => c.from === toNode.id)
+                    const toMenuPortCount = toNode.type === 'action-whatsapp-list'
+                      ? Math.max(toMenuOptions.length, toSiblingConnections.length || 0)
+                      : undefined
+                    const { height: toHeight } = getNodeDimensions(toNode, toMenuPortCount)
 
                     // ✅ Connection points alinhados com as bolinhas
                     const startX = fromNode.position.x + fromWidth
+                    const siblingIndex = siblingConnections.findIndex(c => c.id === connection.id)
+                    const fallbackIndex = siblingIndex === -1 ? 0 : siblingIndex
                     const derivedSourceIndex = (() => {
                       if (typeof connection.sourcePortIndex === 'number') {
                         return connection.sourcePortIndex
@@ -1317,11 +1343,11 @@ export default function FlowEditor({
                       ) {
                         return toNode.config.optionIndex
                       }
-                      return undefined
+                      return fallbackIndex
                     })()
                     let startY = fromNode.position.y + fromHeight / 2
-                    if (fromNode.type === 'action-whatsapp-list' && typeof derivedSourceIndex === 'number') {
-                      const ratio = getMenuOptionAnchorRatio(fromNode, derivedSourceIndex)
+                    if (fromNode.type === 'action-whatsapp-list') {
+                      const ratio = getMenuOptionAnchorRatio(fromNode, derivedSourceIndex, menuPortCount)
                       startY = fromNode.position.y + fromHeight * ratio
                     }
                     

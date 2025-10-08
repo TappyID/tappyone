@@ -11,15 +11,37 @@ const MINI_NODE_DIMENSIONS = { width: 104, height: 34 }
 export const isMiniNode = (node: { type: string; config?: Record<string, any> }) =>
   node.config?.isMiniNode || node.type === 'menu-option'
 
-export const getNodeDimensions = (node: { type: string; config?: Record<string, any> }) =>
-  isMiniNode(node) ? MINI_NODE_DIMENSIONS : DEFAULT_NODE_DIMENSIONS
+export const getNodeDimensions = (
+  node: { type: string; config?: Record<string, any> },
+  portCountOverride?: number
+) => {
+  if (isMiniNode(node)) {
+    return MINI_NODE_DIMENSIONS
+  }
+
+  let width = DEFAULT_NODE_DIMENSIONS.width
+  let height = DEFAULT_NODE_DIMENSIONS.height
+
+  if (node.type === 'action-whatsapp-list') {
+    const optionsLength = Array.isArray(node.config?.listOptions) ? node.config.listOptions.length : 0
+    const portCount = portCountOverride ?? optionsLength
+    if (portCount > 1) {
+      const extraPorts = portCount - 1
+      height += Math.min(extraPorts * 10, 70)
+    }
+  }
+
+  return { width, height }
+}
 
 export const getMenuOptionAnchorRatio = (
   node: { config?: Record<string, any> },
-  optionIndex: number
+  optionIndex: number,
+  portCountOverride?: number
 ) => {
   const options = Array.isArray(node.config?.listOptions) ? node.config?.listOptions : []
-  const count = options.length
+  const explicitCount = typeof portCountOverride === 'number' ? portCountOverride : options.length
+  const count = explicitCount || options.length || 1
   if (!count) {
     return 0.5
   }
@@ -36,6 +58,7 @@ interface FlowNodeComponentProps {
   onConnectionStart: (nodeId: string, e: React.MouseEvent, portInfo?: { optionIndex?: number }) => void
   onConnectionEnd?: (nodeId: string) => void
   onDelete: (nodeId: string) => void
+  menuPortCount?: number
 }
 
 export default function FlowNodeComponent({
@@ -46,14 +69,18 @@ export default function FlowNodeComponent({
   onConfigOpen,
   onConnectionStart,
   onConnectionEnd,
-  onDelete
+  onDelete,
+  menuPortCount
 }: FlowNodeComponentProps) {
   const nodeInfo = NODE_TYPES[node.type]
   
   if (!nodeInfo) return null
   const mini = isMiniNode(node)
-  const { width: nodeWidth, height: nodeHeight } = getNodeDimensions(node)
   const menuOptions = Array.isArray(node.config?.listOptions) ? node.config.listOptions : []
+  const portCount = node.type === 'action-whatsapp-list'
+    ? Math.max(menuOptions.length, menuPortCount ?? 0)
+    : menuOptions.length
+  const { width: nodeWidth, height: nodeHeight } = getNodeDimensions(node, portCount)
 
   const getColorClass = (color: string) => {
     const colorMap: Record<string, string> = {
@@ -156,9 +183,9 @@ export default function FlowNodeComponent({
         {/* ✅ REMOVIDO: Descrição dos mini-nodes para economizar espaço */}
 
         {/* Indicador de opções do menu - Mostrar pontos */}
-        {node.type === 'action-whatsapp-list' && menuOptions.length > 0 && (
+        {node.type === 'action-whatsapp-list' && portCount > 0 && (
           <div className="flex items-center justify-center gap-0.5 mt-auto">
-            {menuOptions.slice(0, 5).map((_: any, idx: number) => (
+            {Array.from({ length: Math.min(portCount, 5) }).map((_, idx: number) => (
               <div 
                 key={idx}
                 className={`w-1 h-1 rounded-full ${
@@ -166,13 +193,13 @@ export default function FlowNodeComponent({
                 }`}
               />
             ))}
-            {menuOptions.length > 5 && (
+            {portCount > 5 && (
               <span className={`text-[8px] ml-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                +{menuOptions.length - 5}
+                +{portCount - 5}
               </span>
             )}
             <span className={`text-[8px] ml-0.5 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              ({menuOptions.length})
+              ({portCount})
             </span>
           </div>
         )}
@@ -200,9 +227,9 @@ export default function FlowNodeComponent({
       )}
 
       {/* Output (right side) */}
-      {node.type === 'action-whatsapp-list' && menuOptions.length ? (
-        menuOptions.map((_: any, index: number) => {
-          const ratio = getMenuOptionAnchorRatio(node, index)
+      {node.type === 'action-whatsapp-list' && portCount ? (
+        Array.from({ length: portCount }).map((_, index: number) => {
+          const ratio = getMenuOptionAnchorRatio(node, index, portCount)
           return (
             <div
               key={index}

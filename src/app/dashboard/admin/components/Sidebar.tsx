@@ -286,6 +286,14 @@ export function Sidebar() {
   const [isHovered, setIsHovered] = useState(false)
   const { colorTheme } = useColorTheme()
 
+  // ✅ Mesma função do TopBar para converter hex para rgba
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+
   const toggleSubmenu = (title: string) => {
     if (!isHovered) return
     
@@ -304,13 +312,13 @@ export function Sidebar() {
 
   return (
     <motion.div
-      className="relative h-screen shadow-xl shadow-black/5"
+      className="relative h-screen shadow-xl shadow-black/5 backdrop-blur-xl"
       initial={false}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       animate={{ 
         width: isHovered ? 280 : 80,
-        backgroundImage: `linear-gradient(180deg, ${colorTheme.primary}, ${colorTheme.secondary})`,
+        backgroundImage: `linear-gradient(135deg, ${hexToRgba(colorTheme.primary, 0.75)}, ${hexToRgba(colorTheme.secondary, 0.75)})`,
         opacity: isHovered ? 1 : 0.95
       }}
       transition={{ 
@@ -415,18 +423,14 @@ export function Sidebar() {
                               </motion.div>
                             )}
                             
-                            {/* Glow effect */}
-                            <motion.div
-                              className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${item.color.replace('text-', 'bg-')}`}
-                              initial={{ scale: 0.8 }}
-                              whileHover={{ scale: 1.2 }}
-                            />
+                            {/* ❌ REMOVIDO: Glow effect para sidebar mais limpa */}
                           </div>
                         </motion.div>
                         
                         {!!isHovered && (
                           <motion.span 
-                            className={`font-medium text-sm transition-all duration-300 select-none ${
+                            className={`text-sm font-medium truncate ${
+                              pathname === item.href ||
                               isSubmenuItemActive(item.children) || isSubmenuOpen(item.title)
                                 ? 'text-white font-semibold'
                                 : 'text-white/80 group-hover:text-white'
@@ -607,8 +611,7 @@ export function Sidebar() {
         </motion.div>
       </div>
 
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/20 pointer-events-none" />
+      {/* ❌ REMOVIDO: Gradient Overlay que causava luz extra */}
     </motion.div>
   )
 }

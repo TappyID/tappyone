@@ -88,13 +88,14 @@ export default function useChatsOverview(): UseChatsOverviewReturn {
 
       const { connections } = await conexoesResponse.json();
       
-      // 2. Extrair apenas sessionNames das conexões ativas
+      // 2. Extrair apenas sessionNames das conexões REALMENTE ativas (ativo = true)
       const activeSessions = connections
-        .filter((conn: any) => conn.ativo !== false) // Garantir que está ativo
+        .filter((conn: any) => conn.ativo === true && conn.status === 'WORKING') // ✅ APENAS ativo=true E status=WORKING
         .map((conn: any) => ({ name: conn.sessionName }));
       
       console.log('🔍 [useChatsOverview] Total conexões recebidas:', connections?.length || 0);
-      console.log('🔍 [useChatsOverview] Conexões ativas (ativo=true):', activeSessions.length);
+      console.log('🔍 [useChatsOverview] Todas conexões:', connections);
+      console.log('🔍 [useChatsOverview] Conexões ativas (ativo=true && status=WORKING):', activeSessions.length);
       console.log('🔍 [useChatsOverview] SessionNames ativos:', activeSessions.map((s: any) => s.name));
 
       // Se não há conexões ativas, retornar vazio
