@@ -36,7 +36,8 @@ import {
   Circle,
   UserX,
   Bell,
-  List
+  List,
+  Send
 } from 'lucide-react'
 import { SidebarLogo } from './SidebarLogo'
 import { SidebarToggle } from './SidebarToggle'
@@ -103,6 +104,14 @@ const menuItems = [
     color: 'text-yellow-600',
     badge: 45,
     badgeColor: 'from-yellow-400 to-yellow-600'
+  },
+  {
+    title: 'Disparos',
+    icon: Send,
+    href: '/dashboard/admin/disparos',
+    color: 'text-violet-600',
+    badge: null,
+    badgeColor: 'from-violet-400 to-violet-600'
   },
   {
     title: 'Contatos',
